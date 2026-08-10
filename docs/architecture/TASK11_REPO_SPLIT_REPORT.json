@@ -1,0 +1,64 @@
+{
+  "task": "TASK_11_PHYSICAL_REPO_SPLIT",
+  "status": "PARTIAL",
+  "audited_at": "2026-08-10",
+  "staging_root": "D:/work/_split",
+  "deploy": "NOT_RUN",
+  "zip": "NOT_RUN",
+  "manual_ui": "NOT_RUN",
+  "old_backend_deleted": false,
+  "trees": {
+    "omnichannel-client_files_excl_vendor_node": 1792,
+    "omnichannel-client-core_files": 57,
+    "omnichannel-addons_files": 3732,
+    "per_addon": {
+      "agent": 582,
+      "ai-prompt": 298,
+      "commerce": 61,
+      "content": 539,
+      "content-projects": 529,
+      "media": 213,
+      "publishing": 81,
+      "search-foundation": 94,
+      "search-intelligence": 474,
+      "seo": 333,
+      "seo-content-ai-compat": 263,
+      "site-sync": 118,
+      "social": 3,
+      "wordpress": 101,
+      "_legacy-obsolete": 17
+    }
+  },
+  "compat_shell": "omnichannel-addons/seo-content-ai-compat (slug seo-content-ai)",
+  "composer": {
+    "path_repos": ["../omnichannel-client-core", "../omnichannel-addons"],
+    "symlink": true,
+    "versions": "0.1.0"
+  },
+  "frontend": {
+    "addons_via": "client/addons junction → omnichannel-addons",
+    "client_core_alias": "@client-core → ../omnichannel-client-core/resources/js",
+    "npm_build": "PASS"
+  },
+  "migrations": {
+    "discovery": "glob addons/*/database/migrations + client database/migrations",
+    "refactor_migrate_x2": "PASS"
+  },
+  "independence": {
+    "directory_rename": "BLOCKED_BY_IDE_LOCK",
+    "reflection_path_proof": "PASS (all under _split, none under omnichannel-backend)"
+  },
+  "verification_from_client": {
+    "optimize_clear": "PASS",
+    "route_list": "PASS 293",
+    "saveCoordinator": "PASS 6/6",
+    "key_phpunit": "PASS 23 tests (Ownership/WP harness/ClientCore/PeerManifest)"
+  },
+  "blockers": [
+    "Full rename independence blocked while Cursor holds omnichannel-backend open",
+    "Broad PHPUnit suite not fully re-swept in new tree (key filters PASS)",
+    "Many addon tests still use dirname(__DIR__,N) assumptions — ProjectRoot helper added; bulk rewrite residual",
+    "Old omnichannel-backend still present by design until explicit cutover"
+  ],
+  "verdict": "PARTIAL — physical split staged and boots from _split/omnichannel-client with external core+addons; build+migrate+key tests PASS; full rename proof pending IDE unlock"
+}

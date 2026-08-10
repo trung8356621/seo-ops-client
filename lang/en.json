@@ -1,0 +1,16 @@
+{
+    "Avatar": "Avatar",
+    "Full name": "Full name",
+    "Rule": "Rule",
+    "Status": "Status",
+    "Wallet balance": "Wallet balance",
+    "Managed by": "Managed by",
+    "created_at": "created at",
+    "Filter by rule": "Filter by rule",
+    "Owner":"Owner",
+    "Domain":"Domain",
+    "Admin url (use for headless)":"Admin url (use for headless)",
+    "User":"User",
+    "Sites":"Sites",
+    "Activated Services":"Activated Services"
+}
