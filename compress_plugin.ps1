@@ -4,7 +4,7 @@
 
 # Normalizing input directories
 $wpPluginDir = "D:\work\wp-seo-ai".TrimEnd("\")
-$laravelTargetDir = "D:\work\omnichannel-backend\storage\app\public\plugins\omi-seo-ai-bridge".TrimEnd("\")
+$laravelTargetDir = "D:\work\omnichannel-client\storage\app\public\plugins\omi-seo-ai-bridge".TrimEnd("\")
 $pluginSlug = "omi-seo-ai-bridge"
 $zipFolder = $pluginSlug # Outermost folder inside the zip file; must match installed plugin folder
 

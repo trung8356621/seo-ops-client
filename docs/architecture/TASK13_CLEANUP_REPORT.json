@@ -1,0 +1,58 @@
+{
+  "task": 13,
+  "title": "POST-REFACTOR CLEANUP + CANONICAL WORKSPACE HARDENING",
+  "verified_at": "2026-08-10",
+  "verdict": "PASS",
+  "deleted": [
+    "D:/work/_split/ (entire tree + temp scripts)",
+    "D:/work/work.code-workspace",
+    "omnichannel-client/scripts/phase3_*.php (17)",
+    "omnichannel-client/scripts/patch-config-tests.php",
+    "omnichannel-client/cmd_store.txt",
+    "omnichannel-addons/_task8_* (18 dump files)"
+  ],
+  "kept": [
+    "RENAME_PRE_SPLIT_BACKUP.ps1",
+    "omnichannel-backend (backup/reference; rename still optional)",
+    "scripts/run-phpunit.php, test-doctor.php, junit helpers",
+    "refactor:migrate, migrate-fresh, reconcile-migrations, data-counts",
+    "_legacy-obsolete migrations (17) for history/basename ordering"
+  ],
+  "stale_paths": {
+    "_split_active": 0,
+    "old_backend_active": "compress_plugin.ps1 retargeted to omnichannel-client",
+    "dirname_DIR_4_tests_fixed": 10,
+    "app_Addons_test_dead_probe_removed": "ArticleWritingStablePhase10Test"
+  },
+  "composer": "validate PASS; dump-autoload 11743 classes; sibling path repos only",
+  "vite": "build PASS; check:editor-cycles PASS; no _split aliases; entrypoints under peer addons",
+  "client_core_purity": "PASS — no business bleed; see CLIENT_CORE_PURITY.md",
+  "addon_hygiene": "14 peers with addon.json; no nested .git",
+  "compat": "FROZEN — COMPAT_FREEZE.md; no migration dir; no new business",
+  "migration": "refactor:migrate x2 PASS delta 0; 14 peer paths",
+  "dead_code": "phase3/task8/_split deleted; deep zero-caller delete deferred for residual B/C tests",
+  "refactor_commands": {
+    "keep": ["refactor:migrate", "refactor:migrate-fresh", "refactor:reconcile-migrations", "refactor:data-counts"],
+    "remove": []
+  },
+  "docs": ["docs/README.md", "CLIENT_CORE_PURITY.md", "COMPAT_FREEZE.md", "REPO_SPLIT/NEW_AGENT_HANDOFF already canonical"],
+  "mcp": {
+    "D-work-omnichannel-client": 1290,
+    "D-work-omnichannel-client-core": 383,
+    "D-work-omnichannel-addons": 29157
+  },
+  "gates": {
+    "routes": 293,
+    "npm_build": "PASS",
+    "saveCoordinator": "6/6",
+    "key_phpunit": "31/31",
+    "migrate_idempotent": "PASS"
+  },
+  "remaining_debts": [
+    "Manual UI / real WP E2E pending",
+    "Broad PHPUnit residual B/C (stale FQCN/Mockery/env)",
+    "public/build asset churn still tracked in client git",
+    "omnichannel-backend rename to __pre_split_backup if IDE unlock",
+    "MCP indexer excludes media/ by default"
+  ]
+}

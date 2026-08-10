@@ -1,20 +1,30 @@
-# Omnichannel Backend — Documentation Index
+# Omnichannel Client — Documentation Index
 
-> Status: Canonical  
-> Last verified: 2026-08-01
+> Status: Canonical (multi-repo workspace at `D:\work\`)  
+> Last verified: 2026-08-10 (Task 13 cleanup)
+
+## Workspace repos
+| Repo | Role |
+|------|------|
+| `omnichannel-client` | Thin Laravel shell (this tree) |
+| `omnichannel-client-core` | Platform / runtime (`App\Core\*`) |
+| `omnichannel-addons` | Peer business addons + `seo-content-ai-compat` |
+| `wp-seo-ai` | WordPress bridge plugin |
+
+Open: `D:\work\omnichannel.code-workspace`. Old `omnichannel-backend` / `_split` are **not** SoT.
 
 ## Precedence (source of truth)
 
-1. `docs/architecture/ARCHITECTURE_FREEZE_V1.md` + accepted ADRs in `ARCHITECTURE_DECISIONS.md`
-2. `docs/modules/*` — one canonical doc per module
-3. `docs/contracts/*` — public contracts / invariants
-4. `docs/operations/*` — deploy, workers, testing, troubleshooting
-5. `docs/audits/*` — current audits only (if any). Active: [`ARTICLE_EDITOR_PERFORMANCE_PHASE1.md`](audits/ARTICLE_EDITOR_PERFORMANCE_PHASE1.md)
-6. `docs/archive/*` — **historical only**, never SoT
+1. `docs/architecture/ADDON_ARCHITECTURE.md` + `NEW_AGENT_HANDOFF.md` + `REPO_SPLIT.md`
+2. `docs/architecture/DB_REPOSITORY_OWNERSHIP.json` + `SEO_CONTENT_AI_COMPAT_SHELL.md`
+3. `docs/modules/*` — one canonical doc per module
+4. `docs/contracts/*` — public contracts / invariants
+5. `docs/operations/*` — deploy, workers, testing, troubleshooting
+6. `docs/audits/*` — current audits only (if any). Active: [`ARTICLE_EDITOR_PERFORMANCE_PHASE1.md`](audits/ARTICLE_EDITOR_PERFORMANCE_PHASE1.md)
+7. `docs/archive/*` + `TASK*_*.json` / Task 1–12 reports — **historical only**, never SoT
 
 Root `/README.md` = repository landing.  
-`app/Addons/SeoContentAi/README_ADDON_SEOCONTENTAI.md` = compatibility stub only.  
-`docs/SUPER_MAP_INDEX.md` = thin legacy pointer for tooling.
+Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addons/SeoContentAi`).
 
 ## Architecture
 
@@ -23,9 +33,13 @@ Root `/README.md` = repository landing.
 | [SYSTEM_OVERVIEW.md](architecture/SYSTEM_OVERVIEW.md) | System map |
 | [ADDON_ARCHITECTURE.md](architecture/ADDON_ARCHITECTURE.md) | Peer-addon rules (Core protocol-only; SeoContentAi compat) |
 | [NEW_AGENT_HANDOFF.md](architecture/NEW_AGENT_HANDOFF.md) | Post-refactor operational handoff for new agents |
+| [REPO_SPLIT.md](architecture/REPO_SPLIT.md) | Canonical multi-repo layout + boot/composer/vite |
+| [DB_REPOSITORY_OWNERSHIP.json](architecture/DB_REPOSITORY_OWNERSHIP.json) | DB / package ownership after split |
 | [SEO_CONTENT_AI_COMPAT_SHELL.md](architecture/SEO_CONTENT_AI_COMPAT_SHELL.md) | SeoContentAi shell retained categories + consumers |
 | [POST_REFACTOR_MANUAL_CHECKLIST.md](architecture/POST_REFACTOR_MANUAL_CHECKLIST.md) | USER browser / WP E2E checklist (refactor CLOSED) |
-| [FINAL_LOCAL_RELEASE_MANIFEST.md](architecture/FINAL_LOCAL_RELEASE_MANIFEST.md) | One-time ZIP inventory + post-upload commands (no deploy) |
+| [CLIENT_CORE_PURITY.md](architecture/CLIENT_CORE_PURITY.md) | Client Core responsibilities after physical split |
+| [TASK13_CLEANUP_REPORT.json](architecture/TASK13_CLEANUP_REPORT.json) | Cleanup pass inventory |
+| [FINAL_LOCAL_RELEASE_MANIFEST.md](architecture/FINAL_LOCAL_RELEASE_MANIFEST.md) | Historical ZIP inventory (Task 10) |
 | [DATA_AND_RUNTIME_BOUNDARIES.md](architecture/DATA_AND_RUNTIME_BOUNDARIES.md) | DB / logging / addon boundaries |
 | [ARCHITECTURE_FREEZE_V1.md](architecture/ARCHITECTURE_FREEZE_V1.md) | Frozen public contracts |
 | [ARCHITECTURE_DECISIONS.md](architecture/ARCHITECTURE_DECISIONS.md) | ADR-001.. |
