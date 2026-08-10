@@ -46,7 +46,8 @@
     "npm_build": "PASS",
     "saveCoordinator": "6/6",
     "key_phpunit": "31/31",
-    "migrate_idempotent": "PASS"
+    "migrate_idempotent": "PASS",
+    "broad_phpunit": "3602 tests; Errors 265; Failures 273; Skipped 30; Risky 8 — residual B/C, not architecture blockers"
   },
   "remaining_debts": [
     "Manual UI / real WP E2E pending",
