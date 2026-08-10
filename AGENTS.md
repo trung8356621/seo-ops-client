@@ -1,34 +1,20 @@
-# Omnichannel Client — Agent instructions
+# omnichannel-client
 
-## Repository map (authoritative after Task 11)
+Thin Laravel application shell only.
 
-| Concern | Path |
-|---------|------|
-| Laravel shell | `D:\work\_split\omnichannel-client` |
-| Platform / runtime | `D:\work\_split\omnichannel-client-core` |
-| Peer business addons | `D:\work\_split\omnichannel-addons/<slug>` |
-| Compat Filament shell | `D:\work\_split\omnichannel-addons\seo-content-ai-compat` |
-| WordPress plugin | `D:\work\wp-seo-ai` |
+## Owns
+- bootstrap / env / public entry
+- root config composition
+- storage / app lifecycle
+- wiring Client Core + discovering addons
 
-**Do not** treat `omnichannel-backend` as runtime SoT after cutover. It remains a legacy working tree until migration complete.
+## Does NOT own
+Business SEO, Content, Media, WordPress, Publishing, Site Sync, Prompts, Search Intelligence, Agent product logic.
 
-## Hard rules
+## Path packages
+- `../omnichannel-client-core` → `omnichannel/client-core`
+- `../omnichannel-addons` → `omnichannel/addons`
+- Junction `addons/` → `../omnichannel-addons` (gitignored)
 
-1. Shell never hard-codes business addon provider classes.
-2. Client-core never imports business addon implementations.
-3. Addon A never imports Addon B internals — capability / command / event / DTO only.
-4. SeoContentAi compat = views/lang/panel bootstrap only — **no new business code**.
-5. Protected DBs `omi_channel` / `omi_seo_ai`: only `refactor:migrate --verify --via-mysql`. Never fresh.
-
-## Verify from client
-
-```text
-cd D:\work\_split\omnichannel-client
-composer dump-autoload -o
-php artisan optimize:clear
-npm run build
-node --test ../omnichannel-client-core/resources/js/__tests__/saveCoordinator.test.mjs
-php artisan refactor:migrate --verify --via-mysql
-```
-
-Architecture: `docs/architecture/REPO_SPLIT.md`, `ADDON_ARCHITECTURE.md`, `NEW_AGENT_HANDOFF.md`.
+## Feature routing
+See workspace root docs / sibling `omnichannel-addons/AGENTS.md`.
