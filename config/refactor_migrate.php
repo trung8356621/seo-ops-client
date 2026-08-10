@@ -21,8 +21,10 @@ return [
      * Exact names that must NEVER be dropped — even with --confirm-destroy-test-db.
      */
     'protected_database_names' => [
-        'omi_channel',
+        'omi_client',
         'omi_seo_ai',
+        'omi_channel',
+        'omi_channel__pre_client_split_backup',
         'omi_channel_real',
         'omi_seo_ai_real',
     ],

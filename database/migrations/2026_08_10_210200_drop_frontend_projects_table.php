@@ -3,20 +3,20 @@
 declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Support\Facades\Schema;
 
 /**
- * Retired — frontend_projects removed (zero runtime consumers).
- * @see 2026_08_10_210200_drop_frontend_projects_table
+ * Drop zero-consumer core table frontend_projects.
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // no-op
+        Schema::dropIfExists('frontend_projects');
     }
 
     public function down(): void
     {
-        // no-op
+        // Irreversible — restore from backup.
     }
 };

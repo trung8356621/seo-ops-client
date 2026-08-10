@@ -39,6 +39,18 @@ All product domains live under `/addons/{slug}` as **peers** (no parent/child hi
 
 Active business code lives in `/addons/*`.
 
+## Database planes (post cutover)
+
+| Plane | Laravel connection | Physical DB | Owns |
+|-------|--------------------|-------------|------|
+| Client core | `mysql` (default / `core_connection`) | `omi_client` | SaaS core, automation `automation_*` + `business_events`, SEO credentials |
+| SEO addon | `omi_seo_ai` | `omi_seo_ai` | Articles, keywords, prompts, media, projects, `seo_link_maps`, … |
+| WP Headless | `wp_headless` | (addon local) | Headless site tables |
+
+`omi_channel` is **retired** (renamed to `omi_channel__pre_client_split_backup`). Do not target it for runtime or `migrate:fresh`.
+
+See [FINAL_DATABASE_ARCHITECTURE.md](FINAL_DATABASE_ARCHITECTURE.md) and [DB_REPOSITORY_OWNERSHIP.json](DB_REPOSITORY_OWNERSHIP.json).
+
 ## Hard rules (1–20)
 
 1. All addons are peers.

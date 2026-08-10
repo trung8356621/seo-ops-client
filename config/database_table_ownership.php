@@ -6,6 +6,7 @@ declare(strict_types=1);
  * Ownership table theo Laravel connection name (không hard-code tên database vật lý).
  *
  * - core: resolve qua config('database.core_connection') — thường là `mysql`
+ *   Physical DB name sau cutover: `omi_client` (ex-`omi_channel`, renamed away).
  * - omi_seo_ai / wp_headless: connection name runtime của addon
  *
  * Addon có thể bổ sung qua DeclaresDatabaseTableOwnership trên ServiceProvider.
@@ -48,7 +49,7 @@ return [
                 'notifications',
                 'personal_access_tokens',
 
-                // Omnichannel core
+                // Omnichannel core (physical DB: omi_client)
                 'wallets',
                 'transactions',
                 'services',
@@ -61,12 +62,10 @@ return [
                 'site_services',
                 'site_meta',
                 'task_jobs',
-                'frontend_projects',
                 'wp_options',
                 'api_connections',
                 'seo_ai_models',
                 'seo_database_connections',
-                'seo_connection_sites',
                 'seo_connection_users',
                 'team_messages',
                 'user_meta',
@@ -78,7 +77,7 @@ return [
                 'seo_serp_provider_connections',
                 'seo_extended_provider_connections',
 
-                // Automation core (sau cutover AUTOMATION_DB_CONNECTION → core)
+                // Automation core (AUTOMATION_DB_CONNECTION → mysql / omi_client)
                 'business_events',
                 'automation_action_executions',
                 'automation_action_runs',
@@ -101,9 +100,13 @@ return [
         'omi_seo_ai' => [
             'tables' => [
                 // Khai báo tối thiểu ở config; SeoContentAiServiceProvider bổ sung đầy đủ.
+                // Dead / dropped (không còn ownership): tags, entities, entity_results,
+                // seo_settings, seo_domain_metas, domain_global_cta_settings,
+                // user_workspace_settings, seo_prompt_templates, seo_links, keyword_link,
+                // seo_generated_images, automation_*, business_events.
             ],
             'patterns' => [
-                // automation_* đã chuyển ownership sang core (xem owners.core).
+                // automation_* + business_events: ownership core.
             ],
         ],
 

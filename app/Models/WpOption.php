@@ -7,7 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Bảng wp_options trên DB Laravel (omi_channel / connection mặc định) — không phải DB WordPress site.
+ * Bảng wp_options trên DB Laravel (omi_client / connection mặc định) — không phải DB WordPress site.
  */
 class WpOption extends Model
 {

@@ -9,8 +9,9 @@ use App\Support\Automation\AutomationConnection;
 use Illuminate\Console\Command;
 
 /**
- * Chuyển automation_* (+ business_events) từ omi_seo_ai sang core DB.
+ * LEGACY UPGRADE ONLY — copy automation_* (+ business_events) from omi_seo_ai → core.
  *
+ * Post-cutover runtime already uses mysql/omi_client. Keep for leftover env upgrades only.
  * Không gộp copy + cutover + drop trong một bước.
  */
 final class MigrateAutomationToCoreCommand extends Command
@@ -24,7 +25,7 @@ final class MigrateAutomationToCoreCommand extends Command
         {--force : Bắt buộc với cleanup}
         {--phase= : copy|verify|cleanup (alias rõ ràng)}';
 
-    protected $description = 'Migrate automation tables from SEO addon DB to core DB (safe phased).';
+    protected $description = '[LEGACY UPGRADE] Migrate automation tables from SEO DB to core (post-cutover unused; mysql/omi_client is runtime SoT).';
 
     public function handle(AutomationCoreMigrationService $service): int
     {

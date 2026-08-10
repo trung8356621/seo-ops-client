@@ -87,6 +87,21 @@ return Application::configure(basePath: dirname(__DIR__))
         // which may be root-owned on production while PHP-FPM runs as www.
         // CLI/cron/queue keep framework default reporting unchanged.
         $exceptions->report(function (\Throwable $e): ?bool {
+            $path = '';
+            try {
+                $path = '/'.ltrim((string) request()->path(), '/');
+            } catch (\Throwable) {
+                $path = '';
+            }
+
+            if (str_contains($path, 'editor-sessions')) {
+                @file_put_contents(
+                    storage_path('logs/editor-session-debug.log'),
+                    date('c').' FRAMEWORK '.$e::class.' '.$e->getMessage().' path='.$path."\n",
+                    FILE_APPEND,
+                );
+            }
+
             if (app()->runningInConsole()) {
                 return null;
             }

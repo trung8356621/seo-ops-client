@@ -42,7 +42,8 @@ final class AutomationCoreMigrationTest extends TestCase
 
         Config::set('automation.source_connection', $this->source);
         Config::set('automation.target_connection', $this->target);
-        Config::set('automation.connection', $this->source);
+        // Runtime SoT = core/mysql (target). Source path is LEGACY migrate-from-seo only.
+        Config::set('automation.connection', $this->target);
         Config::set('automation.chunk_size', 2);
         Config::set('automation.report_directory', 'automation-migration-test');
 
@@ -69,14 +70,25 @@ final class AutomationCoreMigrationTest extends TestCase
         $this->assertInstanceOf(AutomationModel::class, $model);
     }
 
+    public function test_runtime_default_is_core_not_seo_source(): void
+    {
+        Config::set('automation.connection', 'mysql');
+        $this->assertSame('mysql', AutomationConnection::name());
+        $this->assertSame($this->source, AutomationConnection::source());
+        $this->assertNotSame(AutomationConnection::source(), AutomationConnection::name());
+    }
+
     public function test_core_schema_exists_on_target_not_required_on_fresh_seo_noop(): void
     {
         $this->assertTrue(Schema::connection($this->target)->hasTable('automation_rules'));
         $this->assertTrue(Schema::connection($this->target)->hasTable('business_events'));
     }
 
-    public function test_copy_preserves_id_and_timestamps_idempotent(): void
+    public function test_legacy_migrate_from_seo_copy_preserves_id_and_timestamps_idempotent(): void
     {
+        // LEGACY path: copy source (omi_seo_ai analog) -> target (core/mysql analog).
+        Config::set('automation.connection', $this->source);
+
         $createdAt = '2026-01-15 10:00:00';
         DB::connection($this->source)->table('automation_rules')->insert([
             'id' => 42,

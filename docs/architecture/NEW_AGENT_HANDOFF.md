@@ -49,14 +49,21 @@ Column ownership detail: [ARTICLE_COLUMN_OWNERSHIP.json](ARTICLE_COLUMN_OWNERSHI
 
 | Kind | Names / command |
 |------|-----------------|
-| **Protected** | `omi_channel`, `omi_seo_ai` — never destroy / never `fresh` |
+| **Protected** | `omi_client`, `omi_seo_ai` — never destroy / never `fresh` |
+| **Retired** | `omi_channel` → renamed `omi_channel__pre_client_split_backup` (not runtime) |
 | **Non-destructive verify** | `php artisan refactor:migrate --verify --via-mysql` (safe to re-run; expect idempotent) |
 | **Disposable** | `*_test` DBs only |
 | **Fresh test DB** | only with `--confirm-destroy-test-db` |
 
 Do **not** run destructive fresh against protected DBs.
 
+| Connection | Physical | Role |
+|------------|----------|------|
+| `mysql` / core | `omi_client` | Client shell + automation runtime |
+| `omi_seo_ai` | `omi_seo_ai` | SEO/content peer-addon business tables |
+
 SEO runtime connection name: `omi_seo_ai` (bootstrapped from core `seo_database_connections` via Search Foundation).
+Automation runtime: `AUTOMATION_DB_CONNECTION=mysql` (never `omi_seo_ai`).
 
 ---
 

@@ -1,56 +1,73 @@
 ﻿{
-    "generated_at":  "2026-08-10",
-    "note":  "Physical repo ownership after Task 12 cutover (canonical D:\\work). DB schema ownership unchanged from peer-addon cutover.",
-    "repositories":  {
-                         "omnichannel-client":  {
-                                                    "owns_migrations":  [
-                                                                            "database/migrations"
-                                                                        ],
-                                                    "connection_default":  "mysql",
-                                                    "notes":  "Thin Laravel shell migrations only (users/cache/jobs/core SaaS tables)."
-                                                },
-                         "omnichannel-client-core":  {
-                                                         "owns_migrations":  [
-
-                                                                             ],
-                                                         "notes":  "Runtime/guards/locators; no business tables. refactor:* commands live here."
-                                                     },
-                         "omnichannel-addons":  {
-                                                    "connection_default_for_addon_migrations":  "omi_seo_ai",
-                                                    "addons":  {
-                                                                   "search-foundation":  "search-foundation/database/migrations",
-                                                                   "seo":  "seo/database/migrations",
-                                                                   "search-intelligence":  "search-intelligence/database/migrations",
-                                                                   "ai-prompt":  "ai-prompt/database/migrations",
-                                                                   "content":  "content/database/migrations",
-                                                                   "content-projects":  "content-projects/database/migrations",
-                                                                   "media":  "media/database/migrations",
-                                                                   "wordpress":  "wordpress/database/migrations",
-                                                                   "publishing":  "publishing/database/migrations",
-                                                                   "site-sync":  "site-sync/database/migrations",
-                                                                   "agent":  "agent/database/migrations",
-                                                                   "social":  "social/database/migrations",
-                                                                   "commerce":  "commerce/database/migrations",
-                                                                   "seo-content-ai-compat":  "none (compat shell; no new business migrations)",
-                                                                   "_legacy-obsolete":  "_legacy-obsolete/database/migrations (historical only)"
-                                                               }
-                                                }
-                     },
-    "protected_databases":  [
-                                "omi_channel",
-                                "omi_seo_ai"
-                            ],
-    "disposable_test_databases":  [
-                                      "*_test"
-                                  ],
-    "article_table_sot":  {
-                              "articles":  "content",
-                              "article_meta":  "sparse metadata",
-                              "seo_article_profiles":  "seo",
-                              "wordpress_article_links":  "wordpress",
-                              "article_media_states":  "media",
-                              "publishing_article_states":  "publishing",
-                              "seo_content_archive_items":  "content-projects"
-                          },
-    "safe_verify_command":  "php artisan refactor:migrate --verify --via-mysql"
+    "generated_at": "2026-08-10",
+    "note": "Physical repo ownership after Task 12 cutover + DB plane cutover (omi_client). DB schema ownership by peer addon unchanged.",
+    "repositories": {
+        "omnichannel-client": {
+            "owns_migrations": [
+                "database/migrations"
+            ],
+            "connection_default": "mysql",
+            "physical_database": "omi_client",
+            "notes": "Thin Laravel shell migrations only (users/cache/jobs/core SaaS + automation tables). Physical DB renamed from omi_channel → omi_client."
+        },
+        "omnichannel-client-core": {
+            "owns_migrations": [],
+            "notes": "Runtime/guards/locators; no business tables. refactor:* commands live here."
+        },
+        "omnichannel-addons": {
+            "connection_default_for_addon_migrations": "omi_seo_ai",
+            "addons": {
+                "search-foundation": "search-foundation/database/migrations",
+                "seo": "seo/database/migrations",
+                "search-intelligence": "search-intelligence/database/migrations",
+                "ai-prompt": "ai-prompt/database/migrations",
+                "content": "content/database/migrations",
+                "content-projects": "content-projects/database/migrations",
+                "media": "media/database/migrations",
+                "wordpress": "wordpress/database/migrations",
+                "publishing": "publishing/database/migrations",
+                "site-sync": "site-sync/database/migrations",
+                "agent": "agent/database/migrations",
+                "social": "social/database/migrations",
+                "commerce": "commerce/database/migrations",
+                "seo-content-ai-compat": "none (compat shell; no new business migrations)",
+                "_legacy-obsolete": "_legacy-obsolete/database/migrations (historical only)"
+            }
+        }
+    },
+    "protected_databases": [
+        "omi_client",
+        "omi_seo_ai"
+    ],
+    "retired_databases": [
+        {
+            "name": "omi_channel",
+            "status": "retired",
+            "renamed_to": "omi_channel__pre_client_split_backup",
+            "notes": "Not a runtime target. Keep protected in destructive guards if the old name still appears in env/history."
+        }
+    ],
+    "disposable_test_databases": [
+        "*_test"
+    ],
+    "automation": {
+        "runtime_connection": "mysql",
+        "physical_database": "omi_client",
+        "tables": [
+            "business_events",
+            "automation_*"
+        ],
+        "legacy_migrate_command": "automation:migrate-to-core"
+    },
+    "article_table_sot": {
+        "articles": "content",
+        "article_meta": "sparse metadata",
+        "seo_article_profiles": "seo",
+        "wordpress_article_links": "wordpress",
+        "article_media_states": "media",
+        "publishing_article_states": "publishing",
+        "seo_content_archive_items": "content-projects",
+        "seo_link_maps": "search-foundation (link SoT; seo_links/keyword_link dropped)"
+    },
+    "safe_verify_command": "php artisan refactor:migrate --verify --via-mysql"
 }

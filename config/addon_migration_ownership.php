@@ -70,11 +70,7 @@ return [
             'connection' => 'omi_seo_ai',
             'path' => 'addons/social/database/migrations',
         ],
-        // Kept for migrate history / no-op files until proven deletable.
-        'legacy-obsolete' => [
-            'connection' => 'omi_seo_ai',
-            'path' => 'addons/_legacy-obsolete/database/migrations',
-        ],
+        // _legacy-obsolete intentionally omitted from active discovery (fresh install).
     ],
 
     /*

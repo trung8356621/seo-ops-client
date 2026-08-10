@@ -9,17 +9,16 @@ return [
     | Automation runtime connection
     |--------------------------------------------------------------------------
     |
-    | Default = omi_seo_ai để deploy code trước cutover không đọc bảng core rỗng.
-    | Sau copy+verify: set AUTOMATION_DB_CONNECTION=<DB_CORE_CONNECTION> (thường mysql).
-    | Cài mới sạch: set AUTOMATION_DB_CONNECTION ngay từ đầu sang core.
+    | Canonical: Client Core DB via default mysql connection (omi_client).
+    | Missing AUTOMATION_DB_CONNECTION must NEVER fall back to omi_seo_ai.
     |
     */
 
-    'connection' => env('AUTOMATION_DB_CONNECTION', 'omi_seo_ai'),
+    'connection' => env('AUTOMATION_DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
-    | Data migration (automation:migrate-to-core)
+    | Legacy data migration (automation:migrate-to-core) — upgrade only
     |--------------------------------------------------------------------------
     */
 
