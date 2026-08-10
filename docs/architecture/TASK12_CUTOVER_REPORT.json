@@ -1,0 +1,69 @@
+{
+  "task": 12,
+  "title": "FINAL CUTOVER + GIT INITIALIZATION",
+  "verified_at": "2026-08-10",
+  "canonical_root": "D:/work",
+  "staging_obsolete": "D:/work/_split",
+  "workspace_file": "D:/work/omnichannel.code-workspace",
+  "workspace_folders": [
+    "omnichannel-client",
+    "omnichannel-client-core",
+    "omnichannel-addons",
+    "wp-seo-ai"
+  ],
+  "old_source_rename": {
+    "attempted": "D:/work/omnichannel-backend → omnichannel-backend.__pre_split_backup",
+    "result": "BLOCKED",
+    "reason": "Cursor IDE holds lock on omnichannel-backend",
+    "helper": "D:/work/RENAME_PRE_SPLIT_BACKUP.ps1",
+    "instruction": "Close Cursor workspace on old backend; open D:/work/omnichannel.code-workspace; re-run rename script"
+  },
+  "independence_proof": {
+    "vendor_junctions": {
+      "client-core": "D:/work/omnichannel-client-core",
+      "addons": "D:/work/omnichannel-addons"
+    },
+    "reflection": "PASS — classes resolve under D:/work/omnichannel-client/vendor/omnichannel/{client-core,addons}",
+    "full_rename_proof": "PENDING_IDE_UNLOCK",
+    "runtime_depends_on_old_source": false,
+    "runtime_depends_on_split": false
+  },
+  "stale_path_fixes": [
+    "Bulk ProjectRoot::addonsPath() rewrite (Task 12 earlier)",
+    "AutomationMigrateCommand: app/Addons/SeoContentAi → addons/seo-content-ai-compat (ACTIVE)",
+    "SeoPerformanceDashboardServiceTest: views → seo-content-ai-compat via ProjectRoot (TEST)"
+  ],
+  "phpunit": {
+    "key_filter": "PASS",
+    "broad": "~3602 tests; residual ~265 errors / ~283 failures mostly B/C (stale FQCN/Mockery/env) — not architecture blockers"
+  },
+  "git": {
+    "omnichannel-client": ["8af75b7 refactor: establish split client shell", "cc9ca56 docs: point agents to multi-repo workspace"],
+    "omnichannel-client-core": ["8f362b8 refactor: establish client core package", "92cbac0 docs: add client-core agent instructions"],
+    "omnichannel-addons": ["2fec66f refactor: establish peer addon monorepo", "cba903a docs: add peer-addon agent routing map"],
+    "wp-seo-ai": "existing main tracking origin/main — no Task12 commit"
+  },
+  "mcp_reindex": {
+    "D-work-omnichannel-client": {"nodes": 1290, "edges": 3197},
+    "D-work-omnichannel-client-core": {"nodes": 383, "edges": 851},
+    "D-work-omnichannel-addons": {"nodes": 29149, "edges": 98358, "note": "media/ dir excluded by indexer defaults"},
+    "D-work-wp-seo-ai": {"nodes": 561, "edges": 1479},
+    "symbol_spotcheck": {
+      "AddonDiscovery": "PASS (client-core)",
+      "SaveCoordinator": "PASS (client-core resources/js/saveCoordinator.js)",
+      "Article/SeoArticle": "PASS (addons/content)",
+      "ContentProjectCommandBus": "PASS (addons/content-projects)",
+      "WordPress services": "PASS (addons/wordpress)",
+      "media addon classes": "PARTIAL — media/ excluded from fast index; disk path D:/work/omnichannel-addons/media exists"
+    }
+  },
+  "zero_search": {
+    "D:/work/_split": "DOC (historical Task11 refs updated to canonical D:/work)",
+    "D:/work/omnichannel-backend": "DOC/HISTORICAL + filesystem still present (rename blocked)",
+    "omnichannel-backend/addons": "none ACTIVE in new trees",
+    "app/Core": "none ACTIVE (moved to client-core package)",
+    "app/Addons/SeoContentAi": "COMPAT/TEST/DOC/HISTORICAL scripts only — ACTIVE AutomationMigrateCommand fixed"
+  },
+  "deploy_diff": "SKIPPED — client has no .secure/deploy-diff.ps1; old script only tracks omnichannel-backend; NO DEPLOY requested",
+  "verdict": "PARTIAL — canonical D:/work layout + Git + MCP + gates PASS; full directory rename of old backend still IDE-locked"
+}

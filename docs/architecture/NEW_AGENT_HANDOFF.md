@@ -6,7 +6,7 @@
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
-**Task 11:** physical repos under `D:\work\_split\` — see [REPO_SPLIT.md](REPO_SPLIT.md).
+**Task 12:** canonical workspace at `D:\work\` (client + client-core + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). `D:\work\_split` is obsolete staging.
 
 ---
 
@@ -117,7 +117,7 @@ Documented debt — **do not** start another architecture wave for these:
 | Key contracts (Ownership, WP harness, Publishing invariants, ExtensionCutover, RuntimeLogger, SaveCoordinator) | **PASS** this session |
 | Broad addon suites | Residual **B** failures: stale test FQCN / Mockery / env (sqlite vs SEO MySQL). Fix test config when touching that area — **not** architecture |
 | `WordPressPermalinkBuilderTest` | Residual Mockery/siteInfo errors — class **B/C** |
-| Codebase-memory | Fast reindex done (`D-work-omnichannel-backend`); still re-check symbols against disk before trusting old paths |
+| Codebase-memory | Fast reindex: `D-work-omnichannel-client`, `D-work-omnichannel-client-core`, `D-work-omnichannel-addons`, `D-work-wp-seo-ai`. Retire trust in `D-work-omnichannel-backend`. Always re-check symbols against disk. |
 
 Closure report: `docs/architecture/TASK9_CLOSURE_REPORT.json`
 
