@@ -6,7 +6,7 @@
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
-**Task 12:** canonical workspace at `D:\work\` (client + client-core + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). `D:\work\_split` is obsolete staging.
+**Task 12–13:** canonical workspace at `D:\work\` (client + client-core + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). `_split` removed. Cleanup: [TASK13_CLEANUP_REPORT.json](TASK13_CLEANUP_REPORT.json) · [CLIENT_CORE_PURITY.md](CLIENT_CORE_PURITY.md).
 
 ---
 
