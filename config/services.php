@@ -50,4 +50,14 @@ return [
         ),
     ],
 
+    /*
+    | Support ticket remote delivery (optional). Local MySQL is always source of truth
+    | for pending tickets; remote may be disabled/offline without blocking submit.
+    */
+    'support_ticket' => [
+        'enabled' => (bool) env('SUPPORT_TICKET_REMOTE_ENABLED', false),
+        'endpoint' => env('SUPPORT_TICKET_REMOTE_ENDPOINT'),
+        'timeout' => (int) env('SUPPORT_TICKET_REMOTE_TIMEOUT', 5),
+    ],
+
 ];

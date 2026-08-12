@@ -9,14 +9,14 @@ use Omnichannel\Addons\Seo\Support\SeoAccessControl;
 use Filament\Pages\Page;
 
 /**
- * Admin alias for Agent Workspace.
- * Real UI lives on SEO panel (/seo/{connection_hash}/agent).
+ * Admin alias for Chat Workspace (Agent tab).
+ * Real UI lives on SEO panel (/seo/{connection_hash}/chat?tab=agent).
  */
 final class AgentWorkspaceRedirect extends Page
 {
     protected static ?string $slug = 'agent';
 
-    protected static ?string $navigationIcon = 'heroicon-o-cpu-chip';
+    protected static ?string $navigationIcon = 'heroicon-o-chat-bubble-left-right';
 
     protected static ?int $navigationSort = 39;
 
@@ -26,12 +26,12 @@ final class AgentWorkspaceRedirect extends Page
 
     public static function getNavigationLabel(): string
     {
-        return 'Agent Workspace';
+        return 'Chat';
     }
 
     public function getTitle(): string
     {
-        return 'Agent Workspace';
+        return 'Chat';
     }
 
     public static function canAccess(): bool

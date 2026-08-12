@@ -1,0 +1,37 @@
+---
+description: Canonical Assign-to-Content-Project UI — one trigger, one drawer, one open event
+globs: "{addons,../omnichannel-addons,app,resources}/**/*.{php,blade.php,js,jsx,ts,tsx,mdc,md}"
+alwaysApply: false
+---
+
+# Assign-to-Content-Project UI (canonical)
+
+Assign-to-Content-Project is a closed, shared cross-module UI capability.
+
+Before implementing assignment of any article, keyword, SEO issue, anchor, internal link, or future content entity to a Content Project:
+
+MUST reuse:
+- Blade trigger `x-content::assign-to-content-project-trigger`
+- Filament `AssignToContentProjectActionFactory`
+- React `assignToContentProject.js` opener
+- open event `assign-content-project:open` (`AssignToContentProjectContract::OPEN_EVENT`)
+- Livewire `AssignToContentProjectDrawer` + view `content::livewire.assign-to-content-project-drawer`
+
+MUST NOT introduce:
+- a new assign modal
+- a new assign drawer
+- a new Filament assign form/schema on Actions
+- a new React/Alpine assign form
+- a new assign-specific event name
+- a new visual trigger pattern (icon/color/label)
+
+Canonical ownership (source of truth):
+- Contract + ActionFactory → `content-projects`
+- Drawer class + Blade view + Blade trigger + React opener → `content`
+- `seo-content-ai-compat` may mount/consume only — never own a parallel assign UI
+
+Domain differences use modes (`article` | `keyword` | `pending_link`) and context/options.
+`source` must not select backend business logic.
+
+If unsupported: extend the canonical contract/component and its tests/docs.
+Do not create a parallel implementation.

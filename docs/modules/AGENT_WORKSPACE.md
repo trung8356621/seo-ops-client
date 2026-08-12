@@ -15,14 +15,17 @@ Tabs: **Chat | Knowledge | Automations | Operations | Packs | Diagnostics**.
 
 | Entry | Path | Notes |
 |-------|------|-------|
-| Primary | `/seo/{connection_hash}/agent` | Filament slug `agent` (`AgentWorkspacePage`) |
-| Admin alias | `/admin/agent` | `AgentWorkspaceRedirect` → SEO panel URL |
-| Deep link | `AgentWorkspaceDeepLink::tryUrl([...])` | Query: `project_ref`, `workspace_ref`, `article_ref`, `operation_ref`, `conversation`, `skill`, `template`. Fail closed without `connection_hash`. Prefill only — **no auto write**. |
+| Primary UI | `/seo/{connection_hash}/chat?tab=agent` | Chat Workspace hosts Agent tab (`AgentWorkspacePage` slug `chat`) |
+| Legacy | `/seo/{connection_hash}/agent` | Redirect-only → `chat?tab=agent` (`AgentWorkspaceLegacyRedirect`) |
+| Admin alias | `/admin/agent` | `AgentWorkspaceRedirect` → SEO Chat Agent tab |
+| Deep link | `AgentWorkspaceDeepLink::tryUrl([...])` | Query: `tab=agent`, `project_ref`, `workspace_ref`, `article_ref`, `operation_ref`, `conversation`, `skill`, `template`. Fail closed without `connection_hash`. Prefill only — **no auto write**. |
 | MCP tools | `GET|POST /api/v1/agent/mcp/tools` | Sanctum |
 | MCP call | `POST /api/v1/agent/mcp/call` | Via Gateway |
 | Agent execute | `POST /api/v1/agent/execute` | Via Gateway |
 
-Nav group: Content Projects. Access: manager / content-project mutate / content features (`SeoAccessControl`).
+Nav: sidebar **Chat** (not a separate Agent entry). Access: manager / content-project mutate / content features (`SeoAccessControl`).
+
+Communication shell rules: [CHAT_WORKSPACE.md](CHAT_WORKSPACE.md).
 
 ## 3. Main components
 
@@ -42,7 +45,61 @@ Nav group: Content Projects. Access: manager / content-project mutate / content 
 | Gateway | `ContentProjectAgentGateway` | Scopes, schema, confirmation, dry_run, dispatch |
 | Registry | `CanonicalCapabilityRegistry` | Core + enabled extension caps |
 
-**Quick Assistant vs Workspace:** popup `global-ai-chat` Team tab stays team chat; AI star is **launcher only** (`openAgentWorkspace()`). Full runtime lives on `/seo/{hash}/agent` only.
+**Quick Assistant vs Workspace:** Floating `global-ai-chat` is **retired**. Team chat + Agent + Support Ticket live only in Chat Workspace (`/seo/{hash}/chat`). Agent runtime remains this page’s Agent tab — do not mount a second Agent UI.
+
+### AGENT UI LAYOUT RULE
+
+1. Main Agent surface is **conversation-first**.
+2. Empty welcome state contains only minimal greeting/help text (icon + title + “Type / to browse all skills”). **No starter action cards in the welcome surface.**
+3. Starter actions / suggestions belong to the **collapsible Suggestions sidebar** (toggle “Gợi ý” / “Suggestions”), not the conversation welcome surface.
+4. Canonical suggestion source: `$suggestedActions` from `AgentWorkspacePage::refreshSuggestions()` → `AgentChatTemplateRegistry::featured()`. Click handler remains `selectTemplate` via `agent-workspace.action-button`. Do **not** duplicate welcome-card implementations.
+5. Browser/page scroll must **never** be used for Agent conversation content. Agent shell fills the Filament remaining viewport via flex + `min-height: 0` + `overflow: hidden` (see `agent/resources/css/agent-workspace.css`). Enable Filament `full-height` on the Agent page so intermediate wrappers pass height down.
+6. Scroll ownership:
+   - long chat → transcript (`.seo-agent-workspace-chat__messages`) scrolls
+   - long suggestions → suggestion sidebar list scrolls
+   - composer remains fixed inside Agent workspace (`flex-shrink: 0`)
+7. Do not introduce another welcome/action-card implementation (`*WelcomeSuggestionsV2`, parallel grids, etc.).
+8. New Agent shortcuts must register into the canonical suggestion/skill source (`AgentChatTemplateRegistry` / skills catalog), never add standalone cards directly into the welcome screen.
+
+### SUGGESTION EXECUTION RULE
+
+- Suggestions are **composer-prefill shortcuts only**.
+- Clicking a suggestion must **never** submit or execute a command (`selectTemplate` must not call `selectSkill` / `sendMessage` / `submitComposer` / Gateway / CommandBus).
+- The user must explicitly send the command (Enter / Send).
+- This applies to all skills, including read-only skills.
+- Required parameters must be editable in the composer before execution.
+- Prefill prefers the existing CLI catalog template for the mapped `skill_key` (empty placeholders), else the template `prompt_template` / skill slash — without renaming commands.
+- If the composer already has text, do not silently overwrite it.
+- Suggestion UI must reuse the canonical composer state (`composerText` + `prefillComposerFromSuggestion` + `agent-focus-composer` / `agent-cli-template-ready` / `agent-suggestion-prefilled`).
+- Client must guard against accidental auto-send after prefill (click-steal onto Send, Enter key leak while focusing composer).
+
+### AGENT HEIGHT + SCROLL RULE
+
+- Agent workspace MUST fill the remaining application viewport under Filament header/page heading.
+- Agent height must **not** collapse based on message count (empty / 1–2 messages still full height).
+- The page/body is not the scroll owner for Agent content.
+- Transcript owns conversation overflow; Suggestions **list** owns suggestions overflow (header stays fixed).
+- Composer remains fixed inside Agent shell.
+- Opening Suggestions changes **width** only — never Agent height.
+
+### CREATE PROJECT RULE
+
+- `/create-project` must use the canonical Content Project creation workflow (`content_project.create` → CommandBus `CreateContentProjectCommand`).
+- Project assignee is required and collected as plain-text **member ID** (`assignee_ref` → attributes.`user_id` = `seo_projects.user_id`).
+- Eligible members come from `ContentProjectStaffAvailabilityService` (same rules as Filament assignment). List via `/member-list` / `/member-available`.
+- Never hard-code the logged-in user as the project assignee.
+- Suggestion “Tạo project mới” and typed `/create-project` invoke the same skill.
+- Never create a second Agent-specific project creation backend.
+
+### CHANNEL-NEUTRAL INTERACTION RULE
+
+- Core Agent workflows must be executable through plain text (Web / Telegram / Zalo / other adapters).
+- Do not make modal/dropdown/browser UI a required part of a skill.
+- Complex workflows should compose existing small skills/capabilities (`/member-list` then `/create-project`).
+- Entity selection should prefer stable IDs returned by canonical list/read skills.
+- Web UI may provide optional convenience controls, but the underlying skill must never depend on them.
+- Telegram/Zalo/Web must reach the same canonical capability and CommandBus path.
+- Do not duplicate listing logic inside mutation skills when a canonical list skill/command already exists.
 
 ## 4. Data ownership
 

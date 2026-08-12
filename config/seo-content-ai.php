@@ -184,13 +184,18 @@ return [
 
     /**
      * Full article generation length contract.
-     * article_length / {{article_length}} = Prompt target.
-     * minimum_acceptable_words = hard OUTPUT_TRUNCATED floor (never above target).
+     * article_length / {{article_length}} = Prompt target (AI aim — not a hard fail).
+     * minimum_acceptable_ratio = soft floor fraction of target; ACCEPT when
+     * actual_words >= floor(target × ratio) + 1 (e.g. target 2000 + 0.5 ⇒ >1000 words).
      */
     'article_writing' => [
-        'minimum_acceptable_words' => (int) env(
-            'SEO_ARTICLE_WRITING_MINIMUM_ACCEPTABLE_WORDS',
-            1400,
+        'minimum_acceptable_ratio' => (float) env(
+            'SEO_ARTICLE_WRITING_MINIMUM_ACCEPTABLE_RATIO',
+            0.5,
+        ),
+        'absolute_floor_when_no_target' => (int) env(
+            'SEO_ARTICLE_WRITING_ABSOLUTE_FLOOR_WHEN_NO_TARGET',
+            300,
         ),
     ],
 

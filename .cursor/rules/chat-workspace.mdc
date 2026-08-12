@@ -1,0 +1,28 @@
+---
+description: Chat Workspace is the only communication UI (Agent + Group + Ticket)
+globs:
+  - "**/chat/**"
+  - "**/TeamMessage*"
+  - "**/SupportTicket*"
+  - "**/global-ai-chat*"
+  - "**/AgentWorkspace*"
+  - "**/CHAT_WORKSPACE.md"
+  - "**/chat-workspace*"
+  - "**/chat-mode-launcher*"
+alwaysApply: false
+---
+
+# COMMUNICATION WORKSPACE RULE
+
+Canonical: `docs/modules/CHAT_WORKSPACE.md`
+
+1. ONE entry: `/seo/{connection_hash}/chat`
+2. Exactly 3 modes: Agent | Group Chat | Support Ticket
+3. Mode switch = round launcher (`.seo-global-chat__launcher`) — no horizontal tabs
+4. Legacy `/agent` = redirect only (`tab=agent` + preserve deep links)
+5. Group chat = JS client + JSON API; no Livewire poll/render
+6. Outside Chat: light round launcher + unread-count only (~30s, single-inflight)
+7. Group poll ≥ 15s default; single-inflight scheduler
+8. Support tickets offline-safe (local MySQL first); attach via `TeamChatAttachmentService`
+9. No Telegram/Zalo/WebSocket/generic messaging framework
+10. Reuse Chat Workspace — never add a parallel chat popup/page (`ChatModeV2`, etc.)

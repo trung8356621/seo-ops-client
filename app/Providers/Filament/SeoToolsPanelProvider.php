@@ -27,6 +27,9 @@ class SeoToolsPanelProvider extends PanelProvider
             ->id('tools')
             ->path('tools')
             ->login(CustomLogin::class)
+            ->brandLogo(asset('images/logo.png'))
+            ->brandLogoHeight('2.5rem')
+            ->favicon(asset('favicon.ico'))
             ->colors([
                 'primary' => Color::Emerald,
             ])

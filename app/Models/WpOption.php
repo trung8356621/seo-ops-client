@@ -43,7 +43,9 @@ class WpOption extends Model
 
     public static function set(string $name, mixed $value, string $autoload = 'no'): void
     {
-        $serialized = is_string($value) ? $value : json_encode($value, JSON_UNESCAPED_UNICODE);
+        $serialized = is_string($value)
+            ? $value
+            : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
         self::updateOrCreate(
             ['option_name' => $name],
             ['option_value' => $serialized, 'autoload' => $autoload]

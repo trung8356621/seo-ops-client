@@ -60,6 +60,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Module | Doc |
 |--------|-----|
 | Agent Workspace | [AGENT_WORKSPACE.md](modules/AGENT_WORKSPACE.md) |
+| Chat Workspace | [CHAT_WORKSPACE.md](modules/CHAT_WORKSPACE.md) |
 | Automation | [AUTOMATION.md](modules/AUTOMATION.md) |
 | Content Projects | [CONTENT_PROJECTS.md](modules/CONTENT_PROJECTS.md) |
 | Publishing | [PUBLISHING.md](modules/PUBLISHING.md) — includes System Date & Time + queue pending UX |

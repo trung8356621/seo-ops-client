@@ -68,6 +68,8 @@ return [
                 'seo_database_connections',
                 'seo_connection_users',
                 'team_messages',
+                'team_chat_read_cursors',
+                'support_tickets',
                 'user_meta',
 
                 // SEO external API credentials — migration trong addon nhưng connection = mysql (core)
