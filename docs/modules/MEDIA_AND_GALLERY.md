@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-08-13  
 > Supersedes: `docs/archive/maps/MAP_SEO_MEDIA.md` (architecture — discard prompt playbook dumps)
 
 ## 1. Purpose
@@ -77,7 +77,8 @@ Middleware: Authenticate + role checks + `SetDynamicSeoDatabase` / connection co
 | WP sync media | `WordPressLocalMediaSyncService` |
 | WP media browse capability | `WordPressMediaCapabilityResolver` (site-level; used by article media picker) |
 | Article media picker | `ArticleMediaPickerController` + `ArticleEditorLazyPayloadController::mediaPickerConfig` |
-| AI generate job | `Jobs/GenerateMediaJob` |
+| AI generate job | `Jobs/GenerateMediaJob` — dispatch immediately (not only `afterResponse`); hang/placeholder: [`ARTICLE_EDITOR_FIXES_2026_08.md`](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) |
+| Featured / Gallery sidebar UI | `media/resources/js/editor/modules/featured|gallery/*` — labels via content `i18n.js` `t()` |
 | Image routing | `ImageRoutingStrategy` / `ImageCapabilityResolver` / `GeminiModelVersionPolicy` |
 | Frontend | `seoMediaApi.js`, `watermarkApi.js`, `media-image-editor-page.jsx`, `watermark-editor-page.jsx`, Media Library Alpine |
 
@@ -235,6 +236,7 @@ $PHP_BIN vendor/bin/phpunit --filter=ArticleEditorContextPreservationContractTes
 ## 16. Related documents
 
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — picker, gallery, fix slug all
+- [ARTICLE_EDITOR_FIXES_2026_08.md](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) — Featured/Gallery locale (`t()`), AI media placeholder/hang/double-image, `GenerateMediaJob` dispatch
 - [WORDPRESS_BRIDGE.md](WORDPRESS_BRIDGE.md) — attachment import REST
 - [SITE_SYNC.md](SITE_SYNC.md) — catalog sync ≠ media upload
 - [DATA_AND_RUNTIME_BOUNDARIES.md](../architecture/DATA_AND_RUNTIME_BOUNDARIES.md)

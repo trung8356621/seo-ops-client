@@ -1,7 +1,7 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-08-10  
+> Last verified: 2026-08-13  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)
 
@@ -34,6 +34,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | SEO scoring / audit | `omnichannel-addons/seo` |
 | Performance Hub / GSC | `omnichannel-addons/search-intelligence` |
 | Content Project | `omnichannel-addons/content-projects` |
+| Assign to Content Project UI | Contract/ActionFactory: `content-projects/Support/AssignToContentProject`. Drawer/trigger/React opener: `content`. Compat mounts only. **No** second modal. See [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md) |
 | Prompt / provider | `omnichannel-addons/ai-prompt` |
 | Site Sync | `omnichannel-addons/site-sync` |
 | Agent / MCP | `omnichannel-addons/agent` |

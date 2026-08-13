@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-08-13  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -110,7 +110,7 @@ Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_
 | Action | Path |
 |--------|------|
 | Skip audit | Set `skip_seo_audit` — no WP sync, no status change |
-| Assign CP | `ArticleResource::assignArticlesFromFormData` / sidebar helpers |
+| Assign CP | Shared right-side drawer (`assign-content-project:open`) — **not** a per-page modal. Audit rows: `x-content::assign-to-content-project-trigger` (`source=seo_audit`). Keywords: `AssignToContentProjectActionFactory` (`keyword_table`) + Keyword detail `window` event (`keyword_detail`). Drawer submit → `ArticleResource::assignArticlesFromFormData` / `KeywordResource::executeAssignKeywordsToContentProjects`. See [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) § Assign UI. |
 | Populate score cache | Editor save / WP import / domain queue → `AnalyzeArticleSeoJob` |
 
 ### Keyword Intelligence (CommandBus)
@@ -173,7 +173,7 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 ## 11. Transactions and side effects
 
 - Audit skip: meta only.
-- Assign audit → CP: creates tasks; may clear focus keyword UI path; capacity toast when remaining ≤2.
+- Assign audit → CP: shared drawer (`seo_audit`); may prompt missing focus keyword; `ignore_monthly_capacity` + capacity toast when remaining ≤2. Do **not** reintroduce ArticlesOptimal sidebar/modal assign forms.
 - KI analyze: fingerprint-stable cannibalization issues (`open`→`stale` when unseen).
 - GSC persist: dual-write in-memory + Eloquent when `property_id`/`site_id` present; skip mapping overwrite when `metadata.manual`.
 - Manual keyword intent wins over SERP reconciler.
@@ -207,6 +207,7 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 8. Leak numeric IDs on Agent/MCP keyword surfaces.
 9. Auto-schedule/publish from topical/keyword convert.
 10. Treat Performance Hub snapshot as GSC Intelligence SoT (or reverse).
+11. Parallel Assign-to-Content-Project UI on Audit / Keywords (left drawer, Filament modal, `mountAction` from keyword detail). Reuse Contract + drawer.
 
 ## 15. Tests and invariants
 
@@ -218,11 +219,13 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 | `Gsc*Test` | Facts, sync, mapping, provider fail-closed |
 | `Serp*` unit tests | Snapshot immutability, fetch security, overlap suggestions |
 | Keyword intelligence unit suite | Quotas, tenant, public refs, analysis lock |
+| `AssignToContentProjectUiArchitectureGuardTest` | Audit + Keyword resources open canonical drawer; no Action `form()` |
 
 ## 16. Related documents
 
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — scoring client + save triggers score job
-- [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — assign / convert target
+- [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — assign / convert target; shared Assign drawer
+- [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) — 2026-08 assign consolidation
 - [SITE_MCP_AND_DOMAINS.md](SITE_MCP_AND_DOMAINS.md) — domain sync feeding articles
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
 - Archive detail: `docs/archive/audit-keywords/*`, `docs/archive/maps/MAP_SEO_AUDIT.md`

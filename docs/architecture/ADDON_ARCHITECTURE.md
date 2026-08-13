@@ -137,10 +137,18 @@ Start here:
 
 11. Bulk presentation may use a toolbar/bulk-bar button but MUST share the same icon, label, open contract, and drawer.
 
-Domain backends stay separate (do not over-unify):
-- article → `AssignmentCallerBridge` / `SeoIssueProjectTaskAssignmentService` / `seo.project_task.create_from_issue`
-- keyword → `AssignmentCallerBridge` / `KeywordProjectAssignmentService` / `keyword.assign_to_project`
+12. Keyword detail opens via `window` `assign-content-project:open` (`source=keyword_detail`). Do **not** `mountAction('assignToContentProject')`.
+
+13. **Exception (intentional):** Article Editor Vocabulary sidebar assigns **inline** (`EditArticle::assignVocabularyItemsToContentProject` + project select). It must not call `openAssignToContentProject`. `MODE_VOCABULARY_ITEMS` stays on the contract for other/future callers.
+
+Domain backends stay separate (do not over-unify). Drawer submit paths:
+
+- article → `ArticleResource::assignArticlesFromFormData`
+- keyword → `KeywordResource::executeAssignKeywordsToContentProjects`
 - vocabulary_items → `KeywordProjectAssignmentService::assignPhrases` (planning items only; no auto-generation)
-- pending_link → `ArticlePendingInternalLinkService`
+- pending_link → `ArticlePendingInternalLinkService::assignFromEditor`
 - Agent/MCP `content_project.add_items` is a separate product surface (not this UI contract)
+- SEO issue / automation assignment (`SeoIssueProjectTaskAssignmentService`, `AssignmentCallerBridge`) stay on their own product surfaces — not this drawer
+
+Callers: article table, Article Editor overflow, SEO Audit, keyword table/detail/link-map, link bubble. See [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md) § Assign UI and [`CONTENT_PROJECT_ASSIGN_UI_2026_08.md`](CONTENT_PROJECT_ASSIGN_UI_2026_08.md).
 

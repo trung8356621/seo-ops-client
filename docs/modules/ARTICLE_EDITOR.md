@@ -320,6 +320,7 @@ npm run build
 
 ## 16. Related documents
 
+- [ARTICLE_EDITOR_FIXES_2026_08.md](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) — outline local-first, AI media hang/double-image, locale pass (2026-08)
 - [MEDIA_AND_GALLERY.md](MEDIA_AND_GALLERY.md) — upload, watermark, WP media sync
 - [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — score cache consumers
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) / [PUBLISHING.md](PUBLISHING.md)

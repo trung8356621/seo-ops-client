@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-02  
+> Last verified: 2026-08-13  
 > Supersedes: `docs/archive/content-projects/CONTENT_PROJECT_PUBLISHING_DELIVERY.md`, publish sections of `CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md` / `CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md`, publish routes in `docs/MAP_SEO_PROJECTS.md`
 
 ## 1. Purpose
@@ -291,6 +291,6 @@ Publishing-specific:
 
 Symbols: `PostPublishWordPressSyncEligibility`, `PostPublishWordPressPostReconciler`, `WordPressArticleSyncService::updatePublishedArticleOnly`.
 
-Active CP unpublished “Sync WP” remains blocked — Publishing Queue owns first create.
+Active CP article: Article Editor **hides all manual Sync WP chrome** (UI-only; not a second server forbid code). Publishing Queue owns first WordPress create. Archived CP → standalone Sync WP. See [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) + [`ARTICLE_EDITOR.md`](ARTICLE_EDITOR.md).
 
 )

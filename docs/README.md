@@ -1,7 +1,7 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-08-10 (Task 13 cleanup)
+> Last verified: 2026-08-13
 
 ## Workspace repos
 | Repo | Role |
@@ -53,6 +53,8 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [ARTICLE_EDITOR_JSON_PERSISTENCE.md](architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) | Phase 5A TipTap JSON persistence + derived HTML body |
 | [ARTICLE_EDITOR_RUNTIME.md](architecture/ARTICLE_EDITOR_RUNTIME.md) | Phase 6A internal editor runtime (built-in modules, not public SDK) |
 | [ARTICLE_EDITOR_LEGACY_CLEANUP.md](architecture/ARTICLE_EDITOR_LEGACY_CLEANUP.md) | Post-cutover dead-code cleanup inventory + deleted/kept paths |
+| [ARTICLE_EDITOR_FIXES_2026_08.md](architecture/ARTICLE_EDITOR_FIXES_2026_08.md) | Edit Article: outline local-first, AI media hang, locale pass |
+| [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) | Assign-to-Content-Project: one right-side drawer |
 | [SEOCONTENTAI_CUTOVER_INVENTORY.json](architecture/SEOCONTENTAI_CUTOVER_INVENTORY.json) | SeoContentAi compatibility-shell cutover counts + MOVE_* buckets |
 
 ## Modules

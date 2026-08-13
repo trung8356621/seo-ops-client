@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-07  
+> Updated: 2026-08-13  
 > Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
 
 ## 1. Documentation Map
@@ -21,15 +21,18 @@ The current documentation set is organized as a canonical docs system for the Om
 ### Article Editor
 
 - The editor is treated as a dedicated island: Livewire shell plus React/TipTap runtime.
-- Recent work focused on media ownership, featured image/gallery behavior, close/sync behavior, slug/version conflict handling, and lock-related regressions.
+- 2026-08 fixes (canonical changelog: `docs/architecture/ARTICLE_EDITOR_FIXES_2026_08.md`): Outline heading rename local-first; AI media placeholder/hang/double-image; Featured/Gallery/Outline/AI locale via `content/resources/js/utils/i18n.js`.
+- Active Content Project article: editor hides **all** manual Sync WP chrome (UI-only). First WP create stays on Publishing Queue.
 - Any change must preserve session lock, `document_version`, TipTap JSON document model, command layer, media snapshot ownership, and WordPress sync separation.
 - WordPress sync must not be conflated with local editor save; conflict policy and field ownership need to remain explicit.
 
 ### Content Projects
 
 - Content Project lifecycle writes should continue through `ContentProjectCommandBus`.
-- Recent work touched archive/restore/reset flows, rerun behavior, queue states, workspace cleanup, and task sync.
-- False pending/generate states, outline rewrite, and archive preview restore behavior are active areas to keep in mind.
+- **Assign UI (CLOSED):** one right-side drawer, event `assign-content-project:open`. “Modal” aliases render the same drawer. Docs: `CONTENT_PROJECTS.md` § Assign UI + `docs/architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md`.
+- Callers: article list, editor overflow, SEO Audit, keyword list/detail, link bubble. Vocabulary sidebar stays **inline** (not the drawer).
+- Laravel-only articles (`wp_post_id` null) remain assignable.
+- Recent work also touched archive/restore/reset, rerun, queue states, workspace cleanup, and task sync.
 - Generated/AI workspace cleanup must avoid deleting user-owned or canonical media accidentally.
 
 ### Publishing And Queue Runtime
@@ -49,6 +52,7 @@ The current documentation set is organized as a canonical docs system for the Om
 ### Media, Gallery, And Images
 
 - Recent work touched media picker behavior, source classification, local media cleanup, WebP minimum width, attachment rename/slug fixes, and image optimization tests.
+- Editor Featured/Gallery labels go through `i18n.js`; AI media hang/placeholder/double-image documented in `ARTICLE_EDITOR_FIXES_2026_08.md`.
 - Media ownership must distinguish local article media, WordPress-origin media, generated media, and gallery/featured snapshots.
 - Article Editor media snapshot rules remain the primary guardrail for UI/runtime changes.
 

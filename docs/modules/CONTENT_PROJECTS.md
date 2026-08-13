@@ -1,8 +1,8 @@
 # Content Projects
 
 > Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Owner: content-projects (assign drawer UI: content)  
+> Last verified: 2026-08-13  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -75,6 +75,9 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước) |
 | Item archive | `SeoProjectArchiveService` (via `ArchiveProjectItemsHandler`) |
 | `seo_projects.status` policy | `Support/ContentProject/ContentProjectStatusDecision` |
+| Assign UI contract | `Support/AssignToContentProject/AssignToContentProjectContract` |
+| Assign Filament adapters | `AssignToContentProjectActionFactory` (open only — no form/modal schema) |
+| Assign drawer (canonical UI) | `content` Livewire `AssignToContentProjectDrawer` + `content::livewire.assign-to-content-project-drawer` |
 
 ## 4. Data ownership
 
@@ -113,7 +116,51 @@ Task types: `create` \| `rewrite` \| `improve`. Post types (create): `article`, 
 Filament / REST  ──► CommandBus ──► Handler ──► domain services / RunEngine
 Agent/MCP        ──► Gateway → Registry → CommandFactory ──► CommandBus
 Scheduler        ──► ProcessScheduledProjectItemPublish (internal) ──► CommandBus
+Assign UI        ──► shared drawer ──► existing domain assign services (not Agent add_items)
 ```
+
+### Assign to Content Project (shared UI)
+
+User-facing “Assign to Content Project” is **one right-side drawer**, not a centered Filament modal. `AssignToContentProjectModal` / Livewire tag `assign-to-content-project-modal` are **aliases** of the same drawer. Architecture rule: [`ADDON_ARCHITECTURE.md`](../architecture/ADDON_ARCHITECTURE.md) § Assign UI; changelog: [`CONTENT_PROJECT_ASSIGN_UI_2026_08.md`](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md).
+
+SEO panel mounts **once**: `@livewire('assign-to-content-project-drawer')` (`SeoPanelProvider` — consume only; Blade SoT stays in `content`).
+
+| Layer | Owner | Path |
+|-------|--------|------|
+| Contract + ActionFactory | content-projects | `content-projects/src/Support/AssignToContentProject/` |
+| Drawer class + Blade + trigger | content | `AssignToContentProjectDrawer`, `assign-to-content-project-drawer.blade.php`, `x-content::assign-to-content-project-trigger` |
+| React opener | content | `openAssignToContentProject` in `assignToContentProject.js` (JS contract mirror: `assignToContentProjectContract.js`) |
+
+**Open contract:** `assign-content-project:open` + `AssignToContentProjectContract::normalizePayload()`. Alpine opens the shell immediately (`shellOpen`, skeleton, `body.assign-drawer-open`, `z-[10050]`, `inset-y-0 right-0`); Livewire `prepare()` hydrates after. Overlapping prepare calls drop stale completions (`prepareRequestId`). Extra trigger clicks merge into **one** Alpine `x-on:click` (duplicate attributes drop `dispatchEvent`).
+
+Other events: `assign-content-project:success` / `:close` / `:shell-open` / `:shell-close`. Keyword detail listens to shell-open/close so its own drawer does not fight z-index; it must **not** `mountAction('assignToContentProject')`.
+
+**Modes → domain backends** (ONE UI ≠ ONE service; `source` is context/refresh only):
+
+| Mode | Backend |
+|------|---------|
+| `article` | `ArticleResource::assignArticlesFromFormData` |
+| `keyword` | `KeywordResource::executeAssignKeywordsToContentProjects` |
+| `pending_link` | `ArticlePendingInternalLinkService::assignFromEditor` |
+| `vocabulary_items` | `KeywordProjectAssignmentService::assignPhrases` (`TYPE_CREATE` only; no auto-generate) |
+
+Agent/MCP `content_project.add_items` is a **separate** product surface — not this UI.
+
+**Callers (`source`):**
+
+| Surface | Opener | `source` |
+|---------|--------|----------|
+| Article list row / bulk | ActionFactory | `article_table` |
+| Article Editor overflow | Blade trigger | `article_editor` |
+| SEO Audit row | Blade trigger | `seo_audit` |
+| Keyword list row / bulk | ActionFactory | `keyword_table` |
+| Keyword detail panel | `window` `assign-content-project:open` | `keyword_detail` |
+| Keyword link-map / dictionary | ActionFactory page actions | `keyword_detail_link_map` / `keyword_dictionary_drawer` |
+| Link edit bubble | React `openAssignToContentProject` | `link_edit_bubble` (`pending_link`) |
+
+**Exception (intentional):** Article Editor **Vocabulary** sidebar assigns inline via `EditArticle::assignVocabularyItemsToContentProject` + project `<select>` (`wp-article-vocabulary-project-select`). It must **not** open the canonical drawer. `MODE_VOCABULARY_ITEMS` remains on the contract for other/future callers.
+
+Laravel-only articles (`wp_post_id` null) remain assignable — assignment must not require WordPress. Article already in an active project: list/editor assign trigger hidden (`articleIsInContentProject`). Keyword mode hydrates project options only for currently selected sites.
 
 ### Generate
 
@@ -245,6 +292,8 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Archive Content Project ≠ archive Article.** Archiving ends project execution/workspace lifecycle only. Articles return to normal standalone Article behavior (editor open/save/Sync WP). Historical associations (`seo_project_archive_items.article_id`, snapshots, preview stats) remain for reports. Active-project ownership gates (`ContentProjectArticleMembership::belongsToContentProject` / `assignedTaskForArticle`, `ArticleResource::articleIsInContentProject`) apply only while the project is not archived (`archived_at` null). Leftover `seo_project_tasks.article_id` on an archived project must not block the editor.
 
+**Active CP article ↔ Sync WP:** while membership is active, Article Editor **hides all manual Sync WP chrome** (toolbar / overflow / page actions) — UI-only; first WordPress create stays on Publishing Queue. After archive, standalone Sync WP is allowed again. See [`ARTICLE_EDITOR.md`](ARTICLE_EDITOR.md) + [`PUBLISHING.md`](PUBLISHING.md).
+
 ### Publish writes
 
 See [PUBLISHING.md](PUBLISHING.md). All schedule/publish/retry/skip/cancel via CommandBus handlers → `ContentProjectPublishingQueueService` + transition guard.
@@ -347,6 +396,7 @@ Summary for CP:
 11. Item-level restore action.
 12. Direct `ContentPublisher` / queue mutate from Filament callbacks.
 13. Second cron for CP publish dispatcher.
+14. Second assign drawer / centered assign modal / Filament Action `form()` for assign / new open-event name / caller-specific assign schema. Reuse Contract + ActionFactory + drawer.
 
 ## 15. Tests and invariants
 
@@ -368,6 +418,9 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ContentProjectCommandBusCutoverTest` | Bus entry cutover |
 | `ContentProjectStaleGenerationRecoveryTest` | Recovery |
 | `ArticleEditorArchivedContentProjectStandaloneTest` | Archived CP → standalone Article editor/sync; historical archive items kept |
+| `AssignToContentProjectUiArchitectureGuardTest` | One drawer + one open event; modal alias; no legacy events; Vocabulary sidebar stays inline |
+| `AssignToContentProjectDrawerRoutingTest` | Mode → submit routing; payload normalize; `prepareRequestId` |
+| `ArticleEditorSyncWpVisibilityTest` | Active CP editor: no Sync WP chrome |
 | `ArchitectureHardeningLockContractTest` | Related uniqueness contracts |
 | `PublishScheduledArticlesCanonicalRunnerContractTest` | Single publish scheduler shell |
 
@@ -379,7 +432,10 @@ Freeze grep invariants: no production `ContentProjectBulkRerunService`, `Content
 - [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](../contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md)
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md) — Agent/MCP surface (owned elsewhere)
 - [SITE_SYNC.md](SITE_SYNC.md) — catalog sync ≠ publish
-- [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — editor save vs CP publish
+- [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — editor save vs CP publish; Sync WP hidden while in active CP
+- [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — Audit / KI assign callers
+- [ADDON_ARCHITECTURE.md](../architecture/ADDON_ARCHITECTURE.md) — Assign UI contract (CLOSED)
+- [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) — 2026-08 assign consolidation
 - [ARTICLE_EDITOR_JSON_PERSISTENCE.md](../architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) — CP body writers must invalidate/update `editor_document` (not HTML-only silent)
 - Architecture freeze: `docs/architecture/ARCHITECTURE_FREEZE_V1.md` / `ARCHITECTURE_DECISIONS.md`
 - Historical detail: `docs/archive/content-projects/*`
