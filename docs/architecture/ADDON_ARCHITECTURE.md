@@ -88,19 +88,21 @@ Start here:
 
 > **CANONICAL / ARCHITECTURE RULE** — shared cross-module capability. Feature status: **CLOSED** after consolidation.
 
-1. Assign to Content Project is a shared cross-module capability (articles, keywords, SEO audit, editor, link bubble).
+1. Assign to Content Project is a shared cross-module capability (articles, keywords, SEO audit, editor, link bubble, vocabulary planning).
 
-2. There is exactly **ONE** canonical form/drawer implementation:
+2. There is exactly **ONE** canonical **right-side** workspace/sidebar implementation:
    - Livewire: `Omnichannel\Addons\Content\Livewire\AssignToContentProjectDrawer`
    - View: `content::livewire.assign-to-content-project-drawer`
      (`content/resources/views/livewire/assign-to-content-project-drawer.blade.php`)
+   - Layout: `inset-y-0 right-0` (not left, not centered modal)
    - Ownership: **content** addon (not `seo-content-ai-compat`). Compat may mount/consume the drawer; it MUST NOT own the canonical Blade source of truth.
+   - `AssignToContentProjectModal` / modal Livewire tag are compatibility aliases only — they render the same drawer.
 
 3. There is exactly **ONE** canonical trigger identity/presentation abstraction:
    - Blade: `x-content::assign-to-content-project-trigger`
      (`content/resources/views/components/assign-to-content-project-trigger.blade.php`)
    - Filament adapters: `AssignToContentProjectActionFactory`
-   - React opener: `content/resources/js/utils/assignToContentProject.js`
+   - React opener: `content/resources/js/utils/assignToContentProject.js` (`openAssignToContentProject`)
    - Contract: `AssignToContentProjectContract` (`content-projects/.../AssignToContentProject/`)
 
 4. There is exactly **ONE** canonical open contract: `assign-content-project:open`.
@@ -111,12 +113,13 @@ Start here:
    - `AssignToContentProjectDrawer`
 
 6. New modules **MUST NOT** create:
-   - assign modal (centered or Filament)
-   - assign-specific drawer
+   - an assign modal (centered or Filament)
+   - a second assign drawer
    - Filament assign form/schema on the Action
    - separate React/Alpine assign form
    - new open event name
    - new icon/presentation for the same action
+   - caller-specific assign forms/schemas
 
 7. Domain differences MUST go through `mode` / normalized context / `options` / capabilities.
    - `source` is for context, debugging, and completion/refresh only — not backend routing.
@@ -126,6 +129,7 @@ Start here:
    - `article`
    - `keyword`
    - `pending_link`
+   - `vocabulary_items` (batch planning phrases; creates TYPE_CREATE items only)
 
 9. If a future mode cannot fit: EXTEND the canonical contract/component + tests/docs. Do **not** create a parallel UI.
 
@@ -136,6 +140,7 @@ Start here:
 Domain backends stay separate (do not over-unify):
 - article → `AssignmentCallerBridge` / `SeoIssueProjectTaskAssignmentService` / `seo.project_task.create_from_issue`
 - keyword → `AssignmentCallerBridge` / `KeywordProjectAssignmentService` / `keyword.assign_to_project`
+- vocabulary_items → `KeywordProjectAssignmentService::assignPhrases` (planning items only; no auto-generation)
 - pending_link → `ArticlePendingInternalLinkService`
 - Agent/MCP `content_project.add_items` is a separate product surface (not this UI contract)
 

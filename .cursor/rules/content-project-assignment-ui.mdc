@@ -1,37 +1,48 @@
 ---
-description: Canonical Assign-to-Content-Project UI — one trigger, one drawer, one open event
+description: Canonical Assign-to-Content-Project UI — one right-side workspace, one opener, one backend
 globs: "{addons,../omnichannel-addons,app,resources}/**/*.{php,blade.php,js,jsx,ts,tsx,mdc,md}"
 alwaysApply: false
 ---
 
 # Assign-to-Content-Project UI (canonical)
 
-Assign-to-Content-Project is a closed, shared cross-module UI capability.
+Assign to Content Project has exactly one canonical **right-side** workspace/sidebar.
+All callers use the shared opener and shared backend.
+No caller-specific modal/drawer/form is allowed.
 
-Before implementing assignment of any article, keyword, SEO issue, anchor, internal link, or future content entity to a Content Project:
+Before implementing assignment of any article, keyword, SEO issue, anchor, internal link, vocabulary planning item, or future content entity to a Content Project:
 
 MUST reuse:
 - Blade trigger `x-content::assign-to-content-project-trigger`
 - Filament `AssignToContentProjectActionFactory`
-- React `assignToContentProject.js` opener
+- React `assignToContentProject.js` opener (`openAssignToContentProject`)
 - open event `assign-content-project:open` (`AssignToContentProjectContract::OPEN_EVENT`)
 - Livewire `AssignToContentProjectDrawer` + view `content::livewire.assign-to-content-project-drawer`
+  (right-side: `inset-y-0 right-0`, not left, not centered modal)
 
 MUST NOT introduce:
-- a new assign modal
-- a new assign drawer
+- a second assign drawer
+- an assign modal (centered or Filament) as the user-facing UI
+- a left-side assign drawer
 - a new Filament assign form/schema on Actions
 - a new React/Alpine assign form
 - a new assign-specific event name
 - a new visual trigger pattern (icon/color/label)
+- caller-specific assign forms/schemas
 
 Canonical ownership (source of truth):
 - Contract + ActionFactory → `content-projects`
 - Drawer class + Blade view + Blade trigger + React opener → `content`
 - `seo-content-ai-compat` may mount/consume only — never own a parallel assign UI
 
-Domain differences use modes (`article` | `keyword` | `pending_link`) and context/options.
+Compatibility notes:
+- `AssignToContentProjectModal` / `assign-to-content-project-modal` may exist only as aliases that
+  delegate to the same Drawer implementation — they must not render a second UI.
+
+Domain differences use modes (`article` | `keyword` | `pending_link` | `vocabulary_items`) and context/options.
 `source` must not select backend business logic.
+
+Laravel-only articles (`wp_post_id` null) must remain assignable — assignment must not require WordPress.
 
 If unsupported: extend the canonical contract/component and its tests/docs.
 Do not create a parallel implementation.
