@@ -23,8 +23,6 @@ Plugin: `omi-seo-ai-bridge` **â‰¥ 1.0.64**
 
 ## Package
 
-```powershell
-.\compress_plugin.ps1
-```
+Historical note: `compress_plugin.ps1` / Laravel update server were removed. Plugin ZIP is published on GitHub Releases.
 
 ÄÃ£ tá»± Ä‘á»™ng nÃ¢ng cáº¥p phiÃªn báº£n lÃªn **1.0.64** trong `omi-seo-ai-bridge.php`.

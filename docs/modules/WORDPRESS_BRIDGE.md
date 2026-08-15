@@ -60,7 +60,7 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 | Laravel | `WordPressManualSyncService` + `ManualWordPressSyncJob` | Manual editor/list sync (queue `seo`) |
 | Laravel | `ArticleWpSyncQueueService` + lease/watchdog | Sync job lease |
 | Laravel | `ScheduledArticlePublishRunner` | Due scheduled → publish |
-| Laravel | `ExternalPluginRegistry` | Manifest version / download for `omi-seo-ai-bridge` |
+| Laravel | `WordPressPluginUpdateService` | Manual check/update/verify via WP REST; persist site plugin status |
 | WP | `omi-seo-ai-bridge.php` | Plugin bootstrap |
 | WP | `Capability_Manifest` | Provider capability SoT for Site Sync |
 | WP | `Score_Exporter` | Provider scores into sync batches |
@@ -86,7 +86,7 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 
 ```
 Plugin admin / Laravel Domain widgets
-  → ping, capabilities, comment-reviews refresh, plugin release widget
+  → ping, capabilities, comment-reviews refresh, plugin version widget
 
 Site Sync pull
   → WordPressSiteSyncClient → WP sync/v2/*
@@ -155,7 +155,7 @@ Site Sync outbox/callback — see [SITE_SYNC.md](SITE_SYNC.md). Compat push stil
 - Automation action `wordpress.article.sync` when rule enabled+published.
 - Bridge REST for connected sites with valid `seo_read_token`.
 - Site Sync public caps (`site.sync`, …) — owned by Site Sync module.
-- Plugin packaging: `.\compress_plugin.ps1` in `wp-seo-ai` after version bump.
+- Plugin packaging: manual ZIP → GitHub Release `omi-seo-ai-bridge-x.y.z.zip`. Laravel does not host packages.
 
 ## 8. Internal-only capabilities
 
@@ -165,7 +165,6 @@ Site Sync outbox/callback — see [SITE_SYNC.md](SITE_SYNC.md). Compat push stil
 | Lease claim/heartbeat internals | Queue workers |
 | `Laravel_Push_Sync::suppress` | Loop prevention around WP-local publishes |
 | Automation disabled rule | Blocks **new** auto executions; mid-flight may get cancel request |
-| Core `ExternalPluginRegistry` config | Version/download metadata, not business writes |
 
 ## 9. Authorization and confirmation
 

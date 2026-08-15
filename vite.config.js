@@ -28,6 +28,7 @@ export default defineConfig({
                 'addons/seo/resources/js/article-seo-preview.jsx',
                 'addons/seo/resources/js/keyword-detail-panel.jsx',
                 'addons/seo/resources/js/keyword-destinations-modal.jsx',
+                'addons/seo/resources/js/domain-context.js',
                 'addons/media/resources/css/media-library.css',
                 'addons/media/resources/css/image-splitter.css',
                 'addons/media/resources/js/media-library-actions.js',

@@ -11,7 +11,7 @@ Omnichannel SaaS backend: **Laravel 12 / PHP 8.2+ / Filament v3 / MySQL multi-co
 
 | Plane | Path | Role |
 |-------|------|------|
-| **Core** | `app/`, `routes/`, `app/Filament` admin | Users, sites, subscriptions/wallets, addon registry, SEO DB credentials, plugin release distribution |
+| **Core** | `app/`, `routes/`, `app/Filament` admin | Users, sites, subscriptions/wallets, addon registry, SEO DB credentials |
 | **SEO Content AI addon** | `app/Addons/SeoContentAi/` | SEO panel `/seo/{connection_hash}`, articles, projects, sync, keywords, media, agent |
 | **WP plugin** | external `wp-seo-ai` / `omi-seo-ai-bridge` | Live WP public content + Site Sync provider |
 
@@ -32,7 +32,7 @@ Active addons register from `services` table + `addon.json` — not static `conf
 - **Commerce shell:** subscriptions, wallets, transactions, invoices, usage logs (financial writes → `DB::transaction`).
 - **Addon discovery:** `AddonManager`.
 - **SEO DB credentials:** `SeoDatabaseConnection` (core table) → runtime `omi_seo_ai` via `SeoDatabaseConnectionService`.
-- **Plugin distribution:** `ExternalPlugin*` services + update-check/download APIs for bridge ZIP releases.
+- **Bridge plugin updates:** GitHub Releases only. Laravel observes version and can trigger WP check/install. No ZIP hosting.
 - **Shared SEO analyze wrapper:** `SeoEngineService` (compat) — canonical scoring lives in addon registry/engine.
 
 ## SeoContentAi responsibilities (modules)

@@ -13,7 +13,7 @@ Package localhost-verified application for **one ZIP upload** later. This docume
 | Repo | Include in release? |
 |------|---------------------|
 | `omnichannel-backend` | **YES** — primary ZIP |
-| `wp-seo-ai` | Separate plugin package only if plugin files changed (`compress_plugin.ps1`). **This session: no plugin diff.** |
+| `wp-seo-ai` | Separate plugin package only if plugin files changed (manual ZIP → GitHub Release). **This session: no plugin diff.** |
 
 ## MUST upload (backend)
 
@@ -88,7 +88,7 @@ Notes:
 ## WordPress plugin
 
 - This local session: **no `wp-seo-ai` changes**.
-- If a future plugin fix is needed: bump version + `.\compress_plugin.ps1` (separate from backend ZIP).
+- If a future plugin fix is needed: bump version + upload `omi-seo-ai-bridge-x.y.z.zip` to GitHub Releases (separate from backend ZIP).
 - Real WP E2E remains external debt until a reachable test WP is used.
 
 ## Rollback note
