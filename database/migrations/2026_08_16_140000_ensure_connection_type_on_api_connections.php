@@ -8,6 +8,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Repair: 2026_07_12_120000 may be recorded in `migrations` while the column is absent.
+ */
 return new class extends Migration
 {
     protected $connection = 'mysql';
@@ -21,21 +24,6 @@ return new class extends Migration
             });
         }
 
-        $this->backfillConnectionTypes();
-    }
-
-    public function down(): void
-    {
-        if (Schema::connection($this->connection)->hasColumn('api_connections', 'connection_type')) {
-            Schema::connection($this->connection)->table('api_connections', function (Blueprint $table): void {
-                $table->dropIndex(['connection_type']);
-                $table->dropColumn('connection_type');
-            });
-        }
-    }
-
-    private function backfillConnectionTypes(): void
-    {
         $aiProviders = [
             ApiConnectionProviders::GEMINI,
             ApiConnectionProviders::CLAUDE,
@@ -51,5 +39,10 @@ return new class extends Migration
             ->table('api_connections')
             ->whereNotIn('provider', $aiProviders)
             ->update(['connection_type' => 'seo']);
+    }
+
+    public function down(): void
+    {
+        // Do not drop: original 2026_07_12 migration still owns the column lifecycle.
     }
 };

@@ -163,6 +163,9 @@ return [
             'prompt',
             'hook_binding',
             'comment_prompt',
+            'ai_provider_template',
+            'ai_routing',
+            'ai_model_capabilit',
         ]],
         ['owner' => 'content-projects', 'any' => [
             'seo_project',
@@ -193,6 +196,7 @@ return [
         // Core-mysql credential alters that currently live under SeoContentAi
         ['owner' => 'core', 'any' => [
             'add_connection_type_to_api_connections',
+            'ensure_connection_type_on_api_connections',
             'seo_gsc_master',
             'seo_gsc_property',
             'seo_dataforseo',
