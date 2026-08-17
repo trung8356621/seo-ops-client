@@ -4,8 +4,7 @@
 /vendor/
 /node_modules/
 /addons/
-/public/hot
-/public/storage
+/public/*
 /storage/*.key
 /storage/pail
 /storage/logs/*
