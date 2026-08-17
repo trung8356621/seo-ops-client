@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-13  
+> Updated: 2026-08-17  
 > Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
 
 ## 1. Documentation Map
@@ -67,6 +67,14 @@ The current documentation set is organized as a canonical docs system for the Om
 - Blade select boxes should use `<x-select>`.
 - SEO React controls should use `SeoSelect`.
 - Modals, drawers, and popovers should open/close immediately through Alpine/JavaScript; Livewire should handle loading, validation, persistence, and server actions.
+
+### AI Center (Models / Routing)
+
+- Canonical module doc: `docs/modules/PROMPTS_AND_AI.md` § **AI Center (Models / Routing)**.
+- Models = enable/order; Routing = Automatic vs Custom filter; short code `[OR]` is display-only.
+- Execution identity: `connectionId|familyKey`. Persist Custom via `AiRoutingTargetService::saveSimplifiedSelection`.
+- Curated OpenRouter Text catalog: `OpenRouterTextRoutingCatalog` + `php artisan seo:ai:ensure-openrouter-text-routing [--user=]` (idempotent). Does not touch Image/Video routing.
+- Tab state Alpine-only on `#ai-center-root`; do not restore Livewire tab `queryString` dual-panel sync.
 
 ## 3. Current Working-Tree Caution
 

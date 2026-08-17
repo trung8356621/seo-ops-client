@@ -1,8 +1,8 @@
 # Prompts and AI
 
 > Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
+> Last verified: 2026-08-17  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -40,6 +40,7 @@ Panel prefix: `/seo/{connection_hash}/`
 | `settings/recommendations` | `SeoSettingsRecommendations` — docs-only (no runtime) |
 | `settings/api` | `AiConnectionResource` — API connections (AI + SEO providers) |
 | `settings/ai` | Legacy redirect → `settings/api` |
+| `settings/ai-center` | `SeoSettingsAiCenter` — Models + Routing (Text/Image/Video) |
 | `prompts` | `PromptResource` — Prompt management |
 | `extensions` | Extension states UI (provider health) |
 | `image-optimization` | `ImageOptimizationSettings` — site-aware media opts |
@@ -228,7 +229,78 @@ No Prompt Hook schedule owner — workflows/CP/Agent own cadence.
 - Jump migration `legacy` → `hook` without `shadow`.
 - Recommendations page treated as runtime routing config.
 
-## 15. Tests and invariants
+## 15. AI Center (Models / Routing)
+
+Filament page: `Omnichannel\Addons\AiPrompt\Filament\Pages\SeoSettingsAiCenter`  
+Blade/lang shell: `seo-content-ai-compat` (`resources/views/filament/pages/seo-settings-ai-center.blade.php`).
+
+### Product ownership (locked)
+
+| Surface | Owns |
+|---------|------|
+| **Models** | Enabled targets per area (Text/Image/Video), display order / priority |
+| **Routing** | Per execution profile: **Automatic** vs **Custom** filter only |
+| Provider short code (`[OR]`, …) | **Display only** — never execution identity |
+
+Canonical execution identity: `connectionId|familyKey` (example: `3|openai.gpt54_mini`).  
+Custom Allowed Models store `allowed_execution_keys` (full keys) + derived family keys; order still comes from Models priority.
+
+### UI lifecycle (do not regress)
+
+- Main tab / capability state is **Alpine-only** on `#ai-center-root` (`wire:ignore.self`). Do not reintroduce Livewire `queryString` tab sync or dual CSS-hidden panels — that remounts Alpine and stacks Models+Routing.
+- First open of Routing may `loadPanel('routing')` once; subsequent Models↔Routing switches must not spam Livewire.
+- Sortable draft is local until **Save order**; tick/Custom edits use existing unsaved-changes + **Save settings** (no auto-save-on-tick).
+- Unknown catalog rows appear in Models only after explicit **Add** (`omi_areas` / `AiModelPriorityService::isExplicitlyAreaEnabled`).
+
+### OpenRouter curated Text catalog
+
+Idempotent apply (no second registry):
+
+- Service: `OpenRouterTextRoutingCatalog`
+- Command: `php artisan seo:ai:ensure-openrouter-text-routing [--user=]`
+- Registered from `seo-content-ai-compat` `SeoContentAiServiceProvider`
+
+Ensures these OpenRouter `raw_model_name` rows (badge `[OR]`), with `display_name` below; does **not** remove direct Gemini/DeepSeek/Claude connections:
+
+| Model ID | Display |
+|----------|---------|
+| `openai/gpt-5.4` | GPT-5.4 |
+| `openai/gpt-5.4-mini` | GPT-5.4 Mini |
+| `openai/gpt-5.4-nano` | GPT-5.4 Nano |
+| `anthropic/claude-sonnet-4.6` | Claude Sonnet 4.6 |
+| `anthropic/claude-haiku-4.5` | Claude Haiku 4.5 |
+| `google/gemini-3.5-flash` | Gemini 3.5 Flash |
+| `google/gemini-3.5-flash-lite` | Gemini 3.5 Flash Lite |
+| `google/gemini-3.1-pro-preview` | Gemini 3.1 Pro |
+| `deepseek/deepseek-v3.2` | DeepSeek V3.2 |
+| `qwen/qwen3.6-flash` | Qwen 3.6 Flash |
+
+Family mapping lives in `AiModelFamilyCatalog` (distinct families where Routing must tick separately — e.g. `gemini.flash` vs `gemini.flash_lite`, GPT nano/mini/full).  
+`ModelCapabilityRegistry::fromOpenRouterGateway` maps `google/` / `openai/` / `anthropic/` / `deepseek/` / `qwen/` OpenRouter slugs into text (+ reasoning where needed) capabilities.
+
+### Text Routing Custom pools
+
+Command sets **Fast / Long-form / Reasoning** to Custom and merges:
+
+```text
+existing non-curated allowed keys
++
+profile-specific OpenRouter pool
+```
+
+Curated OpenRouter keys on the wrong profile are replaced by that profile’s pool (idempotent repair). Image/Video profiles are **not** written by this catalog.
+
+| Profile | OpenRouter pool (raw ids) |
+|---------|---------------------------|
+| `text.fast` | gpt-5.4-nano, gpt-5.4-mini, claude-haiku-4.5, gemini-3.5-flash-lite, gemini-3.5-flash, deepseek-v3.2, qwen3.6-flash |
+| `text.longform` | claude-sonnet-4.6, gemini-3.5-flash, gpt-5.4-mini, gpt-5.4, deepseek-v3.2, qwen3.6-flash |
+| `text.reasoning` | gpt-5.4, claude-sonnet-4.6, gemini-3.1-pro-preview, gemini-3.5-flash, gpt-5.4-mini, deepseek-v3.2 |
+
+Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_execution_keys` + family keys). Refresh must reload Custom + Allowed Models.
+
+**Image / Video routing** remains owned by existing Image/Video strategy paths — AI Center Text catalog work must not mutate those profiles.
+
+## 16. Tests and invariants
 
 | Area | Tests / evidence |
 |------|------------------|
@@ -236,10 +308,11 @@ No Prompt Hook schedule owner — workflows/CP/Agent own cadence.
 | Hook boundaries | Hook Spec / Runtime unit suites under `PromptHooks` |
 | Extension AI resolve | `ExtensionArchitectureFreezeTest`, `ExtensionSdkFoundationTest` |
 | RuntimeLogger (HTTP AI controllers) | `RuntimeLoggerWebAppChannelTest` |
+| AI Center OR Text catalog | `OpenRouterTextRoutingCatalogTest`, `AiModelFamilyUxTest`, `AiRuntimeRoutingRefactorTest`, `AiRoutingUxTest`, `AiModelsUnifiedTableTest` |
 
-**Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output.
+**Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output; AI Center Custom identity = `connectionId|familyKey`; no duplicate `provider + model_id` on OpenRouter catalog ensure.
 
-## 16. Related documents
+## 17. Related documents
 
 - `docs/modules/EXTENSION_SDK.md`
 - `docs/contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md`
