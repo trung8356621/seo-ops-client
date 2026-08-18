@@ -82,8 +82,7 @@ class User extends Authenticatable implements FilamentUser
         }
 
         return match ($panel->getId()) {
-            'admin' => in_array((string) $this->role, [self::ROLE_ADMIN, self::ROLE_OWNER], true)
-                || SeoAccessControl::canAccessAdminAutomationPanel($this),
+            'admin' => in_array((string) $this->role, [self::ROLE_ADMIN, self::ROLE_OWNER], true),
             'tools' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
             'seo' => SeoAccessControl::canAccessSeoPanel($this),
             default => false,

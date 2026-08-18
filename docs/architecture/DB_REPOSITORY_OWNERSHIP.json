@@ -6,13 +6,13 @@
             "owns_migrations": [
                 "database/migrations"
             ],
+            "owns_runtime": [
+                "app/Core",
+                "resources/js/client-core"
+            ],
             "connection_default": "mysql",
             "physical_database": "omi_client",
-            "notes": "Thin Laravel shell migrations only (users/cache/jobs/core SaaS + automation tables). Physical DB renamed from omi_channel → omi_client."
-        },
-        "omnichannel-client-core": {
-            "owns_migrations": [],
-            "notes": "Runtime/guards/locators; no business tables. refactor:* commands live here."
+            "notes": "Laravel shell + embedded App\\Core runtime (former omnichannel-client-core package, merged 2026-08-18). refactor:* commands live in app/Core."
         },
         "omnichannel-addons": {
             "connection_default_for_addon_migrations": "omi_seo_ai",

@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'nav' => 'Control Server',
+    'title' => 'Control Server',
+    'status_heading' => 'Cài đặt',
+    'connect_heading' => 'Kết nối control server',
+    'status' => 'Trạng thái',
+    'lock_state' => 'Khóa',
+    'lock_locked' => 'Đã khóa',
+    'lock_active' => 'Hoạt động',
+    'control_server_url' => 'URL control server',
+    'installation_id' => 'Installation ID',
+    'client_version' => 'Phiên bản client',
+    'last_command' => 'Lệnh gần nhất',
+    'last_command_at' => 'Thời điểm lệnh gần nhất',
+    'api_key' => 'API key',
+    'connect' => 'Connect',
+    'connecting' => 'Đang kết nối…',
+    'locked_title' => 'Client đã bị khóa',
+    'locked_message' => 'Client is locked by the control server.',
+    'open_control_server' => 'Mở Control Server',
+    'login' => 'Đăng nhập',
+    'enroll_invalid_url' => 'Nhập URL control server hợp lệ.',
+    'enroll_missing_api_key' => 'Nhập API key từ control server.',
+    'enroll_not_ready' => 'Chưa sẵn sàng lưu trạng thái control.',
+    'enroll_already_connected' => 'Client này đã được kết nối.',
+    'enroll_server_unavailable' => 'Control server không khả dụng. Trạng thái local không đổi.',
+    'enroll_invalid_response' => 'Phản hồi enrollment từ control server không hợp lệ.',
+    'enroll_persist_failed' => 'Không lưu được trạng thái cài đặt.',
+    'enroll_success' => 'Đã kết nối control server.',
+    'enroll_failed_title' => 'Không kết nối được',
+    'enroll_success_title' => 'Đã kết nối',
+];

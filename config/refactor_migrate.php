@@ -27,6 +27,7 @@ return [
         'omi_channel__pre_client_split_backup',
         'omi_channel_real',
         'omi_seo_ai_real',
+        'omi_client_real',
     ],
 
     /**

@@ -141,14 +141,6 @@ class SiteResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
-                Tables\Actions\Action::make('settings')
-                    ->label(__('Service settings'))
-                    ->icon('heroicon-o-cog-8-tooth')
-                    ->iconButton()
-                    ->url(fn (Site $record): ?string => ($ss = $record->primarySiteServiceForSettings())
-                        ? SiteServiceResource::getUrl('edit', ['record' => $ss])
-                        : null)
-                    ->visible(fn (Site $record): bool => (bool) $record->primarySiteServiceForSettings()),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
             ])

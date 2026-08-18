@@ -1,7 +1,7 @@
 # Client Core purity (Task 13)
 
-> Status: Audit after physical split  
-> Package: `omnichannel/client-core` → `D:\work\omnichannel-client-core`
+> Status: Audit after client-core merge into client  
+> Location: `omnichannel-client/app/Core` (`App\Core\*`)
 
 ## Verdict
 
@@ -11,12 +11,12 @@
 
 | Area | Path | Role |
 |------|------|------|
-| Addon discovery | `src/Addon/` | Discover/register peer addons; no hard-coded business list |
-| Capability / command / event | `src/Capability`, `src/Command`, `src/Event` | Buses + contracts |
-| API / automation registries | `src/Api`, `src/Automation` | Protocol registries |
-| Queue / operations / sites | `src/Queue`, `src/Operations`, `src/Sites` | Runtime identity + ops logging |
-| Dual-DB migrate | `src/Database/*`, `src/Console/Commands/Refactor*` | `refactor:migrate`, guards, path locators |
-| Frontend runtime | `resources/js/saveCoordinator.js` (+ related) | Cross-owner save coordination |
+| Addon discovery | `app/Core/Addon/` | Discover/register peer addons; no hard-coded business list |
+| Capability / command / event | `app/Core/Capability`, `app/Core/Command`, `app/Core/Event` | Buses + contracts |
+| API / automation registries | `app/Core/Api`, `app/Core/Automation` | Protocol registries |
+| Queue / operations / sites | `app/Core/Queue`, `app/Core/Operations`, `app/Core/Sites` | Runtime identity + ops logging |
+| Dual-DB migrate | `app/Core/Database/*`, `app/Core/Console/Commands/Refactor*` | `refactor:migrate`, guards, path locators |
+| Frontend runtime | `resources/js/client-core/saveCoordinator.js` (+ related) | Cross-owner save coordination |
 
 ## Keyword hits reviewed (not business ownership)
 

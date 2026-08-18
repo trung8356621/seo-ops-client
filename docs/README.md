@@ -6,8 +6,7 @@
 ## Workspace repos
 | Repo | Role |
 |------|------|
-| `omnichannel-client` | Thin Laravel shell (this tree) |
-| `omnichannel-client-core` | Platform / runtime (`App\Core\*`) |
+| `omnichannel-client` | Thin Laravel shell + embedded `App\Core` runtime (this tree) |
 | `omnichannel-addons` | Peer business addons + `seo-content-ai-compat` |
 | `wp-seo-ai` | WordPress bridge plugin |
 

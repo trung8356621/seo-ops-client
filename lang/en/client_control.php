@@ -1,0 +1,36 @@
+<?php
+
+declare(strict_types=1);
+
+return [
+    'nav' => 'Control Server',
+    'title' => 'Control Server',
+    'status_heading' => 'Installation',
+    'connect_heading' => 'Connect to control server',
+    'status' => 'Status',
+    'lock_state' => 'Lock',
+    'lock_locked' => 'Locked',
+    'lock_active' => 'Active',
+    'control_server_url' => 'Control server URL',
+    'installation_id' => 'Installation ID',
+    'client_version' => 'Client version',
+    'last_command' => 'Last command',
+    'last_command_at' => 'Last command time',
+    'api_key' => 'API key',
+    'connect' => 'Connect',
+    'connecting' => 'Connecting…',
+    'locked_title' => 'Client locked',
+    'locked_message' => 'Client is locked by the control server.',
+    'open_control_server' => 'Open Control Server',
+    'login' => 'Sign in',
+    'enroll_invalid_url' => 'Enter a valid control server URL.',
+    'enroll_missing_api_key' => 'Enter the API key from the control server.',
+    'enroll_not_ready' => 'Client control storage is not ready.',
+    'enroll_already_connected' => 'This client is already connected.',
+    'enroll_server_unavailable' => 'Control server is unavailable. Local state was not changed.',
+    'enroll_invalid_response' => 'Control server returned an invalid enrollment response.',
+    'enroll_persist_failed' => 'Could not store installation state.',
+    'enroll_success' => 'Connected to the control server.',
+    'enroll_failed_title' => 'Could not connect',
+    'enroll_success_title' => 'Connected',
+];

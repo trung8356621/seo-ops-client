@@ -4,6 +4,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * SERVER-OWNED LEGACY / PENDING SERVER CUTOVER.
+ *
+ * SaaS subscription belongs to ops-server. Table kept as schema reference.
+ * Do not drop until server cutover.
+ */
 class Subscription extends Model
 {
     use SoftDeletes;

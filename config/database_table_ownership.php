@@ -50,16 +50,20 @@ return [
                 'personal_access_tokens',
 
                 // Omnichannel core (physical DB: omi_client)
+                // SERVER-OWNED LEGACY / PENDING SERVER CUTOVER (do not drop):
                 'wallets',
                 'transactions',
-                'services',
                 'service_plans',
                 'orders',
                 'invoices',
                 'subscriptions',
-                'usage_logs',
+                'usage_logs', // BILLING usage only — not future client telemetry
+                // Client-owned runtime:
+                'services',
                 'sites',
                 'site_services',
+                'client_control_state',
+                'client_control_commands',
                 'site_meta',
                 'task_jobs',
                 'wp_options',

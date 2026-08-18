@@ -1,5 +1,6 @@
 <?php
 
+use App\Control\ClientLockGuard;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Route;
 
@@ -7,6 +8,12 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return '123';
 });
+
+Route::get('/client-locked', function (ClientLockGuard $lockGuard) {
+    return response()->view('client-locked', [
+        'message' => $lockGuard->publicMessage(),
+    ]);
+})->name('client-locked');
 
 require __DIR__.'/auth.php';
 

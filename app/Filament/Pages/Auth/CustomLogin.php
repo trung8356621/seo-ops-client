@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages\Auth;
 
-use Omnichannel\Addons\Seo\Support\SeoAccessControl;
-use App\Models\User;
 use DanHarrin\LivewireRateLimiting\Exceptions\TooManyRequestsException;
 use Filament\Facades\Filament;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
@@ -29,19 +27,14 @@ class CustomLogin extends Login
     {
         if (Filament::auth()->check()) {
             $user = Filament::auth()->user();
-            if ($user instanceof User && $user->isStaff()) {
-                if (SeoAccessControl::canAccessAdminAutomationPanel($user)) {
-                    redirect()->intended('/admin/automation/flows');
-
-                    return;
-                }
-
-                redirect('/');
+            $panel = Filament::getCurrentPanel();
+            if ($user instanceof FilamentUser && $panel !== null && $user->canAccessPanel($panel)) {
+                redirect()->intended(Filament::getUrl());
 
                 return;
             }
 
-            redirect()->intended(Filament::getUrl());
+            redirect('/');
 
             return;
         }
@@ -80,20 +73,6 @@ class CustomLogin extends Login
         }
 
         $user = Filament::auth()->user();
-
-        if ($user instanceof User && $user->isStaff()) {
-            session()->regenerate();
-
-            if (SeoAccessControl::canAccessAdminAutomationPanel($user)) {
-                $this->redirect('/admin/automation/flows');
-
-                return null;
-            }
-
-            $this->redirect('/');
-
-            return null;
-        }
 
         if (
             ($user instanceof FilamentUser)

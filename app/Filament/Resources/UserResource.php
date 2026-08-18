@@ -198,11 +198,6 @@ class UserResource extends Resource
                         default => 'gray',
                     }),
 
-                Tables\Columns\TextColumn::make('wallet.balance')
-                    ->label(__('Wallet balance'))
-                    ->formatStateUsing(fn ($state) => number_format($state, 0, ',', '.').' đ')->default(0)
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('created_at'))
                     ->dateTime('d/m/Y H:i')

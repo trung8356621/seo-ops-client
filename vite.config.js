@@ -9,7 +9,7 @@ const editorDebugBuild = process.env.VITE_EDITOR_DEBUG_BUILD === '1';
 export default defineConfig({
     server: {
         fs: {
-            allow: ['.', '..', path.resolve(__dirname, '../omnichannel-addons'), path.resolve(__dirname, '../omnichannel-client-core')],
+            allow: ['.', '..', path.resolve(__dirname, '../omnichannel-addons')],
         },
     },
     plugins: [
@@ -102,7 +102,7 @@ export default defineConfig({
             'react': path.resolve(__dirname, 'node_modules/react'),
             'react-dom': path.resolve(__dirname, 'node_modules/react-dom'),
             'lucide-react': path.resolve(__dirname, 'node_modules/lucide-react'),
-            '@client-core': path.resolve(__dirname, '../omnichannel-client-core/resources/js'),
+            '@client-core': path.resolve(__dirname, 'resources/js/client-core'),
         },
     },
 });

@@ -6,7 +6,7 @@
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
-**Task 12–13:** canonical workspace at `D:\work\` (client + client-core + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). `_split` removed. Cleanup: [TASK13_CLEANUP_REPORT.json](TASK13_CLEANUP_REPORT.json) · [CLIENT_CORE_PURITY.md](CLIENT_CORE_PURITY.md).
+**Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
 
 ---
 
@@ -16,8 +16,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 
 | Repo | Role |
 |------|------|
-| `omnichannel-client` | Thin Laravel shell |
-| `omnichannel-client-core` | Platform/runtime (`App\Core\*`) |
+| `omnichannel-client` | Thin Laravel shell + embedded `App\Core` runtime |
 | `omnichannel-addons` | Peer business addons + `seo-content-ai-compat` |
 | `wp-seo-ai` | WordPress plugin (unchanged) |
 
@@ -39,7 +38,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Site Sync | `omnichannel-addons/site-sync` |
 | Agent / MCP | `omnichannel-addons/agent` |
 | SEO DB connection bootstrap | `omnichannel-addons/search-foundation` |
-| Save transport / SaveCoordinator | `omnichannel-client-core/resources/js` |
+| Save transport / SaveCoordinator | `omnichannel-client/resources/js/client-core` |
 | Filament Blade `seo-content-ai::` | `omnichannel-addons/seo-content-ai-compat` |
 
 Column ownership detail: [ARTICLE_COLUMN_OWNERSHIP.json](ARTICLE_COLUMN_OWNERSHIP.json).
@@ -125,7 +124,7 @@ Documented debt — **do not** start another architecture wave for these:
 | Key contracts (Ownership, WP harness, Publishing invariants, ExtensionCutover, RuntimeLogger, SaveCoordinator) | **PASS** this session |
 | Broad addon suites | Residual **B** failures: stale test FQCN / Mockery / env (sqlite vs SEO MySQL). Fix test config when touching that area — **not** architecture |
 | `WordPressPermalinkBuilderTest` | Residual Mockery/siteInfo errors — class **B/C** |
-| Codebase-memory | Fast reindex: `D-work-omnichannel-client`, `D-work-omnichannel-client-core`, `D-work-omnichannel-addons`, `D-work-wp-seo-ai`. Retire trust in `D-work-omnichannel-backend`. Always re-check symbols against disk. |
+| Codebase-memory | Fast reindex: `D-work-omnichannel-client`, `D-work-omnichannel-addons`, `D-work-wp-seo-ai`. Retire trust in `D-work-omnichannel-backend`. Always re-check symbols against disk. |
 
 Closure report: `docs/architecture/TASK9_CLOSURE_REPORT.json`
 
@@ -140,7 +139,7 @@ composer dump-autoload -o
 
 npm run build
 
-node --test resources/js/core/__tests__/saveCoordinator.test.mjs
+node --test resources/js/client-core/__tests__/saveCoordinator.test.mjs
 
 php artisan refactor:migrate --verify --via-mysql
 php artisan refactor:migrate --verify --via-mysql

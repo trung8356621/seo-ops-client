@@ -4,6 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * SERVER-OWNED LEGACY / PENDING SERVER CUTOVER.
+ *
+ * Wallet ledger belongs to ops-server. Table kept as schema reference.
+ * Do not drop until server cutover.
+ */
 class Transaction extends Model
 {
     protected $fillable = [

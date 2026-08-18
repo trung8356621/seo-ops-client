@@ -2,10 +2,22 @@
 
 namespace App\Providers;
 
+use App\Control\ClientLockGuard;
+use App\Control\Commands\ControlCommandDispatcher;
+use App\Control\Commands\Handlers\ClientLockHandler;
+use App\Control\Commands\Handlers\ClientUnlockHandler;
+use App\Control\Commands\Handlers\ClientUpdateHandler;
+use App\Control\Commands\Handlers\ServicesApplyHandler;
+use App\Control\Exceptions\ClientLockedException;
+use App\Control\Update\ClientUpdater;
+use App\Control\Update\NotConfiguredClientUpdater;
+use App\Enums\ControlCommandName;
 use App\Support\ImageDriverResolver;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Intervention\Image\ImageManager;
@@ -22,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->registerInterventionImageManager();
+        $this->registerClientControlBindings();
 
         // Panel providers need early registration (Filament). Discover from filesystem
         // manifests marked register_early — Core never hard-codes business addon classes.
@@ -82,6 +95,40 @@ class AppServiceProvider extends ServiceProvider
                 ]);
         });
 
+        $this->registerClientLockQueueGuard();
+        $this->registerClientLockHttpMiddleware();
+    }
+
+    private function registerClientLockHttpMiddleware(): void
+    {
+        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+        if (! $kernel->hasMiddleware(\App\Http\Middleware\EnsureClientIsNotLocked::class)) {
+            $kernel->pushMiddleware(\App\Http\Middleware\EnsureClientIsNotLocked::class);
+        }
+    }
+
+    private function registerClientControlBindings(): void
+    {
+        $this->app->singleton(ClientUpdater::class, NotConfiguredClientUpdater::class);
+        $this->app->singleton(ControlCommandDispatcher::class, function ($app): ControlCommandDispatcher {
+            return new ControlCommandDispatcher([
+                ControlCommandName::ServicesApply->value => $app->make(ServicesApplyHandler::class),
+                ControlCommandName::ClientLock->value => $app->make(ClientLockHandler::class),
+                ControlCommandName::ClientUnlock->value => $app->make(ClientUnlockHandler::class),
+                ControlCommandName::ClientUpdate->value => $app->make(ClientUpdateHandler::class),
+            ]);
+        });
+    }
+
+    private function registerClientLockQueueGuard(): void
+    {
+        Queue::before(function (JobProcessing $_event): void {
+            if (! app(ClientLockGuard::class)->isLocked()) {
+                return;
+            }
+
+            throw new ClientLockedException(__('client_control.locked_message'));
+        });
     }
 
     private function logImageDriverSelection(): void
@@ -165,6 +212,7 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
+            // services = local runtime catalog / activation snapshot (is_active).
             $activeServices = \App\Models\Service::where('is_active', true)->get();
             /** @var \App\Core\Addon\AddonRegistry $registry */
             $registry = $this->app->make(\App\Core\Addon\AddonRegistry::class);

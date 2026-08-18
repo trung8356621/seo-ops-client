@@ -31,6 +31,8 @@ class SiteServiceResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static bool $shouldRegisterNavigation = false;
+
     public static function getNavigationLabel(): string
     {
         return __('Activated Services');
@@ -41,32 +43,39 @@ class SiteServiceResource extends Resource
         return __('Site Service');
     }
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
+    public static function canAccess(): bool
+    {
+        return false;
+    }
+
+    public static function canViewAny(): bool
+    {
+        return false;
+    }
+
     public static function canCreate(): bool
     {
-        return auth()->user()?->role === User::ROLE_ADMIN;
+        return false;
     }
 
     public static function canEdit(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->role === User::ROLE_ADMIN;
+        return false;
     }
 
     public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        return auth()->user()?->role === User::ROLE_ADMIN;
+        return false;
     }
 
     public static function canView(\Illuminate\Database\Eloquent\Model $record): bool
     {
-        if (! $record instanceof SiteService) {
-            return false;
-        }
-
-        if (auth()->user()?->role === User::ROLE_ADMIN) {
-            return true;
-        }
-
-        return static::getEloquentQuery()->whereKey($record->getKey())->exists();
+        return false;
     }
 
     public static function form(Form $form): Form

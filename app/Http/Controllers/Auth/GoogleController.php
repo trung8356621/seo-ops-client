@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Auth;
 
 use Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService;
-use Omnichannel\Addons\Seo\Support\SeoAccessControl;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -45,15 +44,7 @@ class GoogleController extends Controller
             Auth::login($user, true);
             request()->session()->regenerate();
 
-            if ($user->isStaff()) {
-                if (SeoAccessControl::canAccessAdminAutomationPanel($user)) {
-                    return redirect()->intended('/admin/automation/flows');
-                }
-
-                return redirect('/');
-            }
-
-            return redirect()->intended($this->resolveFallbackUrl($user));
+            return redirect($this->resolveFallbackUrl($user));
         } catch (\Exception $e) {
             Log::error('Google Login Error: '.$e->getMessage());
 
@@ -65,17 +56,20 @@ class GoogleController extends Controller
     {
         $user ??= auth()->user();
 
-        if ($user instanceof User && $user->isStaff()) {
-            if (SeoAccessControl::canAccessAdminAutomationPanel($user)) {
-                return '/admin/automation/flows';
+        $intended = session('url.intended');
+        $hasSafeIntended = is_string($intended)
+            && str_starts_with($intended, '/')
+            && ! str_starts_with($intended, '//');
+
+        if ($user instanceof User && ($user->isStaff() || $user->isManager())) {
+            if ($hasSafeIntended && str_starts_with($intended, '/seo')) {
+                return $intended;
             }
 
             return '/';
         }
 
-        $intended = session('url.intended');
-
-        if (is_string($intended) && str_starts_with($intended, '/') && ! str_starts_with($intended, '//')) {
+        if ($hasSafeIntended) {
             return $intended;
         }
 

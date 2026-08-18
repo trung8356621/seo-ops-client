@@ -1,27 +1,31 @@
-# Repository Split (canonical)
+# Repository layout (canonical)
 
-> Status: **Canonical at `D:\work\`** (Task 12 cutover)  
-> Staging under `D:\work\_split` is obsolete — do not use as SoT.  
-> Deploy: **NOT** done · ZIP: **NOT** done · Manual UI: **NOT** yet
+> Status: **Canonical at `D:\work\`**  
+> Last updated: 2026-08-18 — client-core merged into client  
+> Deploy: **NOT** done · ZIP: **NOT** done
 
 ## Target tree
 
 ```text
 D:\work\
-├── omnichannel-client/          # thin Laravel shell
-├── omnichannel-client-core/     # platform/runtime package
+├── omnichannel-client/          # Laravel shell + App\Core runtime
+│   ├── app/Core/                # platform/runtime (former client-core)
+│   └── addons/                  # junction → omnichannel-addons
 ├── omnichannel-addons/          # peer-addon monorepo
+├── ops-server/                  # standalone SaaS control plane (separate)
 ├── wp-seo-ai/                   # WordPress bridge (separate repo)
-└── omnichannel-backend.__pre_split_backup/   # rollback only (after rename)
+└── omnichannel-backend/         # legacy monolith reference (read-only)
 ```
 
-Open workspace: `D:\work\omnichannel.code-workspace` (four folders only).
+**Retired:** `omnichannel-client-core` standalone package — merged into `omnichannel-client/app/Core`.
+
+Open workspace: `D:\work\omnichannel.code-workspace`.
 
 ## Boot order
 
 ```text
 Laravel shell (omnichannel-client)
-  → ClientCoreServiceProvider (omnichannel/client-core)
+  → ClientCoreServiceProvider (app/Core, registered in bootstrap/providers.php)
   → AddonDiscovery(discovery_roots)
   → peer addon providers (filesystem manifests)
 ```
@@ -34,16 +38,14 @@ No hard-coded business providers in `bootstrap/providers.php`.
 
 ```json
 "repositories": [
-  { "type": "path", "url": "../omnichannel-client-core", "options": { "symlink": true } },
   { "type": "path", "url": "../omnichannel-addons", "options": { "symlink": true } }
 ],
 "require": {
-  "omnichannel/client-core": "0.1.0",
   "omnichannel/addons": "0.1.0"
 }
 ```
 
-Local edits visible via Composer path junctions under `vendor/omnichannel/*`.
+`App\Core\*` autoloads via client `"App\\": "app/"`.
 
 Filesystem discovery uses junction:
 
@@ -56,7 +58,7 @@ Env override: `OMNICHANNEL_ADDONS_PATH`.
 ## Frontend / Vite
 
 - Entry points reference `addons/<slug>/resources/...` (via junction).
-- Alias `@client-core` → `../omnichannel-client-core/resources/js`
+- Alias `@client-core` → `resources/js/client-core`
 - `resolve.preserveSymlinks` + explicit `react` / `react-dom` / `lucide-react` aliases.
 
 ## Migrations
@@ -71,21 +73,13 @@ Env override: `OMNICHANNEL_ADDONS_PATH`.
 `omnichannel-addons/seo-content-ai-compat/`  
 Slug remains `seo-content-ai` (legacy). Namespace `App\Addons\SeoContentAi\*` autoloaded from that folder. **No new business code.**
 
-## Independence
-
-Runtime classes resolve under `D:\work\omnichannel-client\vendor\omnichannel\{client-core,addons}\...` (junctions to sibling repos).  
-Full rename of `omnichannel-backend` → `omnichannel-backend.__pre_split_backup` may stay blocked while Cursor holds the old folder open — run `D:\work\RENAME_PRE_SPLIT_BACKUP.ps1` after closing that workspace.
-
 ## First commands (from client)
 
 ```text
-cd D:\work\omnichannel-client
 composer dump-autoload -o
 php artisan optimize:clear
-php artisan route:list
+php artisan about
 npm run build
-node --test ../omnichannel-client-core/resources/js/__tests__/saveCoordinator.test.mjs
-php artisan refactor:migrate --verify --via-mysql
-php artisan refactor:migrate --verify --via-mysql
-php vendor/bin/phpunit --filter=ArticleExtensionOwnershipContractTest
+node --test resources/js/client-core/__tests__/saveCoordinator.test.mjs
+$PHP_BIN vendor/bin/phpunit --testsuite ClientCore
 ```

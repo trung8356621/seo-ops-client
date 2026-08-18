@@ -24,6 +24,18 @@ final class UserPanelAccessTest extends TestCase
         $this->assertFalse($user->canAccessPanel($panel));
     }
 
+    public function test_admin_can_access_admin_panel(): void
+    {
+        $user = new User([
+            'role' => User::ROLE_ADMIN,
+            'status' => User::STATUS_NORMAL,
+        ]);
+
+        $panel = $this->panelWithId('admin');
+
+        $this->assertTrue($user->canAccessPanel($panel));
+    }
+
     public function test_owner_can_access_admin_panel(): void
     {
         $user = new User([
@@ -34,6 +46,19 @@ final class UserPanelAccessTest extends TestCase
         $panel = $this->panelWithId('admin');
 
         $this->assertTrue($user->canAccessPanel($panel));
+    }
+
+    public function test_manager_cannot_access_admin_panel(): void
+    {
+        $user = new User([
+            'role' => User::ROLE_MANAGER,
+            'parent_id' => 10,
+            'status' => User::STATUS_NORMAL,
+        ]);
+
+        $panel = $this->panelWithId('admin');
+
+        $this->assertFalse($user->canAccessPanel($panel));
     }
 
     public function test_staff_with_owner_link_can_access_seo_panel(): void
