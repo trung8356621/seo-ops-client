@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Services\Auth\GoogleLoginUserService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -32,14 +33,7 @@ class GoogleController extends Controller
                 ->stateless()
                 ->user();
 
-            $existingUser = User::query()->where('email', $gUser->email)->first();
-
-            $user = User::updateOrCreate(['email' => $gUser->email], [
-                'name' => $gUser->name,
-                'google_id' => $gUser->id,
-                'avatar' => $gUser->avatar,
-                'password' => $existingUser?->password ?? bcrypt(str()->random(16)),
-            ]);
+            $user = app(GoogleLoginUserService::class)->provisionFromGoogleUser($gUser);
 
             Auth::login($user, true);
             request()->session()->regenerate();

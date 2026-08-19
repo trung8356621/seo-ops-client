@@ -25,6 +25,9 @@ final class UserHierarchyServiceTest extends TestCase
         $fillable = (new User)->getFillable();
         self::assertContains('manager_id', $fillable);
         self::assertContains('parent_id', $fillable);
+        self::assertContains('name', $fillable);
+        self::assertContains('google_id', $fillable);
+        self::assertContains('avatar', $fillable);
     }
 
     public function test_hierarchy_service_clears_links_for_owner_and_admin(): void

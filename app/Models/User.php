@@ -56,8 +56,16 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'google_id',
+        'avatar',
     ];
 
+    /**
+     * Compatibility alias of `name` for older UI call sites.
+     * Canonical editable display name is `users.name` — not user_meta.nickname.
+     *
+     * @var list<string>
+     */
     protected $appends = ['display_name'];
 
     public function isStaff(): bool
@@ -213,10 +221,13 @@ class User extends Authenticatable implements FilamentUser
         return $this;
     }
 
+    /**
+     * Canonical application display name (`users.name`).
+     *
+     * Legacy `user_meta.nickname` is not a live display source.
+     */
     public function getDisplayNameAttribute(): string
     {
-        $nickname = $this->getMeta('nickname');
-
-        return $nickname ?: $this->name;
+        return (string) ($this->attributes['name'] ?? '');
     }
 }
