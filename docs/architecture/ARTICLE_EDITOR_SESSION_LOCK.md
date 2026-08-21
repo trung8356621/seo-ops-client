@@ -11,22 +11,22 @@
 - **Server** is sole lock authority (`article_editor_sessions` on `omi_seo_ai`).
 - **React** is sole **session-state owner** on the client; Blade/Alpine only **consume** events.
 - **localStorage** is recovery cache only (schema v3, user-scoped).
-- One **writable** editor session per article at a time.
+- Different users remain mutually exclusive per article; same-user tabs may hold independent leases.
 - Cache lock `ActionSupport::withArticleLock` only serializes acquire/save races — not a collab lock.
 
 ## Protocol
 
 | Concern | Value |
 |---------|-------|
-| Heartbeat | `ARTICLE_EDITOR_HEARTBEAT_SECONDS` (default 30) |
-| Lock TTL | `ARTICLE_EDITOR_LOCK_TTL_SECONDS` (default 120) |
+| Edit lease renew | Piggyback on save; visible + recently-active near-expiry fallback only |
+| Lease TTL | `ARTICLE_EDITOR_LOCK_TTL_SECONDS` (default 240) |
 | Document version | `articles.document_version` (bigint, default 1) |
 | Version bump | Eloquent observer when `body` dirty + conflict guard |
 
 ### Endpoints
 
-- `POST /api/seo/articles/{article}/editor-sessions` — acquire
-- `PUT .../editor-sessions/{session}/heartbeat`
+- `POST /api/seo/articles/{article}/edit-lease` — acquire
+- `PUT .../edit-lease/{session}` — activity-gated fallback renew
 - `PUT .../editor-sessions/{session}/document` — save/autosave
 - `POST .../editor-sessions/{session}/close` — atomic save + release
 - `DELETE .../editor-sessions/{session}` — release after ACK only
@@ -69,7 +69,8 @@ System writers (`article.content.update` from automation/sync) still go through 
 
 ## Frontend
 
-- `EditorSessionClient` (`resources/js/utils/editorSessionClient.js`) — `client_instance_id` in **sessionStorage** (per-tab)
+- `EditorSessionClient` (`resources/js/utils/editorSessionClient.js`) — per-tab id in **sessionStorage**, no heartbeat interval
+- Same-user same-article awareness uses `BroadcastChannel(article-editor-{articleId})`; unsupported browsers degrade without blocking.
 - Session state event: `article-editor-session-state-changed` (`editorSessionState.js`)
 - Mount gate `ArticleEditorWithSession` in `article-editor.jsx`: acquire-first; if locked/archived/not_editable **or** session unavailable (5xx heartbeat) → **ExclusiveLockScreen** only (title/body + Reload/Retry; no TipTap / no takeover UI)
 - Mid-session `document_version` / content-hash conflict: sync actual version from payload; **keep writable** (toast); do not unmount ExclusiveLockScreen
@@ -78,7 +79,7 @@ System writers (`article.content.update` from automation/sync) still go through 
 - Livewire `EditArticle` body writes require `editorSessionId` + `expectedDocumentVersion` and delegate `ArticleEditorPersistService`
 - FAQ body apply from editor requires owning session; without session while locked → fail
 - Owner unload: `beforeunload` warn when dirty; `pagehide` + sendBeacon release when clean; Save & Close sets `__seoMarkIntentionalEditorClose`
-- Server autosave debounced (~4s) with single in-flight + stale ACK guard
+- Server autosave debounced (~4s) with single in-flight + stale ACK guard; successful save renews the lease.
 - Draft key: `seo-editor:draft:{hash}:{site}:{userId}:{articleId}`
 
 ## Phase 1.1 enforcement notes

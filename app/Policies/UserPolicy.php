@@ -3,7 +3,6 @@
 namespace App\Policies;
 
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class UserPolicy
 {
@@ -12,7 +11,7 @@ class UserPolicy
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return (string) $user->role === User::ROLE_OWNER;
     }
 
     /**
@@ -20,7 +19,7 @@ class UserPolicy
      */
     public function view(User $user, User $model): bool
     {
-        return true;
+        return $this->ownsOrSelf($user, $model);
     }
 
     /**
@@ -28,7 +27,7 @@ class UserPolicy
      */
     public function create(User $user): bool
     {
-        return true;
+        return (string) $user->role === User::ROLE_OWNER;
     }
 
     /**
@@ -36,8 +35,7 @@ class UserPolicy
      */
     public function update(User $user, User $model): bool
     {
-        // Admin sửa được tất cả, Owner chỉ sửa được Staff của mình
-        return $user->role === 'admin' || ($user->role === 'owner' && $model->parent_id === $user->id);
+        return $this->ownsOrSelf($user, $model);
     }
 
     /**
@@ -45,7 +43,9 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
-        return $user->role === 'admin';
+        return (string) $user->role === User::ROLE_OWNER
+            && (int) $model->id !== (int) $user->id
+            && (int) $model->parent_id === (int) $user->id;
     }
 
     /**
@@ -53,7 +53,7 @@ class UserPolicy
      */
     public function restore(User $user, User $model): bool
     {
-        return $user->role === 'admin';
+        return $this->delete($user, $model);
     }
 
     /**
@@ -61,6 +61,16 @@ class UserPolicy
      */
     public function forceDelete(User $user, User $model): bool
     {
-        return $user->role === 'admin';
+        return $this->delete($user, $model);
+    }
+
+    private function ownsOrSelf(User $actor, User $model): bool
+    {
+        if ((string) $actor->role !== User::ROLE_OWNER) {
+            return false;
+        }
+
+        return (int) $model->id === (int) $actor->id
+            || (int) $model->parent_id === (int) $actor->id;
     }
 }

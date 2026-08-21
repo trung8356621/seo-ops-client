@@ -44,15 +44,29 @@ return Application::configure(basePath: dirname(__DIR__))
                     && preg_match('#/seo(?:/|$)#', parse_url($referer, PHP_URL_PATH) ?? '') === 1;
             }
 
-            // Chỉ guest SEO (path hoặc Livewire từ trang SEO) → login SEO có hash.
+            // Chỉ guest SEO (path hoặc Livewire từ trang SEO) → login SEO.
             // Không bắt mọi livewire/* — sẽ phá admin login.
             if ($isSeoPath || $isSeoLivewire) {
-                $hash = \App\Addons\SeoContentAi\Support\SeoConnectionContext::applyUrlDefaultsFromRequest($request);
-                if ($hash !== null && Route::has('filament.seo.auth.login')) {
-                    return route('filament.seo.auth.login', ['connection_hash' => $hash]);
+                if ($path === 'seo/login' || preg_match('#^seo/[a-zA-Z0-9]{32,64}/login$#', $path) === 1) {
+                    return url('/'.$path);
                 }
 
-                return url('/seo');
+                // Explicit hash path → hash login; short Main path → /seo/login.
+                if (preg_match('#^seo/([a-zA-Z0-9]{32,64})(?:/|$)#', $path, $matches) === 1
+                    && Route::has('filament.seo.auth.login')
+                ) {
+                    return route('filament.seo.auth.login', ['connection_hash' => $matches[1]]);
+                }
+
+                if (Route::has('filament.seo-main.auth.login')) {
+                    return route('filament.seo-main.auth.login');
+                }
+
+                if (Route::has('seo.auth.login')) {
+                    return route('seo.auth.login');
+                }
+
+                return url('/seo/login');
             }
 
             if (Route::has('filament.admin.auth.login')) {

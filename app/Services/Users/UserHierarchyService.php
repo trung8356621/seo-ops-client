@@ -21,7 +21,10 @@ final class UserHierarchyService
      */
     public function normalizeFormData(array $data, ?User $existing = null, ?User $actor = null): array
     {
-        $actor ??= auth()->user();
+        if (func_num_args() < 3) {
+            $actor = auth()->user();
+        }
+
         $role = (string) ($data['role'] ?? $existing?->role ?? '');
 
         $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
@@ -31,7 +34,7 @@ final class UserHierarchyService
             ? (int) $data['manager_id']
             : null;
 
-        if (in_array($role, [User::ROLE_ADMIN, User::ROLE_OWNER], true)) {
+        if (in_array($role, [User::ROLE_OWNER], true)) {
             $parentId = null;
             $managerId = null;
         } elseif ($role === User::ROLE_MANAGER) {

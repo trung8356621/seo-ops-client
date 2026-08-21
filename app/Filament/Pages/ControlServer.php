@@ -46,7 +46,7 @@ class ControlServer extends Page implements HasForms
         $user = auth()->user();
 
         return $user instanceof User
-            && in_array($user->role, [User::ROLE_ADMIN, User::ROLE_OWNER], true);
+            && (string) $user->role === User::ROLE_OWNER;
     }
 
     public function mount(): void

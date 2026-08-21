@@ -1,11 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Auth;
 use Closure;
 use Illuminate\Http\Request;
 
+/**
+ * @deprecated Client setup uses owner role + RedirectStaffFromAdminPanel.
+ * Kept as alias-compatible stub; prefer owner checks.
+ */
 class AdminMiddleware
 {
     /**
@@ -15,10 +21,10 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (Auth::check() && Auth::user()->role === 'admin') {
+        if (Auth::check() && Auth::user()?->role === 'owner') {
             return $next($request);
         }
-        return redirect('/')->with('error', 'Bạn không có quyền truy cập vùng này.');
-    }
 
+        return redirect('/seo')->with('error', 'Bạn không có quyền truy cập vùng này.');
+    }
 }

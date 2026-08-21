@@ -62,16 +62,13 @@ class SeoDatabaseConnectionResource extends Resource
 
     public static function canDelete(Model $record): bool
     {
-        return SeoDatabaseConnectionAccess::canDeleteConnection();
+        return $record instanceof SeoDatabaseConnection
+            && SeoDatabaseConnectionAccess::canDeleteConnection($record);
     }
 
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
-
-        if (SeoDatabaseConnectionAccess::isAdmin()) {
-            return $query;
-        }
 
         $user = auth()->user();
         if ($user?->role === User::ROLE_OWNER) {
@@ -160,7 +157,7 @@ class SeoDatabaseConnectionResource extends Resource
 
                 Forms\Components\Section::make('Owner')
                     ->description('Mỗi connection gắn với một owner đã kích hoạt Site Service SEO Content AI.')
-                    ->visible(fn (): bool => SeoDatabaseConnectionAccess::isAdmin())
+                    ->visible(false)
                     ->schema([
                         Forms\Components\Select::make('owner_id')
                             ->label('Owner')
@@ -204,9 +201,9 @@ class SeoDatabaseConnectionResource extends Resource
             ])
             ->actions([
                 SeoDatabaseConnectionBackupActions::exportTableAction()
-                    ->visible(fn (): bool => SeoDatabaseConnectionAccess::isAdmin()),
+                    ->visible(fn (SeoDatabaseConnection $record): bool => SeoDatabaseConnectionAccess::canEditConnection($record)),
                 SeoDatabaseConnectionBackupActions::importTableAction()
-                    ->visible(fn (): bool => SeoDatabaseConnectionAccess::isAdmin()),
+                    ->visible(fn (SeoDatabaseConnection $record): bool => SeoDatabaseConnectionAccess::canEditConnection($record)),
                 Tables\Actions\Action::make('open_panel')
                     ->label('Mở panel SEO')
                     ->icon('heroicon-o-arrow-top-right-on-square')
@@ -215,7 +212,7 @@ class SeoDatabaseConnectionResource extends Resource
                     ->visible(fn (SeoDatabaseConnection $record): bool => (bool) $record->is_active),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
-                    ->visible(fn (): bool => SeoDatabaseConnectionAccess::canDeleteConnection()),
+                    ->visible(fn (SeoDatabaseConnection $record): bool => SeoDatabaseConnectionAccess::canDeleteConnection($record)),
             ]);
     }
 

@@ -24,12 +24,18 @@ use Tests\TestCase;
 
 final class AdminPanelBoundaryTest extends TestCase
 {
-    public function test_admin_and_owner_can_access_admin_panel(): void
+    public function test_owner_can_access_admin_panel(): void
     {
         $panel = Filament::getPanel('admin');
 
-        $this->assertTrue($this->userWithRole(User::ROLE_ADMIN)->canAccessPanel($panel));
         $this->assertTrue($this->userWithRole(User::ROLE_OWNER)->canAccessPanel($panel));
+    }
+
+    public function test_legacy_admin_role_cannot_access_admin_panel(): void
+    {
+        $panel = Filament::getPanel('admin');
+
+        $this->assertFalse($this->userWithRole(User::ROLE_ADMIN)->canAccessPanel($panel));
     }
 
     public function test_manager_and_staff_cannot_access_admin_panel(): void
@@ -69,7 +75,7 @@ final class AdminPanelBoundaryTest extends TestCase
 
     public function test_manage_services_and_activated_services_are_inaccessible(): void
     {
-        $this->actingAs($this->userWithRole(User::ROLE_ADMIN));
+        $this->actingAs($this->userWithRole(User::ROLE_OWNER));
 
         $this->assertFalse(ManageServices::canAccess());
         $this->assertFalse(ManageServices::shouldRegisterNavigation());
@@ -82,7 +88,7 @@ final class AdminPanelBoundaryTest extends TestCase
         $this->assertFalse(SiteServiceResource::canView(new SiteService));
     }
 
-    public function test_admin_keeps_dashboard_users_and_seo_database_connections(): void
+    public function test_owner_keeps_dashboard_users_and_seo_database_connections(): void
     {
         $panel = Filament::getPanel('admin');
 
@@ -90,9 +96,8 @@ final class AdminPanelBoundaryTest extends TestCase
         $this->assertContains(UserResource::class, $panel->getResources());
         $this->assertContains(SeoDatabaseConnectionResource::class, $panel->getResources());
 
-        $this->actingAs($this->userWithRole(User::ROLE_ADMIN));
+        $this->actingAs($this->userWithRole(User::ROLE_OWNER));
         $this->assertTrue(UserResource::canAccess());
-        $this->assertTrue(SeoDatabaseConnectionResource::canAccess());
         $this->assertTrue(ControlServer::canAccess());
         $this->assertContains(ControlServer::class, $panel->getPages());
     }

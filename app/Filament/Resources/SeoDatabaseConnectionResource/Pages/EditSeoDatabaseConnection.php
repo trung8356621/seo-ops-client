@@ -30,14 +30,17 @@ class EditSeoDatabaseConnection extends EditRecord
                 ->label('Export SQL')
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
-                ->visible(fn (): bool => SeoDatabaseConnectionAccess::isAdmin() && (bool) $this->record?->is_active)
+                ->visible(fn (): bool => $this->record instanceof SeoDatabaseConnection
+                    && SeoDatabaseConnectionAccess::canEditConnection($this->record)
+                    && (bool) $this->record->is_active)
                 ->action(fn (): BinaryFileResponse => app(SeoDatabaseBackupService::class)->downloadResponse($this->record)),
 
             Actions\Action::make('importSql')
                 ->label('Import SQL')
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('danger')
-                ->visible(fn (): bool => SeoDatabaseConnectionAccess::isAdmin())
+                ->visible(fn (): bool => $this->record instanceof SeoDatabaseConnection
+                    && SeoDatabaseConnectionAccess::canEditConnection($this->record))
                 ->modalHeading('Khôi phục database từ SQL')
                 ->modalSubmitActionLabel('Bắt đầu khôi phục')
                 ->requiresConfirmation()
@@ -59,15 +62,14 @@ class EditSeoDatabaseConnection extends EditRecord
                 ->action(fn (): mixed => $this->runConnectionTest()),
 
             Actions\DeleteAction::make()
-                ->visible(fn (): bool => SeoDatabaseConnectionAccess::canDeleteConnection()),
+                ->visible(fn (): bool => $this->record instanceof SeoDatabaseConnection
+                    && SeoDatabaseConnectionAccess::canDeleteConnection($this->record)),
         ];
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if (! SeoDatabaseConnectionAccess::isAdmin()) {
-            $data['owner_id'] = auth()->id();
-        }
+        $data['owner_id'] = auth()->id();
 
         /** @var SeoDatabaseConnection $record */
         $record = $this->record;

@@ -11,11 +11,11 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class SeoDatabaseConnectionAccess
 {
-    public static function isAdmin(?User $user = null): bool
+    public static function isOwner(?User $user = null): bool
     {
         $user ??= auth()->user();
 
-        return $user?->role === User::ROLE_ADMIN;
+        return $user?->role === User::ROLE_OWNER;
     }
 
     public static function isEligibleOwner(?User $user = null): bool
@@ -30,24 +30,16 @@ final class SeoDatabaseConnectionAccess
 
     public static function canAccessResource(): bool
     {
-        return self::isAdmin() || self::isEligibleOwner();
+        return self::isEligibleOwner();
     }
 
     public static function canCreateConnection(): bool
     {
-        if (self::isAdmin()) {
-            return true;
-        }
-
         return self::isEligibleOwner() && ! self::ownerHasConnection();
     }
 
     public static function canEditConnection(SeoDatabaseConnection $record): bool
     {
-        if (self::isAdmin()) {
-            return true;
-        }
-
         $user = auth()->user();
         if ($user?->role !== User::ROLE_OWNER) {
             return false;
@@ -56,9 +48,9 @@ final class SeoDatabaseConnectionAccess
         return $record->users()->whereKey($user->id)->exists();
     }
 
-    public static function canDeleteConnection(): bool
+    public static function canDeleteConnection(SeoDatabaseConnection $record): bool
     {
-        return self::isAdmin();
+        return self::canEditConnection($record);
     }
 
     public static function ownerHasConnection(?User $user = null): bool
@@ -78,10 +70,6 @@ final class SeoDatabaseConnectionAccess
      */
     public static function resolveOwnerUserIdsForSave(): array
     {
-        if (self::isAdmin()) {
-            return [];
-        }
-
         $user = auth()->user();
         if ($user?->role !== User::ROLE_OWNER) {
             return [];

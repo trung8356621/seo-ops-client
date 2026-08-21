@@ -51,7 +51,7 @@ final class SeoDatabaseConnectionResourceAccessTest extends TestCase
         $this->assertTrue(SeoDatabaseConnectionAccess::ownerHasConnection());
         $this->assertFalse(SeoDatabaseConnectionResource::canCreate());
         $this->assertTrue(SeoDatabaseConnectionResource::canEdit($connection));
-        $this->assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
+        $this->assertTrue(SeoDatabaseConnectionResource::canDelete($connection));
     }
 
     public function test_owner_without_seo_service_cannot_access(): void
@@ -81,10 +81,11 @@ final class SeoDatabaseConnectionResourceAccessTest extends TestCase
         $this->actingAs($ownerA);
 
         $this->assertFalse(SeoDatabaseConnectionResource::canEdit($connection));
+        $this->assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
         $this->assertCount(0, SeoDatabaseConnectionResource::getEloquentQuery()->get());
     }
 
-    public function test_admin_has_full_access(): void
+    public function test_legacy_admin_role_has_no_setup_privilege(): void
     {
         $admin = User::query()->create([
             'name' => 'Admin',
@@ -103,9 +104,10 @@ final class SeoDatabaseConnectionResourceAccessTest extends TestCase
 
         $this->actingAs($admin);
 
-        $this->assertTrue(SeoDatabaseConnectionResource::canCreate());
-        $this->assertTrue(SeoDatabaseConnectionResource::canEdit($connection));
-        $this->assertTrue(SeoDatabaseConnectionResource::canDelete($connection));
+        $this->assertFalse(SeoDatabaseConnectionAccess::canAccessResource());
+        $this->assertFalse(SeoDatabaseConnectionResource::canCreate());
+        $this->assertFalse(SeoDatabaseConnectionResource::canEdit($connection));
+        $this->assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
     }
 
     private function createOwner(string $email): User

@@ -197,9 +197,9 @@ class SiteServiceResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $isAdmin = auth()->user()?->role === User::ROLE_ADMIN;
+        $isOwner = auth()->user()?->role === User::ROLE_OWNER;
 
-        $actions = $isAdmin
+        $actions = $isOwner
             ? [
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make(),
@@ -267,7 +267,7 @@ class SiteServiceResource extends Resource
             ])
             ->actions($actions)
             ->bulkActions(
-                $isAdmin
+                $isOwner
                     ? [
                         Tables\Actions\BulkActionGroup::make([
                             Tables\Actions\DeleteBulkAction::make(),
@@ -284,8 +284,10 @@ class SiteServiceResource extends Resource
     {
         $query = Site::query()->orderBy('domain');
 
-        if (auth()->user()?->role !== User::ROLE_ADMIN) {
+        if (auth()->user()?->role === User::ROLE_OWNER) {
             $query->where('user_id', auth()->id());
+        } else {
+            $query->whereRaw('1 = 0');
         }
 
         return $query->pluck('domain', 'id')->all();
@@ -307,8 +309,8 @@ class SiteServiceResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Chỉ cho phép user thấy các dịch vụ đã kích hoạt cho Site của mình
-        if (auth()->check() && auth()->user()->role !== User::ROLE_ADMIN) {
+        // Owner chỉ thấy dịch vụ gắn với account của mình
+        if (auth()->check() && auth()->user()->role === User::ROLE_OWNER) {
             $ownerId = (int) auth()->id();
 
             return $query->where(function (Builder $inner) use ($ownerId): void {
@@ -321,7 +323,7 @@ class SiteServiceResource extends Resource
             });
         }
 
-        return $query;
+        return $query->whereRaw('1 = 0');
     }
 
     public static function getPages(): array

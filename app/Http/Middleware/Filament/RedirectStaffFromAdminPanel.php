@@ -10,14 +10,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Client /admin setup is owner-only. Staff (and any non-owner) are denied.
+ */
 final class RedirectStaffFromAdminPanel
 {
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
 
-        if ($user instanceof User && ($user->isStaff() || $user->isManager())) {
-            return redirect('/');
+        if ($user instanceof User && ! $user->isOwner()) {
+            return redirect('/seo');
         }
 
         return $next($request);

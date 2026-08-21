@@ -11,7 +11,7 @@ use Tests\TestCase;
 
 final class SiteServiceResourceAccessTest extends TestCase
 {
-    public function test_admin_cannot_access_site_service_crud(): void
+    public function test_legacy_admin_cannot_access_site_service_crud(): void
     {
         $this->actingAs($this->userWithRole(User::ROLE_ADMIN));
 

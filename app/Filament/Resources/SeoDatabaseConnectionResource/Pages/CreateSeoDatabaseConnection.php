@@ -38,15 +38,13 @@ class CreateSeoDatabaseConnection extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (! SeoDatabaseConnectionAccess::isAdmin()) {
-            if (SeoDatabaseConnectionAccess::ownerHasConnection()) {
-                throw ValidationException::withMessages([
-                    'name' => 'Mỗi owner chỉ được tạo một SEO Database Connection. Hãy chỉnh sửa connection hiện có.',
-                ]);
-            }
-
-            $data['owner_id'] = auth()->id();
+        if (SeoDatabaseConnectionAccess::ownerHasConnection()) {
+            throw ValidationException::withMessages([
+                'name' => 'Mỗi owner chỉ được tạo một SEO Database Connection. Hãy chỉnh sửa connection hiện có.',
+            ]);
         }
+
+        $data['owner_id'] = auth()->id();
 
         $ownerId = SeoDatabaseConnectionOwnerSync::resolveOwnerId(
             $data,

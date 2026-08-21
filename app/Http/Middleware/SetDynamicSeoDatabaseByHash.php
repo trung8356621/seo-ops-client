@@ -19,6 +19,10 @@ final class SetDynamicSeoDatabaseByHash
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($this->shouldSkipHashBootstrap($request)) {
+            return $next($request);
+        }
+
         $hashId = $this->resolveHashId($request);
 
         if ($hashId === null) {
@@ -43,6 +47,24 @@ final class SetDynamicSeoDatabaseByHash
         }
 
         return $next($request);
+    }
+
+    private function shouldSkipHashBootstrap(Request $request): bool
+    {
+        if ($request->routeIs([
+            'seo.auth.login',
+            'seo.auth.login.store',
+            'seo.auth.login.hash.store',
+            'filament.seo.auth.login',
+            'filament.seo-main.auth.login',
+        ])) {
+            return true;
+        }
+
+        $path = trim($request->path(), '/');
+
+        return $path === 'seo/login'
+            || (bool) preg_match('#^seo/[a-zA-Z0-9]{32,64}/login$#', $path);
     }
 
     private function resolveHashId(Request $request): ?string

@@ -82,6 +82,8 @@ return [
      */
     'prompt_hooks' => [
         'live_shadow_enabled' => (bool) env('PROMPT_HOOK_LIVE_SHADOW_ENABLED', false),
+        // Billable dual-run (legacy + hook provider). OFF by default — use shadowWithoutProvider.
+        'live_shadow_provider_enabled' => (bool) env('PROMPT_HOOK_LIVE_SHADOW_PROVIDER_ENABLED', false),
         'live_shadow_environments' => ['local', 'staging'],
         'live_shadow_hook_allowlist' => [],
         'live_shadow_sample_rate' => (float) env('PROMPT_HOOK_LIVE_SHADOW_SAMPLE_RATE', 0),

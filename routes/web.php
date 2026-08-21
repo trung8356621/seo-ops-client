@@ -4,10 +4,7 @@ use App\Control\ClientLockGuard;
 use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Support\Facades\Route;
 
-// Routes mặc định (Breeze)
-Route::get('/', function () {
-    return '123';
-});
+Route::redirect('/', '/seo');
 
 Route::get('/client-locked', function (ClientLockGuard $lockGuard) {
     return response()->view('client-locked', [

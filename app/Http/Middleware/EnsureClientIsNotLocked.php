@@ -82,6 +82,7 @@ final class EnsureClientIsNotLocked
             '/admin/control-server',
             '/login',
             '/logout',
+            '/seo/login',
             '/forgot-password',
             '/reset-password',
             '/auth/google',

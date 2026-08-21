@@ -98,7 +98,7 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Conflict tokens | `updated_at` + content hash | Force overwrite without `canForceArticleContentOverwrite` |
 | Manual save stamp | `last_manual_saved_at` | Touching `updated_at` for CP row semantics |
 | Featured / gallery | Laravel `media_snapshot` + REST mutations | See [`ARTICLE_EDITOR_MEDIA_SNAPSHOT.md`](../architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) |
-| Immediate SEO analysis (editor) | React `composeImmediateArticleAnalysis` + Laravel `analysisPolicy` / `externalFacts` | Livewire `seo-analyze-result` (removed as UI SoT) — see [`ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md) |
+| Immediate SEO analysis (editor) | Current draft `createCurrentDraftAnalysisSnapshot` + React `composeImmediateArticleAnalysis` + Laravel `analysisPolicy` / `externalFacts` | Persisted `seo-summary`, PHP preview score, or Livewire `seo-analyze-result` as live UI SoT — see [`ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md) |
 | Editor document traversal | TipTap JSON `DocumentModel` + selectors | Raw HTML regex for analysis — see [`ARTICLE_EDITOR_DOCUMENT_MODEL.md`](../architecture/ARTICLE_EDITOR_DOCUMENT_MODEL.md) |
 | Document mutations | `executeEditorCommand` command layer | Direct `editor.chain()` in widgets — see [`ARTICLE_EDITOR_COMMAND_LAYER.md`](../architecture/ARTICLE_EDITOR_COMMAND_LAYER.md) |
 | Canonical editable document | `articles.editor_document` TipTap envelope; `body` derived HTML | HTML-only save as SoT — see [`ARTICLE_EDITOR_JSON_PERSISTENCE.md`](../architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) |
@@ -118,7 +118,7 @@ List tabs: posts/categories/queue exclude skip meta; reviewed uses `review_statu
 1. `mount()` → `hydrateArticleState()` — **no** remote WP HTTP; body/featured from local meta; `wordpressMetadataStale` if `wp_post_id`.
 2. SSR embeds **only** `getEditorCoreBootstrap()` (identity, content, conflict tokens, endpoints map, minimal settings). **No** scoring rules/messages in shell.
 3. React reads bootstrap → mounts `SeoArticleEditor` (+ optional AI FAB root).
-4. Lazy HTTP after idle / panel open: `/editor/seo-summary`, `/editor/settings`, `/editor/links`, `/editor/images`, `/editor/faqs`, media-picker-config.
+4. Lazy HTTP after idle / panel open: `/editor/settings`, `/editor/links`, `/editor/images`, `/editor/faqs`, media-picker-config. `/editor/seo-summary` remains a persisted server snapshot endpoint but Edit Article does not use it for live scoring.
 5. Existing links = **client document scan** (not DB body alone).
 
 Policy: max **one** heavy sidebar module mounted; switch unmounts (no CSS-hide tree keep).
@@ -129,14 +129,14 @@ Policy: max **one** heavy sidebar module mounted; switch unmounts (no CSS-hide t
 
 See [`ARTICLE_EDITOR_SESSION_LOCK.md`](../architecture/ARTICLE_EDITOR_SESSION_LOCK.md).
 
-- Acquire writable session before edit; other tabs/users → **ExclusiveLockScreen** (no TipTap / no hard-readonly under lock).
+- Acquire article edit lease before edit; another user → **ExclusiveLockScreen**. Same-user tabs are allowed and coordinated locally with BroadcastChannel.
 - Archived Content Project is not an editor deny reason after archive completes; article is standalone while archive report keeps historical links.
-- Heartbeat `PUT .../heartbeat`: `expireStaleSessionsForArticleId` is best-effort (retry then skip InnoDB 1205/1213) so deadlock must not 500 the owning session.
-- Heartbeat/server 5xx → FE code `article_editor_session_unavailable` → ExclusiveLockScreen + notify + **Tải lại trang** (`editorSessionClient.js` / `article-editor.jsx`).
+- Save/autosave piggybacks lease renewal. A one-shot fallback renew runs only near expiry when the tab is visible and recently active; idle editors do not poll.
+- Lease renew/server 5xx → FE code `article_editor_session_unavailable` → ExclusiveLockScreen + notify + **Tải lại trang** (`editorSessionClient.js` / `article-editor.jsx`).
 - Preparing gate: `ArticleEditorReadinessService` (processing AI media + body hash). `evaluate()` calls `reconcileStaleAiMediaJobs`; stuck jobs → `forceOpenEditorWhilePreparing` / `abandonPreparingGate` (EditArticle + blade CTA).
 - Canonical guard: `expected_document_version` (`articles.document_version`).
 - Compat: `expected_updated_at` + `expected_content_hash`.
-- Explicit Save → session document endpoint; Save & Close → atomic `close`.
+- Explicit Save → session document endpoint and patches revision/hash locally without overlay or page reload; Save & Close → atomic `close`.
 - Legacy `POST .../save` cannot bypass active session without owning session id.
 - Livewire `EditArticle` persist requires owning `editorSessionId` and delegates `ArticleEditorPersistService` (no direct body update).
 - Shell Save/Save&Close reactive-disable via `article-editor-session-state-changed`.
@@ -144,7 +144,7 @@ See [`ARTICLE_EDITOR_SESSION_LOCK.md`](../architecture/ARTICLE_EDITOR_SESSION_LO
 - Server autosave (debounced) + localStorage draft schema v3 (user-scoped).
 - Featured/Gallery: immediate API persist + `media_snapshot` (no localStorage SoT).
 - Immediate analysis (Phase 2B): React owns live checks; Laravel owns `analysisPolicy` / `externalFacts` + save/publish validation. See [`ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md).
-- Article write mutex: `ActionSupport::withArticleLock` key `article-write:{id}` (process-local reentrancy; code `article_write_busy`).
+- Article write mutex: `ActionSupport::withArticleLock` key `article-write:{id}` (process-local reentrancy; non-blocking fail-fast code `article_write_busy`).
 
 ### Local persist
 

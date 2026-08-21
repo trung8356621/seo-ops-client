@@ -10,7 +10,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Validation\Rules\Unique;
 
 class SiteResource extends Resource
@@ -21,7 +20,7 @@ class SiteResource extends Resource
 
     public static function canAccess(): bool
     {
-        return auth()->user()?->role === 'admin';
+        return auth()->user()?->role === \App\Models\User::ROLE_OWNER;
     }
 
     /** Menu cấp cao, không gom chung nhóm khác */
@@ -73,7 +72,7 @@ class SiteResource extends Resource
 
                 Forms\Components\Select::make('user_id')
                     ->label(__('Owner'))
-                    ->relationship('user', 'name', fn (Builder $query) => $query->whereIn('role', ['admin', 'owner']))
+                    ->relationship('user', 'name', fn (Builder $query) => $query->where('role', \App\Models\User::ROLE_OWNER))
                     ->searchable()
                     ->preload()
                     ->required(),
@@ -155,16 +154,9 @@ class SiteResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Nếu không phải admin, chỉ xem được Site của chính mình
-        $query = parent::getEloquentQuery()->with(['user', 'siteServices.service']);
-
-        if (auth()->user()->role !== 'admin') {
-            return $query->where('user_id', auth()->id());
-        }
-
-        return $query->withoutGlobalScopes([
-            SoftDeletingScope::class,
-        ]);
+        return parent::getEloquentQuery()
+            ->with(['user', 'siteServices.service'])
+            ->where('user_id', auth()->id());
     }
 
     public static function getPages(): array

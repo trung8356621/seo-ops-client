@@ -1,5 +1,10 @@
 <x-filament-panels::page.simple>
-    <x-filament-panels::form wire:submit="authenticate">
+    <x-filament-panels::form
+        wire:submit="authenticate"
+        method="post"
+        action="{{ method_exists($this, 'getLoginFormActionUrl') ? $this->getLoginFormActionUrl() : url()->current() }}"
+    >
+        @csrf
         {{ $this->form }}
         <x-filament-panels::form.actions :actions="$this->getCachedFormActions()"
             :full-width="$this->hasFullWidthFormActions()" />
@@ -12,7 +17,7 @@
     </div>
 
     <x-filament::button color="gray" icon="heroicon-m-globe-alt" tag="a"
-        href="{{ route('google.login', ['return_url' => method_exists($this, 'getGoogleLoginReturnUrl') ? $this->getGoogleLoginReturnUrl() : (request()->query('return_url') ?: filament()->getCurrentPanel()->getUrl())]) }}"
+        href="{{ route('google.login', ['return_url' => method_exists($this, 'getGoogleLoginReturnUrl') ? $this->getGoogleLoginReturnUrl() : (request()->query('return_url') ?: url('/seo'))]) }}"
         class="w-full">
         Tiếp tục với Google
     </x-filament::button>

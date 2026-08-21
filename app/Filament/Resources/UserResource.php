@@ -14,7 +14,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
 class UserResource extends Resource
@@ -25,9 +24,7 @@ class UserResource extends Resource
 
     public static function canAccess(): bool
     {
-        $role = (string) (auth()->user()?->role ?? '');
-
-        return in_array($role, [User::ROLE_ADMIN, User::ROLE_OWNER], true);
+        return (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER;
     }
 
     public static function form(Form $form): Form
@@ -73,7 +70,7 @@ class UserResource extends Resource
                             ->live()
                             ->native(false)
                             ->afterStateUpdated(function (Set $set, ?string $state): void {
-                                if (in_array($state, [User::ROLE_ADMIN, User::ROLE_OWNER], true)) {
+                                if ($state === User::ROLE_OWNER) {
                                     $set('parent_id', null);
                                     $set('manager_id', null);
                                 }
@@ -209,7 +206,6 @@ class UserResource extends Resource
                 Tables\Filters\SelectFilter::make('role')
                     ->label(__('Filter by rule'))
                     ->options([
-                        'admin' => 'Admin',
                         'owner' => 'Owner',
                         'manager' => 'Manager',
                         'staff' => 'Staff',
@@ -263,12 +259,6 @@ class UserResource extends Resource
             });
         }
 
-        if ($actor instanceof User && (string) $actor->role === User::ROLE_ADMIN) {
-            return $query->withoutGlobalScopes([
-                SoftDeletingScope::class,
-            ]);
-        }
-
         return $query->whereRaw('1 = 0');
     }
 
@@ -291,17 +281,16 @@ class UserResource extends Resource
      */
     private static function roleOptionsForActor(): array
     {
-        $all = [
-            User::ROLE_ADMIN => 'Administrator',
-            User::ROLE_OWNER => 'Chủ sở hữu (Owner)',
-            User::ROLE_MANAGER => 'Quản lý (Manager)',
-            User::ROLE_STAFF => 'Nhân viên (Staff)',
-        ];
-
+        // Client installation roles: owner | staff only (no legacy admin / org-manager).
         if ((string) (auth()->user()?->role ?? '') === User::ROLE_OWNER) {
-            unset($all[User::ROLE_ADMIN], $all[User::ROLE_OWNER]);
+            return [
+                User::ROLE_STAFF => 'Nhân viên (Staff)',
+            ];
         }
 
-        return $all;
+        return [
+            User::ROLE_OWNER => 'Chủ sở hữu (Owner)',
+            User::ROLE_STAFF => 'Nhân viên (Staff)',
+        ];
     }
 }

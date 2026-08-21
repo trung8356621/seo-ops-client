@@ -7,8 +7,8 @@ namespace Tests\Unit;
 use App\Models\User;
 use App\Services\Users\UserHierarchyService;
 use Illuminate\Validation\ValidationException;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\TestCase;
 
 final class UserHierarchyServiceTest extends TestCase
 {
@@ -30,7 +30,7 @@ final class UserHierarchyServiceTest extends TestCase
         self::assertContains('avatar', $fillable);
     }
 
-    public function test_hierarchy_service_clears_links_for_owner_and_admin(): void
+    public function test_hierarchy_service_clears_links_for_owner(): void
     {
         $service = new UserHierarchyService;
 
@@ -44,17 +44,20 @@ final class UserHierarchyServiceTest extends TestCase
 
         self::assertNull($ownerData['parent_id']);
         self::assertNull($ownerData['manager_id']);
+    }
 
-        $adminData = $service->normalizeFormData([
+    public function test_legacy_admin_role_is_invalid_for_hierarchy(): void
+    {
+        $service = new UserHierarchyService;
+
+        $this->expectException(ValidationException::class);
+        $service->normalizeFormData([
             'role' => User::ROLE_ADMIN,
             'parent_id' => 99,
             'manager_id' => 88,
             'name' => 'Admin',
             'email' => 'a@example.com',
         ], actor: null);
-
-        self::assertNull($adminData['parent_id']);
-        self::assertNull($adminData['manager_id']);
     }
 
     public function test_manager_requires_owner(): void

@@ -26,19 +26,19 @@ final class RefactorFixtureSeeder extends Seeder
     {
         AddonManager::discover();
 
-        $admin = User::query()->updateOrCreate(
-            ['email' => 'admin@refactor.test'],
+        $owner = User::query()->updateOrCreate(
+            ['email' => 'owner@refactor.test'],
             [
-                'name' => 'Refactor Admin',
+                'name' => 'Refactor Owner',
                 'password' => Hash::make('password'),
-                'role' => User::ROLE_ADMIN,
+                'role' => User::ROLE_OWNER,
             ],
         );
 
         $site = Site::query()->updateOrCreate(
             ['domain' => 'demo-wp.refactor.test'],
             [
-                'user_id' => $admin->id,
+                'user_id' => $owner->id,
                 'status' => 'active',
             ],
         );
@@ -91,14 +91,14 @@ final class RefactorFixtureSeeder extends Seeder
             );
 
             if (method_exists($connection, 'users')) {
-                $connection->users()->syncWithoutDetaching([$admin->id]);
+                $connection->users()->syncWithoutDetaching([$owner->id]);
             }
             if (method_exists($connection, 'sites')) {
                 $connection->sites()->syncWithoutDetaching([$site->id]);
             }
         }
 
-        $this->seedSeoBusinessFixture((int) $admin->id, (int) $site->id);
+        $this->seedSeoBusinessFixture((int) $owner->id, (int) $site->id);
     }
 
     private function seedSeoBusinessFixture(int $userId, int $siteId): void

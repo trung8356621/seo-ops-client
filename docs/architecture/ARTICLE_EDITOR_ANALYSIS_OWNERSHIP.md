@@ -8,7 +8,7 @@
 
 | Concern | Owner |
 |---------|--------|
-| Immediate word/link/heading/keyword/image-ratio analysis | **React** (`composeImmediateArticleAnalysis` → `computeSeoAnalysis` + policy) |
+| Immediate word/link/heading/keyword/image/table/list analysis | **React** (`createCurrentDraftAnalysisSnapshot` → `composeImmediateArticleAnalysis` → `computeSeoAnalysis` + policy) |
 | Widget health presentation | React (`assistantWidgetHealth`) consuming composed analysis + media snapshot |
 | Thresholds / reason registry / aliases | **Laravel** `ArticleEditorAnalysisPolicyService` |
 | External facts (trust/wiki refresh flags) | Laravel `external_facts` |
@@ -32,19 +32,19 @@ Canonical thresholds (PHP constants consumed by policy):
 
 ## Input / output
 
-Input (composed): document HTML, focus keyword, article type, media snapshot (via article id store), external facts, policy.
+Input (composed): current TipTap editor document + export HTML, focus keyword, article type, external facts, policy.
 
 Output: `{ score, violations, metrics, reasons, analysis_owner: 'react_immediate', policy_version }`.
 
-Image counts prefer `mediaSnapshot.content_images` via `resolveContentImageCounts`.
+Word, heading, image, table, list and link counts share one current-draft `DocumentModel` snapshot. Persisted body and server media snapshots do not replace these live editor counts.
 
 ## Re-analyze semantics
 
-Local checks (length, links, ratio, keyword, featured/gallery presentation) update live (~250ms debounce).
+Local checks (length, links, ratio, keyword and Featured Snippet structure) update live after a 450ms trailing debounce.
 
-Re-analyze / retry label = refresh **external/server facts**, not required for local score.
+Re-analyze runs the same local snapshot immediately. It does not call the PHP preview scorer.
 
-Save API may emit `seo-editor-analyze-result` → React **recomputes locally** (does not adopt server score as SoT).
+Persist/save still runs the PHP scorer for canonical server score, audit and sync consumers. Its result does not replace the unsaved live editor score.
 
 ## Widget severity
 

@@ -45,9 +45,9 @@ HTML Renderer (export / WP / clipboard only)
 
 Priority: live model → PM JSON → blocks→JSON → HTML compat.
 
-Word count / H2 / links / intro keyword slice use DocumentModel.
+Word count / headings / links / images / tables / lists / intro keyword slice share one current-draft DocumentModel snapshot.
 
-Image **counts** still prefer Phase 2A media snapshot; ratio word count uses DocumentModel.
+Live SEO image counts come from the current draft. Phase 2A media snapshot remains the source for media integrity/featured/gallery widgets, not live content scoring.
 
 ## Inventory (Phase 3 cut)
 
@@ -55,8 +55,8 @@ Image **counts** still prefer Phase 2A media snapshot; ratio word count uses Doc
 |----------|------|-------------|---------|
 | SEO analysis word/H2/links/intro | compat only | DocumentModel | done |
 | FAQ presence (scoring) | fallback parse | `selectFaqPlaceholders` + FAQ snapshot | done |
-| Featured snippet presence | score HTML | `selectTables` presence | partial |
-| Image ratio counts | export HTML alts | media snapshot (2A) + DM words | done |
+| Featured snippet presence/tier | — | current-draft table nodes | done |
+| Image ratio counts | — | current-draft image nodes + DM words | done |
 | CTA/FAQ/image insert | — | TipTap `insertContent` nodes | already PM |
 | Save / WP / clipboard | serialize SoT | not yet persist JSON | later |
 | Outline / link scroll / block split | still HTML | — | remaining |
@@ -67,7 +67,6 @@ Image **counts** still prefer Phase 2A media snapshot; ratio word count uses Doc
 - `exportBlocksToHtml` / save payload / WP sync
 - FAQ answer TipTap (`getHTML`) — separate domain (Phase 2C)
 - Outline / link scroll / block split that still read `block.content` HTML (migrate incrementally)
-- Featured snippet **score** still scans export HTML tables (`seoContentBonus`)
 
 ## Not in this phase
 
