@@ -1,9 +1,10 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-08-13  
+> Last verified: 2026-08-22  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
-> Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)
+> Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
+> Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -27,6 +28,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Feature | Owner path |
 |---------|------------|
 | Article / editor bug | `omnichannel-addons/content` |
+| Editor widget locks (featured/images/publishing/status) | Manifest `content/editor-widget-locks.json` — see client `docs/architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md` |
 | Featured / gallery | `omnichannel-addons/media` |
 | WP sync / bridge | `omnichannel-addons/wordpress` |
 | Publishing schedule/queue | `omnichannel-addons/publishing` |

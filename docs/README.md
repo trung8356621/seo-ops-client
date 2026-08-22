@@ -46,7 +46,8 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [ARTICLE_EDITOR_SESSION_LOCK.md](architecture/ARTICLE_EDITOR_SESSION_LOCK.md) | Phase 1 server edit-session lock + document_version |
 | [ARTICLE_EDITOR_MEDIA_SNAPSHOT.md](architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) | Phase 2A Featured/Gallery media snapshot ownership |
 | [ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md) | Phase 2B React immediate analysis + Laravel policy |
-| [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) | Phase 2C FAQ/CTA ownership + insertion context |
+| [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) | FAQ/CTA/Reviews ownership + FAQ vs schema semantics |
+| [ARTICLE_EDITOR_WIDGET_LOCKS.md](architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) | Dynamic Editor widget lock manifest / CLI / guard |
 | [ARTICLE_EDITOR_DOCUMENT_MODEL.md](architecture/ARTICLE_EDITOR_DOCUMENT_MODEL.md) | Phase 3 TipTap JSON DocumentModel + selectors |
 | [ARTICLE_EDITOR_COMMAND_LAYER.md](architecture/ARTICLE_EDITOR_COMMAND_LAYER.md) | Phase 4 Editor Command Layer + document-changed signal |
 | [ARTICLE_EDITOR_JSON_PERSISTENCE.md](architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) | Phase 5A TipTap JSON persistence + derived HTML body |

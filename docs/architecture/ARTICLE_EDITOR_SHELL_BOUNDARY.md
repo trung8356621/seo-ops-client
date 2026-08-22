@@ -7,7 +7,7 @@
 
 | Surface | Owner |
 |---------|--------|
-| Editor dock chips / search / health badges | **React runtime** (`EditorSidebarNavigation`) |
+| Editor dock chips / health badges | **React runtime** (`EditorSidebarNavigation`) |
 | Active editor panel id | **Runtime navigation** (`openPanel` / `getActivePanel`) |
 | Widget health for chips | **Runtime health store** (`editorRuntimeHealthStore`) |
 | Panel slot visibility (Alpine `x-show`) | Alpine **read-only** mirror of runtime (`runtimeActivePanel`) |
@@ -29,6 +29,12 @@ Blade must not render `x-for="chip in chips"` or hard-code dock chip IDs.
 Publishing stays outside runtime sidebar registry.
 
 Dock shows Publishing / Article as **shell boundary items** (`SHELL_BOUNDARY_NAV_ITEMS`) rendered beside registry chips. Selecting them calls `openPanel('publishing'|'article')` for exclusive accordion only — lifecycle/Sync WP/queue remain Livewire/Alpine.
+
+Technical lock ID for the Article-info chip is `status` (display label currently `Trạng thái`). See [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](ARTICLE_EDITOR_WIDGET_LOCKS.md).
+
+## Dock search
+
+The dock **Search assistants** UI was removed. Chips render directly; do not reintroduce a filter/search layer unless product explicitly requests it.
 
 ## Compatibility events (deprecated bus)
 

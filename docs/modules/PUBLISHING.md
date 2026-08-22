@@ -79,6 +79,17 @@ Publishing Queue: header checkbox (trang hiện tại) → banner “Chọn toà
 | Date/time | `SystemDateTime`, `SeoDateTimeSettingsService` |
 | Handoff eligibility | `PublishingQueueHandoffEligibility` |
 
+### Handoff eligibility notes
+
+`PublishingQueueHandoffEligibility::canSend`:
+
+- Already queued / in-flight queue states → deny.
+- Published without `has_unpublished_changes` → deny.
+- **`improve` tasks:** manual-only path — **no** generation completion prerequisite; requires `has_unpublished_changes`; deny while genuinely running or non-unscheduled queue residue.
+- Other task types: require generation completed / reviewing / execution success (or `generation_completed_at`), and not pending/failed ops.
+
+Detail: `publishing/src/Support/PublishingQueue/PublishingQueueHandoffEligibility.php`.
+
 Operations center may show queue health; it does not own a second dispatcher.
 
 ## 3. Main components

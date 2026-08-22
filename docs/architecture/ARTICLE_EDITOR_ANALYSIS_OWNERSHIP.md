@@ -46,18 +46,33 @@ Re-analyze runs the same local snapshot immediately. It does not call the PHP pr
 
 Persist/save still runs the PHP scorer for canonical server score, audit and sync consumers. Its result does not replace the unsaved live editor score.
 
+## FAQ analysis input
+
+Canonical selector: `seo/resources/js/utils/articleFaqCanonicalState.js`.
+
+| Signal | Violation |
+|--------|-----------|
+| No FAQ content (no schema rows, no count hint, no unhydrated HTML/placeholder) | `faq_missing` |
+| Has FAQ content/hint but no valid Q/A schema rows | `faq_schema_missing` |
+| Valid schema rows | (no FAQ violation) |
+
+Pass `faqCountHint` from editor badge/count while FAQ owner rows are unhydrated. Do **not** pass `faqs: []` as “known empty” before hydrate — use `undefined` / unknown owner state.
+
+Detail: [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md).
+
 ## Widget severity
 
 - Images: integrity = error; ALT = warning; `image_ratio_low` = **info** (not red badge as hard error)
 - Links: `links_below_minimum` with `current/minimum/missing` params from policy
 - Featured/Gallery: media snapshot Phase 2A + policy `featured.alt_required` / `gallery.required`
 
-## Remaining Phase 2C
+## Remaining debt (not Phase 2C reopen)
 
-- FAQ / CTA ownership
 - Full TipTap-JSON-only parser (no dual HTML/DOM paths)
 - Browser E2E caret proof
 - Optional: drop save-patch analyze nudge if redundant with local idle analyze
+
+FAQ / CTA ownership is documented in [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) (Phase 2C closed for ownership).
 
 ## Legacy cleanup
 

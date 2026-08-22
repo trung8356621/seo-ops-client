@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-17  
+> Updated: 2026-08-22  
 > Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
 
 ## 1. Documentation Map
@@ -22,9 +22,21 @@ The current documentation set is organized as a canonical docs system for the Om
 
 - The editor is treated as a dedicated island: Livewire shell plus React/TipTap runtime.
 - 2026-08 fixes (canonical changelog: `docs/architecture/ARTICLE_EDITOR_FIXES_2026_08.md`): Outline heading rename local-first; AI media placeholder/hang/double-image; Featured/Gallery/Outline/AI locale via `content/resources/js/utils/i18n.js`.
+- **2026-08-21/22 (uncommitted working tree):** Editor widget locks + FAQ/Reviews UX — see below.
 - Active Content Project article: editor hides **all** manual Sync WP chrome (UI-only). First WP create stays on Publishing Queue.
 - Any change must preserve session lock, `document_version`, TipTap JSON document model, command layer, media snapshot ownership, and WordPress sync separation.
 - WordPress sync must not be conflated with local editor save; conflict policy and field ownership need to remain explicit.
+
+### Editor widget locks + FAQ/Reviews (2026-08-21/22)
+
+- Stable widgets frozen: `featured`, `images`, `publishing`, `status` (display **Trạng thái**; runtime `panelId` = `article`).
+- Manifest SoT: `omnichannel-addons/content/editor-widget-locks.json`. Guard never hard-codes IDs.
+- Client docs: `docs/architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md`. Rule: `.cursor/rules/editor-widget-locks.mdc`.
+- Commands (from `omnichannel-client`): `npm run widget-lock -- status|unlock|lock|seal`, `npm run check:editor-widget-locks`.
+- FAQ content ≠ FAQ schema: `seo/.../articleFaqCanonicalState.js` → `faq_missing` vs `faq_schema_missing`. Lazy mount must pass `initialFaqs={undefined}`, not `[]`.
+- Reviews: load attempt always resolves (success or failure); no endless spinner on API fail.
+- Dock **Search assistants** UI removed; chips render directly (`ARTICLE_EDITOR_SHELL_BOUNDARY.md`).
+- Panel-filter mode: panel body owns vertical scroll (`min-height: 0` flex).
 
 ### Content Projects
 
@@ -78,15 +90,13 @@ The current documentation set is organized as a canonical docs system for the Om
 
 ## 3. Current Working-Tree Caution
 
-At the time this summary was updated, the worktree already contained many modified application files and docs from prior tasks. Future agents should inspect `git status --short` before editing and must not revert unrelated user/agent changes.
+At the time this summary was updated (**2026-08-22**), both repos have **uncommitted** Editor/widget-lock work. Inspect `git status --short` before editing; do not revert unrelated changes.
 
-Notable modified areas seen:
+**omnichannel-client (uncommitted):** `AGENTS.md`, `docs/architecture/ARTICLE_EDITOR_*` (incl. new `ARTICLE_EDITOR_WIDGET_LOCKS.md`), `docs/README.md`, `NEW_AGENT_HANDOFF.md`, `package.json` scripts, `.cursor/rules/editor-widget-locks.mdc`.
 
-- Article Editor PHP, React runtime, media utilities, and tests.
-- Content Project archive/restore/sync services and tests.
-- WordPress sync services and contract tests.
-- SEO image optimization, media slug fix, GSC, audit scan, and related tests.
-- Canonical docs for Article Editor, Content Projects, and WordPress Bridge.
+**omnichannel-addons (uncommitted):** `AGENTS.md`, `content/editor-widget-locks.json` + lock scripts, FAQ canonical state + SEO analyzer/score changes, dock search removal, Reviews load-fail UI, related selftests.
+
+Committed baseline same day: client `0.1.2`, addons `0.1.4` (broader editor/session/cluster work — not all reflected in module docs yet).
 
 ## 4. Operational Rules To Remember
 

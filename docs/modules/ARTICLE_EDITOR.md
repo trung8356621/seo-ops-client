@@ -1,8 +1,8 @@
 # Article Editor
 
 > Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Owner: content (+ seo / media / publishing peers)  
+> Last verified: 2026-08-22  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -103,11 +103,14 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Document mutations | `executeEditorCommand` command layer | Direct `editor.chain()` in widgets — see [`ARTICLE_EDITOR_COMMAND_LAYER.md`](../architecture/ARTICLE_EDITOR_COMMAND_LAYER.md) |
 | Canonical editable document | `articles.editor_document` TipTap envelope; `body` derived HTML | HTML-only save as SoT — see [`ARTICLE_EDITOR_JSON_PERSISTENCE.md`](../architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) |
 | Editor module wiring | Runtime slots + `EditorSidebarPortalHost` / toolbar registry / nav API | Hard-coded panel switch in `SeoArticleEditor` — see [`ARTICLE_EDITOR_RUNTIME.md`](../architecture/ARTICLE_EDITOR_RUNTIME.md) |
-| Editor dock navigation (6C.1) | React `EditorSidebarNavigation` + runtime `openPanel` / health store | Alpine chips/`activePanel`/health SoT — Blade mount roots only; Publishing shell boundary — [`ARTICLE_EDITOR_SHELL_BOUNDARY.md`](../architecture/ARTICLE_EDITOR_SHELL_BOUNDARY.md) |
+| Editor dock navigation (6C.1) | React `EditorSidebarNavigation` + runtime `openPanel` / health store (no dock search UI) | Alpine chips/`activePanel`/health SoT — Blade mount roots only; Publishing shell boundary — [`ARTICLE_EDITOR_SHELL_BOUNDARY.md`](../architecture/ARTICLE_EDITOR_SHELL_BOUNDARY.md) |
 | Links/FAQ/CTA modules (6C.2) | Runtime sidebar panels + command host actions; FAQ extract REST | Old `ArticleEditorModuleHost` Links/FAQ branches + insert CustomEvent — see [`ARTICLE_EDITOR_RUNTIME.md`](../architecture/ARTICLE_EDITOR_RUNTIME.md) + [`ARTICLE_EDITOR_LEGACY_CLEANUP.md`](../architecture/ARTICLE_EDITOR_LEGACY_CLEANUP.md) |
 | Featured/Gallery + Shared Media Picker (6C.3) | React panels + `openMediaPicker` modes + media snapshot APIs | Alpine Featured/Gallery draft + Alpine media modal — see [`ARTICLE_EDITOR_MEDIA_SNAPSHOT.md`](../architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) |
 | AI Chat runtime (6C.4) | `article-editor.ai` + host generate actions; ModuleHost removed | Legacy ModuleHost — see [`ARTICLE_EDITOR_RUNTIME_COMPLETION.md`](../architecture/ARTICLE_EDITOR_RUNTIME_COMPLETION.md) |
 | FAQ domain | Laravel `faq_snapshot` API (`seo_faqs`); React draft/preview | Livewire FAQ shadow / LS SoT — see [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) |
+| FAQ content vs schema (SEO) | `articleFaqCanonicalState.js` (`faq_missing` / `faq_schema_missing`); lazy `initialFaqs={undefined}` | Equating “has FAQ questions” with “has FAQ schema” |
+| Reviews panel load | Resolve success **or** failure (`reviewsLoaded`); warn + Refresh on fail | Endless `!loaded` spinner |
+| Stable widget locks | Manifest `content/editor-widget-locks.json` + CLI/guard | Silent edits to frozen Featured/Images/Publishing/Status — [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](../architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) |
 | CTA quick templates | Laravel domain CTA settings API | localStorage CTA templates SoT |
 | FAQ catch keywords | `SeoOverviewSettingsService::KEY_FAQ_CATCH_KEYWORDS` | Hardcoded VI/EN only when setting empty |
 
@@ -321,6 +324,9 @@ npm run build
 ## 16. Related documents
 
 - [ARTICLE_EDITOR_FIXES_2026_08.md](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) — outline local-first, AI media hang/double-image, locale pass (2026-08)
+- [ARTICLE_EDITOR_WIDGET_LOCKS.md](../architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) — frozen Featured/Images/Publishing/Status
+- [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) — FAQ/CTA/Reviews + FAQ vs schema
+- [ARTICLE_EDITOR_SHELL_BOUNDARY.md](../architecture/ARTICLE_EDITOR_SHELL_BOUNDARY.md) — dock chips / no search / status lock id
 - [MEDIA_AND_GALLERY.md](MEDIA_AND_GALLERY.md) — upload, watermark, WP media sync
 - [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — score cache consumers
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) / [PUBLISHING.md](PUBLISHING.md)
@@ -330,7 +336,7 @@ npm run build
 
 ### Scoring model (durable)
 
-`score = max(0, 100 - sum(deductions))`. Display always from current violations + registry. Key deductions include `missing_focus_keyword` (100), `h2_missing` (20), `content_length_low` (15), image/FAQ/snippet/keyword-in-* rules.
+`score = max(0, 100 - sum(deductions))`. Display always from current violations + registry. Key deductions include `missing_focus_keyword` (100), `h2_missing` (20), `content_length_low` (15), image/snippet/keyword-in-* rules, plus FAQ split: `faq_missing` (no FAQ content) vs `faq_schema_missing` (content/hint present, schema rows not ready).
 
 ### Vite editor roots
 

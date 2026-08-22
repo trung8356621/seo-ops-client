@@ -24,6 +24,42 @@
 - AI: `generatePreview` returns rows without persist; user **Apply** → `apply` writes faqs + session-aware body inject.
 - Legacy Livewire `saveArticleFaqs` / `generateArticleFaqs` remain for non-editor callers; React editor path uses REST.
 
+### FAQ content vs FAQ schema (SEO)
+
+Canonical selector: `seo/resources/js/utils/articleFaqCanonicalState.js` (`selectCanonicalFaqState`).
+
+| Field | Meaning |
+|-------|---------|
+| `faq_question_count` | Valid FAQ questions (rows and/or bootstrap hint) |
+| `has_faq_content` | `faq_question_count > 0` or unhydrated HTML/placeholder signal |
+| `has_faq_schema` | Valid Q/A rows ready for FAQ schema |
+
+SEO must **not** equate “has FAQ questions” with “has FAQ schema”.
+
+Examples:
+
+- 5 questions + schema rows → FAQ check OK
+- 5 questions (bootstrap/hint) without schema rows → `faq_schema_missing`  
+  message: `Đã có 5 câu hỏi FAQ nhưng chưa có FAQ schema.`
+- 0 questions → `faq_missing` (missing FAQ content)
+
+Lazy mount: `article-editor.jsx` passes `initialFaqs={undefined}` (unhydrated). Do **not** pass `[]` or SEO will treat FAQ as owner-known empty.
+
+## Reviews loading lifecycle
+
+- Full review rows load when the Reviews heavy module is active (`activeHeavyModule === 'reviews'`).
+- A load attempt must resolve: success **or** failure sets `reviewsLoaded` and clears `reviewsLoading`.
+- UI must not spin forever on API failure (`ArticleReviewsTab` shows warning/empty, not endless `!loaded` spinner).
+- Badge count may still hydrate lazily via status endpoint; that must not block Reviews body rendering.
+
+## Panel body scrolling
+
+In panel-filter mode, dock/header stay fixed; **panel body** owns `overflow-y: auto` (`min-height: 0` flex chain). Applies to SEO, Publishing, and Status (`article` / Trạng thái) bodies in `article-editor.css`.
+
+## Stable widget locks
+
+See [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](ARTICLE_EDITOR_WIDGET_LOCKS.md).
+
 ## CTA / contact
 
 - Usable contacts only (PHP filter + JS defense).

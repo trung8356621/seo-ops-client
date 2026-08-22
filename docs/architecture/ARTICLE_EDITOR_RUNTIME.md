@@ -22,7 +22,7 @@ executeEditorCommand (Phase 4) + TipTap (cached extensions)
 
 | Surface | Canonical path |
 |---------|----------------|
-| Dock chips / search / health badges | `EditorSidebarNavigation` ← `getSidebarEntries()` + health store |
+| Dock chips / health badges | `EditorSidebarNavigation` ← `getSidebarEntries()` + health store |
 | Active panel | `editorRuntimeNavigation` only |
 | Blade | Mount roots only (`article-editor-sidebar-navigation-root`) |
 | Alpine `seoAssistantNavigator` | Read-only `runtimeActivePanel` for `x-show` — no chips/health/activePanel SoT |

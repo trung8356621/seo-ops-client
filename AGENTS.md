@@ -21,3 +21,5 @@ Business SEO, Content, Media, WordPress, Publishing, Site Sync, Prompts, Search 
 
 ## Feature routing
 See workspace root docs / sibling `omnichannel-addons/AGENTS.md`.
+
+Editor widget locks: all registered Editor widgets locked except `seo` (intentionally unlocked for active development). See `addons/content/editor-widget-locks.json`, `npm run check:editor-widget-locks`, `npm run widget-lock -- status`.

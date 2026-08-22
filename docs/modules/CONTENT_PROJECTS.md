@@ -57,7 +57,7 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Run seed | `Services/SeoProjectWorkflowRunService` (`startRun` + `prepareRunQueue`) |
 | Article job | `Jobs/RunContentProjectArticleJob` |
 | Rerun gate | `Application/Support/ContentProjectRerunEligibilityGuard` |
-| Generate pending set | `ContentProjectItemGenerationClassifier` |
+| Generate pending set | `ContentProjectItemGenerationClassifier` + `ContentProjectProjectGenerationGate` |
 | Ops read model | `ContentProjectItemOperationsReadModel` |
 | Publishing Queue read model | `ContentProjectPublishingQueueReadModel` (`forProject` scoped, `forHub` cross-project) |
 | Generation Needs Review read-state | `ContentProjectGenerationReadStateStore` + `seo_content_project_item_generation_read_states` (per user/item `viewed_generation_completed_at`) |
@@ -168,9 +168,16 @@ Laravel-only articles (`wp_post_id` null) remain assignable — assignment must 
 
 1. Tenant + reject archived project.
 2. Pipeline validate; resolve item set (explicit refs or pending via classifier; fail-closed full-project unless technical confirm).
-3. `ActionGuard::assertCan(Generate)`.
-4. Under `BusinessLock::projectGenerate`: `startRun` + `prepareRunQueue` (both required).
-5. Outside lock: `ContentProjectRunEngine::start($run)` (idempotent kick). Web returns immediately.
+3. Re-evaluate eligibility server-side (`classifier->preview` + improve-manual-only filter). Skip ineligible items; do not require uniform project state.
+4. Project-level **Generate working items** is blocked only by a *live* multi-item `MODE_FULL` run (stale/expired runs do not count). One item `Processing` does not disable the bulk action.
+5. **Test run** is gated independently (`MODE_TEST` live run only) — not by unrelated item state or Publishing Queue.
+6. `ActionGuard::assertCan(Generate)`.
+7. Under `BusinessLock::projectGenerate`: `startRun` + `prepareRunQueue` (both required).
+8. Outside lock: `ContentProjectRunEngine::start($run)` (idempotent kick). Web returns immediately.
+
+**Generate working items:** bulk over *currently eligible* working-set items (mixed Generated / Pending / Needs Review / Publishing Queue / Published is allowed). Rewrite/improve `article_id` is the source article — it does not mean “already generated”. Publishing Queue items are out of the working set and are not selected.
+
+**Test run:** independently gated; not blocked by unrelated item processing or mixed project state.
 
 **Operator skip generation (not `skip_publish`):** durable columns on `seo_project_tasks` — `generation_blocked_at` / `generation_blocked_by` / `generation_block_reason`. Canonical scope `SeoProjectTask::eligibleForGeneration()` (+ `isGenerationBlocked()`). Classifier preview uses the scope; `classifySnapshot` skips with reason `generation_blocked`; rerun/resume/Generate fail closed with message `Item đã được đánh dấu bỏ qua tạo bài.` Commands: `BlockProjectItemGenerationCommand` / `UnblockProjectItemGenerationCommand` (planner/manager via `canAccessContentProjectRun`). UI: **Bỏ qua tạo bài** / **Cho phép tạo lại** + badge Skipped. Does not delete article/content.
 
@@ -185,6 +192,16 @@ Archived project note: Article Editor FAQ/CTA body mutations blocked via session
 | `RerunProjectItemsCommand` | `RerunProjectItemsHandler` | `validateFull()` — **explicit full rerun from start** |
 
 **Default Failed-row Retry = resume, not full rerun.** Primary UI action «Tiếp tục từ bước lỗi» and Agent/MCP `content_project.resume_failed_step` resolve the first retryable failed step from the **latest run-item attempt**, set `rerun_from_step`, reuse valid upstream artifacts (`ArtifactReusePolicy`), invalidate failed + downstream. Fail closed when `failed_step_key` cannot be resolved. Empty `item_refs` never expands to project-wide. Menu «Chạy lại từ đầu» is the separate full-rerun action (cost warning).
+
+### «Chạy lại với từ khóa» (fresh keyword restart)
+
+Canonical: `ContentProjectFreshKeywordRestart` (`generation_mode = fresh_keyword_restart`) + `ContentProjectFreshKeywordWorkspaceResetService`.
+
+- Isolated generation input: stamps `generation_keyword_override`; does **not** inherit previous generation / existing outline.
+- UI label: `item_action_restart_with_keyword` → «Chạy lại với từ khóa».
+- Distinct from Failed-row resume and full «Chạy lại từ đầu».
+
+**Improve lifecycle:** `improve` tasks are **manual-only** by default for Publishing Queue handoff — see [`PUBLISHING.md`](PUBLISHING.md) (`PublishingQueueHandoffEligibility`). No generation-completion prerequisite; requires unpublished changes and must not be already queued/scheduled.
 
 **Dismiss stale Failed overlay (no AI):** when content/lifecycle already OK (e.g. Published) but Generation still shows Failed from a soft domain-write error, UI «Bỏ qua lỗi (giữ nội dung)» / `content_project.acknowledge_generation_error` marks latest failed run-item `success`, clears `error_message`, and may flip sticky task `failed|writing|processing` → `completed` if `article_id` present. Does **not** regenerate. Prefer this CTA over resume when lifecycle ∈ published/approved/review/waiting_publish and article exists.
 

@@ -76,7 +76,13 @@ Keys mới (prefix): `editor_featured_*`, `editor_product_album_*`, `editor_gall
 
 Còn sót có thể có ở panel/module khác ngoài scope lần này — ưu tiên surface user nhìn thấy trên Edit Article.
 
-## 4. Verify
+## 4. Widget locks + FAQ/Reviews UX (2026-08-21/22)
+
+- Freeze Featured / Images / Publishing / Status via `content/editor-widget-locks.json` + CLI/guard — [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](ARTICLE_EDITOR_WIDGET_LOCKS.md).
+- FAQ content vs schema (`faq_missing` / `faq_schema_missing`) — [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md).
+- Reviews load always settles; dock Search assistants removed; panel body owns scroll.
+
+## 5. Verify
 
 ```text
 # remote / host
@@ -84,7 +90,8 @@ $PHP_BIN vendor/bin/phpunit --filter=ArticleEditorPhase4ClientUtilitiesTest
 $PHP_BIN vendor/bin/phpunit --filter=ArticleEditorSyncWpVisibilityTest
 
 # local frontend (omnichannel-client)
+npm run check:editor-widget-locks
 npm run build
 ```
 
-Smoke: mở Edit Article — đổi locale `vi`/`en` — kiểm tra Featured / Gallery / Outline / AI Media labels + toast.
+Smoke: mở Edit Article — đổi locale `vi`/`en` — kiểm tra Featured / Gallery / Outline / AI Media labels + toast. Before editing locked widgets: `npm run widget-lock -- status`.
