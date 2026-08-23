@@ -201,6 +201,15 @@ Canonical: `ContentProjectFreshKeywordRestart` (`generation_mode = fresh_keyword
 - UI label: `item_action_restart_with_keyword` → «Chạy lại với từ khóa».
 - Distinct from Failed-row resume and full «Chạy lại từ đầu».
 
+**Per-item generation keyword override (inline table edit):**
+
+- Original `seo_project_tasks.keyword` is **never** overwritten by override or bulk regen.
+- Optional column `generation_keyword_override` — canonical resolver `ContentProjectGenerationKeyword::effective()`.
+- Inline double-click on Keywords column → save via `SetItemGenerationKeywordOverrideCommand` (no workspace reset).
+- Display: original (muted/strike) → effective override + badge «Đã đổi»; dirty badge when last successful run input ≠ effective keyword.
+- **Generate working items** includes dirty generated items; routes them through canonical `RestartGenerationWithKeywordCommand` (not normal first-generate). Never-generated items with override use normal generate with effective keyword.
+- After successful fresh-keyword run, override persists; `commitCanonicalKeyword` updates override + article `seo_focus_keyword`, not project keyword catalog.
+
 **Improve lifecycle:** `improve` tasks are **manual-only** by default for Publishing Queue handoff — see [`PUBLISHING.md`](PUBLISHING.md) (`PublishingQueueHandoffEligibility`). No generation-completion prerequisite; requires unpublished changes and must not be already queued/scheduled.
 
 **Dismiss stale Failed overlay (no AI):** when content/lifecycle already OK (e.g. Published) but Generation still shows Failed from a soft domain-write error, UI «Bỏ qua lỗi (giữ nội dung)» / `content_project.acknowledge_generation_error` marks latest failed run-item `success`, clears `error_message`, and may flip sticky task `failed|writing|processing` → `completed` if `article_id` present. Does **not** regenerate. Prefer this CTA over resume when lifecycle ∈ published/approved/review/waiting_publish and article exists.
