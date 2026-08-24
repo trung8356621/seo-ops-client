@@ -67,6 +67,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Content Projects | [CONTENT_PROJECTS.md](modules/CONTENT_PROJECTS.md) |
 | Publishing | [PUBLISHING.md](modules/PUBLISHING.md) — includes System Date & Time + queue pending UX |
 | Article Editor | [ARTICLE_EDITOR.md](modules/ARTICLE_EDITOR.md) |
+| Article Execution History | [ARTICLE_EXECUTION_HISTORY.md](modules/ARTICLE_EXECUTION_HISTORY.md) |
 | Site Sync | [SITE_SYNC.md](modules/SITE_SYNC.md) |
 | WordPress Bridge | [WORDPRESS_BRIDGE.md](modules/WORDPRESS_BRIDGE.md) |
 | Site MCP / Domains | [SITE_MCP_AND_DOMAINS.md](modules/SITE_MCP_AND_DOMAINS.md) |

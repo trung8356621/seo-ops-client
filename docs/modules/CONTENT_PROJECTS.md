@@ -459,6 +459,7 @@ Freeze grep invariants: no production `ContentProjectBulkRerunService`, `Content
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md) — Agent/MCP surface (owned elsewhere)
 - [SITE_SYNC.md](SITE_SYNC.md) — catalog sync ≠ publish
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — editor save vs CP publish; Sync WP hidden while in active CP
+- [ARTICLE_EXECUTION_HISTORY.md](ARTICLE_EXECUTION_HISTORY.md) — per-article Workflow tab (canvas + AI Calls overlay)
 - [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — Audit / KI assign callers
 - [ADDON_ARCHITECTURE.md](../architecture/ADDON_ARCHITECTURE.md) — Assign UI contract (CLOSED)
 - [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) — 2026-08 assign consolidation

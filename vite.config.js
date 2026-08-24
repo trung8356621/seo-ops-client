@@ -23,6 +23,7 @@ export default defineConfig({
                 'addons/content-projects/resources/js/automation-workflow-viewer.jsx',
                 'addons/content-projects/resources/css/automation-workflow-viewer.css',
                 'addons/content/resources/js/article-editor.jsx',
+                'addons/content/resources/js/article-execution-history.jsx',
                 'addons/media/resources/js/article-media-picker-cache-bootstrap.js',
                 'addons/content/resources/css/article-edit-page.css',
                 'addons/seo/resources/js/article-seo-preview.jsx',

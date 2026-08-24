@@ -137,10 +137,21 @@ Prompt Hook execute
 
 Task / Content Project workflow
   → TaskWorkflowTestRunner prompt nodes → PromptRunnerService / ExplicitBinding
+  → outline role node → ArticleOutlineVocabularySplitExecutor (structure + vocabulary = 2 PromptResults)
   → each successful prompt registers typed artifact (article_outline | article_content | …)
   → action nodes consume only declared typed dependencies (PromptTestPublishService)
+  → partial rerun: flushPendingArticleContentIfNeeded() when content artifact exists but save_article skipped
   → WP outbound only via wordpress.* / Publishing module
 ```
+
+**Split outline hooks (canonical pair):**
+
+| Hook | Role |
+|------|------|
+| `article.outline.structure.generate` | Task 1 — structure |
+| `article.vocabulary.generate` | Task 2 — vocabulary |
+
+Legacy combined hook `article.outline.generate` still resolves on outline nodes via `isOutlineRoleNode()`. Install default split prompts: `php artisan seo:prompt:install-split-outline-prompts`. Inspector overlay: [ARTICLE_EXECUTION_HISTORY.md](./ARTICLE_EXECUTION_HISTORY.md).
 
 **Artifact ownership (canonical):**
 
@@ -318,6 +329,7 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 - `docs/contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md`
 - `docs/modules/AUTOMATION.md`
 - `docs/modules/CONTENT_PROJECTS.md`
+- `docs/modules/ARTICLE_EXECUTION_HISTORY.md`
 - `docs/modules/PUBLISHING.md`
 - `docs/modules/OPERATIONS_AND_OBSERVABILITY.md`
 - `docs/operations/TESTING.md`

@@ -258,6 +258,7 @@ No second scheduler for editor autosave — client debounce (local draft + serve
 - Content Manager ops UI is edit-only (Draft / Needs Review / In Review + Total badge); no Generate/Queue/Retry/Approve/Schedule/Publish. Planner **Send to Publishing Queue** handoff — Sync/Save ≠ Publish.
 - **Save/Sync ≠ Published:** editor `articles.status=published` must not drive Content Project lifecycle Published. Only real WordPress publish success (`publish_published_at` / queue published) bumps Published.
 - **Lịch sử AI** (`/{article}/prompts`): manual preview / apply typed artifacts (`article_outline` | `article_content`) into editor draft/session. Apply does **not** auto-save, publish, sync WP, or change generation/run status. Outline and content are independent targets. Pending draft in `article_meta.seo_ai_history_pending_draft`; provenance committed on article save via `ArticleAiHistoryApplyService::commitPendingOnSave`.
+- **Execution History** (tab **Workflow** on same page): read-only workflow canvas + per-node AI Calls overlay. See [ARTICLE_EXECUTION_HISTORY.md](./ARTICLE_EXECUTION_HISTORY.md).
 
 ## 13. Compatibility paths
 
