@@ -58,6 +58,9 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Article job | `Jobs/RunContentProjectArticleJob` |
 | Rerun gate | `Application/Support/ContentProjectRerunEligibilityGuard` |
 | Generate pending set | `ContentProjectItemGenerationClassifier` + `ContentProjectProjectGenerationGate` |
+| Bulk generate partition | `ContentProjectBulkGenerationPlanner` (first-generate vs keyword-restart) |
+| Generation keyword resolver | `Support/ContentProject/ContentProjectGenerationKeyword` |
+| Keyword override command | `SetItemGenerationKeywordOverrideCommand` → `SetItemGenerationKeywordOverrideHandler` |
 | Ops read model | `ContentProjectItemOperationsReadModel` |
 | Publishing Queue read model | `ContentProjectPublishingQueueReadModel` (`forProject` scoped, `forHub` cross-project) |
 | Generation Needs Review read-state | `ContentProjectGenerationReadStateStore` + `seo_content_project_item_generation_read_states` (per user/item `viewed_generation_completed_at`) |
@@ -91,10 +94,12 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Content archive (item/project) | `seo_project_tasks.archived_at` / normalized `archived`, `seo_projects.archived_at` | `review_status = archived` |
 | Manual Index checklist | `articles.indexed_at` + `articles.previous_indexed_at` (2 latest only; preview may patch `article_snapshot`) | Google index status / GSC |
 | Publish queue | `publish_queue_status` + `publish_published_at` + `scheduled_publish_at` | Task `status` alone |
-| Run | `seo_project_runs.status` via Run Engine mappers | Client Alpine “isRunning” |
+| Run | `seo_project_runs.status` via Run Engine mappers | Client Alpine `processingRows` (instant feedback only; table SoT after refresh) |
 | Project workflow flag | `seo_projects.status` — **non-authoritative for items** (Class A/B/C in `ContentProjectStatusDecision`) | Item phase/counters |
 
 Task types: `create` \| `rewrite` \| `improve`. Post types (create): `article`, `product`, `category`, `product_category`. Identity: `UNIQUE(project_id, source_key)`.
+
+**Generation keyword (item-level):** `seo_project_tasks.keyword` = original project input (immutable by override/regen). Optional `seo_project_tasks.generation_keyword_override` = per-item operational correction. Effective input = `ContentProjectGenerationKeyword::effective()` (`override ?: keyword`). Run-level `generation_keyword_override` in `seo_project_runs.settings` remains the fresh-keyword-restart execution stamp only — do not conflate with the task column.
 
 **Item identity (create/rewrite):** Project item requires at least one of keyword or post_title. Both may be provided. Canonical validator: `Support/ContentProject/ContentProjectItemIdentity` (`filled(keyword) || filled(post_title)`). Used by Filament form, sync normalizer, Command Bus add/update, MCP/Agent, generation guards. AI outline/article generation may generate or optimize the final title — do not invent a fake keyword/title only to pass validators, and do not persist topic fallback as if the user entered `post_title`.
 
@@ -209,6 +214,7 @@ Canonical: `ContentProjectFreshKeywordRestart` (`generation_mode = fresh_keyword
 - Display: original (muted/strike) → effective override + badge «Đã đổi»; dirty badge when last successful run input ≠ effective keyword.
 - **Generate working items** includes dirty generated items; routes them through canonical `RestartGenerationWithKeywordCommand` (not normal first-generate). Never-generated items with override use normal generate with effective keyword.
 - After successful fresh-keyword run, override persists; `commitCanonicalKeyword` updates override + article `seo_focus_keyword`, not project keyword catalog.
+- Migration: `2026_08_22_100000_add_generation_keyword_override_to_seo_project_tasks.php` on `omi_seo_ai`.
 
 **Improve lifecycle:** `improve` tasks are **manual-only** by default for Publishing Queue handoff — see [`PUBLISHING.md`](PUBLISHING.md) (`PublishingQueueHandoffEligibility`). No generation-completion prerequisite; requires unpublished changes and must not be already queued/scheduled.
 
@@ -258,6 +264,10 @@ Require explicit `item_refs` (fail-closed — empty selection never expands to a
 **Module boundary:** Content Project = content production only (workspace = the Normal/working-set items). Publishing Queue = schedule + WordPress publication, owned by **Publishing Queue Hub** (`PublishingQueueHub`, slug `publishing-queue`, nested under Content Projects nav; optional `?projectId=`). Legacy nested `content-projects/{id}/publishing-queue` remains a compat redirect. `publishing_queued_at` ownership unchanged.
 
 **Shared ops UI (CP ↔ PQ):** both pages reuse `content-project-ops-styles`, `content-project-summary-cards`, `content-project-filter-toolbar` (`variant`), `content-project-bulk-selection-toolbar` (`variant`), `content-project-items-list` (`variant`), thumbnail/meta/status-badge. CP actions: `content-project-item-actions-menu` + `ContentProjectItemActionsPresenter`. PQ actions: `publishing-queue-item-actions-menu` + `PublishingQueueItemActionsPresenter` (includes **View on WordPress** when publish state = published and stored `wp_permalink` is a valid URL). Edit-article anchors use real `href` + `target="_blank"` / `rel="noopener noreferrer"` (claim Needs Review is side-effect only — no `preventDefault` navigation).
+
+**Ops table realtime refresh (generation):** Client-only optimistic row state (`processingRows` + `cp-ops-row-processing`) gives instant **Running** feedback on row actions / bulk generate — **not** authoritative. After bulk **Generate working items** succeeds, `ViewSeoProject::dispatchGenerate()` invalidates ops cache and dispatches `cp-ops-generation-started` with affected task IDs. Alpine `startGenerationTablePoll()` polls `doLazyRefresh(true)` → `manualRefreshOps()` (full table remorph) on an interval until summary `running` returns to 0; toolbar shows `ops_lazy_refreshing` («Checking updates…» / «Đang kiểm tra cập nhật…») while `lazyBusy`. On failure / zero eligible items, `cp-ops-generation-failed` clears optimistic processing. Modal «Chạy lại với từ khóa» uses the same refresh pattern on terminal completion (`waitRestartKeywordTerminal` → `doLazyRefresh(true)`). Summary-only lazy fetch (`fetchOpsSummaryOnly` + `skipRender`) updates KPI cards only — never remorphs the item table.
+
+**Keyword column (inline edit):** component `content-project-keyword-cell` — double-click Keywords cell; save/revert via `SetItemGenerationKeywordOverrideCommand`. Display partial shows original → override + dirty badge when generation input changed.
 
 **Counters (reporting):** CM Save `needs_review−1/review+1`; enqueue Draft→Pending `draft−1/pending+1`; approve from Needs Review `needs_review−1/approved+1`; approve In Review `review−1/approved+1`; self-edit after viewed `approved+1`; schedule from Approved `approved−1/scheduled+1`; schedule from Needs Review `needs_review−1/scheduled+1`; schedule from In Review `review−1/scheduled+1`.
 
