@@ -240,10 +240,12 @@ No Prompt Hook schedule owner — workflows/CP/Agent own cadence.
 - Jump migration `legacy` → `hook` without `shadow`.
 - Recommendations page treated as runtime routing config.
 
-## 15. AI Center (Models / Routing)
+## 15. AI Center (Models / Routing / Resilience / Health)
 
 Filament page: `Omnichannel\Addons\AiPrompt\Filament\Pages\SeoSettingsAiCenter`  
 Blade/lang shell: `seo-content-ai-compat` (`resources/views/filament/pages/seo-settings-ai-center.blade.php`).
+
+Main tabs (locked order): **Models | Routing | Resilience | Health**.
 
 ### Product ownership (locked)
 
@@ -251,16 +253,21 @@ Blade/lang shell: `seo-content-ai-compat` (`resources/views/filament/pages/seo-s
 |---------|------|
 | **Models** | Enabled targets per area (Text/Image/Video), display order / priority |
 | **Routing** | Per execution profile: **Automatic** vs **Custom** filter only |
+| **Resilience** | Fallback attempt budgets only (`max_ai_attempts` / `max_free_attempts`) |
+| **Health** | Operational connection/model status after real provider requests (presentation only) |
 | Provider short code (`[OR]`, …) | **Display only** — never execution identity |
 
 Canonical execution identity: `connectionId|familyKey` (example: `3|openai.gpt54_mini`).  
 Custom Allowed Models store `allowed_execution_keys` (full keys) + derived family keys; order still comes from Models priority.
 
+**Text Routing cards** show that order follows Models (`text_routing_follows_models`). They do **not** expose a “Manage model order” shortcut — reorder only on the **Models** tab.
+
 ### UI lifecycle (do not regress)
 
 - Main tab / capability state is **Alpine-only** on `#ai-center-root` (`wire:ignore.self`). Do not reintroduce Livewire `queryString` tab sync or dual CSS-hidden panels — that remounts Alpine and stacks Models+Routing.
 - First open of Routing may `loadPanel('routing')` once; subsequent Models↔Routing switches must not spam Livewire.
-- Sortable draft is local until **Save order**; tick/Custom edits use existing unsaved-changes + **Save settings** (no auto-save-on-tick).
+- Sortable draft is local until **Save order** on the **Models** tab; Routing Text profiles do not deep-link into that reorder UI.
+- Tick/Custom edits use existing unsaved-changes + **Save settings** (no auto-save-on-tick).
 - Unknown catalog rows appear in Models only after explicit **Add** (`omi_areas` / `AiModelPriorityService::isExplicitlyAreaEnabled`).
 
 ### OpenRouter curated Text catalog

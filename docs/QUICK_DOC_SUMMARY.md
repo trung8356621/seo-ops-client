@@ -80,11 +80,13 @@ The current documentation set is organized as a canonical docs system for the Om
 - SEO React controls should use `SeoSelect`.
 - Modals, drawers, and popovers should open/close immediately through Alpine/JavaScript; Livewire should handle loading, validation, persistence, and server actions.
 
-### AI Center (Models / Routing)
+### AI Center (Models / Routing / Resilience / Health)
 
-- Canonical module doc: `docs/modules/PROMPTS_AND_AI.md` § **AI Center (Models / Routing)**.
-- Models = enable/order; Routing = Automatic vs Custom filter; short code `[OR]` is display-only.
-- Execution identity: `connectionId|familyKey`. Persist Custom via `AiRoutingTargetService::saveSimplifiedSelection`.
+- Canonical module doc: `docs/modules/PROMPTS_AND_AI.md` § **AI Center (Models / Routing / Resilience / Health)**.
+- Tabs: Models | Routing | Resilience | Health.
+- Models = enable/order; Routing = Automatic vs Custom filter; Resilience = attempt budgets; Health = operational status UI.
+- Text Routing has **no** “Manage model order” link — reorder only on Models.
+- Short code `[OR]` is display-only. Execution identity: `connectionId|familyKey`. Persist Custom via `AiRoutingTargetService::saveSimplifiedSelection`.
 - Curated OpenRouter Text catalog: `OpenRouterTextRoutingCatalog` + `php artisan seo:ai:ensure-openrouter-text-routing [--user=]` (idempotent). Does not touch Image/Video routing.
 - Tab state Alpine-only on `#ai-center-root`; do not restore Livewire tab `queryString` dual-panel sync.
 

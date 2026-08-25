@@ -197,6 +197,7 @@ return [
         ['owner' => 'core', 'any' => [
             'add_connection_type_to_api_connections',
             'ensure_connection_type_on_api_connections',
+            'ai_runtime_health',
             'seo_gsc_master',
             'seo_gsc_property',
             'seo_dataforseo',
