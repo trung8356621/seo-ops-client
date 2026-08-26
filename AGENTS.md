@@ -23,3 +23,6 @@ Business SEO, Content, Media, WordPress, Publishing, Site Sync, Prompts, Search 
 See workspace root docs / sibling `omnichannel-addons/AGENTS.md`.
 
 Editor widget locks: all registered Editor widgets locked except `seo` (intentionally unlocked for active development). See `addons/content/editor-widget-locks.json`, `npm run check:editor-widget-locks`, `npm run widget-lock -- status`.
+
+## Docs trigger
+When the user says `XONG!`, run `$docs-update-on-xong` (`.agents/skills/docs-update-on-xong/`) and follow `.cursor/rules/auto-update-docs.mdc`. Canonical docs live under `docs/modules|contracts|architecture|operations` — not `docs/archive/*`.

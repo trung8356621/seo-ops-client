@@ -82,7 +82,19 @@ Còn sót có thể có ở panel/module khác ngoài scope lần này — ưu t
 - FAQ content vs schema (`faq_missing` / `faq_schema_missing`) — [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md).
 - Reviews load always settles; dock Search assistants removed; panel body owns scroll.
 
-## 5. Verify
+## 5. Domain link list — soft match + locate (2026-08-26)
+
+**Problem:** Domain link list showed `article_count` (other articles), exact-phrase-only filter, click did not jump (esp. collapsed sections).
+
+**Fix:**
+- Client Domain Link stack (`domainLink*.js`): soft lexical match, occurrence index, locate via `scrollToLink` + `blockId`, selection-aware insert.
+- UI hides `occurrence_count === 0`; `(n)` = in-article candidates.
+- Internal Links matcher/filter unchanged.
+
+**Doc:** [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](ARTICLE_EDITOR_DOMAIN_LINK_LIST.md)  
+**Tests:** `node --test addons/content/resources/js/__tests__/domainLinkMatcher.test.mjs`
+
+## 6. Verify
 
 ```text
 # remote / host
@@ -91,7 +103,8 @@ $PHP_BIN vendor/bin/phpunit --filter=ArticleEditorSyncWpVisibilityTest
 
 # local frontend (omnichannel-client)
 npm run check:editor-widget-locks
+node --test addons/content/resources/js/__tests__/domainLinkMatcher.test.mjs
 npm run build
 ```
 
-Smoke: mở Edit Article — đổi locale `vi`/`en` — kiểm tra Featured / Gallery / Outline / AI Media labels + toast. Before editing locked widgets: `npm run widget-lock -- status`.
+Smoke: mở Edit Article — đổi locale `vi`/`en` — kiểm tra Featured / Gallery / Outline / AI Media labels + toast. Before editing locked widgets: `npm run widget-lock -- status`. Links → Domain link list: click jumps; `(n)` = in-article matches; 0 hidden.

@@ -191,7 +191,8 @@ No Filament Queue Manager UI.
 |------|-----------|
 | SeoAccessControl consumers | Rank gates + read-only admin |
 | Site MCP product_cat | Roots only `parent_term_id===0` with live/staging preference |
-| Domain link sync | Official links ↔ keyword rows |
+| Domain link sync | Official links ↔ keyword rows (catalog SoT) |
+| Domain link list (Article Editor) | Client soft match/locate; see [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 | User hierarchy | Owner/Manager/Staff column rules |
 
 ## 16. Related documents
@@ -199,7 +200,7 @@ No Filament Queue Manager UI.
 - [SITE_SYNC.md](SITE_SYNC.md) — Sync button / catalog SoT
 - [WORDPRESS_BRIDGE.md](WORDPRESS_BRIDGE.md)
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — project scoping by role
-- [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — CTA/link insert
+- [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — CTA/link insert; Domain link list → [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md)
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
 - [SYSTEM_OVERVIEW.md](../architecture/SYSTEM_OVERVIEW.md)
 - Archive: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md`

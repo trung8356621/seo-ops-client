@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content (+ seo / media / publishing peers)  
-> Last verified: 2026-08-22  
+> Last verified: 2026-08-26  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -71,6 +71,7 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Content image census | `contentImageCounter.js` — body image-blocks + inline `<img>`; featured/gallery excluded |
 | Orphan quote fix | `orphanQuoteNormalizer.js` — move quote chars outside `</p>` back into editable paragraph |
 | Link unlink / boundary | `editorLinkCommands.js` (`removeLinkKeepText`, `exitLinkAtBoundary`); Link mark `inclusive: false` |
+| Domain link list | Soft lexical inventory + locate/insert — `domainLinkMatcher.js` + `ArticleLinksSidebar.jsx`; see [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 
 ### Editor UX invariants (context preservation)
 
@@ -105,6 +106,7 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Editor module wiring | Runtime slots + `EditorSidebarPortalHost` / toolbar registry / nav API | Hard-coded panel switch in `SeoArticleEditor` — see [`ARTICLE_EDITOR_RUNTIME.md`](../architecture/ARTICLE_EDITOR_RUNTIME.md) |
 | Editor dock navigation (6C.1) | React `EditorSidebarNavigation` + runtime `openPanel` / health store (no dock search UI) | Alpine chips/`activePanel`/health SoT — Blade mount roots only; Publishing shell boundary — [`ARTICLE_EDITOR_SHELL_BOUNDARY.md`](../architecture/ARTICLE_EDITOR_SHELL_BOUNDARY.md) |
 | Links/FAQ/CTA modules (6C.2) | Runtime sidebar panels + command host actions; FAQ extract REST | Old `ArticleEditorModuleHost` Links/FAQ branches + insert CustomEvent — see [`ARTICLE_EDITOR_RUNTIME.md`](../architecture/ARTICLE_EDITOR_RUNTIME.md) + [`ARTICLE_EDITOR_LEGACY_CLEANUP.md`](../architecture/ARTICLE_EDITOR_LEGACY_CLEANUP.md) |
+| Domain link list (Links panel) | Client soft lexical matcher + occurrence locate/insert; catalog from SEO resolver | Server exact-phrase as live count SoT; Internal Links matcher reuse — [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 | Featured/Gallery + Shared Media Picker (6C.3) | React panels + `openMediaPicker` modes + media snapshot APIs | Alpine Featured/Gallery draft + Alpine media modal — see [`ARTICLE_EDITOR_MEDIA_SNAPSHOT.md`](../architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) |
 | AI Chat runtime (6C.4) | `article-editor.ai` + host generate actions; ModuleHost removed | Legacy ModuleHost — see [`ARTICLE_EDITOR_RUNTIME_COMPLETION.md`](../architecture/ARTICLE_EDITOR_RUNTIME_COMPLETION.md) |
 | FAQ domain | Laravel `faq_snapshot` API (`seo_faqs`); React draft/preview | Livewire FAQ shadow / LS SoT — see [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) |
@@ -327,6 +329,7 @@ npm run build
 - [ARTICLE_EDITOR_FIXES_2026_08.md](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) — outline local-first, AI media hang/double-image, locale pass (2026-08)
 - [ARTICLE_EDITOR_WIDGET_LOCKS.md](../architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) — frozen Featured/Images/Publishing/Status
 - [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) — FAQ/CTA/Reviews + FAQ vs schema
+- [ARTICLE_EDITOR_DOMAIN_LINK_LIST.md](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) — Domain link list soft match / locate / insert
 - [ARTICLE_EDITOR_SHELL_BOUNDARY.md](../architecture/ARTICLE_EDITOR_SHELL_BOUNDARY.md) — dock chips / no search / status lock id
 - [MEDIA_AND_GALLERY.md](MEDIA_AND_GALLERY.md) — upload, watermark, WP media sync
 - [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — score cache consumers

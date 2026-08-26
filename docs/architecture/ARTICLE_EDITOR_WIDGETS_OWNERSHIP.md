@@ -66,6 +66,14 @@ See [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](ARTICLE_EDITOR_WIDGET_LOCKS.md).
 - Sidebar UX (chốt): insert actions use CTA **sentence** mode (`value` remaps to sentence). Raw value command remains for legacy/programmatic callers.
 - Template settings: `PUT /api/seo/domain-cta/quick-templates`; React form draft only while modal open.
 
+## Domain link list (Links panel)
+
+- Catalog SoT: SEO `EffectiveDomainLinkResolver` (custom → product_cat → main_domain).
+- Live match/count/locate/insert: **client-only** soft lexical stack — isolated from Internal Links.
+- `(n)` = in-article occurrence candidates; **hide `0`**.
+- Locate expands collapsed sections via `scrollToLink` + optional `blockId`.
+- Canonical detail: [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](ARTICLE_EDITOR_DOMAIN_LINK_LIST.md).
+
 ## Insertion context
 
 - Single store: `EditorInsertionContext` (`editorInsertionContext.js` — live + frozen).

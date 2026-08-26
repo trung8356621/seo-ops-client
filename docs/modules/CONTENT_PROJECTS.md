@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-08-13  
+> Last verified: 2026-08-26  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -81,6 +81,10 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Assign UI contract | `Support/AssignToContentProject/AssignToContentProjectContract` |
 | Assign Filament adapters | `AssignToContentProjectActionFactory` (open only — no form/modal schema) |
 | Assign drawer (canonical UI) | `content` Livewire `AssignToContentProjectDrawer` + `content::livewire.assign-to-content-project-drawer` |
+| SEO Audit / New Content Planner page | `Filament/Pages/ContentProjectSeoAuditPlanner` |
+| Draft planning items read model | `ContentProjectDraftPlanningItemsReadModel` |
+| AI New Content suggestions | `Services/ContentProject/NewContent/NewContentSuggestionPlannerService` (+ Parser / StructuredResult / Intelligence brief) |
+| Planner post_type correction | `UpdateContentProjectItemCommand` → `UpdateContentProjectItemHandler::applyPlannerPostTypeUpdate` |
 
 ## 4. Data ownership
 
@@ -98,6 +102,17 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Project workflow flag | `seo_projects.status` — **non-authoritative for items** (Class A/B/C in `ContentProjectStatusDecision`) | Item phase/counters |
 
 Task types: `create` \| `rewrite` \| `improve`. Post types (create): `article`, `product`, `category`, `product_category`. Identity: `UNIQUE(project_id, source_key)`.
+
+**AI New Content → Draft CREATE persist (Product-aware):**
+
+| Candidate field | `SeoProjectTask` column | Draft UI read-model field |
+|-----------------|-------------------------|---------------------------|
+| `description` (planning brief) | `secondary_description` | `description` (global) |
+| `gallery_description` (Product only) | `description` | `product_description` (only when `post_type=product` and non-empty) |
+| `product_type` (Product only) | `loai_san_pham` | (not shown in Draft table by default) |
+| content type | `post_type` = `article` \| `product` (`post` → `article`) | `post_type` / `post_type_label` |
+
+Inline Draft edit of Title/Keyword/Description writes global brief to `secondary_description` for CREATE items (`applyPlanningDescription`); Product gallery text on `description` is preserved when correcting `post_type` Product ↔ Post (non-destructive).
 
 **Generation keyword (item-level):** `seo_project_tasks.keyword` = original project input (immutable by override/regen). Optional `seo_project_tasks.generation_keyword_override` = per-item operational correction. Effective input = `ContentProjectGenerationKeyword::effective()` (`override ?: keyword`). Run-level `generation_keyword_override` in `seo_project_runs.settings` remains the fresh-keyword-restart execution stamp only — do not conflate with the task column.
 
@@ -166,6 +181,25 @@ Agent/MCP `content_project.add_items` is a **separate** product surface — not 
 **Exception (intentional):** Article Editor **Vocabulary** sidebar assigns inline via `EditArticle::assignVocabularyItemsToContentProject` + project `<select>` (`wp-article-vocabulary-project-select`). It must **not** open the canonical drawer. `MODE_VOCABULARY_ITEMS` remains on the contract for other/future callers.
 
 Laravel-only articles (`wp_post_id` null) remain assignable — assignment must not require WordPress. Article already in an active project: list/editor assign trigger hidden (`articleIsInContentProject`). Keyword mode hydrates project options only for currently selected sites.
+
+### SEO Audit Draft / New Content Planner (AI suggestions)
+
+Page: `ContentProjectSeoAuditPlanner` — SEO Audit + **Create new content with AI** (New Content Planner). Hook: `keyword.discovery.structured@0.1.0` (see `PROMPTS_AND_AI.md`). Domain persist: `NewContentSuggestionPlannerService` → Draft CREATE `SeoProjectTask` only (no Keyword Intelligence upsert, no article/product create at planning stage).
+
+**Structured output gate (importable JSON only):**
+
+1. Planning brief (`ContentPlanningIntelligenceService::renderBrief`) ends with **OUTPUT CONTRACT — STRICT** (JSON array root `[`…`]`; Post vs Product item shape).
+2. After provider response: `NewContentSuggestionStructuredResult::decode` (trim → optional one ```json fence → first char must be `[`/`{` → `json_decode`). **No** prose scrape for the first `[...]`.
+3. Importer SSOT: `NewContentSuggestionParser` (array or envelope `items|keywords|suggestions|results|data`).
+4. On invalid/incomplete: **at most one** format repair retry (`repairBrief`) — no new SEO research. Still invalid → fail run (`structured_output_*`); do not import.
+5. Truncated / incomplete JSON must not import. Restart queue workers after PHP changes so jobs load new code.
+
+**Draft table UI (compat Blade `content-project-draft-items`):**
+
+- Read model: `ContentProjectDraftPlanningItemsReadModel` — `description` = global brief; `product_description` = Product gallery text when `post_type=product`.
+- Post type column: plain text by default; **double-click** enters compact select (`article`/`product`) for CREATE-editable rows (`can_edit_post_type`); save via `updateDraftPlanningItem` → `UpdateContentProjectItemCommand`. Escape / blur without change exits edit. Non-editable rows stay plain text.
+- Product rows: show **Mô tả sản phẩm:** under global description when `product_description` non-empty; hide when Post (stored gallery/`loai_san_pham` not wiped on Product→Post).
+- After AI run completes: `cp-ops-refresh` + `draftPlanningRefreshNonce` remounts Draft payload — **no** `location.reload`.
 
 ### Generate
 
@@ -433,6 +467,8 @@ Summary for CP:
 12. Direct `ContentPublisher` / queue mutate from Filament callbacks.
 13. Second cron for CP publish dispatcher.
 14. Second assign drawer / centered assign modal / Filament Action `form()` for assign / new open-event name / caller-specific assign schema. Reuse Contract + ActionFactory + drawer.
+15. Import New Content Planner AI prose / truncated JSON into Draft without `NewContentSuggestionStructuredResult` validation (or scrape the first `[...]` from commentary as the primary fix).
+16. Wipe Product planning columns (`description` gallery / `loai_san_pham`) when correcting Draft `post_type` Product ↔ Post.
 
 ## 15. Tests and invariants
 
@@ -459,6 +495,7 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ArticleEditorSyncWpVisibilityTest` | Active CP editor: no Sync WP chrome |
 | `ArchitectureHardeningLockContractTest` | Related uniqueness contracts |
 | `PublishScheduledArticlesCanonicalRunnerContractTest` | Single publish scheduler shell |
+| `NewContentSuggestionStructuredResultTest` / `DraftPlanningPostTypeAndRefreshTest` / `NewContentProductPlanningBriefTest` | Planner JSON gate + Draft post_type dblclick UX + Product brief/persist |
 
 Freeze grep invariants: no production `ContentProjectBulkRerunService`, `ContentProjectStepRerunService`, `RerunArticlePipelineJob`, Filament direct `RunEngine::start`, `ContentProjectItemAction::Restore`.
 

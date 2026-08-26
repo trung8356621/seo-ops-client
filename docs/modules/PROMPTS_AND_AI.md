@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-08-17  
+> Last verified: 2026-08-26  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -150,8 +150,17 @@ Task / Content Project workflow
 |------|------|
 | `article.outline.structure.generate` | Task 1 — structure |
 | `article.vocabulary.generate` | Task 2 — vocabulary |
+| `keyword.discovery.structured@0.1.0` | Content Project New Content Planner — structured Draft suggestions (Post or Product). `model.structured_output: true`; callers validate JSON before import. Canonical markdown + OUTPUT CONTRACT in Hook JSON; runtime brief injects content-type contract via `{{brief}}`. DB Prompt markdown is not auto-overwritten (installer `restoreCanonical` only). |
 
 Legacy combined hook `article.outline.generate` still resolves on outline nodes via `isOutlineRoleNode()`. Install default split prompts: `php artisan seo:prompt:install-split-outline-prompts`. Inspector overlay: [ARTICLE_EXECUTION_HISTORY.md](./ARTICLE_EXECUTION_HISTORY.md).
+
+**New Content Planner output contract (caller-owned, not Hook Engine domain write):**
+
+- Prefer raw JSON **array** of suggestion objects. Envelope keys accepted by importer: `items` \| `keywords` \| `suggestions` \| `results` \| `data`.
+- Post item: `keyword`, `suggested_title`, `description`, `suggestion_reason`, `source_signal`.
+- Product item: same + `product_type`, `gallery_description`.
+- `source_signal`: `keyword_gap` \| `cluster_gap` \| `mcp_signal` \| `gsc_signal` \| `related_topic` \| `manual_note` \| `manual_focus`.
+- Gate/repair: `content-projects` `NewContentSuggestionStructuredResult` + one repair retry in `NewContentSuggestionPlannerService::discoverOnce`. Do not scrape prose for embedded JSON as the primary fix.
 
 **Artifact ownership (canonical):**
 

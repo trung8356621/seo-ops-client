@@ -47,13 +47,14 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [ARTICLE_EDITOR_MEDIA_SNAPSHOT.md](architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) | Phase 2A Featured/Gallery media snapshot ownership |
 | [ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md) | Phase 2B React immediate analysis + Laravel policy |
 | [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) | FAQ/CTA/Reviews ownership + FAQ vs schema semantics |
+| [ARTICLE_EDITOR_DOMAIN_LINK_LIST.md](architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) | Domain link list soft match / locate / insert (Links panel) |
 | [ARTICLE_EDITOR_WIDGET_LOCKS.md](architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) | Dynamic Editor widget lock manifest / CLI / guard |
 | [ARTICLE_EDITOR_DOCUMENT_MODEL.md](architecture/ARTICLE_EDITOR_DOCUMENT_MODEL.md) | Phase 3 TipTap JSON DocumentModel + selectors |
 | [ARTICLE_EDITOR_COMMAND_LAYER.md](architecture/ARTICLE_EDITOR_COMMAND_LAYER.md) | Phase 4 Editor Command Layer + document-changed signal |
 | [ARTICLE_EDITOR_JSON_PERSISTENCE.md](architecture/ARTICLE_EDITOR_JSON_PERSISTENCE.md) | Phase 5A TipTap JSON persistence + derived HTML body |
 | [ARTICLE_EDITOR_RUNTIME.md](architecture/ARTICLE_EDITOR_RUNTIME.md) | Phase 6A internal editor runtime (built-in modules, not public SDK) |
 | [ARTICLE_EDITOR_LEGACY_CLEANUP.md](architecture/ARTICLE_EDITOR_LEGACY_CLEANUP.md) | Post-cutover dead-code cleanup inventory + deleted/kept paths |
-| [ARTICLE_EDITOR_FIXES_2026_08.md](architecture/ARTICLE_EDITOR_FIXES_2026_08.md) | Edit Article: outline local-first, AI media hang, locale pass |
+| [ARTICLE_EDITOR_FIXES_2026_08.md](architecture/ARTICLE_EDITOR_FIXES_2026_08.md) | Edit Article: outline local-first, AI media hang, locale pass, Domain link list |
 | [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) | Assign-to-Content-Project: one right-side drawer |
 | [SEOCONTENTAI_CUTOVER_INVENTORY.json](architecture/SEOCONTENTAI_CUTOVER_INVENTORY.json) | SeoContentAi compatibility-shell cutover counts + MOVE_* buckets |
 

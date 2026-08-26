@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-22  
+> Updated: 2026-08-26  
 > Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
 
 ## 1. Documentation Map
@@ -18,11 +18,19 @@ The current documentation set is organized as a canonical docs system for the Om
 
 ## 2. Recent Conversation Themes
 
+### New Content Planner / Draft UI (2026-08-26)
+
+- **JSON-only AI result:** `keyword.discovery.structured` + `NewContentSuggestionStructuredResult` / Parser; OUTPUT CONTRACT on planning brief; one format repair retry; no prose scrape. Docs: `CONTENT_PROJECTS.md` § SEO Audit Draft / New Content Planner; `PROMPTS_AND_AI.md` hook row.
+- **Product planning persist:** brief → `secondary_description`; gallery → `description`; type → `loai_san_pham`. Read model: `description` + `product_description`.
+- **Draft Post type:** plain text + double-click select; `UpdateContentProjectItemHandler` CREATE-only; Product↔Post non-destructive. Reactive remount via `cp-ops-refresh` / `draftPlanningRefreshNonce` (no F5).
+- Ops: restart queue workers after planner PHP changes.
+
 ### Article Editor
 
 - The editor is treated as a dedicated island: Livewire shell plus React/TipTap runtime.
 - 2026-08 fixes (canonical changelog: `docs/architecture/ARTICLE_EDITOR_FIXES_2026_08.md`): Outline heading rename local-first; AI media placeholder/hang/double-image; Featured/Gallery/Outline/AI locale via `content/resources/js/utils/i18n.js`.
-- **2026-08-21/22 (uncommitted working tree):** Editor widget locks + FAQ/Reviews UX — see below.
+- **2026-08-26:** Domain link list — soft lexical match, in-article `(n)`, hide 0, click locate via expand+scroll. Doc: `ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`.
+- **2026-08-21/22:** Editor widget locks + FAQ/Reviews UX — see below.
 - Active Content Project article: editor hides **all** manual Sync WP chrome (UI-only). First WP create stays on Publishing Queue.
 - Any change must preserve session lock, `document_version`, TipTap JSON document model, command layer, media snapshot ownership, and WordPress sync separation.
 - WordPress sync must not be conflated with local editor save; conflict policy and field ownership need to remain explicit.
@@ -92,13 +100,7 @@ The current documentation set is organized as a canonical docs system for the Om
 
 ## 3. Current Working-Tree Caution
 
-At the time this summary was updated (**2026-08-22**), both repos have **uncommitted** Editor/widget-lock work. Inspect `git status --short` before editing; do not revert unrelated changes.
-
-**omnichannel-client (uncommitted):** `AGENTS.md`, `docs/architecture/ARTICLE_EDITOR_*` (incl. new `ARTICLE_EDITOR_WIDGET_LOCKS.md`), `docs/README.md`, `NEW_AGENT_HANDOFF.md`, `package.json` scripts, `.cursor/rules/editor-widget-locks.mdc`.
-
-**omnichannel-addons (uncommitted):** `AGENTS.md`, `content/editor-widget-locks.json` + lock scripts, FAQ canonical state + SEO analyzer/score changes, dock search removal, Reviews load-fail UI, related selftests.
-
-Committed baseline same day: client `0.1.2`, addons `0.1.4` (broader editor/session/cluster work — not all reflected in module docs yet).
+Inspect `git status --short` before editing; do not revert unrelated changes. New Content Planner / Draft UI changes live primarily under `omnichannel-addons` (`content-projects`, `ai-prompt` hook JSON, `seo-content-ai-compat` Draft Blade/lang). Canonical docs updated in `omnichannel-client/docs`.
 
 ## 4. Operational Rules To Remember
 
@@ -108,6 +110,7 @@ Committed baseline same day: client `0.1.2`, addons `0.1.4` (broader editor/sess
 - Do not deploy, commit, push, install dependencies, run migrations, alter databases, upload, or package the plugin unless explicitly asked.
 - Use remote-first PHPUnit commands, normally `$PHP_BIN vendor/bin/phpunit --filter=...`.
 - For JS/CSS changes, run or report the relevant build/check, normally `npm run build`.
+- When the user says `XONG!`, run `$docs-update-on-xong` (canonical module docs). Skill: `.agents/skills/docs-update-on-xong/`; rule: `.cursor/rules/auto-update-docs.mdc`.
 
 ## 5. Documentation Update Policy
 

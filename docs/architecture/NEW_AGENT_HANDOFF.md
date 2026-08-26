@@ -28,6 +28,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Feature | Owner path |
 |---------|------------|
 | Article / editor bug | `omnichannel-addons/content` |
+| Domain link list (Links panel match/locate) | Client `domainLink*.js` + SEO catalog resolver — [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 | Editor widget locks (featured/images/publishing/status) | Manifest `content/editor-widget-locks.json` — see client `docs/architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md` |
 | Featured / gallery | `omnichannel-addons/media` |
 | WP sync / bridge | `omnichannel-addons/wordpress` |
