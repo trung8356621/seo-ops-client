@@ -96,6 +96,12 @@ final class UserHierarchyService
 
     public function assertCanDelete(User $user): void
     {
+        if ($user->isSystemUser()) {
+            throw ValidationException::withMessages([
+                'role' => 'Không thể xóa tài khoản hệ thống.',
+            ]);
+        }
+
         if ((string) $user->role === User::ROLE_OWNER) {
             $hasTeam = User::query()
                 ->where('parent_id', $user->id)

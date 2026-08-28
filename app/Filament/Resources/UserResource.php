@@ -234,6 +234,7 @@ class UserResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
+                    ->visible(fn (User $record): bool => ! $record->isSystemUser())
                     ->before(function (User $record): void {
                         app(UserHierarchyService::class)->assertCanDelete($record);
                         app(UserHierarchyService::class)->detachStaffFromManager($record);
@@ -253,7 +254,11 @@ class UserResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->with(['owner', 'manager']);
+        $query = parent::getEloquentQuery()
+            ->with(['owner', 'manager'])
+            ->where(function (Builder $builder): void {
+                $builder->where('is_system', false)->orWhereNull('is_system');
+            });
         $actor = auth()->user();
 
         if ($actor instanceof User && (string) $actor->role === User::ROLE_OWNER) {

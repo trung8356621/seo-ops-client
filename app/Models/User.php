@@ -53,6 +53,7 @@ class User extends Authenticatable implements FilamentUser
         'role',
         'seo_role',
         'status',
+        'is_system',
         'name',
         'email',
         'password',
@@ -67,6 +68,27 @@ class User extends Authenticatable implements FilamentUser
      * @var list<string>
      */
     protected $appends = ['display_name'];
+
+    protected static function booted(): void
+    {
+        static::deleting(function (User $user): void {
+            if ($user->isSystemUser()) {
+                throw new \RuntimeException('System user cannot be deleted.');
+            }
+        });
+
+        static::forceDeleting(function (User $user): void {
+            if ($user->isSystemUser()) {
+                throw new \RuntimeException('System user cannot be deleted.');
+            }
+        });
+    }
+
+    public function isSystemUser(): bool
+    {
+        return (bool) ($this->is_system ?? false)
+            || strcasecmp((string) ($this->email ?? ''), \App\Services\Users\SeoOpsSystemUser::EMAIL) === 0;
+    }
 
     public function isStaff(): bool
     {
@@ -85,6 +107,10 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
+        if ($this->isSystemUser()) {
+            return false;
+        }
+
         if ((string) ($this->status ?? '') === self::STATUS_BLOCK) {
             return false;
         }
@@ -96,6 +122,13 @@ class User extends Authenticatable implements FilamentUser
             default => false,
         };
     }
+
+    /**
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'is_system' => 'boolean',
+    ];
 
     /**
      * Owner of this Manager/Staff (column parent_id).

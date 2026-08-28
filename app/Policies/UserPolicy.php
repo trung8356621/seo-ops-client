@@ -43,6 +43,10 @@ class UserPolicy
      */
     public function delete(User $user, User $model): bool
     {
+        if ($model->isSystemUser()) {
+            return false;
+        }
+
         return (string) $user->role === User::ROLE_OWNER
             && (int) $model->id !== (int) $user->id
             && (int) $model->parent_id === (int) $user->id;
