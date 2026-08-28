@@ -22,9 +22,11 @@ class ControlServer extends Page implements HasForms
 
     protected static ?string $navigationIcon = 'heroicon-o-signal';
 
+    protected static ?string $navigationGroup = 'Hệ thống';
+
     protected static ?string $slug = 'control-server';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 1;
 
     protected static string $view = 'filament.pages.control-server';
 

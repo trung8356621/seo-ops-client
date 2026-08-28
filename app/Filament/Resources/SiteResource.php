@@ -23,8 +23,8 @@ class SiteResource extends Resource
         return auth()->user()?->role === \App\Models\User::ROLE_OWNER;
     }
 
-    /** Menu cấp cao, không gom chung nhóm khác */
-    protected static ?string $navigationGroup = null;
+    /** Menu cấp cao trong nhóm Quản lý */
+    protected static ?string $navigationGroup = 'Quản lý';
 
     protected static ?int $navigationSort = 1;
 

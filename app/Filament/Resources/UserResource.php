@@ -22,6 +22,10 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
+    protected static ?string $navigationGroup = 'Quản lý';
+
+    protected static ?int $navigationSort = 0;
+
     public static function canAccess(): bool
     {
         return (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER;

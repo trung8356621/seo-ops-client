@@ -8,6 +8,7 @@ use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -20,6 +21,12 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
+use Omnichannel\Addons\Agent\Filament\Pages\AutomationFlowsPage;
+use Omnichannel\Addons\Agent\Filament\Pages\AutomationSettings;
+use Omnichannel\Addons\Agent\Filament\Pages\AutomationWorkflowBuilder;
+use Omnichannel\Addons\Agent\Filament\Resources\AutomationExecutionResource;
+use Omnichannel\Addons\Agent\Filament\Resources\AutomationRuleResource;
+use Omnichannel\Addons\SearchFoundation\Filament\Pages\AutomationOperationsDashboard;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -40,6 +47,11 @@ class AdminPanelProvider extends PanelProvider
                 'primary' => Color::Amber,
             ])
             ->maxContentWidth(MaxWidth::Full)
+            ->navigationGroups([
+                NavigationGroup::make('Quản lý'),
+                NavigationGroup::make('Hệ thống'),
+                NavigationGroup::make('Automation'),
+            ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
@@ -70,12 +82,22 @@ class AdminPanelProvider extends PanelProvider
     }
 
     /**
-     * Addon runtime (Service.is_active snapshot) boots in AppServiceProvider.
-     * /admin is the local client shell only — not an addon or Automation product panel.
-     * SEO / Automation UI belongs to the /seo panel.
+     * Register Automation product UI on /admin (owner-only shell).
+     * SEO business UI stays on /seo; legacy /seo/automation/* redirects here.
      */
     private function discover_addons(Panel $panel): Panel
     {
-        return $panel;
+        return $panel
+            ->pages([
+                Pages\Dashboard::class,
+                AutomationFlowsPage::class,
+                AutomationOperationsDashboard::class,
+                AutomationSettings::class,
+                AutomationWorkflowBuilder::class,
+            ])
+            ->resources([
+                AutomationRuleResource::class,
+                AutomationExecutionResource::class,
+            ]);
     }
 }

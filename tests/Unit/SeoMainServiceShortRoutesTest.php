@@ -20,6 +20,24 @@ final class SeoMainServiceShortRoutesTest extends TestCase
         $this->assertSame('seo/{connection_hash}/content-operations', $hash->uri());
     }
 
+    public function test_keywords_and_content_projects_have_short_routes(): void
+    {
+        $keywords = Route::getRoutes()->getByName('filament.seo-main.resources.keywords.index');
+        $projects = Route::getRoutes()->getByName('filament.seo-main.resources.content-projects.index');
+
+        $this->assertNotNull($keywords);
+        $this->assertNotNull($projects);
+        $this->assertSame('seo/keywords', $keywords->uri());
+        $this->assertSame('seo/content-projects', $projects->uri());
+    }
+
+    public function test_admin_automation_flows_route_exists(): void
+    {
+        $flows = Route::getRoutes()->getByName('filament.admin.pages.automation.flows');
+        $this->assertNotNull($flows);
+        $this->assertSame('admin/automation/flows', $flows->uri());
+    }
+
     public function test_rewrite_main_service_alias_middleware_is_gone(): void
     {
         $this->assertFalse(class_exists(

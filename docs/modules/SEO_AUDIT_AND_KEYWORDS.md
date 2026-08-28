@@ -84,6 +84,8 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | GSC facts | `seo_gsc_daily_metrics` etc. (`omi_seo_ai`) | Legacy SiteMeta snapshot |
 | Hub legacy KPI | SiteMeta `gsc_query_snapshot` | GSC Intelligence tables (separate stack) |
 | SERP snapshots | Immutable SERP snapshot models | Mutating approved topical maps |
+| **Keyword Dictionary** | Flat `keywords` inventory (phrase + type + site meta) | Legacy `keywords.parent_id` hierarchy (dropped 2026-08-27) |
+| **Keyword grouping** | Cluster (`cluster_key` / Topic Cluster index) | Parent/child keyword tree |
 
 Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_`, `kwt_`, `tmv_`, `kwa_`, `kwrel_`, `kwam_`, `kwtcl_`, `kci_*`, SERP `srpq_`/`srps_`/…, GSC `gscp_`/`gscs_`/….
 

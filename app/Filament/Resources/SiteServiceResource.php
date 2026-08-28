@@ -27,7 +27,7 @@ class SiteServiceResource extends Resource
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
     // Đặt vào nhóm Site Management để quản lý tập trung
-    protected static ?string $navigationGroup = 'Site Management';
+    protected static ?string $navigationGroup = 'Quản lý';
 
     protected static ?int $navigationSort = 2;
 

@@ -25,9 +25,9 @@ class SeoDatabaseConnectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $navigationGroup = 'Site Management';
+    protected static ?string $navigationGroup = 'Hệ thống';
 
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'seo-database-connections';
 
