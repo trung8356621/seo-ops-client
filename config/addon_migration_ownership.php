@@ -119,6 +119,10 @@ return [
             'product_review',
             'article_product_review',
         ]],
+        ['owner' => 'social', 'any' => [
+            'seo_social_profile',
+            'social_profile',
+        ]],
         ['owner' => 'media', 'any' => [
             'seo_media',
             'watermark',
