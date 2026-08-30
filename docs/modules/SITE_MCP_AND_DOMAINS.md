@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core User hierarchy)  
-> Last verified: 2026-08-01  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md` (high-level — discard prompt dumps / exhaustive file indexes)
 
 ## 1. Purpose
@@ -34,6 +34,7 @@ Prefix: `/seo/{connection_hash}/`
 | `domains/settings` | `DomainGlobalCtaSettings` |
 | `domains/{record}/info` | Redirect → edit |
 | `seo/team` | `SeoTeam` (manager) |
+| `social` | `SocialProfilesPage` — per-site Social Profile CRUD (nav often via Performance Hub link; `shouldRegisterNavigation` may be false) |
 
 Widgets: All-domains list / projects / team productivity.
 
@@ -58,6 +59,8 @@ Widgets: All-domains list / projects / team productivity.
 | Org hierarchy | `User` + `UserHierarchyService` (core) |
 | Team UI | `Filament/Pages/SeoTeam` |
 | Team messages | `TeamMessageController` + SSE transport |
+| Social Profile (per site) | `social/` — `SocialProfile` + `SocialProfilesPage` (slug `social`) + `SocialProfileReadService` |
+| Panel nav (WP-style modules) | `Seo\Support\SeoUserNavigation` + `SeoPanelRoutes` |
 
 ## 4. Data ownership
 
@@ -69,8 +72,11 @@ Widgets: All-domains list / projects / team productivity.
 | Main domain | user/site meta `seo_is_main` | per-user primary site |
 | Sync progress | Incremental/Metadata/Keyword resync caches | state machines + stale TTLs |
 | Taxonomy parents | Article/term meta `wp_parent_id` including `"0"` | Site MCP fail-closed if wiped |
+| Social Profile | `social_profiles` (site-scoped) | platform / display_name / profile_url / `is_active` — identity for manual share; **not** Electron auto-post |
 
 **Save Domain Settings** persists tone/CTA/links only — no keyword full-site HTML scrape, no Site Sync run (see SITE_SYNC).
+
+**Social Profile:** CRUD on `SocialProfilesPage`; read DTO via `SocialProfileReadService`. Used with Performance Hub **GSC Social Top 10** (`GscSocialTop10Builder` — deterministic from GSC MCP, no AI). Does **not** feed SEO Audit Idea Candidates / Vocabulary Suggest. Invariant: GSC MCP ≠ SEO Audit Idea Suggest ≠ Vocabulary Suggest.
 
 Draft Main Topics: live WP `product_cat` roots (`term_id>0`, `parent_term_id===0`) preferred over heuristics.
 

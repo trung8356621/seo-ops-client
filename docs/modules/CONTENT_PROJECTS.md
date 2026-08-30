@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-08-26  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -85,6 +85,15 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Draft planning items read model | `ContentProjectDraftPlanningItemsReadModel` |
 | AI New Content suggestions | `Services/ContentProject/NewContent/NewContentSuggestionPlannerService` (+ Parser / StructuredResult / Intelligence brief) |
 | Planner post_type correction | `UpdateContentProjectItemCommand` → `UpdateContentProjectItemHandler::applyPlannerPostTypeUpdate` |
+| Draft → Execution split | `SplitDraftContentProjectCommand` → `SplitDraftContentProjectHandler` → `Draft/SplitDraftContentProjectService` (+ Livewire `InteractsWithDraftSplit`) |
+| Writer fair allocation | `Support/ContentProject/ContentProjectWriterAllocator` |
+| Execution packing (max 30) | `ContentProjectExecutionPackingService` + `ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS` |
+| Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — not a hard monthly gate |
+| Writer assignment display | `ContentProjectWriterAssignment` — System User id = unassigned |
+| Projects list buckets | `Support/ContentProject/ContentProjectListBucket` (`all` \| `draft` \| `project` \| `archived`) |
+| SEO Audit Notes (cluster→DNA) | `AuditNotes/AuditNoteClusterSuggestionQuery` + `AuditNoteDnaNormalizer` + `AuditNotePromptSectionBuilder` (+ `InteractsWithAuditNotes`) |
+| Idea Candidates (Vocabulary Suggest → Draft) | `IdeaCandidates/*` + Livewire `InteractsWithIdeaCandidates` → `AddIdeaCandidatesCommand` |
+| EP naming / packing repair | `seo:repair-execution-project-naming` / `seo:repair-execution-project-packing` |
 
 ## 4. Data ownership
 
@@ -200,6 +209,54 @@ Page: `ContentProjectSeoAuditPlanner` — SEO Audit + **Create new content with 
 - Post type column: plain text by default; **double-click** enters compact select (`article`/`product`) for CREATE-editable rows (`can_edit_post_type`); save via `updateDraftPlanningItem` → `UpdateContentProjectItemCommand`. Escape / blur without change exits edit. Non-editable rows stay plain text.
 - Product rows: show **Mô tả sản phẩm:** under global description when `product_description` non-empty; hide when Post (stored gallery/`loai_san_pham` not wiped on Product→Post).
 - After AI run completes: `cp-ops-refresh` + `draftPlanningRefreshNonce` remounts Draft payload — **no** `location.reload`.
+
+### Idea Candidates (Vocabulary Suggest → Draft)
+
+Planner / SEO Audit / View project (`InteractsWithIdeaCandidates`): user **picks ideas first** (no AI in this step).
+
+- Source catalog: `IdeaCandidateSourceCatalog` — currently **`vocabulary_suggest` only** (hook-ready for later sources). **Not** GSC MCP / Social Top 10.
+- Read: `IdeaCandidateQueryService` → `VocabularySuggestStagingQuery::forSite` (`TYPE_SUGGEST` + `ai_generated` staging rows). No separate Ideas table.
+- Actions Create / Rewrite / Improve → Draft via `AddIdeaCandidatesCommand` → `IdeaCandidateDraftPlannerService`.
+- Dismiss: `DismissVocabularySuggestCandidateService` (does not touch GSC MCP).
+
+### SEO Audit Notes (cluster → topic → DNA)
+
+Planning notes on SEO Audit / Planner (`InteractsWithAuditNotes`):
+
+1. Suggestions = Cluster SSOT (`KeywordClusterQuery` + `SiteMcpClusterTopicalProfileBuilder`); sort **MCP share ASC** (then name). List is lightweight (DNA counts only). Filters: `all` \| `mcp_low` \| `<5%` \| `has_focus` \| `no_focus`. Page size 25.
+2. Select cluster → hydrate DNA (limit 30) into note snapshot (`cluster_ref`, name/share snapshots, `dna[]`). DNA edits are **planning override only** — never mutate Cluster DNA SSOT. Sources: `cluster` \| `manual`. Cap 50 DNA/note.
+3. Prompt section: `AuditNotePromptSectionBuilder` orders DNA by weight DESC for semantic priority; MCP share is suggestion priority only.
+4. Manual topics allowed via `manual:{normalized}` — does not invent KI clusters.
+
+### Draft Reviewed → Create Execution Project (split)
+
+Canonical path: UI `InteractsWithDraftSplit` → CommandBus `content_project.split_draft` → `SplitDraftContentProjectService`.
+
+```text
+Draft (planning) + Reviewed items
+  → Manager picks writers (real USER ids)
+  → fair-allocate items across writers
+  → pack each writer into reusable max-30 Execution Projects (current month)
+  → MOVE same task rows (preserve id / article_id / item site_id / origins)
+```
+
+**Invariants:**
+
+- Only `isDraftPlanning()` Drafts. Blocked while a planner materialization run is queued/running.
+- Eligible items = `planning_reviewed_at IS NOT NULL` (column missing → fail-closed empty). Unreviewed never split.
+- Target month = **current calendar month only** (`Carbon::now()->startOfMonth()`). Not multi-month pack; not month metadata on a single project.
+- Creates/reuses **real** `SeoProject` rows (`status=pending`, `kind=monthly`, `user_id=writer`, `site_id=null`, `source_draft_project_id`). Domain/site is **not** a packing key — item-level site stays on the task.
+- Packing: fill free slots on reusable writer+month EPs first, then new chunks of ≤30 (`ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS`). Reusable = not draft/archived; not `running|completed|paused`; never started execution. One writer+month may get **multiple** EPs when over 30 items.
+- Naming: `project n/Y`, then `-2`, `-3`… scoped per writer+month.
+- Every touched EP has a **real writer** `user_id` — never `SeoOpsSystemUser`, actor, or Draft owner. System user is FK placeholder only; CP gates treat it as unassigned.
+- Does **not** call AI / auto-generate. Selection modes: `first_n` \| `all` \| `selected` (API/refs).
+- Ops repair: `seo:repair-execution-project-naming`, `seo:repair-execution-project-packing` (`--month=`, `--user=`, `--dry-run`).
+
+### Projects list buckets + loading UX
+
+- High-level filter: `ContentProjectListBucket` — `all` \| `draft` \| `project` \| `archived` (legacy raw status query params normalize → `project`). Draft never requires execution month; archived/project may filter by month.
+- Projects **list** has **no** bulk select / bulk delete (`bulkActions([])`); row actions only. (Item-level bulk on View/ops is separate.)
+- List/ops/archive/draft/planner/queue tables use compat `list-table-loading-shell` (Article-style dim + spinner; keep table visible; targeted `wire:target`s — not hide-table skeletons).
 
 ### Generate
 
@@ -536,7 +593,7 @@ Freeze grep invariants: no production `ContentProjectBulkRerunService`, `Content
 
 ```
 CreateContentProject, UpdateContentProject, SyncContentProjectItems,
-AddContentProjectItems, UpdateContentProjectItem,
+AddContentProjectItems, UpdateContentProjectItem, SplitDraftContentProject, AddIdeaCandidates,
 GenerateProjectItems, RerunProjectItems, RerunProjectItemStep, ResumeProjectItemFromFailedStep,
 AcknowledgeProjectItemGenerationError, BlockProjectItemGeneration, UnblockProjectItemGeneration,
 StartReview, ApproveProjectItems,
@@ -546,4 +603,4 @@ Retry/Skip/Cancel ProjectItemPublishing,
 StopProjectExecution, ResumeProjectExecution,
 ArchiveContentProject, ArchiveProjectItems, RestoreContentProject
 ```
-)
+

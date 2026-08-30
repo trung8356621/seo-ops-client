@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-26  
+> Updated: 2026-08-30  
 > Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
 
 ## 1. Documentation Map
@@ -16,91 +16,61 @@ The current documentation set is organized as a canonical docs system for the Om
 - `docs/audits/*` contains active audits.
 - `docs/archive/*` is historical only and must not be treated as source of truth.
 
-## 2. Recent Conversation Themes
+## 2. Recent Conversation Themes (2026-08-27 → 2026-08-30)
 
-### New Content Planner / Draft UI (2026-08-26)
+Canonical docs updated this pass: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICLE_EDITOR.md`, `WORDPRESS_BRIDGE.md`, this file, light handoff/index touches.
 
-- **JSON-only AI result:** `keyword.discovery.structured` + `NewContentSuggestionStructuredResult` / Parser; OUTPUT CONTRACT on planning brief; one format repair retry; no prose scrape. Docs: `CONTENT_PROJECTS.md` § SEO Audit Draft / New Content Planner; `PROMPTS_AND_AI.md` hook row.
-- **Product planning persist:** brief → `secondary_description`; gallery → `description`; type → `loai_san_pham`. Read model: `description` + `product_description`.
-- **Draft Post type:** plain text + double-click select; `UpdateContentProjectItemHandler` CREATE-only; Product↔Post non-destructive. Reactive remount via `cp-ops-refresh` / `draftPlanningRefreshNonce` (no F5).
-- Ops: restart queue workers after planner PHP changes.
+### Content Projects — Draft → Execution Project
 
-### Article Editor
+- Flow: **Draft Reviewed → Create Execution Project** via `SplitDraftContentProjectService` / CommandBus `content_project.split_draft`.
+- Eligible = `planning_reviewed_at IS NOT NULL` only. Current calendar month only.
+- Writers = real USER ids selected by Manager. **Never** `SeoOpsSystemUser` (FK placeholder; treated as unassigned).
+- Fair-allocate then pack into reusable **max-30** Execution Projects per writer+month (`ContentProjectExecutionPackingService`). Multiple EPs allowed when over 30 — not “one project + month metadata.”
+- MOVE same task rows (preserve ids/origins). No AI / no auto-generate on split.
+- Repair: `seo:repair-execution-project-naming`, `seo:repair-execution-project-packing`.
+- Projects list buckets: `all|draft|project|archived` (`ContentProjectListBucket`). No bulk select on Projects list.
+- SEO Audit Notes: cluster suggestions by MCP share ASC → per-item DNA snapshot (planning override only).
 
-- The editor is treated as a dedicated island: Livewire shell plus React/TipTap runtime.
-- 2026-08 fixes (canonical changelog: `docs/architecture/ARTICLE_EDITOR_FIXES_2026_08.md`): Outline heading rename local-first; AI media placeholder/hang/double-image; Featured/Gallery/Outline/AI locale via `content/resources/js/utils/i18n.js`.
-- **2026-08-26:** Domain link list — soft lexical match, in-article `(n)`, hide 0, click locate via expand+scroll. Doc: `ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`.
-- **2026-08-21/22:** Editor widget locks + FAQ/Reviews UX — see below.
-- Active Content Project article: editor hides **all** manual Sync WP chrome (UI-only). First WP create stays on Publishing Queue.
-- Any change must preserve session lock, `document_version`, TipTap JSON document model, command layer, media snapshot ownership, and WordPress sync separation.
-- WordPress sync must not be conflated with local editor save; conflict policy and field ownership need to remain explicit.
+### Topics / Keyword DNA / Focus reconcile
 
-### Editor widget locks + FAQ/Reviews (2026-08-21/22)
+- UI rename: Topic Cluster → **Topics / Chủ đề** (code still `cluster_key`).
+- Keyword Dictionary stays **flat**; grouping = Topics only. Legacy `KeywordRuleGroup*` / `parent_id` hierarchy retired.
+- DNA: `KeywordDnaExtractor` / `KeywordDnaService` + `seo_keyword_dna`.
+- Recluster: `ReclusterTopicClustersService` + job. Focus invariant: `ReconcileFocusArticleTopicsService` + `seo:topics:reconcile-focus` — Focus keywords never stay Unassigned.
+- Keywords: Language filter on tab bar; domain context must follow GET `site_id`.
+- Loading UX: Keywords + Content Projects share Article-style `list-table-loading-shell`.
 
-- Stable widgets frozen: `featured`, `images`, `publishing`, `status` (display **Trạng thái**; runtime `panelId` = `article`).
-- Manifest SoT: `omnichannel-addons/content/editor-widget-locks.json`. Guard never hard-codes IDs.
-- Client docs: `docs/architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md`. Rule: `.cursor/rules/editor-widget-locks.mdc`.
-- Commands (from `omnichannel-client`): `npm run widget-lock -- status|unlock|lock|seal`, `npm run check:editor-widget-locks`.
-- FAQ content ≠ FAQ schema: `seo/.../articleFaqCanonicalState.js` → `faq_missing` vs `faq_schema_missing`. Lazy mount must pass `initialFaqs={undefined}`, not `[]`.
-- Reviews: load attempt always resolves (success or failure); no endless spinner on API fail.
-- Dock **Search assistants** UI removed; chips render directly (`ARTICLE_EDITOR_SHELL_BOUNDARY.md`).
-- Panel-filter mode: panel body owns vertical scroll (`min-height: 0` flex).
+### GSC / nav / pagination
 
-### Content Projects
+- GSC prefer month-scoped view/sync; MCP open from GSC surfaces when bound.
+- SEO user nav regrouped WordPress-style modules (`SeoUserNavigation` / `SeoPanelRoutes`).
+- Client pagination: `PaginationWindow` — current-page-centric tokens (±2 desktop), not “1 2 3 4 … 25 26” only.
 
-- Content Project lifecycle writes should continue through `ContentProjectCommandBus`.
-- **Assign UI (CLOSED):** one right-side drawer, event `assign-content-project:open`. “Modal” aliases render the same drawer. Docs: `CONTENT_PROJECTS.md` § Assign UI + `docs/architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md`.
-- Callers: article list, editor overflow, SEO Audit, keyword list/detail, link bubble. Vocabulary sidebar stays **inline** (not the drawer).
-- Laravel-only articles (`wp_post_id` null) remain assignable.
-- Recent work also touched archive/restore/reset, rerun, queue states, workspace cleanup, and task sync.
-- Generated/AI workspace cleanup must avoid deleting user-owned or canonical media accidentally.
+### Product reviews + WP sync
 
-### Publishing And Queue Runtime
+- `ProductReviewCreationPolicy`: must sync/check WP comment-reviews before gen; block when real WP reviews exist (default); target maintains unique AI count (default **3**).
+- Generations recorded into Article AI History via `ProductReviewGenerationHistoryRecorder`.
+- Manual WP sync may run create→sync review side effect under that policy (`WordPressManualSyncService`). Reviews sync ≠ CP publishing queue.
 
-- Laravel remains the source of truth for publishing schedule and queue state.
-- WordPress receives publish/sync outcomes; it is not the schedule owner.
-- Recent incidents and fixes centered on dispatch stalls, retry/idempotency, stuck recovery, immediate publish rewrite, and queue UI clarity.
-- Publishing Queue behavior should be checked against `docs/modules/PUBLISHING.md` and `docs/contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md`.
+### Vocabulary Suggest + Planner Idea Candidates
 
-### WordPress Bridge And Sync
+- Persist: `START_TASK_2_VOCABULARY` → `save_vocabulary_research` / `keyword.vocabulary.save` → staging Suggest rows (not Prompt History SoT).
+- Planner Idea Candidates: pick from Vocabulary Suggest only (`InteractsWithIdeaCandidates`) — no AI / no GSC in that picker phase.
 
-- Backend/plugin REST contracts require cross-repo inspection with `../wp-seo-ai`.
-- Recent context includes preserving WordPress slugs, manual WordPress ID linking, post-publish sync contract, Site Sync stuck recovery, and WordPress field conflict policy.
-- Token-based bridge auth, tenant boundaries, and narrow CSRF exceptions must be preserved.
-- Backend deploy-diff tracking does not cover the sibling WordPress plugin repo.
+### Social + nav
 
-### Media, Gallery, And Images
+- Social Profiles (`social/`) + Hub GSC Social Top 10 (`GscSocialTop10Builder`). GSC MCP ∉ Audit/Planner ideas.
+- SEO nav: `SeoUserNavigation` / `SeoPanelRoutes` (WP-style modules).
 
-- Recent work touched media picker behavior, source classification, local media cleanup, WebP minimum width, attachment rename/slug fixes, and image optimization tests.
-- Editor Featured/Gallery labels go through `i18n.js`; AI media hang/placeholder/double-image documented in `ARTICLE_EDITOR_FIXES_2026_08.md`.
-- Media ownership must distinguish local article media, WordPress-origin media, generated media, and gallery/featured snapshots.
-- Article Editor media snapshot rules remain the primary guardrail for UI/runtime changes.
+### Still relevant from 2026-08-26
 
-### Google Search Console And SEO Audit
-
-- Recent work included GSC missing-table handling, connection service tests, SEO audit scan fixes, and reason/metrics syntax fixes.
-- Verification should cover service-level tests when touching GSC or audit scan behavior.
-
-### UI And Admin UX
-
-- Recent UI work included article list, pagination/block-all, publish/sidebar controls, prompt editor UX, queue bulk UI, lock-at-capacity, and assorted Filament/React cleanup.
-- Blade select boxes should use `<x-select>`.
-- SEO React controls should use `SeoSelect`.
-- Modals, drawers, and popovers should open/close immediately through Alpine/JavaScript; Livewire should handle loading, validation, persistence, and server actions.
-
-### AI Center (Models / Routing / Resilience / Health)
-
-- Canonical module doc: `docs/modules/PROMPTS_AND_AI.md` § **AI Center (Models / Routing / Resilience / Health)**.
-- Tabs: Models | Routing | Resilience | Health.
-- Models = enable/order; Routing = Automatic vs Custom filter; Resilience = attempt budgets; Health = operational status UI.
-- Text Routing has **no** “Manage model order” link — reorder only on Models.
-- Short code `[OR]` is display-only. Execution identity: `connectionId|familyKey`. Persist Custom via `AiRoutingTargetService::saveSimplifiedSelection`.
-- Curated OpenRouter Text catalog: `OpenRouterTextRoutingCatalog` + `php artisan seo:ai:ensure-openrouter-text-routing [--user=]` (idempotent). Does not touch Image/Video routing.
-- Tab state Alpine-only on `#ai-center-root`; do not restore Livewire tab `queryString` dual-panel sync.
+- New Content Planner JSON-only gate + Draft Product persist — see `CONTENT_PROJECTS.md` § SEO Audit Draft / New Content Planner.
+- Domain link list soft match — `ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`.
+- Editor widget locks — `ARTICLE_EDITOR_WIDGET_LOCKS.md`.
 
 ## 3. Current Working-Tree Caution
 
-Inspect `git status --short` before editing; do not revert unrelated changes. New Content Planner / Draft UI changes live primarily under `omnichannel-addons` (`content-projects`, `ai-prompt` hook JSON, `seo-content-ai-compat` Draft Blade/lang). Canonical docs updated in `omnichannel-client/docs`.
+Inspect `git status --short` before editing; do not revert unrelated changes. Large Aug 27–29 work landed mainly in `omnichannel-addons` (`content-projects`, `search-intelligence`, `seo`, `seo-content-ai-compat`, `commerce`, `wordpress`) and light client (`SeoOpsSystemUser`, `PaginationWindow`). Canonical docs live in `omnichannel-client/docs`.
 
 ## 4. Operational Rules To Remember
 

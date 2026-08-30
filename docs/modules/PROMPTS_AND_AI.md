@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-08-26  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -79,7 +79,9 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Prompt Editor — Runtime Rules UI | `PromptRuntimeRulesPresenter` — readonly panel from Hook definition + `PromptOutputContractCatalog` (no compose, no user markdown). Bound via `SeoContentAiServiceProvider` (`PromptOutputContractCatalog` / `PromptOutputContractResolver` singletons). |
 | Prompt Editor — preview toggle | `PromptCompositionSummaryPresenter` — default Runtime Rules; `Show Effective Prompt (Debug)` ON → full compose via `PromptHookCompositionPreviewService`. |
 | Prompt Editor form | `PromptResource` — MarkdownEditor `minHeight(280px)` + `maxHeight(600px)` (EasyMDE single scrollbar); section title Runtime Rules (Built-in). |
-| Default comment | `DefaultCommentPromptInstaller` + hook `article.comment.generate` |
+| Default comment | `DefaultCommentPromptInstaller` + hook `article.comment.generate` — `{{comment_count}}` default **3** (align `ProductReviewCreationPolicy::DEFAULT_TARGET_COUNT`) |
+| Vocabulary research persist | Workflow action `save_vocabulary_research` / BusinessAction `keyword.vocabulary.save` (`SaveKeywordVocabularyAction`) → `WorkflowKeywordResearchService::ingestVocabularySuggestGroupsSafe` |
+| Split outline markers | `[START_TASK_2_VOCABULARY]`…`[END_TASK_2_VOCABULARY]` (`DefaultSplitOutlinePromptsInstaller`) — Task 2 port; business SoT after Save is keyword suggest rows, **not** Prompt History |
 | API connections list | `ApiConnectionsListService` + `AiConnectionResource` |
 | SEO provider matrix | `SeoProviderRegistry` + `SeoProviderCapabilityResolver` |
 | Outline input any-of | `article.outline.generate` — `post_title` and `keyword` individually optional; `metadata.require_any_of` enforced by `PromptHookRequireAnyOf` / ExplicitBinding. Project item requires at least one of keyword or post_title. Both may be provided. AI outline/article generation may generate or optimize the final title. |
@@ -161,6 +163,17 @@ Legacy combined hook `article.outline.generate` still resolves on outline nodes 
 - Product item: same + `product_type`, `gallery_description`.
 - `source_signal`: `keyword_gap` \| `cluster_gap` \| `mcp_signal` \| `gsc_signal` \| `related_topic` \| `manual_note` \| `manual_focus`.
 - Gate/repair: `content-projects` `NewContentSuggestionStructuredResult` + one repair retry in `NewContentSuggestionPlannerService::discoverOnce`. Do not scrape prose for embedded JSON as the primary fix.
+
+**Vocabulary Suggest persistence (decoupled from Prompt History):**
+
+```text
+Outline Task 2 markers [START_TASK_2_VOCABULARY]…[END_TASK_2_VOCABULARY]
+  → workflow Save vocabulary research (`save_vocabulary_research` / `keyword.vocabulary.save`)
+  → WorkflowKeywordResearchService::ingestVocabularySuggestGroupsSafe
+  → seo_article_keywords + Keyword Suggest staging (`TYPE_SUGGEST`)
+```
+
+Vocabulary Suggest UI / Planner Idea Candidates read **staging rows**, not “latest PromptResult for vocabulary.” Outline-only CP graphs (`skipContentWriting`) still run Extract keywords + Save vocabulary research. Do not rebuild Suggest from Prompt History timestamps alone.
 
 **Artifact ownership (canonical):**
 

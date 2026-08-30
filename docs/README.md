@@ -1,7 +1,7 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-08-13
+> Last verified: 2026-08-30
 
 ## Workspace repos
 | Repo | Role |

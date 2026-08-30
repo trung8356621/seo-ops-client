@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/MAP_SEO_WP.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (plugin/general sections), Site Sync–adjacent WP notes formerly rooted in MAP_SEO_WP
 
 ## 1. Purpose
@@ -79,6 +79,7 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 | Media binary after upload | WordPress attachment + Laravel managed source when present | Laravel `seo_media` / local media markers / pending versions allow explicit Sync WP to update managed attachment meta, slug, assignment, and pending binary |
 | FAQs meta | WP `_omi_seo_faqs` | Empty `faqs:[]` must not wipe existing unless `clear_faqs` |
 | Product virtual reviews | WP meta + optional local pending | Reviewed article: WP SoT; local pending cleared |
+| Product review **create** gate | `ProductReviewCreationPolicy` + `WordPressProductReviewStatusService` | Must fetch WP comment-reviews first; `block_if_real_reviews_exist` default true; no invent before `wp_post_id` |
 | Catalog links/keywords/scores (V2) | Site Sync / WP provider | Not dual-written by push-content |
 | Manual Domain overrides | Laravel Manual | See SITE_SYNC ownership |
 
@@ -107,6 +108,7 @@ Manual: WordPressManualSyncService
   → ArticleWordPressBusinessSequence
   → WordPressArticleSyncService::publishForArticle|syncForArticle
        → media sync → editor-sync REST
+  → optional product-review side effect (`runProductReviewsAfterArticleSync`: create then sync-wp) via `ProductReviewCreationPolicy` — never gen when WP has real comments / fetch failed; reviews sync independent of CP publishing queue / media slug lock
 
 Automatic: Automation rule wordpress.article.sync (enabled+published)
   → automation-external queue

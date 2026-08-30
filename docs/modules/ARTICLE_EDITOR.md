@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content (+ seo / media / publishing peers)  
-> Last verified: 2026-08-26  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -112,6 +112,9 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | FAQ domain | Laravel `faq_snapshot` API (`seo_faqs`); React draft/preview | Livewire FAQ shadow / LS SoT — see [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) |
 | FAQ content vs schema (SEO) | `articleFaqCanonicalState.js` (`faq_missing` / `faq_schema_missing`); lazy `initialFaqs={undefined}` | Equating “has FAQ questions” with “has FAQ schema” |
 | Reviews panel load | Resolve success **or** failure (`reviewsLoaded`); warn + Refresh on fail | Endless `!loaded` spinner |
+| Product review create policy | `commerce` `ProductReviewCreationPolicy` — must verify WP product + comment-reviews fetch before gen; block if real WP reviews exist (default); target = maintain unique AI count (default 3), not “create N each run” | Gen 10 without WP check; treat raw row counts as unique |
+| Product review → AI History | `ProductReviewGenerationHistoryRecorder` → `PromptResult` + article link (comment hook) | Reviews absent from Lịch sử AI |
+| Product review sync independence | Reviews create/sync after article WP sync — not Content Project publishing queue / media slug lock (`ProductReviewSyncIndependenceContractTest`) | Gate reviews behind publishing/media locks |
 | Stable widget locks | Manifest `content/editor-widget-locks.json` + CLI/guard | Silent edits to frozen Featured/Images/Publishing/Status — [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](../architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) |
 | CTA quick templates | Laravel domain CTA settings API | localStorage CTA templates SoT |
 | FAQ catch keywords | `SeoOverviewSettingsService::KEY_FAQ_CATCH_KEYWORDS` | Hardcoded VI/EN only when setting empty |
@@ -233,7 +236,8 @@ Related public:
 |---------|----------------|
 | Persist / seo-meta | `AnalyzeArticleSeoJob` |
 | AI media generate | `GenerateMediaJob` (`media_generation` queue); dispatch failure marks placeholder `failed`; stale `processing` reconciled via `ArticleEditorMediaAiService::reconcileStaleAiMediaJobs` / `failAllProcessingAiMediaJobs` |
-| Quick post reviews | `GenerateArticleReviewsJob` |
+| Quick post reviews | `GenerateArticleReviewsJob` — gated by `ProductReviewCreationPolicy` (WP sync + real-comment check; default target 3) |
+| Product review AI history | `ProductReviewGenerationHistoryRecorder` (commerce) |
 | CP full rewrite from editor menu | `ArticleWritingExecutionService` path (not Publish graph) |
 
 No second scheduler for editor autosave — client debounce (local draft + server session document) + REST session APIs.

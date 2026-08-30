@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-13  
+> Last verified: 2026-08-30  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -28,7 +28,10 @@ Panel prefix: `/seo/{connection_hash}/`
 | Path | Page |
 |------|------|
 | `articles/optimal` | `ArticlesOptimal` — SEO Audit + Reviewed tabs |
-| `performance-hub` | `SeoPerformanceHub` (nav via Keywords sidebar; Filament nav hidden) |
+| `performance-hub` | `SeoPerformanceHub` (nav via Keywords sidebar; Filament nav hidden) — month-scoped GSC + MCP drawer |
+| `keywords` | Keyword Dictionary (`ListKeywords`) |
+| `keywords/clusters` | **Topics** UI (`KeywordTopicClusters` / detail) — product label Topics; code still `cluster_*` |
+| `keywords/focus` | Focus keywords surface |
 | `keywords/ai-discovery` | `AiKeywordDiscovery` |
 | `keywords/cannibalization` | `KeywordCannibalizationWorkspace` |
 | `keyword-intelligence` | `ListKeywordWorkspaces` |
@@ -57,14 +60,25 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | Rank groups | `SeoRankKeywordGroupService` + `KeywordRankCheckService` |
 | KI pipeline | `Services/KeywordIntelligence/*` |
 | KI analysis ops | `KeywordWorkspaceAnalysisService` |
+| **Topics (UI label; code: Topic Cluster)** | `KeywordResource` Topic pages + `KeywordClusterQuery` — user-facing **Chủ đề / Topics** |
+| Canonical cluster phrase | `Canonical/CanonicalClusterPhraseResolver` + `CanonicalClusterResolverService` + merge helpers |
+| Keyword DNA | `KeywordDnaExtractor` / `KeywordDnaService` / `KeywordDnaDiagnosticsService` — tables `seo_keyword_dna`, cluster meta/alias |
+| Full-domain recluster | `ReclusterTopicClustersService` + `Jobs/ReclusterTopicClustersJob` |
+| Focus Article → Topic invariant | `ReconcileFocusArticleTopicsService` + `seo:topics:reconcile-focus` |
+| Keywords language filter | `InteractsWithKeywordWorkspaceLanguageFilter` + `KeywordWorkspaceLanguageScope` |
 | Topical map | `TopicalMapBuilder` + `KeywordTopicalMapMutationService` |
 | KI → CP | `KeywordToContentProjectConverter` / topical converter |
 | Cannibalization (KI) | `KeywordCannibalizationService` |
 | SERP stack | `Services/SerpIntelligence/*` |
 | GSC stack | `Services/GscIntelligence/*` |
+| GSC monthly Hub | `GscMonthlyPeriod` + `GscMonthlyDashboardService` — Hub month picker; `syncGscData()` = **selected month**; MCP drawer via `MonthlyMcpSnapshotService` (`McpSourceKey::Gsc`) |
+| GSC URL Inspection | `GscIntelligence/UrlInspection/*` — feeds **Article Index Health**, not the monthly GSC dashboard |
 | GSC sync stages | `GscSyncOperationService` + `GscSyncLockService` |
 | GSC OAuth (core) | `GoogleSearchConsoleOAuthService` |
 | Legacy GSC snapshot | `GoogleSearchConsoleSyncService` → SiteMeta `gsc_query_snapshot` |
+| Panel nav (WP-style modules) | `Seo\Support\SeoUserNavigation` + `SeoPanelRoutes` |
+| Domain context bar | `seo/resources/js/domainContextStore.js` + `domain-context.js` (GET `site_id` SoT) |
+| List loading shell | compat `list-table-loading-shell` + `seo/.../panelLoading.js` |
 | Public refs | `KeywordIntelligencePublicRef` |
 | Quotas / tenant | `KeywordIntelligenceQuotaGuard` / `KeywordIntelligenceTenantGuard` |
 
@@ -84,8 +98,10 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | GSC facts | `seo_gsc_daily_metrics` etc. (`omi_seo_ai`) | Legacy SiteMeta snapshot |
 | Hub legacy KPI | SiteMeta `gsc_query_snapshot` | GSC Intelligence tables (separate stack) |
 | SERP snapshots | Immutable SERP snapshot models | Mutating approved topical maps |
-| **Keyword Dictionary** | Flat `keywords` inventory (phrase + type + site meta) | Legacy `keywords.parent_id` hierarchy (dropped 2026-08-27) |
-| **Keyword grouping** | Cluster (`cluster_key` / Topic Cluster index) | Parent/child keyword tree |
+| **Keyword Dictionary** | Flat `keywords` inventory (phrase + type + site meta) | Legacy `keywords.parent_id` hierarchy (dropped 2026-08-27); **not** a grouping tree |
+| **Keyword grouping / Topics** | Cluster (`cluster_key` / Topics index UI) + DNA residuals | Parent/child keyword tree; retired `KeywordRuleGroup*` tables (dropped 2026-08) |
+| **Keyword DNA** | `seo_keyword_dna` (+ cluster canonical phrase) | Raw token diff / glue / cluster echo |
+| **Focus Article Topic invariant** | Every SEO-eligible keyword with ≥1 Focus Article **must** have a Topic (`ReconcileFocusArticleTopicsService`) | Leaving Focus keywords in Unassigned |
 
 Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_`, `kwt_`, `tmv_`, `kwa_`, `kwrel_`, `kwam_`, `kwtcl_`, `kci_*`, SERP `srpq_`/`srps_`/…, GSC `gscp_`/`gscs_`/….
 
@@ -102,8 +118,15 @@ Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_
 ### Keyword / SERP / GSC
 
 - Filament / Agent / MCP reads → `*ReadService` with `site_id` + public refs.
-- Performance Hub: `#[Computed]` state per active `source` (`gsc` vs SERP providers).
+- Keywords module tabs: Dictionary \| Topics \| Focus \| … — **Language** filter (`InteractsWithKeywordWorkspaceLanguageFilter`) on the right of the tab bar; default = site primary language; scope via `KeywordWorkspaceLanguageScope` (Focus article or link-map source language variants).
+- Topics UI = renamed Topic Cluster surface (`topic_cluster_*` / `workspace_nav_two` → **Chủ đề / Topics**). Route still under clusters; clustering logic still uses `cluster_key`. Tables: `seo_topic_cluster_meta`, `seo_topic_cluster_aliases`, `seo_keyword_dna`.
+- **Vocabulary Suggest staging:** `VocabularySuggestStagingQuery` — `TYPE_SUGGEST` + `ai_generated`; **not** Dictionary active inventory. Planner Idea Candidates consume this staging only (see [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) § Idea Candidates). **GSC MCP / Social Top 10 do not feed Idea Suggest.**
+- Nav WP-style: `SeoUserNavigation` + `SeoPanelRoutes` (module top-level groups; active helpers avoid path wildcards).
+- Domain context: Global SEO bar / Keywords must follow GET `site_id` via `domainContextStore` — do not keep a stale “global domain” that ignores the URL after soft navigation.
+- Performance Hub: `#[Computed]` state per active `source` (`gsc` vs SERP providers). GSC uses **month-scoped** view/sync (`GscMonthlyPeriod` + `GscMonthlyDashboardService` on `SeoPerformanceHub`); sync targets the **selected month**; MCP snapshot rebuild is Hub drawer (`MonthlyMcpSnapshotService`), separate from URL Inspection / Article Index Health.
+- Hub **Social Top 10:** `GscSocialTop10Builder` — deterministic share candidates from GSC MCP; links to [`SITE_MCP_AND_DOMAINS.md`](SITE_MCP_AND_DOMAINS.md) Social Profiles. No AI.
 - GSC Intelligence overlay additive — Overview/Queries/Pages/Opportunities may be placeholders; Sync CSV preview wired.
+- List loading: Keywords / Topics use the same Article-style `list-table-loading-shell` + `panelLoading.js` as Content Projects (domain switch → panel bar; table filter/pagination → shell overlay).
 
 ## 6. Write path
 
@@ -119,7 +142,11 @@ Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_
 
 Import → Analyze (locked operation) → Approve keywords/clusters → Build topical map (draft) → Approve map → Preview/Create CP.
 
-Cluster mutations (merge/split/move) and cannibalization review also CommandBus-only.
+Cluster / Topics mutations (merge/split/move/dissolve), full-domain **Recluster**, and cannibalization review are CommandBus/job-only — not Filament ad-hoc SQL.
+
+**Focus Article reconcile:** `ReconcileFocusArticleTopicsService` ensures Focus keywords are never left Unassigned (attach existing Topic, shared Focus Topic, or singleton Topic — Focus overrides min-size-2). Runs inside recluster; Artisan: `seo:topics:reconcile-focus --site=N` (default reconcile-only; `--recluster` = full rebuild).
+
+**DNA:** `KeywordDnaExtractor` derives residual modifiers from keyword vs cluster canonical; persist via `KeywordDnaService` → `seo_keyword_dna`. Topic title SSOT = `seo_topic_cluster_meta`. Audit Notes may override DNA for planning prompts only — see [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) § SEO Audit Notes.
 
 ### SERP / GSC
 
@@ -210,6 +237,8 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 9. Auto-schedule/publish from topical/keyword convert.
 10. Treat Performance Hub snapshot as GSC Intelligence SoT (or reverse).
 11. Parallel Assign-to-Content-Project UI on Audit / Keywords (left drawer, Filament modal, `mountAction` from keyword detail). Reuse Contract + drawer.
+12. Reintroduce Keyword Rule Groups (`seo_keyword_rule_groups*`) or `keywords.parent_id` hierarchy.
+13. Leave Focus Article keywords in Topics Unassigned after recluster/reconcile.
 
 ## 15. Tests and invariants
 
@@ -222,6 +251,10 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 | `Serp*` unit tests | Snapshot immutability, fetch security, overlap suggestions |
 | Keyword intelligence unit suite | Quotas, tenant, public refs, analysis lock |
 | `AssignToContentProjectUiArchitectureGuardTest` | Audit + Keyword resources open canonical drawer; no Action `form()` |
+| `CanonicalClusterAndDnaTest` / `TopicIdeaCoverageAndDnaQualityTest` | DNA + canonical phrase |
+| `FullDomainReclusterRepairTest` / `FocusArticleTopicInvariantTest` | Recluster + Focus→Topic |
+| `KeywordDictionaryExcludeFromSeoVisibilityTest` / `TopicMembershipIntentGateTest` | Dictionary vs Topics eligibility |
+| `KeywordListLoadingUxTest` / `DomainContextLoadingUxTest` | Loading shell + domain GET `site_id` |
 
 ## 16. Related documents
 
