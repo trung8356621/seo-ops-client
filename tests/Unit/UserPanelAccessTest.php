@@ -24,7 +24,7 @@ final class UserPanelAccessTest extends TestCase
         $this->assertFalse($user->canAccessPanel($panel));
     }
 
-    public function test_legacy_admin_cannot_access_admin_panel(): void
+    public function test_legacy_admin_can_access_admin_panel(): void
     {
         $user = new User([
             'role' => User::ROLE_ADMIN,
@@ -33,7 +33,7 @@ final class UserPanelAccessTest extends TestCase
 
         $panel = $this->panelWithId('admin');
 
-        $this->assertFalse($user->canAccessPanel($panel));
+        $this->assertTrue($user->canAccessPanel($panel));
     }
 
     public function test_owner_can_access_admin_panel(): void

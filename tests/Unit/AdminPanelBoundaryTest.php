@@ -31,11 +31,11 @@ final class AdminPanelBoundaryTest extends TestCase
         $this->assertTrue($this->userWithRole(User::ROLE_OWNER)->canAccessPanel($panel));
     }
 
-    public function test_legacy_admin_role_cannot_access_admin_panel(): void
+    public function test_legacy_admin_role_can_access_admin_panel(): void
     {
         $panel = Filament::getPanel('admin');
 
-        $this->assertFalse($this->userWithRole(User::ROLE_ADMIN)->canAccessPanel($panel));
+        $this->assertTrue($this->userWithRole(User::ROLE_ADMIN)->canAccessPanel($panel));
     }
 
     public function test_manager_and_staff_cannot_access_admin_panel(): void
@@ -100,6 +100,15 @@ final class AdminPanelBoundaryTest extends TestCase
         $this->assertTrue(UserResource::canAccess());
         $this->assertTrue(ControlServer::canAccess());
         $this->assertContains(ControlServer::class, $panel->getPages());
+        $this->assertTrue(\App\Filament\Pages\HelpTopicsAdmin::canAccess());
+        $this->assertContains(\App\Filament\Pages\HelpTopicsAdmin::class, $panel->getPages());
+        $this->assertContains(\App\Filament\Pages\HelpTopicEdit::class, $panel->getPages());
+        $this->assertContains(\App\Filament\Pages\HelpTopicCreate::class, $panel->getPages());
+
+        $this->actingAs($this->userWithRole(User::ROLE_ADMIN));
+        $this->assertTrue(\App\Filament\Pages\HelpTopicsAdmin::canAccess());
+        $this->assertTrue(\App\Filament\Pages\HelpTopicsAdmin::shouldRegisterNavigation());
+        $this->assertFalse(\App\Filament\Pages\HelpTopicEdit::shouldRegisterNavigation());
     }
 
     public function test_service_runtime_catalog_and_provider_boot_remain(): void

@@ -43,7 +43,7 @@ final class RoleAxesMatrixTest extends TestCase
         $this->assertTrue(SeoAccessControl::canAccessManagerFeatures());
     }
 
-    public function test_legacy_admin_role_has_no_client_setup_privilege(): void
+    public function test_legacy_admin_role_can_access_admin_but_not_seo_without_owner_link(): void
     {
         $user = new User([
             'role' => User::ROLE_ADMIN,
@@ -53,7 +53,7 @@ final class RoleAxesMatrixTest extends TestCase
 
         $this->actingAs($user);
 
-        $this->assertFalse($user->canAccessPanel(filament()->getPanel('admin')));
+        $this->assertTrue($user->canAccessPanel(filament()->getPanel('admin')));
         $this->assertFalse(SeoAccessControl::canAccessSeoPanel($user));
     }
 }

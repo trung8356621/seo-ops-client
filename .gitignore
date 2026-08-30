@@ -24,6 +24,7 @@ npm-debug.log
 yarn-error.log
 /.idea/
 /.vscode/
+/.local/
 /_indep.php
 .tmp_*
 /bootstrap/cache/*.php

@@ -131,8 +131,15 @@ final class LongRunningProgress
         $incoming = self::fromArray([...$this->toArray(), ...$patch]);
         $now = $nowIso ?? gmdate('c');
 
+        $phaseChanged = ($incoming->phase ?? null) !== null
+            && ($this->phase ?? null) !== null
+            && $incoming->phase !== $this->phase;
+
+        // Monotonic within a phase; new phase may restart its own counter (e.g. keywords after catalog).
         $current = $this->current;
-        if ($incoming->current !== null) {
+        if ($phaseChanged) {
+            $current = $incoming->current;
+        } elseif ($incoming->current !== null) {
             $current = $current === null ? $incoming->current : max($current, $incoming->current);
         }
 
@@ -147,7 +154,7 @@ final class LongRunningProgress
             step: $incoming->step > 0 ? $incoming->step : $this->step,
             totalSteps: $incoming->totalSteps > 0 ? $incoming->totalSteps : $this->totalSteps,
             current: $current,
-            total: $incoming->total ?? $this->total,
+            total: $phaseChanged ? $incoming->total : ($incoming->total ?? $this->total),
             metrics: $metrics,
             message: $incoming->message ?? $this->message,
             startedAt: $this->startedAt ?? $incoming->startedAt,

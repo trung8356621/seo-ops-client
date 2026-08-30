@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Client /admin setup is owner-only. Staff (and any non-owner) are denied.
+ * Client /admin setup is owner or legacy admin. Other roles are denied.
  */
 final class RedirectStaffFromAdminPanel
 {
@@ -19,7 +19,7 @@ final class RedirectStaffFromAdminPanel
     {
         $user = Auth::user();
 
-        if ($user instanceof User && ! $user->isOwner()) {
+        if ($user instanceof User && ! $user->isOwner() && (string) $user->role !== User::ROLE_ADMIN) {
             return redirect('/seo');
         }
 

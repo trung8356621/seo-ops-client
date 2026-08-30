@@ -1,0 +1,21 @@
+{
+    "version": 1,
+    "sort_orders": {
+        "getting-started": 10,
+        "overview": 20,
+        "dashboard": 30,
+        "websites-domains": 40,
+        "content-planning": 50,
+        "articles": 60,
+        "article-editor": 70,
+        "writing-posts": 80,
+        "keywords-topics": 90,
+        "seo": 100,
+        "seo-indexing": 110,
+        "media": 120,
+        "publishing": 130,
+        "sync-queue": 140,
+        "settings": 150,
+        "account-settings": 160
+    }
+}

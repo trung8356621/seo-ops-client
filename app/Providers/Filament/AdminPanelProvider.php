@@ -3,6 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\CustomLogin;
+use App\Filament\Pages\HelpTopicCreate;
+use App\Filament\Pages\HelpTopicEdit;
+use App\Filament\Pages\HelpTopicsAdmin;
 use App\Http\Middleware\Filament\RedirectStaffFromAdminPanel;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -56,6 +59,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 Pages\Dashboard::class,
+                HelpTopicsAdmin::class,
+                HelpTopicEdit::class,
+                HelpTopicCreate::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
@@ -90,6 +96,9 @@ class AdminPanelProvider extends PanelProvider
         return $panel
             ->pages([
                 Pages\Dashboard::class,
+                HelpTopicsAdmin::class,
+                HelpTopicEdit::class,
+                HelpTopicCreate::class,
                 AutomationFlowsPage::class,
                 AutomationOperationsDashboard::class,
                 AutomationSettings::class,

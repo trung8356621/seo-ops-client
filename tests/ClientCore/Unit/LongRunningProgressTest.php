@@ -32,6 +32,25 @@ final class LongRunningProgressTest extends TestCase
         self::assertSame('2026-08-14T05:00:01+00:00', $stale->lastActivityAt);
     }
 
+    public function test_merge_resets_current_when_phase_changes(): void
+    {
+        $catalog = LongRunningProgress::fromArray([
+            'current' => 8078,
+            'total' => 8078,
+            'phase' => 'sync_url_catalog',
+            'status' => 'running',
+        ]);
+        $keywords = $catalog->merge([
+            'phase' => 'sync_provider_keywords',
+            'current' => 65,
+            'total' => 324,
+        ], '2026-08-14T05:00:00+00:00');
+
+        self::assertSame(65, $keywords->current);
+        self::assertSame(324, $keywords->total);
+        self::assertSame('sync_provider_keywords', $keywords->phase);
+    }
+
     public function test_should_persist_throttles_small_deltas(): void
     {
         $a = LongRunningProgress::fromArray([
