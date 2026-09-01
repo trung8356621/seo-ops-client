@@ -1,47 +1,44 @@
 ---
-name: docs-update-on-xong
-description: "Trigger only when the user message contains XONG! (case-insensitive). Update the relevant canonical backend docs for code changes just completed. Do not trigger without XONG! and do not update archive docs."
+name: docs-bulk-update
+description: "Bulk-update canonical backend docs after multi-day or multi-module code changes, or when the user explicitly asks to sync/summarize docs. Replaces the retired XONG! per-session workflow."
 ---
 
 # Purpose
 
-Keep canonical backend docs aligned after the user explicitly signals completion with `XONG!`.
+Keep canonical docs aligned via **one consolidated pass** — not per-agent micro-updates.
 
 # Trigger conditions
 
-- Use only when the latest user message contains `XONG!`, case-insensitive.
-- Do not use for normal coding tasks or general documentation requests.
+- User asks to update, sync, or summarize docs (e.g. "cập nhật docs", "tổng kết docs").
+- User retires `XONG!` workflow and wants bulk catch-up.
+- Large code landings span client + addons and canonical docs are stale.
 
 # Required context
 
-- Changed files from current conversation.
-- `git status` and `git diff` if needed.
+- `git log` / `git diff` on `omnichannel-client`, `omnichannel-addons`, `wp-seo-ai` if relevant.
 - `docs/README.md` module index.
+- `docs/QUICK_DOC_SUMMARY.md` for digest section.
 
 # Workflow
 
-1. Identify changed symbols, routes, components, services, jobs, queues, or contracts.
-2. Select canonical docs from `docs/README.md` (and `docs/architecture/ADDON_ARCHITECTURE.md` / `NEW_AGENT_HANDOFF.md` for ownership).
-3. Patch only the relevant section. Route feature ownership: content/media/seo/wordpress/publishing/content-projects/ai-prompt/search-intelligence/site-sync/agent — not SeoContentAi.
-4. Do not create new docs outside `docs/modules`, `docs/contracts`, `docs/architecture`, or `docs/operations` unless the user asks.
-5. Do not update `docs/archive/*` as source of truth.
-6. Do not instruct agents to add business code under `app/Addons/SeoContentAi`.
+1. Identify all changed symbols, routes, services, jobs, migrations, contracts since last doc pass.
+2. Select every affected canonical doc from mapping in `.cursor/rules/auto-update-docs.mdc`.
+3. Patch all files in one pass; bump `Last verified` dates.
+4. Update `docs/QUICK_DOC_SUMMARY.md` digest (not SoT).
+5. Update `docs/README.md` if new module doc added.
+6. Route feature ownership: content/media/seo/wordpress/publishing/content-projects/ai-prompt/search-intelligence/site-sync/agent — not SeoContentAi compat shell.
 
 # Verification
 
-- Review scoped diff for changed docs.
-- Confirm no application source code changed as part of docs update unless already part of the active task.
+- Grep changed symbols appear in updated docs.
+- No application source changed unless already part of the active task.
 
-# Safety and approval boundaries
+# Safety
 
-- MUST NOT run when `XONG!` is absent.
-- MUST NOT rewrite full large docs when a focused patch works.
-- MUST NOT copy archive docs into canonical docs without verifying current code.
+- Do not rewrite full large docs when focused patches work.
+- Do not copy archive into canonical without code verification.
+- Do not use retired `XONG!` trigger.
 
 # Expected final report
 
-One concise Vietnamese sentence:
-
-```text
-Da cap nhat xong docs: <file-list>.
-```
+Concise Vietnamese summary listing all files updated and date range covered.

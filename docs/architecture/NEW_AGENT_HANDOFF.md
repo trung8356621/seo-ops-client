@@ -1,7 +1,7 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
@@ -42,6 +42,9 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Product review create / AI history | `omnichannel-addons/commerce` (`ProductReviewCreationPolicy`, `ProductReviewGenerationHistoryRecorder`) |
 | Prompt / provider | `omnichannel-addons/ai-prompt` |
 | Site Sync | `omnichannel-addons/site-sync` |
+| Site Sync V3 (protocol 3) | `site-sync` — `SiteSyncV3Schema`, `RunSiteSyncV3Orchestrator`, `SiteSyncProtocolRouter` — see [`SITE_SYNC.md`](../modules/SITE_SYNC.md) §17 |
+| Contextual Help (in-app) | Client `app/Help/*` + `resources/help-seed/` — see [`CONTEXTUAL_HELP.md`](../modules/CONTEXTUAL_HELP.md) |
+| Article meta inventory / WP body cache | `content` `ArticleMetaKeyCatalog`; `wordpress` `ArticleWpContentCacheService` — see [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`WORDPRESS_BRIDGE.md`](../modules/WORDPRESS_BRIDGE.md) |
 | Agent / MCP | `omnichannel-addons/agent` |
 | Social Profile / manual share | `omnichannel-addons/social` |
 | SEO DB connection bootstrap | `omnichannel-addons/search-foundation` |

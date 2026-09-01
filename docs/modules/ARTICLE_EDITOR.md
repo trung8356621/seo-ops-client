@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content (+ seo / media / publishing peers)  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -46,6 +46,9 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Scoring registry | `Support/SeoScoringRulesRegistry` |
 | Scoring engine | `Services/SeoScoringEngine` + `SeoScoringCalculator` |
 | Client analyzer | `seoAnalyzer.js` + `seoScoreCalculator.js` + `SeoScorePanel.jsx` |
+| Meta key catalog | `Support/ArticleMetaKeyCatalog` | Canonical inventory + class (canonical/cache/legacy/orphan) |
+| Required data registry | `Support/ArticleRequiredDataRegistry` | Health/readiness required fields |
+| Content lifecycle | `Support/ArticleEditorContentLifecycle` | Persist/readiness gates |
 | Score job | `AnalyzeArticleSeoJob` via `SeoArticleScoringQueueService` |
 | Violations | `SeoRuleViolationsResolver` / `SeoAnalyzerService` |
 | FAQ matcher | `Support/FaqHeadingMatcher` |
@@ -290,7 +293,26 @@ No second scheduler for editor autosave — client debounce (local draft + serve
 12. Reintroduce Editor «Chạy lại quy trình» full-pipeline modal; use Content Project retry + AI History apply instead.
 13. Apply outline artifact into article body, or content artifact into outline editor.
 
-## 15. Tests and invariants
+## 15. Article meta inventory (2026-08-31)
+
+`ArticleMetaKeyCatalog` classifies every known `article_meta` key:
+
+| Class | Meaning |
+|-------|---------|
+| `canonical` | Active SoT or feeds projection columns |
+| `compatibility` | Dual-read/write or WP mirror still needed |
+| `cache` | Rebuildable projection |
+| `runtime` | Ephemeral flags/fingerprints |
+| `legacy` | Superseded — migrate before delete |
+| `orphan` | Zero readers — cleanup candidate when `cleanup: true` |
+
+Migration `2026_08_31_120000_delete_article_meta_wp_post_content_keys` removes `wp_post_content*` from `article_meta`. WP post body for sync/editor now uses dedicated cache table via `ArticleWpContentCacheService` (wordpress addon) — see [WORDPRESS_BRIDGE.md](WORDPRESS_BRIDGE.md).
+
+Refactored consumers (same pass): `ArticleEditorPersistService`, `ArticleEditorReadinessService`, `ArticleContentFaqService`, `ArticleFaqManualExtractService`, `ArticleLinkContextMapService`, `ArticlePendingInternalLinkService`, `ArticleTocExtractionService`, `ArticleProductGalleryDistributeService`, `ArticleRequiredDataHealthAuditor`.
+
+Tests: `ArticleMetaMapTest`, `ArticleRequiredDataRegistryTest` in `addons/content/tests/Unit/`.
+
+## 16. Tests and invariants
 
 | Test / area | Invariant |
 |-------------|-----------|
@@ -328,7 +350,7 @@ $PHP_BIN vendor/bin/phpunit --filter=ArticleEditorCtaMediaQuoteFixContractTest
 npm run build
 ```
 
-## 16. Related documents
+## 17. Related documents
 
 - [ARTICLE_EDITOR_FIXES_2026_08.md](../architecture/ARTICLE_EDITOR_FIXES_2026_08.md) — outline local-first, AI media hang/double-image, locale pass (2026-08)
 - [ARTICLE_EDITOR_WIDGET_LOCKS.md](../architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) — frozen Featured/Images/Publishing/Status

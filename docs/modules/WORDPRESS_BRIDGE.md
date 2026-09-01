@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/MAP_SEO_WP.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (plugin/general sections), Site Sync–adjacent WP notes formerly rooted in MAP_SEO_WP
 
 ## 1. Purpose
@@ -58,6 +58,8 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 | Laravel | `WordPressLocalMediaSyncService` / `ArticleMediaLocalService` | Local media → WP |
 | Laravel | `WordPressArticleMediaService` / `WordPressArticleAttachmentService` | Featured/gallery/rename/meta |
 | Laravel | `WordPressManualSyncService` + `ManualWordPressSyncJob` | Manual editor/list sync (queue `seo`) |
+| Laravel | `ArticleWpContentCacheService` | WP `post_content` cache table — replaces `wp_post_content*` article_meta |
+| Laravel | `ArticleWpContentCache` model | Table `article_wp_content_cache`; purge via `wordpress:purge-expired-wp-content-cache` |
 | Laravel | `ArticleWpSyncQueueService` + lease/watchdog | Sync job lease |
 | Laravel | `ScheduledArticlePublishRunner` | Due scheduled → publish |
 | Laravel | `WordPressPluginUpdateService` | Manual check/update/verify via WP REST; persist site plugin status |
@@ -81,6 +83,7 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 | Product virtual reviews | WP meta + optional local pending | Reviewed article: WP SoT; local pending cleared |
 | Product review **create** gate | `ProductReviewCreationPolicy` + `WordPressProductReviewStatusService` | Must fetch WP comment-reviews first; `block_if_real_reviews_exist` default true; no invent before `wp_post_id` |
 | Catalog links/keywords/scores (V2) | Site Sync / WP provider | Not dual-written by push-content |
+| WP post body cache | `article_wp_content_cache` (wordpress addon) | **Not** `article_meta` `wp_post_content*` (deleted 2026-08-31). Site Sync V3 must not write body/meta either. |
 | Manual Domain overrides | Laravel Manual | See SITE_SYNC ownership |
 
 ## 5. Read path
@@ -229,6 +232,7 @@ Site Sync outbox/callback — see [SITE_SYNC.md](SITE_SYNC.md). Compat push stil
 | Site Sync schema/min bridge | `SiteSyncV2ArchitectureFreezeTest` |
 | Publish scheduled runner ownership | `PublishScheduledArticlesCanonicalRunnerContractTest` |
 | Automation / dispatcher ownership | `AutomationDispatcherOwnershipContractTest` |
+| WP content cache lifecycle | `ArticleWpContentLifecycleContractTest` (wordpress addon) |
 | Architecture locks (unique jobs, etc.) | `ArchitectureHardeningLockContractTest` |
 
 ```text

@@ -1,99 +1,98 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-08-30  
-> Purpose: summarize recent conversation/work context so the next session can re-orient quickly. Canonical behavior still lives in `docs/README.md` and the linked architecture/module/contract docs.
+> Updated: 2026-09-01  
+> Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
 
-The current documentation set is organized as a canonical docs system for the Omnichannel Laravel backend.
+- `docs/README.md` — index + precedence.
+- `docs/architecture/*` — boundaries, ADR, handoff.
+- `docs/modules/*` — 16 module docs (thêm `CONTEXTUAL_HELP.md` 2026-09-01).
+- `docs/contracts/*`, `docs/operations/*`, `docs/audits/*`.
+- `docs/archive/*` — historical only.
+- `resources/help-seed/` — human-facing Help topics (48); không override canonical dev docs.
 
-- `docs/README.md` is the starting index and precedence guide.
-- `docs/architecture/*` records system boundaries, frozen architecture rules, and ADRs.
-- `docs/modules/*` describes each business module.
-- `docs/contracts/*` records public contracts and invariants.
-- `docs/operations/*` covers deploy, testing, scheduler/workers, and troubleshooting.
-- `docs/audits/*` contains active audits.
-- `docs/archive/*` is historical only and must not be treated as source of truth.
+## 2. Documentation update policy (2026-09-01)
 
-## 2. Recent Conversation Themes (2026-08-27 → 2026-08-30)
+- **Đã bỏ** trigger `XONG!` per-agent session.
+- Cập nhật docs **một lần tổng hợp** khi user yêu cầu hoặc sau đợt code lớn.
+- Rule: `.cursor/rules/auto-update-docs.mdc`. Skill: `.agents/skills/docs-update-on-xong/SKILL.md` (bulk mode).
 
-Canonical docs updated this pass: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICLE_EDITOR.md`, `WORDPRESS_BRIDGE.md`, this file, light handoff/index touches.
+## 3. Batch 2026-08-27 → 2026-08-30
+
+Canonical đã sync: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICLE_EDITOR.md`, `WORDPRESS_BRIDGE.md`.
 
 ### Content Projects — Draft → Execution Project
 
-- Flow: **Draft Reviewed → Create Execution Project** via `SplitDraftContentProjectService` / CommandBus `content_project.split_draft`.
-- Eligible = `planning_reviewed_at IS NOT NULL` only. Current calendar month only.
-- Writers = real USER ids selected by Manager. **Never** `SeoOpsSystemUser` (FK placeholder; treated as unassigned).
-- Fair-allocate then pack into reusable **max-30** Execution Projects per writer+month (`ContentProjectExecutionPackingService`). Multiple EPs allowed when over 30 — not “one project + month metadata.”
-- MOVE same task rows (preserve ids/origins). No AI / no auto-generate on split.
+- **Draft Reviewed → Create Execution Project** via `SplitDraftContentProjectService` / `content_project.split_draft`.
+- Writers = user thật; **không** `SeoOpsSystemUser`.
+- Pack **max-30** task/EP per writer+month (`ContentProjectExecutionPackingService`).
 - Repair: `seo:repair-execution-project-naming`, `seo:repair-execution-project-packing`.
-- Projects list buckets: `all|draft|project|archived` (`ContentProjectListBucket`). No bulk select on Projects list.
-- SEO Audit Notes: cluster suggestions by MCP share ASC → per-item DNA snapshot (planning override only).
+- List buckets: `all|draft|project|archived`. SEO Audit Notes: DNA snapshot per cluster.
 
-### Topics / Keyword DNA / Focus reconcile
+### Topics / Keyword DNA
 
-- UI rename: Topic Cluster → **Topics / Chủ đề** (code still `cluster_key`).
-- Keyword Dictionary stays **flat**; grouping = Topics only. Legacy `KeywordRuleGroup*` / `parent_id` hierarchy retired.
-- DNA: `KeywordDnaExtractor` / `KeywordDnaService` + `seo_keyword_dna`.
-- Recluster: `ReclusterTopicClustersService` + job. Focus invariant: `ReconcileFocusArticleTopicsService` + `seo:topics:reconcile-focus` — Focus keywords never stay Unassigned.
-- Keywords: Language filter on tab bar; domain context must follow GET `site_id`.
-- Loading UX: Keywords + Content Projects share Article-style `list-table-loading-shell`.
+- UI **Topics / Chủ đề** (`cluster_key` trong code).
+- Keyword Dictionary **flat**; DNA + recluster + focus reconcile (`seo:topics:reconcile-focus`).
+- `PaginationWindow` (±2 desktop). Keywords + CP dùng `list-table-loading-shell`.
 
-### GSC / nav / pagination
+### GSC / nav / reviews / vocabulary
 
-- GSC prefer month-scoped view/sync; MCP open from GSC surfaces when bound.
-- SEO user nav regrouped WordPress-style modules (`SeoUserNavigation` / `SeoPanelRoutes`).
-- Client pagination: `PaginationWindow` — current-page-centric tokens (±2 desktop), not “1 2 3 4 … 25 26” only.
+- `SeoUserNavigation` / `SeoPanelRoutes`. GSC month-scoped.
+- `ProductReviewCreationPolicy` + AI history recorder.
+- Vocabulary Suggest persist; Planner Idea Candidates chỉ từ Suggest.
+- Social Profiles + GSC Social Top 10.
 
-### Product reviews + WP sync
+### Editor (26–30/8)
 
-- `ProductReviewCreationPolicy`: must sync/check WP comment-reviews before gen; block when real WP reviews exist (default); target maintains unique AI count (default **3**).
-- Generations recorded into Article AI History via `ProductReviewGenerationHistoryRecorder`.
-- Manual WP sync may run create→sync review side effect under that policy (`WordPressManualSyncService`). Reviews sync ≠ CP publishing queue.
-
-### Vocabulary Suggest + Planner Idea Candidates
-
-- Persist: `START_TASK_2_VOCABULARY` → `save_vocabulary_research` / `keyword.vocabulary.save` → staging Suggest rows (not Prompt History SoT).
-- Planner Idea Candidates: pick from Vocabulary Suggest only (`InteractsWithIdeaCandidates`) — no AI / no GSC in that picker phase.
-
-### Social + nav
-
-- Social Profiles (`social/`) + Hub GSC Social Top 10 (`GscSocialTop10Builder`). GSC MCP ∉ Audit/Planner ideas.
-- SEO nav: `SeoUserNavigation` / `SeoPanelRoutes` (WP-style modules).
-
-### Still relevant from 2026-08-26
-
-- New Content Planner JSON-only gate + Draft Product persist — see `CONTENT_PROJECTS.md` § SEO Audit Draft / New Content Planner.
 - Domain link list soft match — `ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`.
-- Editor widget locks — `ARTICLE_EDITOR_WIDGET_LOCKS.md`.
+- Widget locks — SEO unlocked, còn lại locked (`ARTICLE_EDITOR_WIDGET_LOCKS.md`).
 
-## 3. Current Working-Tree Caution
+## 4. Batch 2026-08-31 (bổ sung canonical 2026-09-01)
 
-Inspect `git status --short` before editing; do not revert unrelated changes. Large Aug 27–29 work landed mainly in `omnichannel-addons` (`content-projects`, `search-intelligence`, `seo`, `seo-content-ai-compat`, `commerce`, `wordpress`) and light client (`SeoOpsSystemUser`, `PaginationWindow`). Canonical docs live in `omnichannel-client/docs`.
+### Contextual Help System — `omnichannel-client` 0.2.5–0.2.8
 
-## 4. Operational Rules To Remember
+- Full stack: `HelpGroupRegistry`, `HelpPublishService`, `HelpRemoteSyncService`, `HelpSyncCommand`.
+- Filament admin: `HelpTopicsAdmin`, `HelpTopicCreate`, `HelpTopicEdit`.
+- `HelpUi::fieldHintAction()` — mở help client-side (`seo-global-help:open`), không Livewire toggle.
+- `HelpContextKeyRegistry` + `HelpRuntimePayloadBuilder`.
+- **48 topics** `resources/help-seed/docs/`; VERSION `2026.08.31.1`.
+- Help **không** nằm Settings nav; tách khỏi Prompt Guidance.
+- Module doc: `docs/modules/CONTEXTUAL_HELP.md`.
 
-- For non-trivial tasks, query `codebase-memory` near the start when available, then verify against code/docs.
-- Before application-code edits, start or reuse a deploy-diff session.
-- After meaningful application-code edits, run deploy-diff `track` for modified/deleted backend files.
-- Do not deploy, commit, push, install dependencies, run migrations, alter databases, upload, or package the plugin unless explicitly asked.
-- Use remote-first PHPUnit commands, normally `$PHP_BIN vendor/bin/phpunit --filter=...`.
-- For JS/CSS changes, run or report the relevant build/check, normally `npm run build`.
-- When the user says `XONG!`, run `$docs-update-on-xong` (canonical module docs). Skill: `.agents/skills/docs-update-on-xong/`; rule: `.cursor/rules/auto-update-docs.mdc`.
+### Site Sync V3 — `omnichannel-addons` 0.2.7
 
-## 5. Documentation Update Policy
+- `SiteSyncV3Schema` (`site_sync.v3`), `SiteSyncProtocolRouter`, `RunSiteSyncV3Orchestrator`.
+- Phases: discover → import → reconcile_stale → catch_up → verify → complete.
+- **Không** ghi `articles.body` / `wp_post_content*` meta.
+- Keyset cursors; migrations run state + WAL index.
+- Tests: `SiteSyncV3ContractTest`, `SiteSyncV3HardeningIntegrationTest`.
+- Ghi trong `SITE_SYNC.md` §17.
 
-- This file is a lightweight conversation digest.
-- It does not override canonical docs.
-- When the user says `XONG!`, update the relevant canonical docs through the project docs workflow.
-- Contract/API/auth/site-sync/publishing/article/media changes should update the matching module/contract docs only after behavior is verified in code.
+### Article meta + WP content cache — `addons` 0.2.7
 
-## 6. Fast Re-Entry Checklist
+- `ArticleMetaKeyCatalog` + `ArticleRequiredDataRegistry`.
+- Xóa `wp_post_content*` khỏi `article_meta` (migration 2026-08-31).
+- Bảng `article_wp_content_cache` + `ArticleWpContentCacheService`.
+- Refactor persist/readiness/FAQ/links/TOC/gallery services.
+- Ghi trong `ARTICLE_EDITOR.md` §15, `WORDPRESS_BRIDGE.md`.
 
-1. Read `docs/README.md`.
-2. Check `git status --short`.
-3. Read the relevant module/contract docs for the touched area.
-4. Inspect current code and nearby tests before editing.
-5. Start/reuse deploy-diff for application-code changes.
-6. Run focused verification or clearly report why it was skipped.
+### Domain UI (compat shell)
+
+- Site health card, sync preflight modal, progress partials (`seo-content-ai-compat`).
+
+## 5. Repos & caution
+
+- Code chính: `omnichannel-addons` + light `omnichannel-client`.
+- Canonical docs chỉ ở `omnichannel-client/docs`.
+- `git status --short` trước khi sửa — tránh revert unrelated.
+
+## 6. Fast re-entry
+
+1. `docs/README.md`
+2. `git status --short` (+ log client + addons nếu docs lag)
+3. Module doc cho vùng đang sửa
+4. Code + test gần nhất
+5. deploy-diff cho application-code changes
+6. Verification focused hoặc báo skip có lý do

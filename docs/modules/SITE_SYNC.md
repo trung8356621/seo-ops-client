@@ -1,8 +1,8 @@
 # Site Sync
 
 > Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Owner: site-sync (peer addon)  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/SITE_SYNC_V2.md`, `docs/SITE_SYNC_V2_*.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (Site Sync sections), `docs/archive/site-sync/*`
 
 ## 1. Purpose
@@ -47,7 +47,13 @@ Auth for bridge callbacks: Bearer `sites.seo_read_token` (+ site/domain binding)
 | Backfill | `SiteSyncV2BackfillService` | Legacy migrate (non-destructive) |
 | Handshake / security | `SiteSyncHandshakeService`, `SiteSyncCallbackVerifier` | HMAC + nonce/replay |
 | Cutover | `SiteSyncCutoverStateService` + cutover commands | Writer mode / shadow / rollback flags |
-| Flags | `SiteSyncFeatureFlags` | `config('seo-content-ai.seo_architecture.site_sync_v2.*')` |
+| Flags | `SiteSyncFeatureFlags` | `config('seo-content-ai.seo_architecture.site_sync_v2.*')` + `protocol_v3_enabled` |
+| Protocol router | `SiteSyncProtocolRouter` | V3 when capability/probe hit; else V2 |
+| V3 schema | `SiteSyncV3Schema` | `site_sync.v3`, keyset cursors, no body/meta writes |
+| V3 orchestrator | `RunSiteSyncV3Orchestrator` | Phases: discover → import → reconcile_stale → catch_up → verify → complete |
+| V3 job | `ProcessSiteSyncV3Job` | Queue `seo`; unique per run |
+| V3 client | `WordPressSiteSyncV3Client` | Pull records/discover from WP when plugin ships V3 |
+| V3 importer | `SiteSyncV3BulkImporter` | Bulk content import without touching `articles.body` |
 | Handler | `SiteSyncCommandHandler` / `SiteSyncCutoverCommandHandler` | CommandBus |
 | Presenters | `SiteSyncStatusPresenter`, `SiteSyncSourceLabelPresenter` | Ops / Domain UI |
 | WP outbox | `wp-seo-ai` `Site_Sync_Outbox` | Debounced auto delta → Laravel callback |
@@ -239,6 +245,33 @@ $PHP_BIN vendor/bin/phpunit --filter=ContentProjectOperationsCenterTest
 ```
 
 Pointers also in `docs/operations/TESTING.md`.
+
+## 17. Site Sync V3 (protocol 3)
+
+> Added 2026-08-31. V2 remains default until site has V3 capability and `protocol_v3_enabled` flag.
+
+| Item | Detail |
+|------|--------|
+| Schema id | `site_sync.v3` (`SiteSyncV3Schema::VERSION`) |
+| Capability | `site_sync_v3` on WP bridge when shipped |
+| Router | `SiteSyncProtocolRouter::shouldUseV3()` — flag + capability or discover probe → V3 orchestrator; else V2 |
+| Resources | `content`, `terms` |
+| Modes | `force_full`, `delta` |
+| Phases | `discover`, `import`, `reconcile_stale`, `catch_up`, `verify`, `complete`, `needs_attention` |
+| Pagination | Keyset cursors only — **never** offset |
+| Body rule | V3 **must not** write `articles.body` or `wp_post_content*` article_meta keys |
+| Baseline meta | `seo_site_sync_v3_baseline_completed_at`, `seo_site_sync_v3_baseline_generation` |
+| Run state | Migration `2026_08_31_160000_site_sync_v3_run_state`; receipt model `SeoSiteSyncV3Receipt` |
+| WAL index | Migration `2026_08_31_161000_add_wal_site_wp_post_composite_index` |
+
+Tests:
+
+```text
+$PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3ContractTest.php
+$PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3HardeningIntegrationTest.php
+```
+
+WP body cache for editor/import paths: [`WORDPRESS_BRIDGE.md`](WORDPRESS_BRIDGE.md) — `article_wp_content_cache`.
 
 ## 16. Related documents
 

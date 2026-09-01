@@ -1,64 +1,58 @@
 ---
-description: Khi user gõ "XONG!" — tự cập nhật docs vệ tinh SEO theo thay đổi vừa code
+description: Quy trình cập nhật docs canonical tổng hợp — không trigger per-agent
 alwaysApply: true
 ---
 
-# Auto-update docs — trigger `XONG!`
+# Documentation maintenance — bulk canonical updates
 
-## Bước 0 — Bắt buộc kiểm tra đầu mỗi tin nhắn user
+## Policy
 
-**Trước mọi hành động khác**, quét tin nhắn user xem có chứa `XONG!` không (không phân biệt hoa thường, cho phép kèm text khác).
+- **Không** dùng trigger `XONG!` hay cập nhật docs từng phiên agent.
+- Cập nhật docs **một lần, tổng hợp** khi user yêu cầu hoặc sau đợt code lớn — tránh xung đột giữa các session.
+- Canonical SoT: `docs/README.md` → `architecture/`, `modules/`, `contracts/`, `operations/`.
+- Human-facing help: `resources/help-seed/` + `docs/modules/CONTEXTUAL_HELP.md`.
+- `docs/QUICK_DOC_SUMMARY.md` = digest nhanh; **không** override canonical.
 
-- **Không có `XONG!`** → bỏ qua toàn bộ rule này. Không đọc, không sửa docs.
-- **Có `XONG!`** → thực hiện ngay quy trình bên dưới. Đây là ưu tiên cao nhất; không hỏi lại user.
+## Khi nào cập nhật
 
-## Quy trình khi trigger
+1. User yêu cầu rõ (vd. "cập nhật docs", "tổng kết docs", "sync docs").
+2. Sau đợt thay đổi đa module kéo dài nhiều ngày.
+3. Trước handoff agent mới nếu canonical docs lag so với code.
 
-### 1. Xác định phạm vi thay đổi
+## Quy trình (một pass)
 
-Dùng **một hoặc nhiều** nguồn sau (ưu tiên theo thứ tự):
+1. Quét thay đổi: `git log` / `git diff` trên `omnichannel-client`, `omnichannel-addons`, `wp-seo-ai` (nếu bridge).
+2. Map symbol/route/service → file docs (bảng dưới).
+3. Patch **tất cả** file liên quan trong cùng một lần; bump `Last verified`.
+4. Cập nhật `docs/QUICK_DOC_SUMMARY.md` (section digest).
+5. Thêm dòng index trong `docs/README.md` nếu có module doc mới.
 
-1. File đã sửa trong **phiên chat hiện tại** (git status / diff / context conversation).
-2. `git diff` và `git status` nếu cần bổ sung.
-
-Ghi nhận: class/hàm/component/route mới hoặc đổi tên, luồng nghiệp vụ thay đổi.
-
-### 2. Chọn file docs vệ tinh
-
-Đọc **chỉ** mục Modules/Architecture trong `docs/README.md` (không đọc full file nếu >100 dòng — dùng grep/offset).
+## Mapping code → docs
 
 | Vùng code | File docs |
 |-----------|-----------|
-| React/Vite, JSX, `resources/js/` addon SEO | `docs/modules/ARTICLE_EDITOR.md` |
-| Domain, site settings | `docs/modules/SITE_MCP_AND_DOMAINS.md` |
-| Article editor, EditArticle, Livewire bridge | `docs/modules/ARTICLE_EDITOR.md` |
-| SEO audit, ArticlesOptimal, tab Reviewed | `docs/modules/SEO_AUDIT_AND_KEYWORDS.md` |
+| React/Vite editor, `resources/js/` addon SEO | `docs/modules/ARTICLE_EDITOR.md` |
+| Domain, site settings, team/RBAC | `docs/modules/SITE_MCP_AND_DOMAINS.md` |
+| SEO audit, keywords, topics, GSC | `docs/modules/SEO_AUDIT_AND_KEYWORDS.md` |
 | Media, upload, watermark | `docs/modules/MEDIA_AND_GALLERY.md` |
-| WP sync, bridge plugin | `docs/modules/WORDPRESS_BRIDGE.md` / `docs/modules/SITE_SYNC.md` |
+| WP sync, bridge plugin, content cache | `docs/modules/WORDPRESS_BRIDGE.md` |
+| Site Sync v2/v3, catalog reconcile | `docs/modules/SITE_SYNC.md` |
 | Content projects, workflow | `docs/modules/CONTENT_PROJECTS.md` |
-| Settings, prompts, AI connections | `docs/modules/PROMPTS_AND_AI.md` |
-| Team, RBAC | `docs/modules/SITE_MCP_AND_DOMAINS.md` |
-| Thay đổi core (không thuộc addon SEO) | `docs/architecture/SYSTEM_OVERVIEW.md` |
+| Settings, prompts, AI | `docs/modules/PROMPTS_AND_AI.md` |
+| Contextual Help, help-seed, HelpUi | `docs/modules/CONTEXTUAL_HELP.md` |
+| Core shell (không addon SEO) | `docs/architecture/SYSTEM_OVERVIEW.md` |
+| Ownership / handoff | `docs/architecture/NEW_AGENT_HANDOFF.md` |
 
-Nhiều vùng → cập nhật nhiều file tương ứng.
+Nhiều vùng → nhiều file trong cùng một pass.
 
-### 3. Cập nhật docs
+## Cách patch
 
-- Mở đúng section liên quan trong module canonical (grep tên class/hàm trước).
-- **Chèn hoặc sửa** entry ngắn gọn: tên symbol, vai trò 1 dòng, đường dẫn file.
-- Không rewrite cả file. Không tạo file docs mới ngoài tree canonical (`docs/modules|contracts|architecture|operations`).
-- Nếu thêm module/service quan trọng mới → cập nhật thêm 1 dòng trong `docs/README.md` nếu chưa có.
-
-### 4. Phản hồi user
-
-Chỉ trả lời **một câu**:
-
-> Đã cập nhật xong docs!
-
-Kèm tên file docs đã sửa (vd: `MAP_SEO_MEDIA.md`, `MAP_SEO_EDITOR.md`). Không giải thích dài.
+- Grep tên class/hàm trong module doc trước khi sửa.
+- Chèn/sửa entry ngắn: symbol, vai trò 1 dòng, đường dẫn file.
+- Không rewrite cả file. Không tạo doc ngoài tree canonical trừ khi user yêu cầu.
 
 ## Cấm
 
-- Không chạy quy trình này khi user **không** gõ `XONG!`.
-- Không đọc toàn bộ file docs >100 dòng — dùng grep/search rồi patch đúng section.
-- Không bỏ qua bước cập nhật docs khi đã thấy trigger `XONG!`.
+- Cập nhật docs rải rác mỗi agent session khi user đã chọn workflow tổng hợp.
+- Dùng `docs/archive/*` làm SoT.
+- Thêm business code vào `app/Addons/SeoContentAi` compat shell.
