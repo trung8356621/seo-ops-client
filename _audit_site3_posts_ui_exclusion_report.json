@@ -1,0 +1,1410 @@
+{
+    "inventory_count": 322,
+    "posts_ui_count": 273,
+    "excluded_count": 49,
+    "layer_counts": {
+        "inventory": 322,
+        "after_content_tab": 322,
+        "after_exclude_skip": 289,
+        "after_unreviewed": 273,
+        "after_post_type": 273
+    },
+    "primary_reason_counts": {
+        "skip_seo_audit": 33,
+        "review_status_approved": 13,
+        "review_status_archived": 3,
+        "is_term": 0,
+        "wrong_content_type_filter": 0,
+        "other": 0
+    },
+    "reason_membership_counts": {
+        "skip_seo_audit": 33,
+        "review_status_approved": 13,
+        "review_status_archived": 3,
+        "is_term": 0,
+        "wrong_content_type_filter": 0,
+        "other": 0
+    },
+    "focus": {
+        "inventory_with_focus": 101,
+        "inventory_without_focus": 221,
+        "ui_with_focus": 85,
+        "ui_without_focus": 188,
+        "excluded_with_focus": 16,
+        "excluded_without_focus": 33,
+        "focus_gap_inventory_minus_ui": 16
+    },
+    "excluded_with_focus": [
+        {
+            "article_id": 3020,
+            "wp_post_id": 24689,
+            "title": "Kỹ Thuật Tính Toán Định Mức Phụ Kiện Ngũ Kim Khi May Cặp Laptop Công Nghiệp",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3021,
+            "wp_post_id": 24686,
+            "title": "Tiêu Chí Đánh Giá Năng Lực Xưởng May Cặp Laptop Quà Tặng Sự Kiện Uy Tín",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3022,
+            "wp_post_id": 24683,
+            "title": "Quy Trình Kiểm Soát Chất Lượng Trong Chuyền May Cặp Laptop Số Lượng Lớn",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3023,
+            "wp_post_id": 24679,
+            "title": "Giải Pháp Tối Ưu Chi Phí Tại Xưởng May Cặp Laptop Cho Dự Án Đồng Phục Văn Phòng",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3024,
+            "wp_post_id": 24676,
+            "title": "Ứng Dụng Vật Liệu Trượt Nước Kháng Xước Vào Dây Chuyền Sản Xuất Cặp Laptop Công ",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3025,
+            "wp_post_id": 24662,
+            "title": "Cấu Tạo Của Quai Xách Trợ Lực Tại Xưởng May Cặp Laptop",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3026,
+            "wp_post_id": 24653,
+            "title": "Cấu Trúc Form Dáng Trong Sản Xuất Cặp Laptop Công Sở Chuyên Dụng",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3027,
+            "wp_post_id": 24649,
+            "title": "Tiêu Chuẩn Kỹ Thuật Đệm Chống Sốc Đa Tầng Tại Xưởng May Cặp Laptop Chuyên Nghiệp",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3028,
+            "wp_post_id": 24646,
+            "title": "Đồng Bộ Hóa Quy Trình Sản Xuất Balo Laptop Công Nghệ Trọng Tải Nặng Cho Dự Án Do",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3041,
+            "wp_post_id": 24718,
+            "title": "Kỹ Thuật Xử Lý Bề Mặt: Giải Pháp Chuẩn Hóa Nhận Diện Thương Hiệu Tại Xưởng May",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3042,
+            "wp_post_id": 24715,
+            "title": "In PET Chuyển Nhiệt Là Gì? Giải Pháp In Ấn Kỹ Thuật Số Đột Phá Ngành May Mặc",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3045,
+            "wp_post_id": 24707,
+            "title": "Lộ Trình Triển Khai Đơn Hàng Tại Xưởng May Balo Quà Tặng Chuyên Nghiệp",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3049,
+            "wp_post_id": 24691,
+            "title": "Kỹ Thuật Dập Nổi, Ép Kim Cấu Trúc Bề Mặt: Giải Pháp Nâng Tầm Nhận Diện Thương Hi",
+            "reasons": [
+                "review_status_approved"
+            ]
+        },
+        {
+            "article_id": 3309,
+            "wp_post_id": 18880,
+            "title": "15+ Tips Phối Đồ Nam Hàn Quốc Chuẩn Soái Ca Cho Anh Em",
+            "reasons": [
+                "review_status_archived"
+            ]
+        },
+        {
+            "article_id": 9616,
+            "wp_post_id": 24866,
+            "title": "Sức hút từ những chiếc túi xách handmade: Tại sao giới trẻ thà tự may\/đặt may ri",
+            "reasons": [
+                "review_status_archived"
+            ]
+        },
+        {
+            "article_id": 9617,
+            "wp_post_id": 24879,
+            "title": "Balo dây rút, túi vải canvas – “Vũ khí” chiếm trọn spotlight lễ hội âm nhạc",
+            "reasons": [
+                "review_status_archived"
+            ]
+        }
+    ],
+    "excluded_without_focus_sample": [
+        {
+            "article_id": 3088,
+            "wp_post_id": 1106,
+            "title": "Nhận đặt may balo theo yêu cầu cầu túi xách, cặp...",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3090,
+            "wp_post_id": 2237,
+            "title": "Cảm nhận Ông Nguyễn Trương Tuyến – GĐ Cty TNHH CDS",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3091,
+            "wp_post_id": 2240,
+            "title": "Cảm nhận Cảm nhận của Sư thầy Đông Thiện",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3092,
+            "wp_post_id": 2242,
+            "title": "Thầy Nguyễn Thái Duy Chủ Sáng Lập BeTraning",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3093,
+            "wp_post_id": 2261,
+            "title": "Logo Khách Hàng 1",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3094,
+            "wp_post_id": 2269,
+            "title": "Logo Khách Hàng 2",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3095,
+            "wp_post_id": 2271,
+            "title": "Logo Khách Hàng 3",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3096,
+            "wp_post_id": 2273,
+            "title": "Logo Khách Hàng 4",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3097,
+            "wp_post_id": 2275,
+            "title": "Logo Khách Hàng 5",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3098,
+            "wp_post_id": 2277,
+            "title": "Logo Khách Hàng 6",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3099,
+            "wp_post_id": 2518,
+            "title": "Cảm nhận chị Thu Công ty Milano",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3100,
+            "wp_post_id": 2522,
+            "title": "CẢM NHẬN CHỊ THÚY ANH VĂN GREELIGH",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3101,
+            "wp_post_id": 2551,
+            "title": "Logo Khách Hàng 7",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3102,
+            "wp_post_id": 2573,
+            "title": "Logo Khách Hàng 8",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3103,
+            "wp_post_id": 2575,
+            "title": "Logo Khách Hàng 9",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3104,
+            "wp_post_id": 2576,
+            "title": "Logo Khách Hàng 10",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3105,
+            "wp_post_id": 2579,
+            "title": "Logo Khách Hàng 11",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3106,
+            "wp_post_id": 2580,
+            "title": "Logo Khách Hàng 12",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3107,
+            "wp_post_id": 2584,
+            "title": "Logo Khách Hàng 14",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        },
+        {
+            "article_id": 3108,
+            "wp_post_id": 2583,
+            "title": "Logo Khách Hàng 15",
+            "reasons": [
+                "skip_seo_audit"
+            ]
+        }
+    ],
+    "excluded_details": [
+        {
+            "article_id": 3020,
+            "wp_post_id": 24689,
+            "title": "Kỹ Thuật Tính Toán Định Mức Phụ Kiện Ngũ Kim Khi May Cặp Laptop Công Nghiệp",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3021,
+            "wp_post_id": 24686,
+            "title": "Tiêu Chí Đánh Giá Năng Lực Xưởng May Cặp Laptop Quà Tặng Sự Kiện Uy Tín",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3022,
+            "wp_post_id": 24683,
+            "title": "Quy Trình Kiểm Soát Chất Lượng Trong Chuyền May Cặp Laptop Số Lượng Lớn",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3023,
+            "wp_post_id": 24679,
+            "title": "Giải Pháp Tối Ưu Chi Phí Tại Xưởng May Cặp Laptop Cho Dự Án Đồng Phục Văn Phòng",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3024,
+            "wp_post_id": 24676,
+            "title": "Ứng Dụng Vật Liệu Trượt Nước Kháng Xước Vào Dây Chuyền Sản Xuất Cặp Laptop Công Nghệ",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3025,
+            "wp_post_id": 24662,
+            "title": "Cấu Tạo Của Quai Xách Trợ Lực Tại Xưởng May Cặp Laptop",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3026,
+            "wp_post_id": 24653,
+            "title": "Cấu Trúc Form Dáng Trong Sản Xuất Cặp Laptop Công Sở Chuyên Dụng",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3027,
+            "wp_post_id": 24649,
+            "title": "Tiêu Chuẩn Kỹ Thuật Đệm Chống Sốc Đa Tầng Tại Xưởng May Cặp Laptop Chuyên Nghiệp",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3028,
+            "wp_post_id": 24646,
+            "title": "Đồng Bộ Hóa Quy Trình Sản Xuất Balo Laptop Công Nghệ Trọng Tải Nặng Cho Dự Án Doanh Nghiệp Đa Quốc G",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3041,
+            "wp_post_id": 24718,
+            "title": "Kỹ Thuật Xử Lý Bề Mặt: Giải Pháp Chuẩn Hóa Nhận Diện Thương Hiệu Tại Xưởng May",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3042,
+            "wp_post_id": 24715,
+            "title": "In PET Chuyển Nhiệt Là Gì? Giải Pháp In Ấn Kỹ Thuật Số Đột Phá Ngành May Mặc",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3045,
+            "wp_post_id": 24707,
+            "title": "Lộ Trình Triển Khai Đơn Hàng Tại Xưởng May Balo Quà Tặng Chuyên Nghiệp",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3049,
+            "wp_post_id": 24691,
+            "title": "Kỹ Thuật Dập Nổi, Ép Kim Cấu Trúc Bề Mặt: Giải Pháp Nâng Tầm Nhận Diện Thương Hiệu Trên Cặp Balo",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "approved",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_approved"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3088,
+            "wp_post_id": 1106,
+            "title": "Nhận đặt may balo theo yêu cầu cầu túi xách, cặp...",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3090,
+            "wp_post_id": 2237,
+            "title": "Cảm nhận Ông Nguyễn Trương Tuyến – GĐ Cty TNHH CDS",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3091,
+            "wp_post_id": 2240,
+            "title": "Cảm nhận Cảm nhận của Sư thầy Đông Thiện",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3092,
+            "wp_post_id": 2242,
+            "title": "Thầy Nguyễn Thái Duy Chủ Sáng Lập BeTraning",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3093,
+            "wp_post_id": 2261,
+            "title": "Logo Khách Hàng 1",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3094,
+            "wp_post_id": 2269,
+            "title": "Logo Khách Hàng 2",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3095,
+            "wp_post_id": 2271,
+            "title": "Logo Khách Hàng 3",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3096,
+            "wp_post_id": 2273,
+            "title": "Logo Khách Hàng 4",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3097,
+            "wp_post_id": 2275,
+            "title": "Logo Khách Hàng 5",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3098,
+            "wp_post_id": 2277,
+            "title": "Logo Khách Hàng 6",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3099,
+            "wp_post_id": 2518,
+            "title": "Cảm nhận chị Thu Công ty Milano",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3100,
+            "wp_post_id": 2522,
+            "title": "CẢM NHẬN CHỊ THÚY ANH VĂN GREELIGH",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3101,
+            "wp_post_id": 2551,
+            "title": "Logo Khách Hàng 7",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3102,
+            "wp_post_id": 2573,
+            "title": "Logo Khách Hàng 8",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3103,
+            "wp_post_id": 2575,
+            "title": "Logo Khách Hàng 9",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3104,
+            "wp_post_id": 2576,
+            "title": "Logo Khách Hàng 10",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3105,
+            "wp_post_id": 2579,
+            "title": "Logo Khách Hàng 11",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3106,
+            "wp_post_id": 2580,
+            "title": "Logo Khách Hàng 12",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3107,
+            "wp_post_id": 2584,
+            "title": "Logo Khách Hàng 14",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3108,
+            "wp_post_id": 2583,
+            "title": "Logo Khách Hàng 15",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3109,
+            "wp_post_id": 2590,
+            "title": "Logo Khách Hàng 16",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3110,
+            "wp_post_id": 2591,
+            "title": "Logo Khách Hàng 17",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3111,
+            "wp_post_id": 2592,
+            "title": "Logo Khách Hàng 18",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3112,
+            "wp_post_id": 2593,
+            "title": "Logo Khách Hàng 19",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3113,
+            "wp_post_id": 2594,
+            "title": "Logo Khách Hàng 20",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3116,
+            "wp_post_id": 4583,
+            "title": "Đam mê",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3117,
+            "wp_post_id": 4584,
+            "title": "Chuyên nghiệp",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3118,
+            "wp_post_id": 4585,
+            "title": "Tôn trọng và cởi mở",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3119,
+            "wp_post_id": 5197,
+            "title": "Tinh thần trách nhiệm",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3120,
+            "wp_post_id": 5624,
+            "title": "Checklist bảng câu hỏi tiêu chuẩn đánh giá nhà cung cấp",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3128,
+            "wp_post_id": 6410,
+            "title": "Lớp học vẽ balo cho người đam mê thiết kế",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3130,
+            "wp_post_id": 6850,
+            "title": "Giải đáp thắc mắc về câu hỏi túi xách lata có tốt không?",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3309,
+            "wp_post_id": 18880,
+            "title": "15+ Tips Phối Đồ Nam Hàn Quốc Chuẩn Soái Ca Cho Anh Em",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "archived",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_archived"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 3322,
+            "wp_post_id": 19162,
+            "title": "Quần lọt khe nữ là gì? Mua quần lọt khe ở đâu tốt nhất?",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "draft",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "1",
+            "has_effective_focus": false,
+            "has_provider_focus": false,
+            "reasons": [
+                "skip_seo_audit"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": false,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 9616,
+            "wp_post_id": 24866,
+            "title": "Sức hút từ những chiếc túi xách handmade: Tại sao giới trẻ thà tự may\/đặt may riêng chứ không mua sẵ",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "archived",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_archived"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        },
+        {
+            "article_id": 9617,
+            "wp_post_id": 24879,
+            "title": "Balo dây rút, túi vải canvas – “Vũ khí” chiếm trọn spotlight lễ hội âm nhạc",
+            "status": "publish",
+            "language": "vi",
+            "review_status": "archived",
+            "content_type": "post",
+            "wp_post_type": "post",
+            "skip_seo_audit": "",
+            "has_effective_focus": true,
+            "has_provider_focus": true,
+            "reasons": [
+                "review_status_archived"
+            ],
+            "layer": {
+                "in_after_tab": true,
+                "in_after_skip": true,
+                "in_after_unreviewed": false,
+                "in_after_type": false
+            }
+        }
+    ],
+    "verdict": "Articles are imported. Gap is Posts UI exclusion (mainly review_status approved\/archived and\/or skip_seo_audit), not missing inventory and not keyword sync."
+}

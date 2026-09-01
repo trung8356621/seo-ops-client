@@ -1,0 +1,249 @@
+{
+    "started_at": "2026-08-31T03:01:08+00:00",
+    "site_id": 2,
+    "domain": "https://maybalotuixachgiare.com",
+    "steps": [],
+    "pre_discover": {
+        "bridge": "1.0.85",
+        "total": 573,
+        "by_content_type": {
+            "post": 295,
+            "page": 30,
+            "product": 220
+        },
+        "snapshot_bounds": {
+            "content_max_id": 11285,
+            "term_max_id": 320
+        },
+        "snapshot_at": "2026-08-31T03:01:10+00:00"
+    },
+    "laravel_before": {
+        "laravel_wp_backed": 572,
+        "by_content_type": {
+            "post": 302,
+            "page": 29,
+            "product": 241,
+            "null": 0
+        },
+        "content_type_null": 0,
+        "body_non_null_wp_backed": 103,
+        "wp_post_content": 0,
+        "wp_post_content_source": 0,
+        "v3_baseline_at": "2026-08-31T03:00:04+00:00"
+    },
+    "trace_normal_wp_payload": {
+        "wp_id": 10936,
+        "title": "Cặp học sinh Kim Ngưu: Lựa chọn hàng đầu bảo vệ cột sống cho bé",
+        "focus_keywords": [
+            {
+                "phrase": "Cặp học sinh Kim Ngưu",
+                "provider": "rank_math"
+            }
+        ],
+        "link_count": 2,
+        "provider_score": {
+            "wordpress_id": 10936,
+            "source": "rank_math",
+            "score": null,
+            "raw": {
+                "note": "assessment_present_score_unavailable"
+            }
+        },
+        "content_type": "product",
+        "wp_post_type": "product"
+    },
+    "trace_delete_create": {
+        "http": 201,
+        "body": {
+            "success": true,
+            "message": "Đã tạo bài viết mới trên WordPress.",
+            "wp_post_id": 11286,
+            "slug": "",
+            "permalink": "https://maybalotuixachgiare.com/v3-accept-delete-20260831-030112.html",
+            "status": "draft",
+            "post_date": "2026-08-31 10:01:14",
+            "post_modified": "2026-08-31 10:01:14",
+            "faq_count": 0,
+            "seo_applied": false
+        },
+        "wp_id": 11286
+    },
+    "traces": {
+        "TRACE_NORMAL_ID": 10936,
+        "TRACE_NEWEST_ID": 11285,
+        "TRACE_UPDATE_ID": 11,
+        "TRACE_DELETE_ID": 11286,
+        "TRACE_CREATE_ID": 11287
+    },
+    "start": {
+        "success": true,
+        "message": "Đã xếp hàng Đồng bộ lại toàn bộ website (V3).",
+        "run_id": 39,
+        "public_ref": "ssr3_gd91othi3qnfdagp",
+        "protocol": 3
+    },
+    "create_http": {
+        "status": 201,
+        "body": {
+            "success": true,
+            "message": "Đã tạo bài viết mới trên WordPress. Đã áp SEO meta.",
+            "wp_post_id": 11287,
+            "slug": "v3-accept-create-20260831-030154",
+            "permalink": "https://maybalotuixachgiare.com/v3-accept-create-20260831-030154.html",
+            "status": "publish",
+            "post_date": "2026-08-31 10:01:56",
+            "post_modified": "2026-08-31 10:01:56",
+            "faq_count": 0,
+            "seo_applied": true
+        },
+        "snapshot_max": 11286
+    },
+    "update_http": {
+        "status": 200,
+        "body": {
+            "success": true,
+            "message": "Đã đồng bộ bài viết từ SEO editor.",
+            "wp_post_id": 11,
+            "post_type": "page",
+            "previous_post_type": "page",
+            "post_type_changed": false,
+            "redirect_created": false,
+            "slug": "gioi-thieu",
+            "permalink": "https://maybalotuixachgiare.com/gioi-thieu",
+            "status": "publish",
+            "faq_count": 0,
+            "category_count": 0,
+            "virtual_count": 0,
+            "seo_applied": false,
+            "post_date": "2014-11-11 11:14:05",
+            "post_modified": "2026-08-31 10:01:59"
+        },
+        "wp_id": 11,
+        "title": "V3-CATCHUP-TEST 030157 [V3-CATCHUP-TEST]"
+    },
+    "delete_http": {
+        "status": 200,
+        "body": {
+            "success": true,
+            "message": "Đã đồng bộ bài viết từ SEO editor.",
+            "wp_post_id": 11286,
+            "post_type": "post",
+            "previous_post_type": "post",
+            "post_type_changed": false,
+            "redirect_created": false,
+            "slug": "",
+            "permalink": "https://maybalotuixachgiare.com/v3-accept-delete-20260831-030112.html",
+            "status": "draft",
+            "faq_count": 0,
+            "category_count": 0,
+            "virtual_count": 0,
+            "seo_applied": false,
+            "post_date": "2026-08-31 10:01:14",
+            "post_modified": "2026-08-31 10:01:14"
+        },
+        "wp_id": 11286,
+        "seen_gen": 39,
+        "trashed": false,
+        "when": "import"
+    },
+    "blocker_delete": "Bridge 1.0.85 ignores status=trash (got draft). Install wp-seo-ai-1.0.86.zip from GitHub release 1.0.86.",
+    "create_above_bound": true,
+    "run": {
+        "run_id": 39,
+        "status": "completed",
+        "phase": "complete",
+        "protocol_version": "3",
+        "snapshot_at": "2026-08-31T03:01:16+00:00",
+        "snapshot_content_max_id": 11286,
+        "snapshot_term_max_id": 320,
+        "initial_expected_total": 574,
+        "final_expected_total": 575,
+        "final_manifest_at": "2026-08-31T03:10:43+00:00",
+        "verify": {
+            "at": "2026-08-31T03:11:09+00:00",
+            "extra": [],
+            "missing": [],
+            "local_total": 546,
+            "extra_removed": 0,
+            "local_by_type": {
+                "page": 29,
+                "post": 297,
+                "other": 0,
+                "product": 220
+            },
+            "type_mismatch": [],
+            "content_expected": 547,
+            "sample_extra_wp_ids": [],
+            "sample_missing_wp_ids": [],
+            "wp_content_enumerated": 546
+        },
+        "counters": {
+            "links": 1948,
+            "failed": 0,
+            "scores": 547,
+            "deleted": 0,
+            "fetched": 573,
+            "keywords": 528,
+            "upserted": 575,
+            "full_fetched": 573,
+            "catch_up_fetched": 2
+        },
+        "job_number": 16,
+        "retry_count": 0,
+        "catch_up_round": 1,
+        "error_code": null,
+        "error_message": null,
+        "ticks": 18,
+        "duration_sec": 595.54
+    },
+    "races": {
+        "create": {
+            "expected": "catch_up",
+            "actual": {
+                "laravel_exists": true,
+                "article_id": 13609,
+                "title": "V3-ACCEPT-CREATE-20260831-030154"
+            },
+            "result": "PASS_CATCHUP_OR_PRESENT"
+        },
+        "update": {
+            "expected": "catch_up",
+            "actual": {
+                "title": "V3-CATCHUP-TEST 030157 [V3-CATCHUP-TEST]"
+            },
+            "result": "PASS"
+        },
+        "delete": {
+            "expected": "tombstone",
+            "actual": {
+                "laravel_gone_or_trashed": false,
+                "article_id": 13608,
+                "deleted_at": null
+            },
+            "result": "FAIL_NEED_BRIDGE_GE_1.0.86"
+        }
+    },
+    "laravel_after": {
+        "wp_backed": 574,
+        "body_non_null": 103,
+        "baseline_at": "2026-08-31T03:11:09+00:00"
+    },
+    "receipts": {
+        "count": 16,
+        "avg_ms": "34831.8125",
+        "avg_items": "35.9375",
+        "sum_items": "575"
+    },
+    "performance": {
+        "duration_sec": 595.54,
+        "records_fetched": 573,
+        "records_per_min": 57.7,
+        "jobs": 16,
+        "ticks": 18
+    },
+    "verdict": "BLOCKED — need bridge >= 1.0.86 for trash/delete race",
+    "baseline_ok": true,
+    "url_keyword_count": 0,
+    "delete_bridge_blocker": true,
+    "finished_at": "2026-08-31T03:11:09+00:00"
+}

@@ -1,0 +1,335 @@
+{
+    "audit": [
+        {
+            "article_id": 964,
+            "wp_post_id": 11,
+            "title": "V3-CATCHUP-TEST 030157 [V3-CATCHUP-TEST]",
+            "slug": "gioi-thieu",
+            "status": "publish",
+            "created_at": "2014-11-11 11:14:05"
+        },
+        {
+            "article_id": 13595,
+            "wp_post_id": 11278,
+            "title": "V3-ACCEPT-CREATE-20260831-020148",
+            "slug": "v3-accept-create-20260831-020148",
+            "status": "publish",
+            "created_at": "2026-08-31 09:01:50"
+        },
+        {
+            "article_id": 13597,
+            "wp_post_id": 11274,
+            "title": "V3-ACCEPT-DELETE-20260831-012952",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:34:33"
+        },
+        {
+            "article_id": 13598,
+            "wp_post_id": 11275,
+            "title": "V3-ACCEPT-DELETE-20260831-014823",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:34:33"
+        },
+        {
+            "article_id": 13599,
+            "wp_post_id": 11276,
+            "title": "V3-ACCEPT-CREATE-20260831-014922",
+            "slug": "v3-accept-create-20260831-014922",
+            "status": "publish",
+            "created_at": "2026-08-31 08:49:24"
+        },
+        {
+            "article_id": 13600,
+            "wp_post_id": 11277,
+            "title": "V3-ACCEPT-DELETE-20260831-020102",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:34:33"
+        },
+        {
+            "article_id": 13601,
+            "wp_post_id": 11279,
+            "title": "V3-ACCEPT-DELETE-20260831-022723",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:34:33"
+        },
+        {
+            "article_id": 13602,
+            "wp_post_id": 11280,
+            "title": "V3-ACCEPT-CREATE-20260831-022759",
+            "slug": "v3-accept-create-20260831-022759",
+            "status": "publish",
+            "created_at": "2026-08-31 09:28:02"
+        },
+        {
+            "article_id": 13603,
+            "wp_post_id": 11281,
+            "title": "V3-TMP-DEL-023920",
+            "slug": "v3-tmp-del-023920",
+            "status": "publish",
+            "created_at": "2026-08-31 02:58:44"
+        },
+        {
+            "article_id": 13604,
+            "wp_post_id": 11282,
+            "title": "V3-ACCEPT-DELETE-20260831-024158",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:58:44"
+        },
+        {
+            "article_id": 13605,
+            "wp_post_id": 11283,
+            "title": "V3-ACCEPT-CREATE-20260831-024237",
+            "slug": "v3-accept-create-20260831-024237",
+            "status": "publish",
+            "created_at": "2026-08-31 09:42:39"
+        },
+        {
+            "article_id": 13606,
+            "wp_post_id": 11284,
+            "title": "V3-ACCEPT-DELETE-20260831-024958",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 02:58:45"
+        },
+        {
+            "article_id": 13607,
+            "wp_post_id": 11285,
+            "title": "V3-ACCEPT-CREATE-20260831-025036",
+            "slug": "v3-accept-create-20260831-025036",
+            "status": "publish",
+            "created_at": "2026-08-31 09:50:38"
+        },
+        {
+            "article_id": 13608,
+            "wp_post_id": 11286,
+            "title": "V3-ACCEPT-DELETE-20260831-030112",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 03:09:44"
+        },
+        {
+            "article_id": 13609,
+            "wp_post_id": 11287,
+            "title": "V3-ACCEPT-CREATE-20260831-030154",
+            "slug": "v3-accept-create-20260831-030154",
+            "status": "publish",
+            "created_at": "2026-08-31 10:01:56"
+        },
+        {
+            "article_id": 13610,
+            "wp_post_id": 11288,
+            "title": "V3-PROBE-TRASH-031232",
+            "slug": null,
+            "status": "draft",
+            "created_at": "2026-08-31 03:49:09"
+        }
+    ],
+    "restore": {
+        "wp_post_id": 11,
+        "article_id": 964,
+        "http": 200,
+        "title": "Giới thiệu",
+        "body": {
+            "success": true,
+            "message": "Đã đồng bộ bài viết từ SEO editor.",
+            "wp_post_id": 11,
+            "post_type": "page",
+            "previous_post_type": "page",
+            "post_type_changed": false,
+            "redirect_created": false,
+            "slug": "gioi-thieu",
+            "permalink": "https://maybalotuixachgiare.com/gioi-thieu",
+            "status": "publish",
+            "faq_count": 0,
+            "category_count": 0,
+            "virtual_count": 0,
+            "seo_applied": false,
+            "post_date": "2014-11-11 11:14:05",
+            "post_modified": "2026-08-31 11:04:57"
+        }
+    },
+    "wp_trashed": [
+        {
+            "wp_post_id": 11278,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11274,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11275,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11276,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11277,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11279,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11280,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11281,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11282,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11283,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11284,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11285,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11286,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11287,
+            "http": 200,
+            "status": "trash"
+        },
+        {
+            "wp_post_id": 11288,
+            "http": 200,
+            "status": "trash"
+        }
+    ],
+    "laravel_soft_deleted": [
+        13595,
+        13597,
+        13598,
+        13599,
+        13600,
+        13601,
+        13602,
+        13603,
+        13604,
+        13605,
+        13606,
+        13607,
+        13608,
+        13609,
+        13610
+    ],
+    "relations_cleaned": [
+        {
+            "article_id": 13595,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13597,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13598,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13599,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13600,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13601,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13602,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13603,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13604,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13605,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13606,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13607,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13608,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        },
+        {
+            "article_id": 13609,
+            "seo_link_maps": 1,
+            "article_meta": 9
+        },
+        {
+            "article_id": 13610,
+            "seo_link_maps": 0,
+            "article_meta": 5
+        }
+    ],
+    "skipped_business": [
+        964
+    ],
+    "reconcile": {
+        "wp_discover_total": 561,
+        "laravel_wp_backed_active": 560,
+        "discover_ok": true
+    }
+}

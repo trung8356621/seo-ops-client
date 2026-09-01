@@ -255,6 +255,36 @@ final class HelpContextKeyRegistry
                 'label' => 'Typography Validation',
             ],
             [
+                'key' => 'settings.ai.model_updates',
+                'group' => 'settings',
+                'label' => 'AI Model Updates',
+            ],
+            [
+                'key' => 'settings.workflow.prompt_design',
+                'group' => 'settings',
+                'label' => 'Prompt Design',
+            ],
+            [
+                'key' => 'settings.workflow.media_pipeline',
+                'group' => 'settings',
+                'label' => 'Media Generation Workflow',
+            ],
+            [
+                'key' => 'media.image_routing',
+                'group' => 'media',
+                'label' => 'Image Routing',
+            ],
+            [
+                'key' => 'media.typography',
+                'group' => 'media',
+                'label' => 'Typography',
+            ],
+            [
+                'key' => 'media.typography_experimental',
+                'group' => 'media',
+                'label' => 'Typography Experimental',
+            ],
+            [
                 'key' => 'settings.keywords.cta_blacklist',
                 'group' => 'settings',
                 'label' => 'CTA Keyword Blacklist',

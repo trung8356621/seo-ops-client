@@ -1,0 +1,2298 @@
+{
+    "site_id": 2,
+    "generated_at": "2026-08-31T03:25:26+00:00",
+    "seo_warning": {
+        "ui_formula": "SUM(field.present) \/ SUM(field.total) complete · SUM(field.missing) missing",
+        "ui_expected": "4,021 \/ 4,053 complete · 32 missing",
+        "article_denominator_per_field": 579,
+        "field_count": 7,
+        "fields": [
+            {
+                "key": "source_id",
+                "label": "WordPress ID",
+                "present": 574,
+                "missing": 5,
+                "total": 579,
+                "severity": "yellow",
+                "how_to_check": "wordpress_article_links.wp_post_id present and > 0",
+                "storage": "relation",
+                "technical_key": "wordpress_article_links.wp_post_id"
+            },
+            {
+                "key": "title",
+                "label": "Title",
+                "present": 579,
+                "missing": 0,
+                "total": 579,
+                "severity": "green",
+                "how_to_check": "articles.title not null and not whitespace-only",
+                "storage": "column",
+                "technical_key": "title"
+            },
+            {
+                "key": "slug",
+                "label": "Slug",
+                "present": 566,
+                "missing": 13,
+                "total": 579,
+                "severity": "yellow",
+                "how_to_check": "articles.slug not null\/empty\/whitespace-only (independent of permalink)",
+                "storage": "column",
+                "technical_key": "slug"
+            },
+            {
+                "key": "permalink",
+                "label": "Permalink",
+                "present": 565,
+                "missing": 14,
+                "total": 579,
+                "severity": "yellow",
+                "how_to_check": "article_meta.wp_permalink present and not whitespace-only (stored URL, not derived UI)",
+                "storage": "meta",
+                "technical_key": "wp_permalink"
+            },
+            {
+                "key": "content_type",
+                "label": "Content type",
+                "present": 579,
+                "missing": 0,
+                "total": 579,
+                "severity": "green",
+                "how_to_check": "article_meta.content_type in post|page|product",
+                "storage": "meta",
+                "technical_key": "content_type"
+            },
+            {
+                "key": "wp_post_type",
+                "label": "WP post type",
+                "present": 579,
+                "missing": 0,
+                "total": 579,
+                "severity": "green",
+                "how_to_check": "article_meta.wp_post_type present and not whitespace-only",
+                "storage": "meta",
+                "technical_key": "wp_post_type"
+            },
+            {
+                "key": "status",
+                "label": "Status",
+                "present": 579,
+                "missing": 0,
+                "total": 579,
+                "severity": "green",
+                "how_to_check": "articles.status not null and not whitespace-only",
+                "storage": "column",
+                "technical_key": "status"
+            }
+        ],
+        "worst_severity": "yellow",
+        "max_missing": 14,
+        "by_content_type": {
+            "post": 302,
+            "page": 29,
+            "product": 220,
+            "other": 28
+        },
+        "note": "Denominator is NOT unique articles. Each of 7 required fields contributes articles.total (= 579). 579×7=4053",
+        "missing_by_field": {
+            "source_id": {
+                "label": "WordPress ID",
+                "count": 5,
+                "article_ids": [
+                    9634,
+                    9636,
+                    13578,
+                    13579,
+                    13585
+                ],
+                "rows": [
+                    {
+                        "article_id": 9634,
+                        "wp_post_id": null,
+                        "title": "Phong cách Office Chic",
+                        "slug": "phong-cach-office-chic",
+                        "status": "scheduled",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 9636,
+                        "wp_post_id": null,
+                        "title": "Phong cách Boho Chic",
+                        "slug": "phong-cach-boho-chic",
+                        "status": "scheduled",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13578,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13579,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13585,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    }
+                ]
+            },
+            "title": {
+                "label": "Title",
+                "count": 0,
+                "article_ids": [],
+                "rows": []
+            },
+            "slug": {
+                "label": "Slug",
+                "count": 13,
+                "article_ids": [
+                    744,
+                    13578,
+                    13579,
+                    13585,
+                    13596,
+                    13597,
+                    13598,
+                    13600,
+                    13601,
+                    13603,
+                    13604,
+                    13606,
+                    13608
+                ],
+                "rows": [
+                    {
+                        "article_id": 744,
+                        "wp_post_id": 9072,
+                        "title": "Đinh Tán Balo: Xu Hướng Thời Trang Cá Tính Hot Nhất 2025",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": "https:\/\/maybalotuixachgiare.com\/dinh-tan-balo-xu-huong-thoi-trang-ca-tinh-hot-nhat-2025.html"
+                    },
+                    {
+                        "article_id": 13578,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13579,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13585,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13596,
+                        "wp_post_id": 8579,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13597,
+                        "wp_post_id": 11274,
+                        "title": "V3-ACCEPT-DELETE-20260831-012952",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13598,
+                        "wp_post_id": 11275,
+                        "title": "V3-ACCEPT-DELETE-20260831-014823",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13600,
+                        "wp_post_id": 11277,
+                        "title": "V3-ACCEPT-DELETE-20260831-020102",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13601,
+                        "wp_post_id": 11279,
+                        "title": "V3-ACCEPT-DELETE-20260831-022723",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13603,
+                        "wp_post_id": 11281,
+                        "title": "V3-TMP-DEL-023920",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13604,
+                        "wp_post_id": 11282,
+                        "title": "V3-ACCEPT-DELETE-20260831-024158",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13606,
+                        "wp_post_id": 11284,
+                        "title": "V3-ACCEPT-DELETE-20260831-024958",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13608,
+                        "wp_post_id": 11286,
+                        "title": "V3-ACCEPT-DELETE-20260831-030112",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    }
+                ]
+            },
+            "permalink": {
+                "label": "Permalink",
+                "count": 14,
+                "article_ids": [
+                    9634,
+                    9636,
+                    13578,
+                    13579,
+                    13585,
+                    13596,
+                    13597,
+                    13598,
+                    13600,
+                    13601,
+                    13603,
+                    13604,
+                    13606,
+                    13608
+                ],
+                "rows": [
+                    {
+                        "article_id": 9634,
+                        "wp_post_id": null,
+                        "title": "Phong cách Office Chic",
+                        "slug": "phong-cach-office-chic",
+                        "status": "scheduled",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 9636,
+                        "wp_post_id": null,
+                        "title": "Phong cách Boho Chic",
+                        "slug": "phong-cach-boho-chic",
+                        "status": "scheduled",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13578,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13579,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13585,
+                        "wp_post_id": 0,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13596,
+                        "wp_post_id": 8579,
+                        "title": "footer",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "blocks",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13597,
+                        "wp_post_id": 11274,
+                        "title": "V3-ACCEPT-DELETE-20260831-012952",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13598,
+                        "wp_post_id": 11275,
+                        "title": "V3-ACCEPT-DELETE-20260831-014823",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13600,
+                        "wp_post_id": 11277,
+                        "title": "V3-ACCEPT-DELETE-20260831-020102",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13601,
+                        "wp_post_id": 11279,
+                        "title": "V3-ACCEPT-DELETE-20260831-022723",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13603,
+                        "wp_post_id": 11281,
+                        "title": "V3-TMP-DEL-023920",
+                        "slug": null,
+                        "status": "publish",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13604,
+                        "wp_post_id": 11282,
+                        "title": "V3-ACCEPT-DELETE-20260831-024158",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13606,
+                        "wp_post_id": 11284,
+                        "title": "V3-ACCEPT-DELETE-20260831-024958",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    },
+                    {
+                        "article_id": 13608,
+                        "wp_post_id": 11286,
+                        "title": "V3-ACCEPT-DELETE-20260831-030112",
+                        "slug": null,
+                        "status": "draft",
+                        "body_null": true,
+                        "content_type": "post",
+                        "wp_post_type": "post",
+                        "wp_permalink": null
+                    }
+                ]
+            },
+            "content_type": {
+                "label": "Content type",
+                "count": 0,
+                "article_ids": [],
+                "rows": []
+            },
+            "wp_post_type": {
+                "label": "WP post type",
+                "count": 0,
+                "article_ids": [],
+                "rows": []
+            },
+            "status": {
+                "label": "Status",
+                "count": 0,
+                "article_ids": [],
+                "rows": []
+            }
+        },
+        "wp_probe": [
+            {
+                "field": "source_id",
+                "article_id": 9634,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "source_id",
+                "article_id": 9636,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "source_id",
+                "article_id": 13578,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "source_id",
+                "article_id": 13579,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "source_id",
+                "article_id": 13585,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "slug",
+                "article_id": 744,
+                "wp_post_id": 9072,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "Đinh Tán Balo: Xu Hướng Thời Trang Cá Tính Hot Nhất 2025",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/dinh-tan-balo-xu-huong-thoi-trang-ca-tinh-hot-nhat-2025.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13578,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "slug",
+                "article_id": 13579,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "slug",
+                "article_id": 13585,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "slug",
+                "article_id": 13596,
+                "wp_post_id": 8579,
+                "observe_found": true,
+                "observe_status": "publish",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "footer",
+                    "slug": "footer",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/blocks\/footer",
+                    "content_type": "post",
+                    "wp_post_type": "blocks",
+                    "status": "publish"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13597,
+                "wp_post_id": 11274,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-012952",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-012952.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13598,
+                "wp_post_id": 11275,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-014823",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-014823.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13600,
+                "wp_post_id": 11277,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-020102",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-020102.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13601,
+                "wp_post_id": 11279,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-022723",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-022723.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13603,
+                "wp_post_id": 11281,
+                "observe_found": true,
+                "observe_status": "publish",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-TMP-DEL-023920",
+                    "slug": "v3-tmp-del-023920",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-tmp-del-023920.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "publish"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13604,
+                "wp_post_id": 11282,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-024158",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-024158.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13606,
+                "wp_post_id": 11284,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-024958",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-024958.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "slug",
+                "article_id": 13608,
+                "wp_post_id": 11286,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-030112",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-030112.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": false,
+                "local_missing": true,
+                "classification": "LEGITIMATE_SOURCE_ABSENCE — WP also empty\/missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 9634,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "permalink",
+                "article_id": 9636,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13578,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13579,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13585,
+                "wp_post_id": null,
+                "classification": "local_only_or_null_wp_link — not importer loss from WP payload"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13596,
+                "wp_post_id": 8579,
+                "observe_found": true,
+                "observe_status": "publish",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "footer",
+                    "slug": "footer",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/blocks\/footer",
+                    "content_type": "post",
+                    "wp_post_type": "blocks",
+                    "status": "publish"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13597,
+                "wp_post_id": 11274,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-012952",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-012952.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13598,
+                "wp_post_id": 11275,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-014823",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-014823.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13600,
+                "wp_post_id": 11277,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-020102",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-020102.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13601,
+                "wp_post_id": 11279,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-022723",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-022723.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13603,
+                "wp_post_id": 11281,
+                "observe_found": true,
+                "observe_status": "publish",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-TMP-DEL-023920",
+                    "slug": "v3-tmp-del-023920",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-tmp-del-023920.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "publish"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13604,
+                "wp_post_id": 11282,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-024158",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-024158.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13606,
+                "wp_post_id": 11284,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-024958",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-024958.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            },
+            {
+                "field": "permalink",
+                "article_id": 13608,
+                "wp_post_id": 11286,
+                "observe_found": true,
+                "observe_status": "draft",
+                "v3_item_found": true,
+                "wp_payload_field": {
+                    "title": "V3-ACCEPT-DELETE-20260831-030112",
+                    "slug": "",
+                    "permalink": "https:\/\/maybalotuixachgiare.com\/v3-accept-delete-20260831-030112.html",
+                    "content_type": "post",
+                    "wp_post_type": "post",
+                    "status": "draft"
+                },
+                "wp_has_field": true,
+                "local_missing": true,
+                "classification": "IMPORTER_LOSS — WP has value, local missing"
+            }
+        ]
+    },
+    "bridge_version": "1.0.86",
+    "discover_ok": true,
+    "keyword_counters": {
+        "dictionary_page": {
+            "total": 756,
+            "active": 743,
+            "errors_underperforming": 13,
+            "active_plus_errors": 756,
+            "overlap_active_and_errors": 0,
+            "query_paths": {
+                "total": "KeywordUiInventoryQuery::baseQuery(site=2) — forSite + has linkMaps.source_article_id + exclude TYPE_SUGGEST + min word count + exclude link-like",
+                "active": "applyActiveSeoKeywords: (mainArticles OR linkMaps) AND review_status=active AND NOT seo_hidden",
+                "errors": "applyUnderperformingReview: review_status IN (danger,warning) OR seo_hidden=1"
+            }
+        },
+        "focus_page": {
+            "total_badge": 176,
+            "active": 172,
+            "errors": 4,
+            "query_path": "ListFocusKeywords mode=focus → DictionaryQuery filter focus=true → whereHas(mainArticles) on inventory base",
+            "same_as_dictionary_total": false
+        },
+        "raw_site_keywords": {
+            "all_for_site": 1166,
+            "with_main_articles": 543,
+            "with_link_maps": 782,
+            "with_neither": 18
+        }
+    },
+    "zero_usage": {
+        "dictionary_visible_total": 756,
+        "with_link_map_ge1": 756,
+        "with_focus_article_ge1": 0,
+        "with_both": 0,
+        "with_neither": 0,
+        "link_map_count_eq_0_in_dictionary": 0,
+        "focus_article_count_eq_0_in_dictionary": 756,
+        "samples_link_map_zero": [],
+        "samples_focus_zero": [
+            {
+                "keyword_id": 11,
+                "phrase": "Công ty May Balo Túi Xách Hợp Phát",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 11,
+                    "raw_text": "Công ty May Balo Túi Xách Hợp Phát",
+                    "normalized_text": "công ty may balo túi xách hợp phát",
+                    "folded_text": "cong ty may balo tui xach hop phat",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 11,
+                    "cluster_key": "hop_phat__e3b0c4",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 68,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-19 21:47:31",
+                    "created_at": "2026-08-19 21:35:11",
+                    "updated_at": "2026-08-30 04:42:19",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.94",
+                    "classification_hash": "8facac8a45a4b0aa9bea24800fc2d8d2e94bed0b3e2067857437f513d0fd04b3",
+                    "input_hash": "608325e9f05a703da4d1ecf1641f1f473df097f7e95b448602265e8d210d93be",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 67,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 13,
+                "phrase": "balo quà tặng doanh nghiệp",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 13,
+                    "raw_text": "balo quà tặng doanh nghiệp",
+                    "normalized_text": "balo quà tặng doanh nghiệp",
+                    "folded_text": "balo qua tang doanh nghiep",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 13,
+                    "cluster_key": "balo_qua__b98880",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 77,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:37",
+                    "created_at": "2026-08-26 09:31:37",
+                    "updated_at": "2026-08-27 05:10:04",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.90",
+                    "classification_hash": "ea225767a9d668c73e5192f2c907889dbea6283e8f1543bd73cab5120094a560",
+                    "input_hash": "8e656ea192a8719bcf300962396f70bd94fd099c910e3fc4c7ad603f5593ba4c",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 81,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 15,
+                "phrase": "balo quà tặng",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 15,
+                    "raw_text": "balo quà tặng",
+                    "normalized_text": "balo quà tặng",
+                    "folded_text": "balo qua tang",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 15,
+                    "cluster_key": "balo_qua__b98880",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 70,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:45",
+                    "created_at": "2026-08-26 09:31:45",
+                    "updated_at": "2026-08-27 05:10:04",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.87",
+                    "classification_hash": "feb3a2c4cd3c703f2dead918849b14f827a75a312f59fa2aa9fcedac58cdc5da",
+                    "input_hash": "f4e83fb622ba889b5a447ed2493fdecc496e1286409a59e0fcc54b6e34021790",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 34,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 22,
+                "phrase": "Vải Canvas",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 22,
+                    "raw_text": "Vải Canvas",
+                    "normalized_text": "vải canvas",
+                    "folded_text": "vai canvas",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 22,
+                    "cluster_key": "vai_canvas__785f3e",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:45",
+                    "created_at": "2026-08-26 09:31:45",
+                    "updated_at": "2026-08-27 05:14:54",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.90",
+                    "classification_hash": "4f40e301e0198a305f097ccf922e62dc4c5c1b6b1dc9b675059b1e25c0589b12",
+                    "input_hash": "1d34f13d86edba5b218a291d2656fce5c9eee3a5f4ad961fce1d0b98071dd46f",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 9,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 23,
+                "phrase": "Phong cách vintage",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 23,
+                    "raw_text": "Phong cách vintage",
+                    "normalized_text": "phong cách vintage",
+                    "folded_text": "phong cach vintage",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 23,
+                    "cluster_key": "phong_cach_vintage__535fa3",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 62,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-19 21:47:31",
+                    "created_at": "2026-08-19 21:47:31",
+                    "updated_at": "2026-08-28 09:45:28",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.77",
+                    "classification_hash": "e7c19c480c810a73f5b1cbce098bd3f6a5247e6a155489964459dfc44ab721ab",
+                    "input_hash": "e8ea060b2c8efc14b4c9f9e96231ed783f2b870738d39036eb994804d8900c0e",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 4,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 24,
+                "phrase": "khóa kéo YKK",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 24,
+                    "raw_text": "khóa kéo YKK",
+                    "normalized_text": "khóa kéo ykk",
+                    "folded_text": "khoa keo ykk",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 24,
+                    "cluster_key": "khoa_keo_ykk__c23560",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-15 01:24:32",
+                    "created_at": "2026-08-15 01:24:32",
+                    "updated_at": "2026-08-30 04:42:33",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.82",
+                    "classification_hash": "c89f48dd5abe19ae3713b326da25ef29ed9f9cb3bf1426ac1dedc566b19dc61e",
+                    "input_hash": "4a9c49b7318a8f5b1b885e9ccfeb89d2db770e5febb422249dd16de0d4ff1932",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 54,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 25,
+                "phrase": "Balo Quà Tặng Hợp Phát",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 25,
+                    "raw_text": "Balo Quà Tặng Hợp Phát",
+                    "normalized_text": "balo quà tặng hợp phát",
+                    "folded_text": "balo qua tang hop phat",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 25,
+                    "cluster_key": "balo_qua__b98880",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 67,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:37",
+                    "created_at": "2026-08-26 09:31:37",
+                    "updated_at": "2026-08-27 05:10:04",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.87",
+                    "classification_hash": "cbad6b75674cdfbb7e5eb0944348556b18605998cb2a15ff4f3acd1a9d681edf",
+                    "input_hash": "8622098b554eb6585ff144ad3489d9d52445481a63b97ef311f65f5ea5ed98d5",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 7,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 234,
+                "phrase": "Cách may balo dây rút",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 234,
+                    "raw_text": "Cách may balo dây rút",
+                    "normalized_text": "cách may balo dây rút",
+                    "folded_text": "cach may balo day rut",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 234,
+                    "cluster_key": "may__0a2d64",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 77,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:39",
+                    "created_at": "2026-08-26 09:31:39",
+                    "updated_at": "2026-08-27 05:10:05",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.89",
+                    "classification_hash": "b050ffa43b7663fe1a00abf9fd977e67fe46ae117c67d4768c126e0fef1265d2",
+                    "input_hash": "42cb510c7a158c92f7d94795f26a0edc6661cba40b90b82104ff32bcd32779f8",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 8,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 237,
+                "phrase": "kích thước túi xách",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 237,
+                    "raw_text": "kích thước túi xách",
+                    "normalized_text": "kích thước túi xách",
+                    "folded_text": "kich thuoc tui xach",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 237,
+                    "cluster_key": "kich_thuoc_tui_xach__f0bc31",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 78,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:39",
+                    "created_at": "2026-08-26 09:31:39",
+                    "updated_at": "2026-08-27 05:15:00",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.84",
+                    "classification_hash": "827125de55fb7834788343630b2163e588d4cd151552b5845fccf1dad1b5ca72",
+                    "input_hash": "607bbf4c3dba82007da560c19a0a420f1093afbee2a18cdfd0b5c7e7c5b0a462",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 8,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 244,
+                "phrase": "cách kiểm hàng may mặc",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 244,
+                    "raw_text": "cách kiểm hàng may mặc",
+                    "normalized_text": "cách kiểm hàng may mặc",
+                    "folded_text": "cach kiem hang may mac",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 244,
+                    "cluster_key": "may_mac__82c01c",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 55,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:39",
+                    "created_at": "2026-08-26 09:31:39",
+                    "updated_at": "2026-08-27 05:14:53",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.79",
+                    "classification_hash": "0042ee0207187641e651d758973426ff386e83ba9bacce3907d2883ee31f2da0",
+                    "input_hash": "579785237147e93090ff6608498ef6ab4e1bfd5a4ebe94fa38b34b3299809057",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 2,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 252,
+                "phrase": "kích thước balo",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 252,
+                    "raw_text": "kích thước balo",
+                    "normalized_text": "kích thước balo",
+                    "folded_text": "kich thuoc balo",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 252,
+                    "cluster_key": "kich_thuoc_balo__d6e5a2",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 66,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:39",
+                    "created_at": "2026-08-26 09:31:39",
+                    "updated_at": "2026-08-27 05:14:57",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.82",
+                    "classification_hash": "eb483b8e1d2076721e3153d5b95104904dbd5261161124371f8cf613836f7a36",
+                    "input_hash": "21d187ff4968ac57cbadcda4c9e044cf23dd5844acb86d5fa329ef044bee984c",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 5,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 268,
+                "phrase": "Xưởng May Balo",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 268,
+                    "raw_text": "Xưởng May Balo",
+                    "normalized_text": "xưởng may balo",
+                    "folded_text": "xuong may balo",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 268,
+                    "cluster_key": "may__0a2d64",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:45",
+                    "created_at": "2026-08-26 09:31:45",
+                    "updated_at": "2026-08-27 05:10:05",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.94",
+                    "classification_hash": "d8fb6e1ea958d89ff6495f309a08753eab548197704fe9a907bf3c8102796144",
+                    "input_hash": "9d9923c7b3d2303484fea513fe2ec54a639d17ee979373ecd7289a8e83f9df79",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 127,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 302,
+                "phrase": "cách thắt quai balo",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 302,
+                    "raw_text": "cách thắt quai balo",
+                    "normalized_text": "cách thắt quai balo",
+                    "folded_text": "cach that quai balo",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 302,
+                    "cluster_key": "cach_that_quai_balo__f32828",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 66,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-30 04:42:36",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.82",
+                    "classification_hash": "11a315b83039f603d4cd9c6a119b207faad13aa7eea651432243dc35b377f63e",
+                    "input_hash": "02f6fdc862f11428059dd36c9f375686929e74b17fd52c109aef34cbd8d554f1",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 4,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 319,
+                "phrase": "Xưởng May balo trẻ em",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 319,
+                    "raw_text": "Xưởng May balo trẻ em",
+                    "normalized_text": "xưởng may balo trẻ em",
+                    "folded_text": "xuong may balo tre em",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 319,
+                    "cluster_key": "may__0a2d64",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 63,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-27 05:10:05",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.90",
+                    "classification_hash": "79ff629bf3e3a61fef36438e3415a867e24163833168c0012265fb428dd91633",
+                    "input_hash": "eb070ab918a2e5372e3f5f6d084cf0ddeaa68bfdea3e1a99dce3ae787fc80f00",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 5,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 323,
+                "phrase": "balo học sinh",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": null,
+                "is_seo_keyword": null,
+                "article_relation_count": 0,
+                "link_map_count": 22,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 326,
+                "phrase": "Vải xion",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 326,
+                    "raw_text": "Vải xion",
+                    "normalized_text": "vải xion",
+                    "folded_text": "vai xion",
+                    "phrase_kind": "brand_entity",
+                    "seo_intent": "navigational",
+                    "canonical_keyword_id": 326,
+                    "cluster_key": null,
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.74",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-27 05:16:02",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.85",
+                    "classification_hash": "390326e4229b1034d1f08d8a6eea8c35afdd237c77edd2fa10be0f30524d9ef6",
+                    "input_hash": "ac411a00b076db30562bca61b0ea14db173c2dddfcbf42866cffb986676c2368",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 8,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 327,
+                "phrase": "vải polyester",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 327,
+                    "raw_text": "vải polyester",
+                    "normalized_text": "vải polyester",
+                    "folded_text": "vai polyester",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 327,
+                    "cluster_key": "vai_polyester__02cca3",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-15 01:24:32",
+                    "created_at": "2026-08-15 01:24:32",
+                    "updated_at": "2026-08-30 04:42:42",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.86",
+                    "classification_hash": "14c0f57308d4ad4894edb6fa147b38b6d59a1e52f362039c66dd5cac7beedf09",
+                    "input_hash": "7848a116fd99ea8ab16d096f653fa4807bf5692bf192080c900b3fa5e5aab654",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 57,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 328,
+                "phrase": "vải không dệt là gì",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 328,
+                    "raw_text": "vải không dệt là gì",
+                    "normalized_text": "vải không dệt là gì",
+                    "folded_text": "vai khong det la gi",
+                    "phrase_kind": "query",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 328,
+                    "cluster_key": null,
+                    "is_anchor_candidate": 0,
+                    "anchor_priority": 0,
+                    "classification_confidence": "0.88",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-27 05:16:01",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.92",
+                    "classification_hash": "97d384f357f0d1d8264b885708cc31349ea607c97e59d063acb83e67f58c344b",
+                    "input_hash": "60d54e1e239c50ad1d7a27b0522cb1c2b098042d4fec5fc4cdc481e79895231c",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 13,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 329,
+                "phrase": "Vải bố là gì",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 329,
+                    "raw_text": "Vải bố là gì",
+                    "normalized_text": "vải bố là gì",
+                    "folded_text": "vai bo la gi",
+                    "phrase_kind": "query",
+                    "seo_intent": "informational",
+                    "canonical_keyword_id": 329,
+                    "cluster_key": null,
+                    "is_anchor_candidate": 0,
+                    "anchor_priority": 0,
+                    "classification_confidence": "0.88",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-27 05:16:01",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.88",
+                    "classification_hash": "a0fda73c46e6e500abbbb981832c6bdd5c1403833eed3b420b2d928e9c22892d",
+                    "input_hash": "606362a7261aeab960dee6a1bb38ae62bcc57dbed3961351556ba1933ff20117",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 13,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 335,
+                "phrase": "Xưởng may balo túi xách",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "danger",
+                "classification": {
+                    "keyword_id": 335,
+                    "raw_text": "Xưởng may balo túi xách",
+                    "normalized_text": "xưởng may balo túi xách",
+                    "folded_text": "xuong may balo tui xach",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 335,
+                    "cluster_key": "may__0a2d64",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 77,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-15 01:24:32",
+                    "created_at": "2026-08-15 01:24:32",
+                    "updated_at": "2026-08-27 05:10:05",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.97",
+                    "classification_hash": "a3ff24920333db8e1e60a112a82aeb44ddfe5ce0c17f7337dfa10ecfebb88e50",
+                    "input_hash": "b4d1131ad773bea13c3d48575a091b371036230a38bffe1bad5b82bd49fcdf8a",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 25,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 336,
+                "phrase": "BALO DÂY RÚT",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": null,
+                "is_seo_keyword": null,
+                "article_relation_count": 0,
+                "link_map_count": 2,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 338,
+                "phrase": "XƯỞNG MAY BALO TÚI XÁCH HỢP PHÁT",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 338,
+                    "raw_text": "XƯỞNG MAY BALO TÚI XÁCH HỢP PHÁT",
+                    "normalized_text": "xưởng may balo túi xách hợp phát",
+                    "folded_text": "xuong may balo tui xach hop phat",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 338,
+                    "cluster_key": "hop_phat__e3b0c4",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 71,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-15 01:24:32",
+                    "created_at": "2026-08-15 01:24:32",
+                    "updated_at": "2026-08-30 04:42:19",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.97",
+                    "classification_hash": "493bbdecb402f849f45ee9afb5a967384095419a41e869c6fa2691af76184a28",
+                    "input_hash": "254ba3379ca12e828f7743a0e1737388cf9de7afd19134e2969d6422777395d6",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 71,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 348,
+                "phrase": "Xưởng may ba lô túi xách Hợp Phát",
+                "source": null,
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 348,
+                    "raw_text": "Xưởng may ba lô túi xách Hợp Phát",
+                    "normalized_text": "xưởng may ba lô túi xách hợp phát",
+                    "folded_text": "xuong may ba lo tui xach hop phat",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 348,
+                    "cluster_key": "may_ba_lo__058d5d",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 62,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:40",
+                    "created_at": "2026-08-26 09:31:40",
+                    "updated_at": "2026-08-27 05:14:56",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.92",
+                    "classification_hash": "fcd9b001853cf81ec5ce0ce3d60430b25d4c4f2a7835e4dd1c2892aca0020a83",
+                    "input_hash": "dd254474838e8d6acf564dc060ac23b2263d45a9b5c768de3c5c45556f1ff302",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 6,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 349,
+                "phrase": "balo laptop",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "danger",
+                "classification": {
+                    "keyword_id": 349,
+                    "raw_text": "balo laptop",
+                    "normalized_text": "balo laptop",
+                    "folded_text": "balo laptop",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 349,
+                    "cluster_key": "balo_laptop__72ba18",
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 66,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-26 09:31:45",
+                    "created_at": "2026-08-26 09:31:45",
+                    "updated_at": "2026-08-27 05:14:54",
+                    "source_kind": "site_sync",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.82",
+                    "classification_hash": "e6a4a7a77a844d77dbd1432f3ea8432e4d893b94ce22a40ec06ed2a48a371257",
+                    "input_hash": "1d6a212aae0b175b5d4727f9f76f24199b168d150d5ed712b864df6e505db17d",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 18,
+                "provider_relation_count": null
+            },
+            {
+                "keyword_id": 361,
+                "phrase": "Xưởng may Hợp Phát",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "classification": {
+                    "keyword_id": 361,
+                    "raw_text": "Xưởng may Hợp Phát",
+                    "normalized_text": "xưởng may hợp phát",
+                    "folded_text": "xuong may hop phat",
+                    "phrase_kind": "keyword_phrase",
+                    "seo_intent": "commercial",
+                    "canonical_keyword_id": 361,
+                    "cluster_key": null,
+                    "is_anchor_candidate": 1,
+                    "anchor_priority": 80,
+                    "classification_confidence": "0.80",
+                    "classified_at": "2026-08-19 21:47:31",
+                    "created_at": "2026-08-15 01:24:32",
+                    "updated_at": "2026-08-28 06:23:31",
+                    "source_kind": "other",
+                    "is_seo_keyword": 1,
+                    "is_ambiguous": 0,
+                    "keyword_score": "0.90",
+                    "classification_hash": "b7b19ccc0642e2464fe15eb4778a2525dc382e7578a7c41e8c6d8fb31d73da85",
+                    "input_hash": "ff1161e204e114116a4ac60f0974b821f7a6c0aba1939d6bd0b185f5ec060350",
+                    "is_dirty": 0,
+                    "duplicate_of": null,
+                    "segments": "[]",
+                    "occurrence_count": null
+                },
+                "is_seo_keyword": 1,
+                "article_relation_count": 0,
+                "link_map_count": 80,
+                "provider_relation_count": null
+            }
+        ],
+        "note": "Dictionary inventory REQUIRES whereHas(linkMaps). True link_map=0 rows should not appear unless stale\/orphan maps."
+    },
+    "keyword_traces": {
+        "picks": {
+            "valid_anchor": [
+                11,
+                13,
+                15
+            ],
+            "provider_focus": [
+                1675,
+                268,
+                3410
+            ],
+            "zero_count": [
+                2836,
+                3544
+            ],
+            "error_underperforming": [
+                335,
+                349
+            ]
+        },
+        "traces": [
+            {
+                "bucket": "valid_anchor",
+                "keyword_id": 11,
+                "phrase": "Công ty May Balo Túi Xách Hợp Phát",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 5,
+                        "source_article_id": 4064,
+                        "anchor_text": "Công ty May Balo Túi Xách Hợp Phát",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 212,
+                        "source_article_id": 4096,
+                        "anchor_text": "Công ty May Balo Túi Xách Hợp Phát",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 827,
+                        "source_article_id": 4334,
+                        "anchor_text": "Công ty may balo túi xách Hợp Phát",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1045,
+                        "source_article_id": 4387,
+                        "anchor_text": "CÔNG TY MAY BALO TÚI XÁCH HỢP PHÁT",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1121,
+                        "source_article_id": 4423,
+                        "anchor_text": "Công ty may balo túi xách Hợp Phát",
+                        "link_type": "external"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 67,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "valid_anchor",
+                "keyword_id": 13,
+                "phrase": "balo quà tặng doanh nghiệp",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 7,
+                        "source_article_id": 4064,
+                        "anchor_text": "balo quà tặng doanh nghiệp",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 20,
+                        "source_article_id": 4065,
+                        "anchor_text": "balo quà tặng doanh nghiệp",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 46,
+                        "source_article_id": 4070,
+                        "anchor_text": "balo quà tặng doanh nghiệp",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 50,
+                        "source_article_id": 4071,
+                        "anchor_text": "balo quà tặng doanh nghiệp",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 58,
+                        "source_article_id": 4072,
+                        "anchor_text": "Balo Quà Tặng Doanh Nghiệp",
+                        "link_type": "external"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 81,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "valid_anchor",
+                "keyword_id": 15,
+                "phrase": "balo quà tặng",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 37267,
+                        "source_article_id": 4077,
+                        "anchor_text": "Balo Quà Tặng",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 37378,
+                        "source_article_id": 4073,
+                        "anchor_text": "Balo Quà Tặng",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 37403,
+                        "source_article_id": 4067,
+                        "anchor_text": "balo quà tặng",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 37440,
+                        "source_article_id": 4066,
+                        "anchor_text": "balo quà tặng",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 40030,
+                        "source_article_id": 4068,
+                        "anchor_text": "balo quà tặng",
+                        "link_type": "internal"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 34,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "provider_focus",
+                "keyword_id": 1675,
+                "phrase": "Công ty may ba lô túi xách",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 8039,
+                        "source_article_id": 890,
+                        "anchor_text": "công ty may ba lô túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 8406,
+                        "source_article_id": 1006,
+                        "anchor_text": "công ty may ba lô túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 29332,
+                        "source_article_id": 3342,
+                        "anchor_text": "Công ty may ba lô túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 51297,
+                        "source_article_id": 1006,
+                        "anchor_text": "công ty may ba lô túi xách",
+                        "link_type": "internal"
+                    },
+                    {
+                        "id": 51554,
+                        "source_article_id": 890,
+                        "anchor_text": "công ty may ba lô túi xách",
+                        "link_type": "external"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 5,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "provider_focus",
+                "keyword_id": 268,
+                "phrase": "Xưởng May Balo",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 719,
+                        "source_article_id": 4307,
+                        "anchor_text": "Xưởng May Balo",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 740,
+                        "source_article_id": 4316,
+                        "anchor_text": "Xưởng may balo",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 847,
+                        "source_article_id": 4337,
+                        "anchor_text": "Xưởng May Balo",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 999,
+                        "source_article_id": 4359,
+                        "anchor_text": "xưởng may balo",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1468,
+                        "source_article_id": 4584,
+                        "anchor_text": "Xưởng may balo",
+                        "link_type": "external"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 127,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "provider_focus",
+                "keyword_id": 3410,
+                "phrase": "đặt balo theo yêu cầu",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": false,
+                "link_maps": [],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 0,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "zero_count",
+                "keyword_id": 2836,
+                "phrase": "May Túi Xách Vải Canvas",
+                "source": null,
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": false,
+                "link_maps": [],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 0,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "zero_count",
+                "keyword_id": 3544,
+                "phrase": "công ty may balo túi xách túi vải",
+                "source": null,
+                "type": "normal",
+                "review_status": "active",
+                "in_dictionary_ui": false,
+                "link_maps": [],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 0,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "error_underperforming",
+                "keyword_id": 335,
+                "phrase": "Xưởng may balo túi xách",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "danger",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 1000,
+                        "source_article_id": 4363,
+                        "anchor_text": "Xưởng may balo túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1016,
+                        "source_article_id": 4373,
+                        "anchor_text": "XƯỞNG MAY BALO TÚI XÁCH",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1107,
+                        "source_article_id": 4417,
+                        "anchor_text": "xưởng may balo túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1955,
+                        "source_article_id": 4854,
+                        "anchor_text": "xưởng may balo túi xách",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 1977,
+                        "source_article_id": 4862,
+                        "anchor_text": "Xưởng may balo túi xách",
+                        "link_type": "external"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 25,
+                    "focus_article_count": null
+                }
+            },
+            {
+                "bucket": "error_underperforming",
+                "keyword_id": 349,
+                "phrase": "balo laptop",
+                "source": "provider",
+                "type": "normal",
+                "review_status": "danger",
+                "in_dictionary_ui": true,
+                "link_maps": [
+                    {
+                        "id": 36981,
+                        "source_article_id": 4191,
+                        "anchor_text": "Balo laptop",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 37026,
+                        "source_article_id": 9606,
+                        "anchor_text": "balo laptop",
+                        "link_type": "external"
+                    },
+                    {
+                        "id": 52059,
+                        "source_article_id": 1078,
+                        "anchor_text": "balo laptop",
+                        "link_type": "internal"
+                    },
+                    {
+                        "id": 52066,
+                        "source_article_id": 1086,
+                        "anchor_text": "balo laptop",
+                        "link_type": "internal"
+                    },
+                    {
+                        "id": 52084,
+                        "source_article_id": 1061,
+                        "anchor_text": "Balo laptop",
+                        "link_type": "internal"
+                    }
+                ],
+                "article_keyword": [],
+                "ui_counts": {
+                    "link_map_count": 18,
+                    "focus_article_count": null
+                }
+            }
+        ]
+    },
+    "seo_link_maps_schema": {
+        "column": {
+            "Field": "keyword_id",
+            "Type": "bigint unsigned",
+            "Null": "NO",
+            "Key": "MUL",
+            "Default": null,
+            "Extra": ""
+        },
+        "keyword_id_nullable": false,
+        "migration_says": "foreignId()->constrained() => NOT NULL",
+        "null_keyword_id_rows": 0
+    },
+    "link_storage_evidence": {
+        "total_link_maps_site2": 2437,
+        "keywords_created_from_url_shaped": 1
+    }
+}

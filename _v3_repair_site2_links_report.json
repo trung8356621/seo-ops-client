@@ -1,0 +1,118 @@
+{
+    "run_id": 40,
+    "chunks": 11,
+    "upserted": 547,
+    "importer_links_counter": 2740,
+    "failed": 0,
+    "inventory": {
+        "internal_links": 1918,
+        "external_links": 1292,
+        "total_links": 3257,
+        "keyword_links": 2437,
+        "keywordless_links": 820,
+        "orphan_pages": 324,
+        "inventory_available": true,
+        "inventory_state": "Inventory ready",
+        "link_opportunities": null,
+        "opportunities_checked": false,
+        "broken_links": null,
+        "remote_health_checked": false,
+        "remote_health_state": "Not checked",
+        "last_remote_analyzed_at": null,
+        "source": "seo_link_maps"
+    },
+    "dictionary_total": 756,
+    "focus_main_articles": 176,
+    "classification_focus_chip": 176,
+    "url_keywords_site2": 0,
+    "dictionary_without_link": 0,
+    "seo_health_fields": [
+        {
+            "key": "source_id",
+            "label": "WordPress ID",
+            "present": 575,
+            "missing": 5,
+            "total": 580,
+            "severity": "yellow",
+            "how_to_check": "wordpress_article_links.wp_post_id present and > 0",
+            "storage": "relation",
+            "technical_key": "wordpress_article_links.wp_post_id"
+        },
+        {
+            "key": "title",
+            "label": "Title",
+            "present": 580,
+            "missing": 0,
+            "total": 580,
+            "severity": "green",
+            "how_to_check": "articles.title not null and not whitespace-only",
+            "storage": "column",
+            "technical_key": "title"
+        },
+        {
+            "key": "slug",
+            "label": "Slug",
+            "present": 568,
+            "missing": 12,
+            "total": 580,
+            "severity": "yellow",
+            "how_to_check": "articles.slug not null\/empty\/whitespace-only (independent of permalink)",
+            "storage": "column",
+            "technical_key": "slug"
+        },
+        {
+            "key": "permalink",
+            "label": "Permalink",
+            "present": 575,
+            "missing": 5,
+            "total": 580,
+            "severity": "yellow",
+            "how_to_check": "article_meta.wp_permalink present and not whitespace-only (stored URL, not derived UI)",
+            "storage": "meta",
+            "technical_key": "wp_permalink"
+        },
+        {
+            "key": "content_type",
+            "label": "Content type",
+            "present": 580,
+            "missing": 0,
+            "total": 580,
+            "severity": "green",
+            "how_to_check": "article_meta.content_type in post|page|product",
+            "storage": "meta",
+            "technical_key": "content_type"
+        },
+        {
+            "key": "wp_post_type",
+            "label": "WP post type",
+            "present": 580,
+            "missing": 0,
+            "total": 580,
+            "severity": "green",
+            "how_to_check": "article_meta.wp_post_type present and not whitespace-only",
+            "storage": "meta",
+            "technical_key": "wp_post_type"
+        },
+        {
+            "key": "status",
+            "label": "Status",
+            "present": 580,
+            "missing": 0,
+            "total": 580,
+            "severity": "green",
+            "how_to_check": "articles.status not null and not whitespace-only",
+            "storage": "column",
+            "technical_key": "status"
+        }
+    ],
+    "domain_general_card": {
+        "internal_links": 1918,
+        "orphan_pages": 324,
+        "link_opportunities": null,
+        "broken_links": null,
+        "link_health_lines": [
+            "Inventory ready",
+            "Remote health: Not checked"
+        ]
+    }
+}

@@ -1,33 +1,33 @@
 {
-  "_BlockFormatToolbar-BLUZDfgN.js": {
-    "file": "assets/BlockFormatToolbar-BLUZDfgN.js",
+  "_BlockFormatToolbar-D58At2gC.js": {
+    "file": "assets/BlockFormatToolbar-D58At2gC.js",
     "name": "BlockFormatToolbar",
     "imports": [
       "_tiptap-vendor-U7k3hmg0.js",
       "_react-vendor-BJWL6Tay.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_vendor-CYZicxqJ.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoArticleApi-CPKqx417.js"
     ]
   },
-  "_FaqAnswerEditor-DjVbEVtt.js": {
-    "file": "assets/FaqAnswerEditor-DjVbEVtt.js",
+  "_FaqAnswerEditor-DAQPt1np.js": {
+    "file": "assets/FaqAnswerEditor-DAQPt1np.js",
     "name": "FaqAnswerEditor",
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_BlockFormatToolbar-BLUZDfgN.js"
+      "_BlockFormatToolbar-D58At2gC.js"
     ]
   },
-  "_ImageSplitterPanel-DOSVODhw.js": {
-    "file": "assets/ImageSplitterPanel-DOSVODhw.js",
+  "_ImageSplitterPanel-CgdiFsYv.js": {
+    "file": "assets/ImageSplitterPanel-CgdiFsYv.js",
     "name": "ImageSplitterPanel",
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "_seoMediaApi-BwAw07hA.js",
-      "_i18n-k5rJOx1d.js"
+      "_i18n-TyJZT1Tw.js"
     ]
   },
   "_SeoSelect-xrvCEU2O.js": {
@@ -37,19 +37,19 @@
       "_react-vendor-BJWL6Tay.js"
     ]
   },
-  "_article-editor-9TcN9bEy.css": {
-    "file": "assets/article-editor-9TcN9bEy.css",
-    "src": "_article-editor-9TcN9bEy.css"
+  "_article-editor-B0aV_Wzq.css": {
+    "file": "assets/article-editor-B0aV_Wzq.css",
+    "src": "_article-editor-B0aV_Wzq.css"
   },
-  "_article-editor-B7V_HVvg.js": {
-    "file": "assets/article-editor-B7V_HVvg.js",
+  "_article-editor-Cd98L_MZ.js": {
+    "file": "assets/article-editor-Cd98L_MZ.js",
     "name": "article-editor",
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js"
     ],
     "css": [
-      "assets/article-editor-9TcN9bEy.css"
+      "assets/article-editor-B0aV_Wzq.css"
     ]
   },
   "_articleMediaPickerCache-Cxa_A24x.js": {
@@ -60,15 +60,15 @@
     "file": "assets/articleMediaPickerCustomTabs-B_yuEDmG.js",
     "name": "articleMediaPickerCustomTabs"
   },
-  "_articlePhraseOccurrences-xuFFdXzy.js": {
-    "file": "assets/articlePhraseOccurrences-xuFFdXzy.js",
+  "_articlePhraseOccurrences-C0Vdnzgq.js": {
+    "file": "assets/articlePhraseOccurrences-C0Vdnzgq.js",
     "name": "articlePhraseOccurrences",
     "imports": [
       "addons/content/resources/js/article-editor.jsx"
     ]
   },
-  "_i18n-k5rJOx1d.js": {
-    "file": "assets/i18n-k5rJOx1d.js",
+  "_i18n-TyJZT1Tw.js": {
+    "file": "assets/i18n-TyJZT1Tw.js",
     "name": "i18n"
   },
   "_react-vendor-BJWL6Tay.js": {
@@ -157,18 +157,18 @@
     "isEntry": true
   },
   "addons/ai-prompt/resources/js/components/ArticleAiChatPanel.jsx": {
-    "file": "assets/ArticleAiChatPanel-DEXiRLag.js",
+    "file": "assets/ArticleAiChatPanel-C1MBjLm8.js",
     "name": "ArticleAiChatPanel",
     "src": "addons/ai-prompt/resources/js/components/ArticleAiChatPanel.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_seoArticleApi-CPKqx417.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_article-editor-B7V_HVvg.js"
+      "_article-editor-Cd98L_MZ.js"
     ]
   },
   "addons/content-projects/resources/css/automation-workflow-builder.css": {
@@ -243,16 +243,16 @@
     "isEntry": true
   },
   "addons/content/resources/js/article-editor.jsx": {
-    "file": "assets/article-editor-CpcTCjbN.js",
+    "file": "assets/article-editor-CdnvPwgF.js",
     "name": "article-editor",
     "src": "addons/content/resources/js/article-editor.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
-      "_i18n-k5rJOx1d.js",
+      "_BlockFormatToolbar-D58At2gC.js",
+      "_i18n-TyJZT1Tw.js",
       "_vendor-CYZicxqJ.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-BwAw07hA.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -309,19 +309,19 @@
     "isEntry": true
   },
   "addons/content/resources/js/components/ArticleFaqEditor.jsx": {
-    "file": "assets/ArticleFaqEditor-PnuKmIFj.js",
+    "file": "assets/ArticleFaqEditor-pg3AMHgJ.js",
     "name": "ArticleFaqEditor",
     "src": "addons/content/resources/js/components/ArticleFaqEditor.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
-      "_FaqAnswerEditor-DjVbEVtt.js",
+      "_FaqAnswerEditor-DAQPt1np.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_BlockFormatToolbar-BLUZDfgN.js",
-      "_i18n-k5rJOx1d.js",
+      "_BlockFormatToolbar-D58At2gC.js",
+      "_i18n-TyJZT1Tw.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-BwAw07hA.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -334,7 +334,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleLinksSidebar.jsx": {
-    "file": "assets/ArticleLinksSidebar-CjNL9SIQ.js",
+    "file": "assets/ArticleLinksSidebar-CWIBoytl.js",
     "name": "ArticleLinksSidebar",
     "src": "addons/content/resources/js/components/ArticleLinksSidebar.jsx",
     "isDynamicEntry": true,
@@ -342,11 +342,11 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoArticleApi-CPKqx417.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
-      "_articlePhraseOccurrences-xuFFdXzy.js",
-      "_article-editor-B7V_HVvg.js",
+      "_BlockFormatToolbar-D58At2gC.js",
+      "_articlePhraseOccurrences-C0Vdnzgq.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoMediaApi-BwAw07hA.js",
       "_SeoSelect-xrvCEU2O.js",
       "_seoScoreCalculator-wVAguMec.js",
@@ -359,7 +359,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleVocabularySidebar.jsx": {
-    "file": "assets/ArticleVocabularySidebar-DsVbO0N2.js",
+    "file": "assets/ArticleVocabularySidebar-CIwghJ05.js",
     "name": "ArticleVocabularySidebar",
     "src": "addons/content/resources/js/components/ArticleVocabularySidebar.jsx",
     "isDynamicEntry": true,
@@ -367,12 +367,12 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoArticleApi-CPKqx417.js",
-      "_articlePhraseOccurrences-xuFFdXzy.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_articlePhraseOccurrences-C0Vdnzgq.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_SeoSelect-xrvCEU2O.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoMediaApi-BwAw07hA.js",
       "_seoScoreCalculator-wVAguMec.js",
       "_articleMediaPickerCache-Cxa_A24x.js",
@@ -384,7 +384,7 @@
     ]
   },
   "addons/content/resources/js/modules/ReviewsModule.jsx": {
-    "file": "assets/ReviewsModule-Dc5tqdhy.js",
+    "file": "assets/ReviewsModule-C3VtCn7w.js",
     "name": "ReviewsModule",
     "src": "addons/content/resources/js/modules/ReviewsModule.jsx",
     "isDynamicEntry": true,
@@ -392,10 +392,10 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_i18n-TyJZT1Tw.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-BwAw07hA.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -447,7 +447,7 @@
     ]
   },
   "addons/media/resources/js/components/GenerateImageModal.jsx": {
-    "file": "assets/GenerateImageModal-DlbB9Bhu.js",
+    "file": "assets/GenerateImageModal-CYtqlO4Y.js",
     "name": "GenerateImageModal",
     "src": "addons/media/resources/js/components/GenerateImageModal.jsx",
     "isDynamicEntry": true,
@@ -455,14 +455,14 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "_SeoSelect-xrvCEU2O.js",
-      "_ImageSplitterPanel-DOSVODhw.js",
+      "_ImageSplitterPanel-CgdiFsYv.js",
       "_seoMediaApi-BwAw07hA.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoArticleApi-CPKqx417.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoScoreCalculator-wVAguMec.js",
       "_articleMediaPickerCache-Cxa_A24x.js",
       "_seoLocalMediaUpload-iu4cX4df.js"
@@ -472,7 +472,7 @@
     ]
   },
   "addons/media/resources/js/editor/host/SharedMediaPicker.jsx": {
-    "file": "assets/SharedMediaPicker-B2dLrXSk.js",
+    "file": "assets/SharedMediaPicker-Dcs25mxS.js",
     "name": "SharedMediaPicker",
     "src": "addons/media/resources/js/editor/host/SharedMediaPicker.jsx",
     "isDynamicEntry": true,
@@ -481,12 +481,12 @@
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
       "_seoArticleApi-CPKqx417.js",
-      "_i18n-k5rJOx1d.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_i18n-TyJZT1Tw.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_seoMediaApi-BwAw07hA.js",
       "_seoLocalMediaUpload-iu4cX4df.js",
       "_articleMediaPickerCustomTabs-B_yuEDmG.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_SeoSelect-xrvCEU2O.js",
       "_seoScoreCalculator-wVAguMec.js",
       "_articleMediaPickerCache-Cxa_A24x.js",
@@ -497,7 +497,7 @@
     ]
   },
   "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx": {
-    "file": "assets/GallerySidebarPanel-BpbL8WVh.js",
+    "file": "assets/GallerySidebarPanel-DvfniDvs.js",
     "name": "GallerySidebarPanel",
     "src": "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx",
     "isDynamicEntry": true,
@@ -505,9 +505,9 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
-      "_article-editor-B7V_HVvg.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_i18n-TyJZT1Tw.js",
+      "_article-editor-Cd98L_MZ.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_tiptap-vendor-U7k3hmg0.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-BwAw07hA.js",
@@ -521,16 +521,16 @@
     ]
   },
   "addons/media/resources/js/media-image-editor-page.jsx": {
-    "file": "assets/media-image-editor-page-ie431Q9d.js",
+    "file": "assets/media-image-editor-page-Csc3xZUQ.js",
     "name": "media-image-editor-page",
     "src": "addons/media/resources/js/media-image-editor-page.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoMediaApi-BwAw07hA.js",
-      "_ImageSplitterPanel-DOSVODhw.js",
+      "_ImageSplitterPanel-CgdiFsYv.js",
       "_seoArticleApi-CPKqx417.js"
     ],
     "css": [
@@ -549,7 +549,7 @@
     ]
   },
   "addons/media/resources/js/media-library-page.jsx": {
-    "file": "assets/media-library-page-CgsXhK7a.js",
+    "file": "assets/media-library-page-BKGo5lRd.js",
     "name": "media-library-page",
     "src": "addons/media/resources/js/media-library-page.jsx",
     "isEntry": true,
@@ -557,7 +557,7 @@
       "_react-vendor-BJWL6Tay.js",
       "_SeoSelect-xrvCEU2O.js",
       "_watermarkApi-DVsZLuen.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "addons/wordpress/resources/js/components/WordPressMediaRenameModal.jsx",
       "_vendor-CYZicxqJ.js",
       "_seoArticleApi-CPKqx417.js"
@@ -567,7 +567,7 @@
     ]
   },
   "addons/media/resources/js/modules/ImagesModule.jsx": {
-    "file": "assets/ImagesModule-CIvGvmUp.js",
+    "file": "assets/ImagesModule-oFRx6Cu6.js",
     "name": "ImagesModule",
     "src": "addons/media/resources/js/modules/ImagesModule.jsx",
     "isDynamicEntry": true,
@@ -575,11 +575,11 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoMediaApi-BwAw07hA.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
+      "_BlockFormatToolbar-D58At2gC.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_seoArticleApi-CPKqx417.js",
       "_SeoSelect-xrvCEU2O.js",
       "_seoScoreCalculator-wVAguMec.js",
@@ -591,7 +591,7 @@
     ]
   },
   "addons/media/resources/js/watermark-editor-page.jsx": {
-    "file": "assets/watermark-editor-page-BK0Z8UtS.js",
+    "file": "assets/watermark-editor-page-DyxXg-IU.js",
     "name": "watermark-editor-page",
     "src": "addons/media/resources/js/watermark-editor-page.jsx",
     "isEntry": true,
@@ -599,7 +599,7 @@
       "_react-vendor-BJWL6Tay.js",
       "_SeoSelect-xrvCEU2O.js",
       "_watermarkApi-DVsZLuen.js",
-      "_i18n-k5rJOx1d.js"
+      "_i18n-TyJZT1Tw.js"
     ],
     "css": [
       "assets/watermark-editor-C5r8iEbC.css"
@@ -616,28 +616,28 @@
     ]
   },
   "addons/seo/resources/js/article-seo-preview.jsx": {
-    "file": "assets/article-seo-preview-CtSsvIk8.js",
+    "file": "assets/article-seo-preview-BR19C8yc.js",
     "name": "article-seo-preview",
     "src": "addons/seo/resources/js/article-seo-preview.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "addons/seo/resources/js/modules/SeoModule.jsx",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_vendor-CYZicxqJ.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoScoreCalculator-wVAguMec.js"
     ]
   },
   "addons/seo/resources/js/components/FeaturedSnippetPromptModal.jsx": {
-    "file": "assets/FeaturedSnippetPromptModal-MNKY9bD0.js",
+    "file": "assets/FeaturedSnippetPromptModal-DObVqeg9.js",
     "name": "FeaturedSnippetPromptModal",
     "src": "addons/seo/resources/js/components/FeaturedSnippetPromptModal.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
-      "_i18n-k5rJOx1d.js"
+      "_i18n-TyJZT1Tw.js"
     ]
   },
   "addons/seo/resources/js/domain-context.js": {
@@ -659,20 +659,20 @@
     "isEntry": true
   },
   "addons/seo/resources/js/modules/SeoModule.jsx": {
-    "file": "assets/SeoModule-axGGkjFP.js",
+    "file": "assets/SeoModule-CkJ0Lt4F.js",
     "name": "SeoModule",
     "src": "addons/seo/resources/js/modules/SeoModule.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoScoreCalculator-wVAguMec.js",
-      "_article-editor-B7V_HVvg.js"
+      "_article-editor-Cd98L_MZ.js"
     ]
   },
   "addons/wordpress/resources/js/components/WordPressMediaRenameModal.jsx": {
-    "file": "assets/WordPressMediaRenameModal-DE1Bq6ky.js",
+    "file": "assets/WordPressMediaRenameModal-B5-RctV-.js",
     "name": "WordPressMediaRenameModal",
     "src": "addons/wordpress/resources/js/components/WordPressMediaRenameModal.jsx",
     "isDynamicEntry": true,
@@ -680,7 +680,7 @@
       "_react-vendor-BJWL6Tay.js",
       "_vendor-CYZicxqJ.js",
       "_seoArticleApi-CPKqx417.js",
-      "_i18n-k5rJOx1d.js"
+      "_i18n-TyJZT1Tw.js"
     ]
   },
   "resources/css/app.css": {
@@ -698,18 +698,18 @@
     ]
   },
   "resources/js/help-admin/help-admin-editor.jsx": {
-    "file": "assets/help-admin-editor-CfKHtyB3.js",
+    "file": "assets/help-admin-editor-DDURJZ19.js",
     "name": "help-admin-editor",
     "src": "resources/js/help-admin/help-admin-editor.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
-      "_article-editor-B7V_HVvg.js",
+      "_article-editor-Cd98L_MZ.js",
       "_tiptap-vendor-U7k3hmg0.js",
-      "_BlockFormatToolbar-BLUZDfgN.js",
-      "_FaqAnswerEditor-DjVbEVtt.js",
+      "_BlockFormatToolbar-D58At2gC.js",
+      "_FaqAnswerEditor-DAQPt1np.js",
       "_vendor-CYZicxqJ.js",
-      "_i18n-k5rJOx1d.js",
+      "_i18n-TyJZT1Tw.js",
       "_seoArticleApi-CPKqx417.js"
     ]
   }
