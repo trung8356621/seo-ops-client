@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -18,6 +18,8 @@ Layers (must stay separate):
 | **Task-owned prompt** | `prompt_id` on workflow graph Prompt Block / SeoTask node |
 | **Provider** | `AiProviderResolver` → registry drivers (no vendor hard-code in PromptRunner) |
 | **Domain write** | Business Action / Workflow action node / UI apply — **never** Hook Engine |
+| **Domain prompt context** | `SiteDomainPromptContextService` — official Site MCP JSON (`seo_domain_prompt_context`) |
+| **WP field sync** | `DomainPromptContextWordPressFieldSyncService` — explicit pull of `company_short_identity` / `short_description`; **not** Site Sync |
 
 Unassigned Prompt (no Hook, no binding, no Task ref) is valid storage — does **not** auto-run.
 
@@ -89,6 +91,17 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Topic input (schema-gated) | `PromptHookExplicitBindingExecutor::enrichTopicInput` + `mapInput` whitelist — injects runtime `topic` only when **current** hook `input_schema` declares `topic`. Legacy compile uses schema-whitelisted `$input` only (no shared-payload merge). Must not leak into `article.content.generate` / comment / FAQ → `Unknown input key [topic]`. |
 | Outline fail → write skip | `TaskWorkflowTestRunner::run` marks content/write steps `skipped` with “Không chạy vì bước Dàn ý thất bại.” — not Failed missing-outline. |
 | Content fail → persist block | Persist action `blocked` when no valid `article_content` artifact — never fallback to outline / latest PromptResult. |
+| Domain context patch | `SiteDomainPromptContextService::patchForSite()` — partial update used by WP field sync + form save |
+| WP sync access gate | `WordPressFieldSyncAccessGate` — manager/planner + site binding before profile pull |
+
+### WordPress → Domain Prompt Context field sync (2026-09-01)
+
+Owner: `ai-prompt` service + `search-foundation` Edit Domain UI (`SyncsDomainPromptContextFromWordPress`).
+
+- Reads WP via `site-sync` `WordPressSiteProfileReader` (`GET /omi-seo-ai/v1/sync/v2/profile`).
+- Writes only whitelisted keys through `SiteDomainPromptContextService::patchForSite()`.
+- **Forbidden:** treating this as Site Sync, keyword scrape, or full profile replace.
+- Tests: `DomainPromptContextWordPressFieldSyncTest`, `DomainPromptContextWordPressSyncUiContractTest`, `SiteDomainPromptContextPatchTest`.
 
 ## 4. Data ownership
 
@@ -348,6 +361,7 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 | Hook boundaries | Hook Spec / Runtime unit suites under `PromptHooks` |
 | Extension AI resolve | `ExtensionArchitectureFreezeTest`, `ExtensionSdkFoundationTest` |
 | RuntimeLogger (HTTP AI controllers) | `RuntimeLoggerWebAppChannelTest` |
+| Domain WP field sync | `DomainPromptContextWordPressFieldSyncTest`, `DomainPromptContextWordPressSyncUiContractTest` |
 | AI Center OR Text catalog | `OpenRouterTextRoutingCatalogTest`, `AiModelFamilyUxTest`, `AiRuntimeRoutingRefactorTest`, `AiRoutingUxTest`, `AiModelsUnifiedTableTest` |
 
 **Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output; AI Center Custom identity = `connectionId|familyKey`; no duplicate `provider + model_id` on OpenRouter catalog ensure.

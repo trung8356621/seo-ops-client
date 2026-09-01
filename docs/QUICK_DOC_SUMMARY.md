@@ -88,7 +88,38 @@ Canonical đã sync: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICL
 - Canonical docs chỉ ở `omnichannel-client/docs`.
 - `git status --short` trước khi sửa — tránh revert unrelated.
 
-## 6. Fast re-entry
+## 6. Batch 2026-09-01 (pass này)
+
+Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons).
+
+### Domain Prompt Context ↔ WordPress field sync
+
+- `DomainPromptContextWordPressFieldSyncService` — explicit pull `company_short_identity` / `short_description`.
+- `WordPressSiteProfileReader` — lightweight `GET /sync/v2/profile`; **không** Site Sync run.
+- UI: `SyncsDomainPromptContextFromWordPress` trên Edit Domain + loading states.
+- Docs: `SITE_MCP_AND_DOMAINS.md`, `PROMPTS_AND_AI.md`, `SITE_SYNC.md`.
+
+### Article social links + archive reporting
+
+- Bảng `seo_article_social_links` (`social` addon); migration archive → article-level.
+- API: `GET|POST /api/seo/articles/{article}/social-links`.
+- Archive preview + Excel (per-project + monthly) dùng `ArticleSocialLinkService`.
+- Docs: `SITE_MCP_AND_DOMAINS.md`, `CONTENT_PROJECTS.md`.
+
+### SEO Workspace dashboard refresh
+
+- Single-domain: `KeywordOverviewWidget` (`DashboardKeywordOverviewService`).
+- All-domains: month workload charts (`DashboardDomainArticlesChartWidget` / `DashboardWriterArticlesChartWidget`).
+- Test contract: `SeoWorkspaceDashboardContractTest`.
+- Doc: `SEO_AUDIT_AND_KEYWORDS.md`.
+
+### Content Projects draft table
+
+- Domain column + clone idea + inline domain repair.
+- Tests: `DraftItemTableDomainAndCloneContractTest`.
+- Doc: `CONTENT_PROJECTS.md`.
+
+## 7. Fast re-entry
 
 1. `docs/README.md`
 2. `git status --short` (+ log client + addons nếu docs lag)

@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -81,6 +81,8 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | List loading shell | compat `list-table-loading-shell` + `seo/.../panelLoading.js` |
 | Public refs | `KeywordIntelligencePublicRef` |
 | Quotas / tenant | `KeywordIntelligenceQuotaGuard` / `KeywordIntelligenceTenantGuard` |
+| Dashboard keyword overview | `DashboardKeywordOverviewService` + `KeywordOverviewWidget` — top Topics + keywords by internal links (single-domain dashboard) |
+| SEO Workspace dashboard layout | `search-foundation` `Dashboard` — single-domain: `KeywordOverviewWidget` + `SeoScoreChart` + `WpSyncStatusTable`; all-domains: month workload charts + `AllDomainsListWidget` |
 
 ## 4. Data ownership
 
@@ -255,6 +257,7 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 | `FullDomainReclusterRepairTest` / `FocusArticleTopicInvariantTest` | Recluster + Focus→Topic |
 | `KeywordDictionaryExcludeFromSeoVisibilityTest` / `TopicMembershipIntentGateTest` | Dictionary vs Topics eligibility |
 | `KeywordListLoadingUxTest` / `DomainContextLoadingUxTest` | Loading shell + domain GET `site_id` |
+| `SeoWorkspaceDashboardContractTest` | Dashboard widget registration + month chart presenters |
 
 ## 16. Related documents
 

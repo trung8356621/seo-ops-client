@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-08-30  
+> Last verified: 2026-09-01  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -75,7 +75,12 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Project archive | `ArchiveContentProjectService` |
 | Archive preview UI | `ContentProjectArchivePreview` + `ArchivePreviewArticlePresenter` |
 | Manual Index marker (checklist) | `ArticleManualIndexMarkerService` — `articles.indexed_at` / `previous_indexed_at` (+ patch archive `article_snapshot`); not GSC/Indexing API |
-| Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước) |
+| Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước + social evidence child rows) |
+| Archived month workbook | `ContentProjectArchivedMonthExportService` — Summary + per-writer sheets; social rows via `ContentProjectArchiveSocialExportRowExpander` |
+| Archive social reporting | `ArticleSocialLinkService` (canonical counts/links; migrated from archive-item social rows) |
+| Draft planning domain column | `DraftItemDomainRepairService` + inline domain edit in shared draft table (`content-project-draft-items`) |
+| Draft clone idea | `CloneDraftCreateIdeaService` — duplicate CREATE row within draft |
+| Dashboard month charts | `DashboardDomainArticlesChartWidget` / `DashboardWriterArticlesChartWidget` + `ResolvesContentProjectMonthDashboardCharts` |
 | Item archive | `SeoProjectArchiveService` (via `ArchiveProjectItemsHandler`) |
 | `seo_projects.status` policy | `Support/ContentProject/ContentProjectStatusDecision` |
 | Assign UI contract | `Support/AssignToContentProject/AssignToContentProjectContract` |
@@ -207,6 +212,8 @@ Page: `ContentProjectSeoAuditPlanner` — SEO Audit + **Create new content with 
 
 - Read model: `ContentProjectDraftPlanningItemsReadModel` — `description` = global brief; `product_description` = Product gallery text when `post_type=product`.
 - Post type column: plain text by default; **double-click** enters compact select (`article`/`product`) for CREATE-editable rows (`can_edit_post_type`); save via `updateDraftPlanningItem` → `UpdateContentProjectItemCommand`. Escape / blur without change exits edit. Non-editable rows stay plain text.
+- **Domain column (2026-09-01):** shared CREATE/Rewrite table shows site/domain per row; double-click inline edit via `DraftItemDomainRepairService` + `startDomainEdit` (Alpine `rootEl()` scoping — no bare `$root.querySelector`).
+- **Clone idea:** duplicate CREATE planning row via `CloneDraftCreateIdeaService` (actions column).
 - Product rows: show **Mô tả sản phẩm:** under global description when `product_description` non-empty; hide when Post (stored gallery/`loai_san_pham` not wiped on Product→Post).
 - After AI run completes: `cp-ops-refresh` + `draftPlanningRefreshNonce` remounts Draft payload — **no** `location.reload`.
 
@@ -421,6 +428,8 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Active CP article ↔ Sync WP:** while membership is active, Article Editor **hides all manual Sync WP chrome** (toolbar / overflow / page actions) — UI-only; first WordPress create stays on Publishing Queue. After archive, standalone Sync WP is allowed again. See [`ARTICLE_EDITOR.md`](ARTICLE_EDITOR.md) + [`PUBLISHING.md`](PUBLISHING.md).
 
+**Archive social reporting (2026-09-01):** Preview (`ContentProjectArchivePreview` / `ArchivePreviewArticlePresenter`) and Excel exports show **social link counts** from `ArticleSocialLinkService` (`seo_article_social_links`). Monthly workbook `ContentProjectArchivedMonthExportService` emits parent article rows plus **social evidence child rows** (`ContentProjectArchiveSocialExportRowExpander`). Reporting only — not share-action buttons (those remain on GSC MCP drawer).
+
 ### Publish writes
 
 See [PUBLISHING.md](PUBLISHING.md). All schedule/publish/retry/skip/cancel via CommandBus handlers → `ContentProjectPublishingQueueService` + transition guard.
@@ -553,6 +562,9 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ArchitectureHardeningLockContractTest` | Related uniqueness contracts |
 | `PublishScheduledArticlesCanonicalRunnerContractTest` | Single publish scheduler shell |
 | `NewContentSuggestionStructuredResultTest` / `DraftPlanningPostTypeAndRefreshTest` / `NewContentProductPlanningBriefTest` | Planner JSON gate + Draft post_type dblclick UX + Product brief/persist |
+| `DraftItemTableDomainAndCloneContractTest` | Shared draft table Domain column + clone idea + safe JS root |
+| `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
+| `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
 
 Freeze grep invariants: no production `ContentProjectBulkRerunService`, `ContentProjectStepRerunService`, `RerunArticlePipelineJob`, Filament direct `RunEngine::start`, `ContentProjectItemAction::Restore`.
 

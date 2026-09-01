@@ -52,7 +52,8 @@
             max-width: 100%;
         }
 
-        .x-select {
+        .x-select-wrap > select.x-select,
+        .x-select-wrap > select.x-select.classic-select {
             display: block;
             width: 100%;
             max-width: 100%;
@@ -64,6 +65,9 @@
             color: #374151;
             background-color: #fff;
             background-image: none !important;
+            background-repeat: no-repeat !important;
+            background-position: initial !important;
+            background-size: auto !important;
             border: 1px solid #e5e7eb;
             border-radius: 0.5rem;
             box-shadow: 0 1px 2px rgb(15 23 42 / 0.04);
@@ -74,6 +78,26 @@
             -moz-appearance: none !important;
         }
 
+        .x-select-wrap > select.x-select:hover:not(:disabled),
+        .x-select-wrap > select.x-select.classic-select:hover:not(:disabled) {
+            border-color: #d1d5db;
+            box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+        }
+
+        .x-select-wrap > select.x-select:focus,
+        .x-select-wrap > select.x-select.classic-select:focus {
+            outline: none;
+            border-color: #f43f5e;
+            box-shadow: 0 0 0 3px rgb(244 63 94 / 0.14);
+        }
+
+        .x-select-wrap > select.x-select:disabled,
+        .x-select-wrap > select.x-select.classic-select:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Legacy alias — keep in sync with .x-select-wrap > select.x-select above */
         .x-select:hover:not(:disabled) {
             border-color: #d1d5db;
             box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
@@ -103,7 +127,7 @@
             border-radius: 0.4375rem;
         }
 
-        .x-select-chevron {
+        .x-select-wrap > .x-select-chevron {
             pointer-events: none;
             position: absolute;
             top: 50%;
@@ -112,9 +136,13 @@
             height: 1rem;
             transform: translateY(-50%);
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: center;
+            background-repeat: no-repeat !important;
+            background-position: center !important;
             background-size: contain;
+        }
+
+        .x-select-wrap > .x-select-chevron ~ .x-select-chevron {
+            display: none !important;
         }
 
         .x-select-wrap--sm .x-select-chevron,
@@ -124,22 +152,29 @@
             height: 0.875rem;
         }
 
+        .dark .x-select-wrap > select.x-select,
+        .dark .x-select-wrap > select.x-select.classic-select,
         .dark .x-select {
             background-color: rgb(15 23 42);
             border-color: rgb(51 65 85);
             color: rgb(226 232 240);
         }
 
+        .dark .x-select-wrap > select.x-select:hover:not(:disabled),
+        .dark .x-select-wrap > select.x-select.classic-select:hover:not(:disabled),
         .dark .x-select:hover:not(:disabled) {
             border-color: rgb(71 85 105);
             background-color: rgb(15 23 42);
         }
 
+        .dark .x-select-wrap > select.x-select:focus,
+        .dark .x-select-wrap > select.x-select.classic-select:focus,
         .dark .x-select:focus {
             border-color: #fb7185;
             box-shadow: 0 0 0 3px rgb(251 113 133 / 0.18);
         }
 
+        .dark .x-select-wrap > .x-select-chevron,
         .dark .x-select-chevron {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75' d='m6 8 4 4 4-4'/%3E%3C/svg%3E");
         }

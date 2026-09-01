@@ -42,6 +42,7 @@ Auth for bridge callbacks: Bearer `sites.seo_read_token` (+ site/domain binding)
 | Delta ingest | `SiteSyncDeltaEventIngestor` | Inbox → process |
 | Inbound job | `ProcessSiteSyncInboundEventJob` | Unique per `eventId`; queue `seo` |
 | Client | `WordPressSiteSyncClient` | Pull capabilities / profile / delta / batches / manifest |
+| Profile reader (lightweight) | `WordPressSiteProfileReader` | Single-field/domain-form reads via `fetchProfile()` — **not** orchestrator step |
 | Ownership | `SiteSyncOwnershipResolver` | Manual > Provider > Workspace |
 | Bootstrap | `SiteSyncBootstrapService` | Preview + first-time snapshot |
 | Backfill | `SiteSyncV2BackfillService` | Legacy migrate (non-destructive) |
@@ -91,6 +92,8 @@ Pull from WP (orchestrator / reconcile):
 
 Reconcile scheduler scans sites with `seo_read_token` meta (`whereHas(metas…)`), **not** a non-existent `sites.settings` column.
 
+**Lightweight profile reads (2026-09-01):** Domain Edit form field sync (`DomainPromptContextWordPressFieldSyncService`) calls `WordPressSiteProfileReader` → same `/sync/v2/profile` endpoint but **does not** create a Site Sync run, mutate catalog, or write `articles.body`. Do not route through `RunSiteSyncOrchestrator`.
+
 ## 6. Write path
 
 ### Save vs Sync vs Publish vs Rebuild
@@ -98,6 +101,7 @@ Reconcile scheduler scans sites with `seo_read_token` meta (`whereHas(metas…)`
 | Action | Behavior |
 |--------|----------|
 | **Save Domain Settings** | Persist tone/CTA/short-desc/manual links only. No keyword sync job, no HTML full-site parse, no Site Sync run. |
+| **WP field sync (Edit Domain)** | Pull `site_name` / `short_description` into Domain Prompt Context via `WordPressSiteProfileReader` — explicit user action per field; **not** `sync_site_profile` step. |
 | **Sync** | `site.sync` → `RunSiteSync` orchestrator (incremental/standard by default). |
 | **Auto delta** | WP outbox → signed `delta-event` → inbound inbox → `ProcessSiteSyncInboundEventJob` → reconcile one post. |
 | **Publish** | Content Project / editor WordPress publish path — **separate** module (`WORDPRESS_BRIDGE` / Content Projects). |
@@ -235,6 +239,7 @@ See also `docs/operations/SCHEDULER_AND_WORKERS.md` (Site Sync section).
 | Ops Center Site Sync tab; hidden SiteSync nav | `ContentProjectOperationsCenterTest` |
 | Wave / force-full / score / cutover freezes | `SiteSyncV2Wave*FreezeTest`, `SiteSyncV2ForceFullFreezeTest`, `SiteSyncV2ScorePipelineFreezeTest` |
 | Agent CLI site-sync mapping | `AgentMcpSiteCliFixTest` |
+| Profile reader isolated from orchestrator | `WordPressSiteProfileReaderTest` |
 
 Manual:
 
@@ -242,6 +247,7 @@ Manual:
 $PHP_BIN vendor/bin/phpunit --filter=SiteSyncV2ArchitectureFreezeTest
 $PHP_BIN vendor/bin/phpunit --filter=SiteSyncCompatPushOwnershipContractTest
 $PHP_BIN vendor/bin/phpunit --filter=ContentProjectOperationsCenterTest
+$PHP_BIN vendor/bin/phpunit --filter=WordPressSiteProfileReaderTest
 ```
 
 Pointers also in `docs/operations/TESTING.md`.
