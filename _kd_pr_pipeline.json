@@ -1,0 +1,316 @@
+{
+    "1114": {
+        "status": "failed",
+        "error": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+        "started": "2026-09-03 04:45:46",
+        "finished": "2026-09-03 04:51:47",
+        "output_len": 0,
+        "output_head": "",
+        "output_tail": "",
+        "count_requested_from_input": 20,
+        "input_top_keys": [
+            "variables",
+            "compiled_prompt",
+            "model_category",
+            "is_task_mode",
+            "tools"
+        ],
+        "routing_model": null,
+        "parse_error": null,
+        "generated": null,
+        "candidates": null,
+        "invalid": null,
+        "candidate_preview": [],
+        "all_keywords": [],
+        "continuation": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        },
+        "brief_len": 6538,
+        "brief_has_continuation_sample": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        }
+    },
+    "1115": {
+        "status": "completed",
+        "error": null,
+        "started": "2026-09-03 04:51:47",
+        "finished": "2026-09-03 04:57:37",
+        "output_len": 10285,
+        "output_head": "[\n  {\n    \"keyword\": \"balo laptop cho sinh viên\",\n    \"suggested_title\": \"Balo Laptop Cho Sinh Viên: Cách Chọn Kích Thước Và Thiết Kế Phù Hợp\",\n    \"description\": \"Bài viết hướng dẫn sinh viên chọn ba",
+        "output_tail": "thương hiệu, thiết kế và tính năng, giúp người mua hiểu rõ.\",\n    \"suggestion_reason\": \"Cần giải thích nguyên nhân giá khác nhau, chưa có bài viết phân tích.\",\n    \"source_signal\": \"keyword_gap\"\n  }\n]",
+        "count_requested_from_input": 20,
+        "input_top_keys": [
+            "variables",
+            "compiled_prompt",
+            "model_category",
+            "is_task_mode",
+            "tools",
+            "planner_model",
+            "raw_model_used"
+        ],
+        "routing_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "parse_error": null,
+        "generated": 20,
+        "candidates": 20,
+        "invalid": 0,
+        "candidate_preview": [
+            {
+                "keyword": "balo laptop cho sinh viên",
+                "title": "Balo Laptop Cho Sinh Viên: Cách Chọn Kích Thước Và Thiết Kế Phù Hợp",
+                "fp": "256c1f0a272d4c2a15636f0b96d588a5d15e41bc694a97535f4a9f4258058948"
+            },
+            {
+                "keyword": "túi vải không dệt quà tặng",
+                "title": "Túi Vải Không Dệt: Gợi Ý Quà Tặng Độc Đáo Cho Hàng Năm",
+                "fp": "3cb2dddc9b49103ea1da6f0355d0eba91205dcec586075c22b2abec1a630e120"
+            },
+            {
+                "keyword": "túi canvas cho laptop",
+                "title": "Túi Canvas Dành Cho Laptop: So Sánh Với Túi Vải Không Dệt",
+                "fp": "6c8edc7c31210e73cefa40827b526f1b3e5cc7b07c132384c898a0d686a693d2"
+            },
+            {
+                "keyword": "cách in logo trên túi vải không dệt",
+                "title": "Cách In Logo Trên Túi Vải Không Dệt: Hướng Dẫn chi Tiết",
+                "fp": "d696d8be91e83142e4eeeb2ca6c06f62b1ef0b3223dd9bc368e0d6e317d15828"
+            },
+            {
+                "keyword": "tại sao túi canvas bền",
+                "title": "Tại Sao Túi Canvas Bền Chất Lượng Và Dễ Dàng Chăm Sóc",
+                "fp": "f786b8ffcef8b416310fef1bb998926a0621ec9a056ec8c7fee2a9d59c59bd2a"
+            }
+        ],
+        "all_keywords": [
+            "balo laptop cho sinh viên",
+            "túi vải không dệt quà tặng",
+            "túi canvas cho laptop",
+            "cách in logo trên túi vải không dệt",
+            "tại sao túi canvas bền",
+            "bảo quản túi canvas",
+            "mẫu balo học sinh in logo",
+            "công ty may balo corporate",
+            "túi balo quà tặng sinh viên",
+            "túi vải không dệt in logo",
+            "túi balo cho du lịch",
+            "túi vải canvas là gì",
+            "so sánh túi balo và túi xách",
+            "túi vải không dệt giá rẻ",
+            "cách chọn kích thước balo laptop",
+            "túi balo cho công việc",
+            "túi vải không dệt vs canvas",
+            "túi balo quà tặng cho phụ huynh",
+            "cách thiết kế pattern túi vải không dệt",
+            "tại sao túi balo có giá khác nhau"
+        ],
+        "continuation": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        },
+        "brief_len": 6538,
+        "brief_has_continuation_sample": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        }
+    },
+    "1116": {
+        "status": "completed",
+        "error": null,
+        "started": "2026-09-03 04:57:37",
+        "finished": "2026-09-03 04:59:31",
+        "output_len": 544,
+        "output_head": "[\n  {\n    \"keyword\": \"túi vải không dệt in logo\",\n    \"suggested_title\": \"Túi Vải Không Dệt In Logo: Quy Trình Thiết Kế Và Sản Xuất\",\n    \"description\": \"Bài viết hướng dẫn quy trình thiết kế và sản x",
+        "output_tail": " thuật in, vật liệu và các bước thực hiện.\",\n    \"suggestion_reason\": \"Vấn đề về kỹ thuật và quy trình sản xuất chưa được đề cập chi tiết trong nội dung hiện có.\",\n    \"source_signal\": \"keyword_gap\"\n}",
+        "count_requested_from_input": 20,
+        "input_top_keys": [
+            "variables",
+            "compiled_prompt",
+            "model_category",
+            "is_task_mode",
+            "tools",
+            "planner_model",
+            "raw_model_used"
+        ],
+        "routing_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+        "parse_error": null,
+        "generated": 0,
+        "candidates": 0,
+        "invalid": 0,
+        "candidate_preview": [],
+        "all_keywords": [],
+        "continuation": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        },
+        "brief_len": 9363,
+        "brief_has_continuation_sample": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        }
+    },
+    "1117": {
+        "status": "completed",
+        "error": null,
+        "started": "2026-09-03 04:59:31",
+        "finished": "2026-09-03 05:00:24",
+        "output_len": 548,
+        "output_head": "[\n  {\n    \"keyword\": \"túi vải không dệt in logo\",\n    \"suggested_title\": \"Túi Vải Không Dệt In Logo: Quy Trình Thiết Kế Và Sản Xuất\",\n    \"description\": \"Bài viết hướng dẫn quy trình thiết kế và sản x",
+        "output_tail": "ật in, vật liệu và các bước thực hiện.\",\n    \"suggestion_reason\": \"Vấn đề về kỹ thuật và quy trình sản xuất chưa được đề cập chi tiết trong nội dung hiện có.\",\n    \"source_signal\": \"keyword_gap\"\n  }\n]",
+        "count_requested_from_input": 20,
+        "input_top_keys": [
+            "variables",
+            "compiled_prompt",
+            "model_category",
+            "is_task_mode",
+            "tools",
+            "planner_model",
+            "raw_model_used"
+        ],
+        "routing_model": "deepseek-reasoner",
+        "parse_error": null,
+        "generated": 1,
+        "candidates": 1,
+        "invalid": 0,
+        "candidate_preview": [
+            {
+                "keyword": "túi vải không dệt in logo",
+                "title": "Túi Vải Không Dệt In Logo: Quy Trình Thiết Kế Và Sản Xuất",
+                "fp": "54d784b02ddfa2f37be21b3a94f87207378cfbc3557b00616d0e2366ded38027"
+            }
+        ],
+        "all_keywords": [
+            "túi vải không dệt in logo"
+        ],
+        "continuation": {
+            "already_accepted": false,
+            "do_not_repeat": false,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": false
+        },
+        "brief_len": 2028,
+        "brief_has_continuation_sample": {
+            "already_accepted": false,
+            "do_not_repeat": false,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": false
+        }
+    },
+    "1118": {
+        "status": "failed",
+        "error": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+        "started": "2026-09-03 05:00:24",
+        "finished": "2026-09-03 05:03:37",
+        "output_len": 0,
+        "output_head": "",
+        "output_tail": "",
+        "count_requested_from_input": 20,
+        "input_top_keys": [
+            "variables",
+            "compiled_prompt",
+            "model_category",
+            "is_task_mode",
+            "tools"
+        ],
+        "routing_model": null,
+        "parse_error": null,
+        "generated": null,
+        "candidates": null,
+        "invalid": null,
+        "candidate_preview": [],
+        "all_keywords": [],
+        "continuation": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        },
+        "brief_len": 9363,
+        "brief_has_continuation_sample": {
+            "already_accepted": true,
+            "do_not_repeat": true,
+            "exclusion": false,
+            "fingerprint_hex": false,
+            "compact_line": false,
+            "in_raw_input_do_not_propose": true
+        }
+    },
+    "cross": {
+        "1115_count": 20,
+        "1116_count": 0,
+        "1117_count": 1,
+        "1116_overlap_1115_kw": 0,
+        "1117_overlap_1115_kw": 1,
+        "1116_only": [],
+        "1117_only": []
+    },
+    "run_summary_counts": {
+        "added": 19,
+        "generated": 21,
+        "valid": 21,
+        "duplicate_skipped": 2,
+        "rejected_skipped": 0,
+        "invalid": 0,
+        "duplicate_breakdown": {
+            "in_batch": 0,
+            "active_draft": 2,
+            "covered_content": 0,
+            "in_batch_keyword": 0
+        },
+        "status": "completed",
+        "batch_trace": [
+            {
+                "failed": false,
+                "accepted": 19,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": false,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": true,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            }
+        ],
+        "candidates_statuses": {
+            "added": 19,
+            "duplicate_draft": 2
+        }
+    }
+}

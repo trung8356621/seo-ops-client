@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-01  
+> Updated: 2026-09-03  
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -119,7 +119,15 @@ Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons)
 - Tests: `DraftItemTableDomainAndCloneContractTest`.
 - Doc: `CONTENT_PROJECTS.md`.
 
-## 7. Fast re-entry
+## 7. Batch 2026-09-03 — Keyword Cannibalization removed
+
+- **Removed** seo-ops route `/keywords/cannibalization`, sidebar/workspace nav, KI detect/persist (`seo_keyword_cannibalization_issues` drop migration), agent/MCP `get_cannibalization` / `review_cannibalization` / `domain.keyword_cannibalization`.
+- Keywords nav remaining: dictionary / focus / Topics / **anchor-audit** (Sửa Link Chết) / AI discovery.
+- **Kept:** GSC `possible_cannibalization` (query×page competition evidence for planning/MCP) — not a Keywords module.
+- Docs: `SEO_AUDIT_AND_KEYWORDS.md`, `AGENT_AND_MCP_CONTRACTS.md`.
+- Anchor-audit eager load: `articles.wp_post_id` → `wordpress_article_links` via `sourceArticle.wordpressLink`.
+
+## 8. Fast re-entry
 
 1. `docs/README.md`
 2. `git status --short` (+ log client + addons nếu docs lag)

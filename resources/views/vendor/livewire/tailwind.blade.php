@@ -57,7 +57,7 @@ $pageName = $paginator->getPageName();
                 </span>
             </div>
 
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between gap-3 min-w-0">
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between gap-3 min-w-0 w-full">
                 <div class="shrink-0">
                     <p class="text-sm text-gray-700 leading-5 dark:text-gray-400">
                         <span>{!! __('Showing') !!}</span>

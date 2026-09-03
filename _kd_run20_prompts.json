@@ -1,0 +1,412 @@
+{
+    "now": "2026-09-03 05:01:34",
+    "job_77041": {
+        "id": 77041,
+        "queue": "default",
+        "payload": "{\"uuid\":\"774477bc-7034-4835-8d4f-816a2bf8c0ae\",\"displayName\":\"Omnichannel\\\\Addons\\\\ContentProjects\\\\Jobs\\\\GenerateNewContentSuggestionsJob\",\"job\":\"Illuminate\\\\Queue\\\\CallQueuedHandler@call\",\"maxTries\":1,\"maxExceptions\":null,\"failOnTimeout\":false,\"backoff\":null,\"timeout\":900,\"retryUntil\":null,\"data\":{\"commandName\":\"Omnichannel\\\\Addons\\\\ContentProjects\\\\Jobs\\\\GenerateNewContentSuggestionsJob\",\"command\":\"O:72:\\\"Omnichannel\\\\Addons\\\\ContentProjects\\\\Jobs\\\\GenerateNewContentSuggestionsJob\\\":3:{s:12:\\\"plannerRunId\\\";i:20;s:9:\\\"projectId\\\";i:81;s:7:\\\"actorId\\\";i:2;}\"},\"createdAt\":1788410746,\"illuminate:log:context\":{\"data\":[],\"hidden\":{\"laravel_unique_job_cache_store\":\"s:8:\\\"database\\\";\",\"laravel_unique_job_key\":\"s:122:\\\"laravel_unique_job:Omnichannel\\\\Addons\\\\ContentProjects\\\\Jobs\\\\GenerateNewContentSuggestionsJob:content-project-new-content:81\\\";\"}},\"delay\":null}",
+        "attempts": 1,
+        "reserved_at": 1788410746,
+        "available_at": 1788410746,
+        "created_at": 1788410746
+    },
+    "failed_related": [],
+    "unique_lock": {
+        "content-project-new-content:81": null
+    },
+    "prompt_tables": {
+        "mysql": "missing",
+        "omi_seo_ai": {
+            "columns": [
+                "id",
+                "prompt_id",
+                "user_id",
+                "site_id",
+                "status",
+                "input_snapshot",
+                "output_text",
+                "token_usage",
+                "error_message",
+                "started_at",
+                "finished_at",
+                "created_at",
+                "updated_at"
+            ],
+            "count": 5,
+            "rows": [
+                {
+                    "id": 1114,
+                    "prompt_id": 24,
+                    "status": "failed",
+                    "created_at": "2026-09-03 04:45:46",
+                    "updated_at": "2026-09-03 04:51:47",
+                    "meta": {
+                        "token_usage": null,
+                        "error_message": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+                        "status": "failed"
+                    },
+                    "output_len": null
+                },
+                {
+                    "id": 1115,
+                    "prompt_id": 24,
+                    "status": "completed",
+                    "created_at": "2026-09-03 04:51:47",
+                    "updated_at": "2026-09-03 04:57:37",
+                    "meta": {
+                        "token_usage": {
+                            "keys": [
+                                "prompt_tokens",
+                                "completion_tokens",
+                                "total_tokens",
+                                "cost",
+                                "is_byok",
+                                "prompt_tokens_details",
+                                "cost_details",
+                                "completion_tokens_details",
+                                "requested_model",
+                                "resolved_model",
+                                "routing"
+                            ],
+                            "sample": {
+                                "prompt_tokens": 5810,
+                                "completion_tokens": 7164,
+                                "total_tokens": 12974,
+                                "cost": 0,
+                                "is_byok": false,
+                                "prompt_tokens_details": {
+                                    "cached_tokens": 4352,
+                                    "cache_write_tokens": 0,
+                                    "audio_tokens": 0,
+                                    "video_tokens": 0
+                                },
+                                "cost_details": {
+                                    "upstream_inference_cost": 0,
+                                    "upstream_inference_prompt_cost": 0,
+                                    "upstream_inference_completions_cost": 0
+                                },
+                                "completion_tokens_details": {
+                                    "reasoning_tokens": 4380,
+                                    "image_tokens": 0,
+                                    "audio_tokens": 0
+                                },
+                                "requested_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                "resolved_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                "routing": {
+                                    "profile": "text.reasoning",
+                                    "capability": "text.reasoning",
+                                    "provider": "openrouter",
+                                    "connection_id": 3,
+                                    "connection_name": "OpenRouter",
+                                    "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                    "capabilities": [
+                                        "text.generate",
+                                        "text.reasoning",
+                                        "structured_output"
+                                    ],
+                                    "priority": 2,
+                                    "route_position": 2,
+                                    "legacy_fallback": false,
+                                    "seo_ai_model_id": 138,
+                                    "is_free": true,
+                                    "free": true,
+                                    "fallback_count": 1,
+                                    "fallback_reasons": [
+                                        "position 1 attempt 1 deepseek\/deepseek-reasoner: Transient provider failure."
+                                    ],
+                                    "routing_attempts": [
+                                        {
+                                            "attempt": 1,
+                                            "connection_id": 2,
+                                            "model": "deepseek-reasoner",
+                                            "is_free": false,
+                                            "result": "failed",
+                                            "failure_class": "transient_provider"
+                                        },
+                                        {
+                                            "attempt": 2,
+                                            "connection_id": 3,
+                                            "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                            "is_free": true,
+                                            "result": "success"
+                                        }
+                                    ],
+                                    "cost_policy": "default",
+                                    "attempt": 2,
+                                    "attempt_number": 2,
+                                    "route_revision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                }
+                            }
+                        },
+                        "error_message": null,
+                        "status": "completed"
+                    },
+                    "output_len": null
+                },
+                {
+                    "id": 1116,
+                    "prompt_id": 24,
+                    "status": "completed",
+                    "created_at": "2026-09-03 04:57:37",
+                    "updated_at": "2026-09-03 04:59:31",
+                    "meta": {
+                        "token_usage": {
+                            "keys": [
+                                "prompt_tokens",
+                                "completion_tokens",
+                                "total_tokens",
+                                "cost",
+                                "is_byok",
+                                "prompt_tokens_details",
+                                "cost_details",
+                                "completion_tokens_details",
+                                "requested_model",
+                                "resolved_model",
+                                "routing"
+                            ],
+                            "sample": {
+                                "prompt_tokens": 6747,
+                                "completion_tokens": 5407,
+                                "total_tokens": 12154,
+                                "cost": 0,
+                                "is_byok": false,
+                                "prompt_tokens_details": {
+                                    "cached_tokens": 0,
+                                    "cache_write_tokens": 0,
+                                    "audio_tokens": 0,
+                                    "video_tokens": 0
+                                },
+                                "cost_details": {
+                                    "upstream_inference_cost": 0,
+                                    "upstream_inference_prompt_cost": 0,
+                                    "upstream_inference_completions_cost": 0
+                                },
+                                "completion_tokens_details": {
+                                    "reasoning_tokens": 4891,
+                                    "image_tokens": 0,
+                                    "audio_tokens": 0
+                                },
+                                "requested_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                "resolved_model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                "routing": {
+                                    "profile": "text.reasoning",
+                                    "capability": "text.reasoning",
+                                    "provider": "openrouter",
+                                    "connection_id": 3,
+                                    "connection_name": "OpenRouter",
+                                    "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                    "capabilities": [
+                                        "text.generate",
+                                        "text.reasoning",
+                                        "structured_output"
+                                    ],
+                                    "priority": 2,
+                                    "route_position": 2,
+                                    "legacy_fallback": false,
+                                    "seo_ai_model_id": 138,
+                                    "is_free": true,
+                                    "free": true,
+                                    "fallback_count": 0,
+                                    "fallback_reasons": [],
+                                    "routing_attempts": [
+                                        {
+                                            "attempt": 1,
+                                            "connection_id": 2,
+                                            "model": "deepseek-reasoner",
+                                            "is_free": false,
+                                            "result": "skipped",
+                                            "skip_reason": "connection_cooldown"
+                                        },
+                                        {
+                                            "attempt": 2,
+                                            "connection_id": 3,
+                                            "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                                            "is_free": true,
+                                            "result": "success"
+                                        }
+                                    ],
+                                    "cost_policy": "default",
+                                    "attempt": 1,
+                                    "attempt_number": 1,
+                                    "route_revision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                }
+                            }
+                        },
+                        "error_message": null,
+                        "status": "completed"
+                    },
+                    "output_len": null
+                },
+                {
+                    "id": 1117,
+                    "prompt_id": 24,
+                    "status": "completed",
+                    "created_at": "2026-09-03 04:59:31",
+                    "updated_at": "2026-09-03 05:00:24",
+                    "meta": {
+                        "token_usage": {
+                            "keys": [
+                                "prompt_tokens",
+                                "completion_tokens",
+                                "total_tokens",
+                                "prompt_tokens_details",
+                                "completion_tokens_details",
+                                "prompt_cache_hit_tokens",
+                                "prompt_cache_miss_tokens",
+                                "routing"
+                            ],
+                            "sample": {
+                                "prompt_tokens": 5373,
+                                "completion_tokens": 5870,
+                                "total_tokens": 11243,
+                                "prompt_tokens_details": {
+                                    "cached_tokens": 0
+                                },
+                                "completion_tokens_details": {
+                                    "reasoning_tokens": 5698
+                                },
+                                "prompt_cache_hit_tokens": 0,
+                                "prompt_cache_miss_tokens": 5373,
+                                "routing": {
+                                    "profile": "text.reasoning",
+                                    "capability": "text.reasoning",
+                                    "provider": "deepseek",
+                                    "connection_id": 2,
+                                    "connection_name": "deepseek",
+                                    "model": "deepseek-reasoner",
+                                    "capabilities": [
+                                        "text.generate",
+                                        "text.reasoning",
+                                        "structured_output"
+                                    ],
+                                    "priority": 1,
+                                    "route_position": 1,
+                                    "legacy_fallback": false,
+                                    "seo_ai_model_id": 31,
+                                    "is_free": false,
+                                    "free": false,
+                                    "fallback_count": 0,
+                                    "fallback_reasons": [],
+                                    "routing_attempts": [
+                                        {
+                                            "attempt": 1,
+                                            "connection_id": 2,
+                                            "model": "deepseek-reasoner",
+                                            "is_free": false,
+                                            "result": "success"
+                                        }
+                                    ],
+                                    "cost_policy": "default",
+                                    "attempt": 1,
+                                    "attempt_number": 1,
+                                    "route_revision": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                                }
+                            }
+                        },
+                        "error_message": null,
+                        "status": "completed"
+                    },
+                    "output_len": null
+                },
+                {
+                    "id": 1118,
+                    "prompt_id": 24,
+                    "status": "running",
+                    "created_at": "2026-09-03 05:00:24",
+                    "updated_at": "2026-09-03 05:00:24",
+                    "meta": {
+                        "token_usage": null,
+                        "error_message": null,
+                        "status": "running"
+                    },
+                    "output_len": null
+                }
+            ]
+        }
+    },
+    "ai_related_tables": {
+        "mysql": [
+            "ai_model_capabilities",
+            "ai_provider_templates",
+            "ai_routing_profiles",
+            "ai_routing_targets",
+            "ai_runtime_health_states",
+            "automation_action_executions",
+            "automation_executions",
+            "automation_node_executions",
+            "seo_ai_models",
+            "seo_extended_provider_connections",
+            "seo_serp_provider_connections"
+        ],
+        "omi_seo_ai": [
+            "prompt_parts",
+            "prompt_results",
+            "prompts",
+            "seo_agent_execution_plans",
+            "seo_agent_executions",
+            "seo_article_ai_history_applies",
+            "seo_article_ai_history_tombstones",
+            "seo_product_gallery_executions",
+            "seo_prompt_result_links",
+            "seo_site_sync_provider_timeline"
+        ]
+    },
+    "job_77041_norm": {
+        "id": 77041,
+        "queue": "default",
+        "attempts": 1,
+        "reserved_at": "2026-09-03T04:45:46+00:00",
+        "available_at": "2026-09-03T04:45:46+00:00",
+        "created_at": "2026-09-03T04:45:46+00:00",
+        "reserved_age_sec": 948,
+        "payload": {
+            "uuid": "774477bc-7034-4835-8d4f-816a2bf8c0ae",
+            "displayName": "Omnichannel\\Addons\\ContentProjects\\Jobs\\GenerateNewContentSuggestionsJob",
+            "job": "Illuminate\\Queue\\CallQueuedHandler@call",
+            "maxTries": 1,
+            "maxExceptions": null,
+            "failOnTimeout": false,
+            "backoff": null,
+            "timeout": 900,
+            "retryUntil": null,
+            "data": {
+                "commandName": "Omnichannel\\Addons\\ContentProjects\\Jobs\\GenerateNewContentSuggestionsJob",
+                "command": "O:72:\"Omnichannel\\Addons\\ContentProjects\\Jobs\\GenerateNewContentSuggestionsJob\":3:{s:12:\"plannerRunId\";i:20;s:9:\"projectId\";i:81;s:7:\"actorId\";i:2;}"
+            },
+            "createdAt": 1788410746,
+            "illuminate:log:context": {
+                "data": [],
+                "hidden": {
+                    "laravel_unique_job_cache_store": "s:8:\"database\";",
+                    "laravel_unique_job_key": "s:122:\"laravel_unique_job:Omnichannel\\Addons\\ContentProjects\\Jobs\\GenerateNewContentSuggestionsJob:content-project-new-content:81\";"
+                }
+            },
+            "delay": null
+        }
+    },
+    "run20_live": {
+        "updated_at": "2026-09-03 05:00:24",
+        "status": null,
+        "summary": {
+            "kind": "executed",
+            "added": 19,
+            "status": "running",
+            "message": "19 \/ 50",
+            "requested": 50,
+            "_batch_trace": [
+                {
+                    "failed": false,
+                    "accepted": 19,
+                    "requested": 20,
+                    "model_class": "paid_standard"
+                },
+                {
+                    "failed": false,
+                    "accepted": 0,
+                    "requested": 20,
+                    "model_class": "paid_standard"
+                }
+            ]
+        },
+        "prompt_result_id": null
+    }
+}

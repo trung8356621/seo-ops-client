@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-03  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -14,9 +14,9 @@ SEO technical audit + keyword research stack for one SEO DB connection (`omi_seo
 | Surface | Role |
 |---------|------|
 | **ArticlesOptimal** | Scan/filter articles failing SEO rules; assign into Content Projects; Reviewed dashboard |
-| **Keyword Intelligence (KI)** | Import → normalize → intent → score → map → cluster → topical map → cannibalization → CP convert |
+| **Keyword Intelligence (KI)** | Import → normalize → intent → score → map → cluster → topical map → CP convert |
 | **SERP Intelligence** | Snapshot / intent evidence / cluster overlap / content gaps — advisory to KI |
-| **GSC Intelligence** | Search Analytics facts, mappings, opportunities — CommandBus ingest; live Google Analytics adapter out of scope for handlers |
+| **GSC Intelligence** | Search Analytics facts, mappings, opportunities — CommandBus ingest; live Google Analytics adapter out of scope for handlers; query×page competition signals (`possible_cannibalization`) are GSC evidence only |
 | **Performance Hub** | Legacy GSC snapshot KPI + SERP rank tracker UI; additive GSC Intelligence overlay |
 
 KI / SERP / GSC are **not** Content Project aggregates. They reuse `ContentProjectCommandBus` + `ActorContext` but own `KeywordIntelligencePublicRef` prefixes.
@@ -32,14 +32,14 @@ Panel prefix: `/seo/{connection_hash}/`
 | `keywords` | Keyword Dictionary (`ListKeywords`) |
 | `keywords/clusters` | **Topics** UI (`KeywordTopicClusters` / detail) — product label Topics; code still `cluster_*` |
 | `keywords/focus` | Focus keywords surface |
+| `keywords/anchor-audit` | Broken / weak link triage (`AnchorTextAuditWorkspace`) |
 | `keywords/ai-discovery` | `AiKeywordDiscovery` |
-| `keywords/cannibalization` | `KeywordCannibalizationWorkspace` |
 | `keyword-intelligence` | `ListKeywordWorkspaces` |
-| `keyword-intelligence/{workspace_ref}` | `ViewKeywordWorkspace` (Overview / Keywords / Clusters / Topical / Cannibalization / SERP / …) |
+| `keyword-intelligence/{workspace_ref}` | `ViewKeywordWorkspace` (Overview / Keywords / Clusters / Topical / SERP / …) |
 | `settings/api/google-search-console/{id}/edit` | GSC master connection edit |
 | `seo/oauth/google-search-console/callback` | GSC OAuth callback (global) |
 
-Legacy redirects: `keywords/workspace-3` → AI Discovery; `keywords/workspace-4` → cannibalization.
+Legacy redirects: `keywords/workspace-3` → AI Discovery. **Removed (2026-09-03):** `keywords/cannibalization` UI + KI cannibalization pipeline (`seo_keyword_cannibalization_issues` dropped). GET → 404.
 
 Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAccessControl::canAccessPlannerFeatures()` (+ `SeoPlannerPermissionMiddleware`); KI manager tabs via `canAccessManagerFeatures()`.
 
@@ -66,9 +66,9 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | Full-domain recluster | `ReclusterTopicClustersService` + `Jobs/ReclusterTopicClustersJob` |
 | Focus Article → Topic invariant | `ReconcileFocusArticleTopicsService` + `seo:topics:reconcile-focus` |
 | Keywords language filter | `InteractsWithKeywordWorkspaceLanguageFilter` + `KeywordWorkspaceLanguageScope` |
+| Link triage (anchor-audit) | `KeywordResource/Pages/AnchorTextAuditWorkspace` — `wp_post_id` via `wordpressLink`, not `articles.wp_post_id` |
 | Topical map | `TopicalMapBuilder` + `KeywordTopicalMapMutationService` |
 | KI → CP | `KeywordToContentProjectConverter` / topical converter |
-| Cannibalization (KI) | `KeywordCannibalizationService` |
 | SERP stack | `Services/SerpIntelligence/*` |
 | GSC stack | `Services/GscIntelligence/*` |
 | GSC monthly Hub | `GscMonthlyPeriod` + `GscMonthlyDashboardService` — Hub month picker; `syncGscData()` = **selected month**; MCP drawer via `MonthlyMcpSnapshotService` (`McpSourceKey::Gsc`) |
@@ -144,7 +144,7 @@ Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_
 
 Import → Analyze (locked operation) → Approve keywords/clusters → Build topical map (draft) → Approve map → Preview/Create CP.
 
-Cluster / Topics mutations (merge/split/move/dissolve), full-domain **Recluster**, and cannibalization review are CommandBus/job-only — not Filament ad-hoc SQL.
+Cluster / Topics mutations (merge/split/move/dissolve) and full-domain **Recluster** are CommandBus/job-only — not Filament ad-hoc SQL.
 
 **Focus Article reconcile:** `ReconcileFocusArticleTopicsService` ensures Focus keywords are never left Unassigned (attach existing Topic, shared Focus Topic, or singleton Topic — Focus overrides min-size-2). Runs inside recluster; Artisan: `seo:topics:reconcile-focus --site=N` (default reconcile-only; `--recluster` = full rebuild).
 
@@ -168,7 +168,7 @@ Prefix families on CapabilityRegistry / Agent / MCP:
 
 | Family | Examples |
 |--------|----------|
-| `keyword_intelligence.*` | list/get workspaces, keywords, clusters, topical map, cannibalization, analysis op; write import/analyze/approve/build/convert/archive |
+| `keyword_intelligence.*` | list/get workspaces, keywords, clusters, topical map, analysis op; write import/analyze/approve/build/convert/archive |
 | `serp_intelligence.*` | collect/import/validate/list gaps |
 | `gsc_intelligence.*` | list/get properties, sync runs, mappings, aggregates, opportunities; write import/sync/detect/cancel (MCP catalog: **reads**; app CommandBus writes) |
 
@@ -205,7 +205,6 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 
 - Audit skip: meta only.
 - Assign audit → CP: shared drawer (`seo_audit`); may prompt missing focus keyword; `ignore_monthly_capacity` + capacity toast when remaining ≤2. Do **not** reintroduce ArticlesOptimal sidebar/modal assign forms.
-- KI analyze: fingerprint-stable cannibalization issues (`open`→`stale` when unseen).
 - GSC persist: dual-write in-memory + Eloquent when `property_id`/`site_id` present; skip mapping overwrite when `metadata.manual`.
 - Manual keyword intent wins over SERP reconciler.
 - Approve topical map → immutable version snapshot.
@@ -268,9 +267,9 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
 - Archive detail: `docs/archive/audit-keywords/*`, `docs/archive/maps/MAP_SEO_AUDIT.md`
 
-### Quick ref — cannibalization types (KI)
+### Quick ref — retired Keyword Cannibalization (2026-09-03)
 
-`c1_same_keyword_multi_article`, `c2_cluster_multi_article` (active); `c3`–`c6` reserved. Risk by distinct article count. Multi-keyword → one article is **not** auto cannibalization.
+seo-ops Keywords Cannibalization UI + KI `c1`/`c2` issue pipeline **removed**. Multi-article same/near keyword is accepted; quality via SEO score / Focus Keyword / Topic / Focus Article / internal links / GSC diagnostics. GSC `possible_cannibalization` (query×page competition) remains as planning evidence only — not a Keywords nav module.
 
 ### Quick ref — audit low score
 

@@ -1,0 +1,226 @@
+{
+    "job": {
+        "exists": false
+    },
+    "run": {
+        "updated_at": "2026-09-03 05:03:37",
+        "message": "19 \/ 50 · 2 duplicates skipped · 0 rejected skipped · 0 invalid",
+        "added": 19,
+        "batch_trace": [
+            {
+                "failed": false,
+                "accepted": 19,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": false,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": true,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            }
+        ],
+        "status": "completed"
+    },
+    "prs": [
+        {
+            "id": 1114,
+            "status": "failed",
+            "started_at": "2026-09-03 04:45:46",
+            "finished_at": "2026-09-03 04:51:47",
+            "updated_at": "2026-09-03 04:51:47",
+            "error": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+            "model": null,
+            "profile": null,
+            "attempts": null,
+            "reasoning_tokens": null,
+            "elapsed_sec": 361
+        },
+        {
+            "id": 1115,
+            "status": "completed",
+            "started_at": "2026-09-03 04:51:47",
+            "finished_at": "2026-09-03 04:57:37",
+            "updated_at": "2026-09-03 04:57:37",
+            "error": "",
+            "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "profile": "text.reasoning",
+            "attempts": [
+                {
+                    "attempt": 1,
+                    "connection_id": 2,
+                    "model": "deepseek-reasoner",
+                    "is_free": false,
+                    "result": "failed",
+                    "failure_class": "transient_provider"
+                },
+                {
+                    "attempt": 2,
+                    "connection_id": 3,
+                    "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                    "is_free": true,
+                    "result": "success"
+                }
+            ],
+            "reasoning_tokens": 4380,
+            "elapsed_sec": 350
+        },
+        {
+            "id": 1116,
+            "status": "completed",
+            "started_at": "2026-09-03 04:57:37",
+            "finished_at": "2026-09-03 04:59:31",
+            "updated_at": "2026-09-03 04:59:31",
+            "error": "",
+            "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+            "profile": "text.reasoning",
+            "attempts": [
+                {
+                    "attempt": 1,
+                    "connection_id": 2,
+                    "model": "deepseek-reasoner",
+                    "is_free": false,
+                    "result": "skipped",
+                    "skip_reason": "connection_cooldown"
+                },
+                {
+                    "attempt": 2,
+                    "connection_id": 3,
+                    "model": "nvidia\/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+                    "is_free": true,
+                    "result": "success"
+                }
+            ],
+            "reasoning_tokens": 4891,
+            "elapsed_sec": 114
+        },
+        {
+            "id": 1117,
+            "status": "completed",
+            "started_at": "2026-09-03 04:59:31",
+            "finished_at": "2026-09-03 05:00:24",
+            "updated_at": "2026-09-03 05:00:24",
+            "error": "",
+            "model": "deepseek-reasoner",
+            "profile": "text.reasoning",
+            "attempts": [
+                {
+                    "attempt": 1,
+                    "connection_id": 2,
+                    "model": "deepseek-reasoner",
+                    "is_free": false,
+                    "result": "success"
+                }
+            ],
+            "reasoning_tokens": 5698,
+            "elapsed_sec": 53
+        },
+        {
+            "id": 1118,
+            "status": "failed",
+            "started_at": "2026-09-03 05:00:24",
+            "finished_at": "2026-09-03 05:03:37",
+            "updated_at": "2026-09-03 05:03:37",
+            "error": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+            "model": null,
+            "profile": null,
+            "attempts": null,
+            "reasoning_tokens": null,
+            "elapsed_sec": 193
+        }
+    ],
+    "prompt_24": {
+        "id": 24,
+        "name": "Content Planning Assistant",
+        "slug": null,
+        "routing_profile_key": null,
+        "execution_profile": null,
+        "ai_profile": null,
+        "meta_keys": [
+            "id",
+            "user_id",
+            "ai_connection_id",
+            "routing_mode",
+            "routing_profile_key",
+            "model_category",
+            "name",
+            "tools",
+            "hook_key",
+            "hook_version",
+            "hook_settings",
+            "markdown_content",
+            "variables",
+            "is_active",
+            "title",
+            "description",
+            "status",
+            "ai_model",
+            "settings",
+            "prompt_data",
+            "created_at",
+            "updated_at",
+            "deleted_at",
+            "portable_uuid"
+        ]
+    },
+    "prompt_24_relevant": {
+        "routing_mode": "auto",
+        "routing_profile_key": null,
+        "model_category": null,
+        "name": "Content Planning Assistant",
+        "hook_key": "keyword.discovery.structured",
+        "ai_model": null
+    },
+    "resilience": {
+        "max_ai_attempts": 6,
+        "max_free_attempts": 3
+    },
+    "queue_config": {
+        "default": "database",
+        "retry_after": 1200
+    },
+    "origins_count": 19,
+    "new_code_markers_in_latest_success": {
+        "capability_source": null,
+        "fallback_allowed": null,
+        "budget": false,
+        "routing_keys": [
+            "profile",
+            "capability",
+            "provider",
+            "connection_id",
+            "connection_name",
+            "model",
+            "capabilities",
+            "priority",
+            "route_position",
+            "legacy_fallback",
+            "seo_ai_model_id",
+            "is_free",
+            "free",
+            "fallback_count",
+            "fallback_reasons",
+            "routing_attempts",
+            "cost_policy",
+            "attempt",
+            "attempt_number",
+            "route_revision"
+        ],
+        "usage_keys": [
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens",
+            "prompt_tokens_details",
+            "completion_tokens_details",
+            "prompt_cache_hit_tokens",
+            "prompt_cache_miss_tokens",
+            "routing"
+        ]
+    }
+}

@@ -298,7 +298,6 @@ return [
                 'intent' => 0.10,
             ],
             'penalties' => [
-                'cannibalization' => (float) env('SEO_KI_SCORING_PENALTY_CANNIBALIZATION', 15),
                 'existing_coverage' => (float) env('SEO_KI_SCORING_PENALTY_EXISTING_COVERAGE', 10),
             ],
         ],
@@ -361,11 +360,6 @@ return [
             'conversion_operations_per_hour' => (int) env('SEO_KI_CONVERSION_OPS_PER_HOUR', 10),
             'default_policy' => env('SEO_KI_CONVERSION_DEFAULT_POLICY', 'new_only'),
             'default_grouping' => env('SEO_KI_CONVERSION_DEFAULT_GROUPING', 'single_project'),
-        ],
-
-        'cannibalization' => [
-            /** Số mapping "current_content" trên cùng keyword được coi là rủi ro. */
-            'multi_mapping_threshold' => (int) env('SEO_KI_CANNIBALIZATION_MULTI_MAPPING_THRESHOLD', 2),
         ],
     ],
 

@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-09-03  
 > Supersedes: `docs/archive/content-projects/CONTENT_PROJECT_AGENT_GATEWAY.md`, `docs/archive/content-projects/CONTENT_PROJECT_MCP_TOOLS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_CAPABILITIES.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_SECURITY.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_APPROVALS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLANNER.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLAN_LIFECYCLE.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_WORKFLOWS.md`, `docs/archive/agent/AGENT_CONFIRMATION.md`, `docs/archive/agent/AGENT_SLASH_COMMANDS.md` (contract slices)
 
 Module UX/runtime: `docs/modules/AGENT_WORKSPACE.md`. Automation owners: `docs/modules/AUTOMATION.md`.
@@ -80,9 +80,9 @@ Agent/MCP I/O uses public refs only (`project_ref`, `item_ref`, `site_ref`, …)
 ### Read tools (summary)
 
 - CP: `list_projects`, `get_project`, `list_items`, `get_item`, `get_status`, `get_publishing_queue`, `get_timeline`, `get_daily_report`, `get_site_health`, `get_operation`  
-- Keyword Intelligence: list/get workspace, keywords, clusters, topical map, topics, conflicts, link suggestions, map versions, conversion, cannibalization, analysis operation  
+- Keyword Intelligence: list/get workspace, keywords, clusters, topical map, topics, conflicts, link suggestions, map versions, conversion, analysis operation  
 - SERP Intelligence: list/get queries, snapshots, results, features, cluster evidence, content gaps, competitors, operation  
-- GSC Intelligence: list/get properties, sync runs, mappings, aggregates, opportunities, operation  
+- GSC Intelligence: list/get properties, sync runs, mappings, aggregates, opportunities, operation (planning may include GSC `possible_cannibalization` evidence — not a KI/Keywords module)  
 - SEO Audit: `seo_audit.list`
 
 ### Write tools (CP core, MCP-exposed)

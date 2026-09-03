@@ -1,0 +1,262 @@
+{
+    "run_status_col": null,
+    "summary": {
+        "kind": "executed",
+        "added": 19,
+        "valid": 21,
+        "status": "completed",
+        "invalid": 0,
+        "message": "19 \/ 50 · 2 duplicates skipped · 0 rejected skipped · 0 invalid",
+        "task_ids": [
+            8830,
+            8831,
+            8832,
+            8833,
+            8834,
+            8835,
+            8836,
+            8837,
+            8838,
+            8839,
+            8840,
+            8841,
+            8842,
+            8843,
+            8844,
+            8845,
+            8846,
+            8847,
+            8848
+        ],
+        "generated": 21,
+        "requested": 50,
+        "candidates": [
+            {
+                "title": "Balo Laptop Cho Sinh Viên: Cách Chọn Kích Thước Và Thiết Kế Phù Hợp",
+                "status": "added",
+                "keyword": "balo laptop cho sinh viên",
+                "fingerprint": "256c1f0a272d4c2a15636f0b96d588a5d15e41bc694a97535f4a9f4258058948",
+                "source_signal": "cluster_gap",
+                "suggestion_reason": "Cluster balo laptop chưa có hướng dẫn chi tiết cho sinh viên, tạo cơ hội để cover missing intent."
+            },
+            {
+                "title": "Túi Vải Không Dệt: Gợi Ý Quà Tặng Độc Đáo Cho Hàng Năm",
+                "status": "added",
+                "keyword": "túi vải không dệt quà tặng",
+                "fingerprint": "3cb2dddc9b49103ea1da6f0355d0eba91205dcec586075c22b2abec1a630e120",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Keyword quà tặng vải không dệt chưa có nội dung hướng dẫn chi tiết, mở rộng cluster."
+            },
+            {
+                "title": "Túi Canvas Dành Cho Laptop: So Sánh Với Túi Vải Không Dệt",
+                "status": "added",
+                "keyword": "túi canvas cho laptop",
+                "fingerprint": "6c8edc7c31210e73cefa40827b526f1b3e5cc7b07c132384c898a0d686a693d2",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần so sánh trực tiếp hai loại túi để giúp người dùng quyết định, chưa có bài so sánh này."
+            },
+            {
+                "title": "Cách In Logo Trên Túi Vải Không Dệt: Hướng Dẫn chi Tiết",
+                "status": "added",
+                "keyword": "cách in logo trên túi vải không dệt",
+                "fingerprint": "d696d8be91e83142e4eeeb2ca6c06f62b1ef0b3223dd9bc368e0d6e317d15828",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Yêu cầu in logo trên túi vải không dệt đang tăng, nhưng chưa có hướng dẫn chi tiết."
+            },
+            {
+                "title": "Tại Sao Túi Canvas Bền Chất Lượng Và Dễ Dàng Chăm Sóc",
+                "status": "added",
+                "keyword": "tại sao túi canvas bền",
+                "fingerprint": "f786b8ffcef8b416310fef1bb998926a0621ec9a056ec8c7fee2a9d59c59bd2a",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần cung cấp thông tin về tính năng bền vững của canvas, chưa có bài chuyên sâu."
+            },
+            {
+                "title": "Cách Bảo Quản Và Vệ Sinh Túi Canvas Để Giữ Thời Thơ",
+                "status": "added",
+                "keyword": "bảo quản túi canvas",
+                "fingerprint": "9e58c1e74f87fadcf817980fd4634683cd563ccdbe7b50ebc33e8c8098b5a0bf",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Người dùng quan tâm đến bảo quản túi canvas nhưng chưa có hướng dẫn chi tiết."
+            },
+            {
+                "title": "Mẫu Balo Học Sinh In Logo Độc Đáo: Gợi Ý Thiết Kế",
+                "status": "added",
+                "keyword": "mẫu balo học sinh in logo",
+                "fingerprint": "133ecccccede72f169a2862912c7be82c56e4db793eeaab023e9223158d48b41",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Khó được tìm thấy nội dung về mẫu balo học sinh in logo, mở rộng cluster."
+            },
+            {
+                "title": "Công Ty May Balo Corporate: Giải Pháp Balo Công Nghiệp Cho Doanh Nghiệp",
+                "status": "added",
+                "keyword": "công ty may balo corporate",
+                "fingerprint": "eb04c1599ae3855f3a46096196fbffbb1445076c41f29981d6ee3bc57e8bab70",
+                "source_signal": "cluster_gap",
+                "suggestion_reason": "Công ty may balo chưa có đề xuất chi tiết cho nhu cầu doanh nghiệp, tạo cơ hội để cover."
+            },
+            {
+                "title": "Túi Balo Quà Tặng Sinh Viên: Gợi Ý Mẫu Hiện Đại",
+                "status": "added",
+                "keyword": "túi balo quà tặng sinh viên",
+                "fingerprint": "b55c23c1ddb6e9bd5901e33dbab2e669989bdfeb5b28d86b6bea5b0a4395931c",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần cung cấp gợi ý mẫu balo quà tặng cho sinh viên, chưa có bài viết chi tiết."
+            },
+            {
+                "title": "Túi Vải Không Dệt In Logo: Quy Trình Thiết Kế Và Sản Xuất",
+                "status": "added",
+                "keyword": "túi vải không dệt in logo",
+                "fingerprint": "54d784b02ddfa2f37be21b3a94f87207378cfbc3557b00616d0e2366ded38027",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Từ khóa in logo trên túi vải không dệt chưa được cover, tạo cơ hội để cung cấp hướng dẫn."
+            },
+            {
+                "title": "Túi Balo Chọn Đối Với Du Lịch Ngắn Ngày: Các Tiêu Chất Quan Trọng",
+                "status": "added",
+                "keyword": "túi balo cho du lịch",
+                "fingerprint": "807baccfbffac0e767ae7c4e1b5d3f01a080bd527a132dd0a44867890e2763b8",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần hướng dẫn người dùng chọn balo phù hợp cho du lịch, chưa có nội dung chi tiết."
+            },
+            {
+                "title": "Túi Vải Canvas Là Gì? Tính Năng Và Ứng Dụng Thực Tế",
+                "status": "duplicate_draft",
+                "keyword": "túi vải canvas là gì",
+                "fingerprint": "084e02e0c1766787addc11fd7372b3ea2c12c5a3deeb7bb292001082b754857d",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Khái niệm canvas chưa được giải thích chi tiết, mở rộng kiến thức người đọc."
+            },
+            {
+                "title": "Túi Balo So Sánh Với Túi Xách: Khi Nào Nên Chọn Mỗi Loại?",
+                "status": "added",
+                "keyword": "so sánh túi balo và túi xách",
+                "fingerprint": "8fcdc50ce444cb117470d5b045e2e2f2c364c2468efc1bc63197f3bee4c36b57",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "So sánh này chưa có, cung cấp quyết định thông tin cho người dùng."
+            },
+            {
+                "title": "Túi Vải Không Dệt Giá Rẻ: Các Mẫu Phù Hợp Ngân Hàn",
+                "status": "added",
+                "keyword": "túi vải không dệt giá rẻ",
+                "fingerprint": "af72d1a9a58783ec273c085d9fdfaf7ae63d716f5233fa185e70c848b9a86be6",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Từ khóa giá rẻ chưa có nội dung chi tiết về các mẫu phù hợp."
+            },
+            {
+                "title": "Cách Chọn Kích Thước Balo Laptop Phù Hợp Cho Máy Đóng",
+                "status": "added",
+                "keyword": "cách chọn kích thước balo laptop",
+                "fingerprint": "bb3962a24dd81534da7b77d9114db0cdfd8e9d41e629f38269135d8212dba3d3",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần cung cấp hướng dẫn chi tiết về kích thước balo laptop, chưa có bài viết."
+            },
+            {
+                "title": "Túi Balo Chọn Đối Với Công Việc: Thiết Kế Thông Minh Cho Dân Hành",
+                "status": "added",
+                "keyword": "túi balo cho công việc",
+                "fingerprint": "b8860606865a42bb282c1c361a63b6df91d7dfb824b5b4aebef115224378df37",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Không có nội dung về túi balo cho công việc, mở rộng cluster."
+            },
+            {
+                "title": "Túi Vải Không Dệt So Sánh Với Túi Canvas: So Sánh Chất Lượng Và Giá",
+                "status": "added",
+                "keyword": "túi vải không dệt vs canvas",
+                "fingerprint": "a65fb00ffb366482863e906c21dab2f02e0e7042d3ec78a7ef0f622c98b4d1f6",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần so sánh hai loại vật liệu này, chưa có bài viết chuyên sâu."
+            },
+            {
+                "title": "Túi Balo Quà Tặng Cho Phụ Huynh: Gợi Ý Thiết Kế Thông Minh",
+                "status": "added",
+                "keyword": "túi balo quà tặng cho phụ huynh",
+                "fingerprint": "519601c223416db6440b4feab07000a664adaa09b4b2371f4f413477cc262d65",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần cung cấp gợi ý quà tặng cho phụ huynh, chưa có nội dung chi tiết."
+            },
+            {
+                "title": "Cách Thiết Kế Pattern Túi Vải Không Dệt: Hướng Dẫn Sáng Tạo",
+                "status": "added",
+                "keyword": "cách thiết kế pattern túi vải không dệt",
+                "fingerprint": "4fe112d6cc535685dbe7bdc3cd0279b2318a58e0415a9076e094d47577c2090e",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Yêu cầu thiết kế pattern đang tăng, nhưng chưa có hướng dẫn chi tiết."
+            },
+            {
+                "title": "Tại Sao Túi Balo Có Giá Khác Nhau: Fакторы Ảnh hưởng Đến Giá",
+                "status": "added",
+                "keyword": "tại sao túi balo có giá khác nhau",
+                "fingerprint": "54c0927d8be954fde395bd9bc1bdb5a1d9b6280140d330b5ab97ed3ef082f2fc",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Cần giải thích nguyên nhân giá khác nhau, chưa có bài viết phân tích."
+            },
+            {
+                "title": "Túi Vải Không Dệt In Logo: Quy Trình Thiết Kế Và Sản Xuất",
+                "status": "duplicate_draft",
+                "keyword": "túi vải không dệt in logo",
+                "fingerprint": "54d784b02ddfa2f37be21b3a94f87207378cfbc3557b00616d0e2366ded38027",
+                "source_signal": "keyword_gap",
+                "suggestion_reason": "Vấn đề về kỹ thuật và quy trình sản xuất chưa được đề cập chi tiết trong nội dung hiện có."
+            }
+        ],
+        "_batch_trace": [
+            {
+                "failed": false,
+                "accepted": 19,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": false,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            },
+            {
+                "failed": true,
+                "accepted": 0,
+                "requested": 20,
+                "model_class": "paid_standard"
+            }
+        ],
+        "context_flags": {
+            "use_mcp_context": false,
+            "use_site_context": true,
+            "use_keyword_intelligence": true
+        },
+        "planner_run_id": 20,
+        "logical_ai_calls": 6,
+        "planning_context": {
+            "mcp_period": null,
+            "cluster_count": 0,
+            "missing_direction_count": 0,
+            "principal_keywords_count": 100
+        },
+        "primary_language": "vi",
+        "prompt_result_id": 1117,
+        "rejected_skipped": 0,
+        "duplicate_skipped": 2,
+        "planning_ai_calls": 0,
+        "duplicate_breakdown": {
+            "in_batch": 0,
+            "active_draft": 2,
+            "covered_content": 0,
+            "in_batch_keyword": 0
+        }
+    },
+    "prompt_result_id": 1117,
+    "updated_at": "2026-09-03 05:03:37",
+    "origins": 19,
+    "pr1118": {
+        "status": "failed",
+        "error": "AI_ROUTES_EXHAUSTED: 2 AI attempts failed.",
+        "started": "2026-09-03 05:00:24",
+        "finished": "2026-09-03 05:03:37",
+        "routing": null,
+        "usage_keys": []
+    },
+    "job_77041_exists": false,
+    "remaining_kd_jobs": [],
+    "failed": []
+}
