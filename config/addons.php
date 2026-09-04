@@ -43,6 +43,7 @@ return [
         'agent',
         'social',
         'commerce',
+        'seeding',
         'seo-content-ai',
     ],
 

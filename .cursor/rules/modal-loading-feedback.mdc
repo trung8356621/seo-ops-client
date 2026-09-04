@@ -1,0 +1,70 @@
+---
+description: Mandatory immediate loading feedback for every modal/dialog/drawer/server-backed panel
+globs: "{addons,../omnichannel-addons,app,resources}/**/*.{php,blade.php,js,jsx,ts,tsx,vue}"
+alwaysApply: false
+---
+
+# MODAL / DIALOG LOADING UX RULE
+
+Whenever an interaction opens a modal, dialog, drawer, popover,
+or other server-backed UI:
+
+1. The click must produce immediate visual feedback.
+
+2. Never implement:
+
+   click
+   → silent server/Livewire round-trip
+   → modal appears later
+
+3. If modal preparation needs async/server data:
+   - open the modal shell immediately
+   - show skeleton/loading placeholder in the body
+   - load data asynchronously
+   - replace placeholder when ready
+
+4. If opening the modal shell immediately is not technically possible:
+   - show a scoped loading indicator on the trigger immediately
+   - disable the trigger to prevent double-click
+   - never leave the UI visually idle
+
+5. Loading must be local/scoped.
+   Do not block or dim the entire page for a local modal action.
+
+6. Never flash stale data from the previously opened entity.
+   Use skeleton/hidden content until the new entity is ready.
+
+7. Distinguish:
+   - modal data loading
+   - form submission loading
+
+8. While modal data is loading:
+   - disable submit
+   - prevent actions against incomplete state
+
+9. On failure:
+   - stop loading
+   - show an understandable error state
+   - do not leave permanent spinner/skeleton
+
+10. For Livewire:
+    avoid waiting for a server action to finish before displaying
+    visual feedback.
+    Prefer immediate frontend state + async Livewire preparation.
+
+11. This rule applies to ALL newly created or modified:
+    - modal
+    - dialog
+    - drawer
+    - popover
+    - server-backed action panel
+
+12. When reviewing existing UI code, treat a silent wait longer than
+    an instantaneous interaction as a UX bug.
+
+## Preferred implementation (this repo)
+
+- Reuse `<x-seo-content-ai::modal-loading-placeholder />` for Blade/Filament modal bodies.
+- Pattern: Alpine/JS opens shell → `phase = loading` → Livewire `prepare*` → `phase = ready|error`.
+- Do **not** gate the entire modal markup behind `@if ($modalOpen)` when `$modalOpen` is only set after a heavy Livewire prepare.
+- Submit CTA stays disabled while `phase !== ready`; submitting uses a separate spinner on the CTA.
