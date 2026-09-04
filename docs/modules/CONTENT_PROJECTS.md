@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-04  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -89,14 +89,20 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | SEO Audit / New Content Planner page | `Filament/Pages/ContentProjectSeoAuditPlanner` |
 | Draft planning items read model | `ContentProjectDraftPlanningItemsReadModel` |
 | AI New Content suggestions | `Services/ContentProject/NewContent/NewContentSuggestionPlannerService` (+ Parser / StructuredResult / Intelligence brief) |
+| New Content auto-continuation | `NewContentAutoContinuationPolicy` + `NewContentCrossBatchContinuationPolicy` + `NewContentGenerationBatchPolicy` / `NewContentPlanningSlotSplitter` |
+| New Content auto DNA fill | `NewContentAutoDnaPolicy` (system-owned; not Prompt Management content) |
+| New Content run outcome | `NewContentPlannerRunOutcome` + readiness `NewContentGenerationReadinessService` |
+| Planner plan clone (config only) | `Planner/PlannerPlanCloneService` + `PlannerPlanCloneAllowlist` / `PlannerPlanCloneResult` (+ Livewire `InteractsWithPlannerPlanClone`) |
 | Planner post_type correction | `UpdateContentProjectItemCommand` → `UpdateContentProjectItemHandler::applyPlannerPostTypeUpdate` |
 | Draft → Execution split | `SplitDraftContentProjectCommand` → `SplitDraftContentProjectHandler` → `Draft/SplitDraftContentProjectService` (+ Livewire `InteractsWithDraftSplit`) |
 | Writer fair allocation | `Support/ContentProject/ContentProjectWriterAllocator` |
 | Execution packing (max 30) | `ContentProjectExecutionPackingService` + `ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS` |
-| Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — not a hard monthly gate |
+| Writer monthly capacity settings | `ContentProjectWriterCapacitySettingsService` — global WpOption + per-user meta override (default 30; independent of EP pack size) |
+| Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — display/allocator input; not a hard monthly gate |
 | Writer assignment display | `ContentProjectWriterAssignment` — System User id = unassigned |
+| Archive export reviewed_at | `Support/ContentProject/ContentProjectExportReviewedAtResolver` |
 | Projects list buckets | `Support/ContentProject/ContentProjectListBucket` (`all` \| `draft` \| `project` \| `archived`) |
-| SEO Audit Notes (cluster→DNA) | `AuditNotes/AuditNoteClusterSuggestionQuery` + `AuditNoteDnaNormalizer` + `AuditNotePromptSectionBuilder` (+ `InteractsWithAuditNotes`) |
+| SEO Audit Notes (cluster→DNA) | `AuditNotes/AuditNoteClusterSuggestionQuery` + `AuditNoteDnaNormalizer` + `AuditNotePromptSectionBuilder` + `AuditNoteTargetAllocator` (+ `InteractsWithAuditNotes`) |
 | Idea Candidates (Vocabulary Suggest → Draft) | `IdeaCandidates/*` + Livewire `InteractsWithIdeaCandidates` → `AddIdeaCandidatesCommand` |
 | EP naming / packing repair | `seo:repair-execution-project-naming` / `seo:repair-execution-project-packing` |
 
@@ -208,6 +214,8 @@ Page: `ContentProjectSeoAuditPlanner` — SEO Audit + **Create new content with 
 4. On invalid/incomplete: **at most one** format repair retry (`repairBrief`) — no new SEO research. Still invalid → fail run (`structured_output_*`); do not import.
 5. Truncated / incomplete JSON must not import. Restart queue workers after PHP changes so jobs load new code.
 
+**One-click Keyword Discovery recovery (2026-09-03):** `NewContentAutoContinuationPolicy` bounds automatic continuation slices (max 12), no-progress escalations, soft job time budget (~700s), and provider-transient retries (backoff). Levels escalate refresh → coverage slice → oversample → reduce batch → fresh batch. `consecutive_no_progress` is a recovery signal, not a terminal stop. Cross-batch continuation: `NewContentCrossBatchContinuationPolicy`. Batch sizing: `NewContentGenerationBatchPolicy` + `NewContentPlanningSlotSplitter`. DNA slot fill policy: `NewContentAutoDnaPolicy` (injected at runtime; never persisted into `SeoPrompt`).
+
 **Draft table UI (compat Blade `content-project-draft-items`):**
 
 - Read model: `ContentProjectDraftPlanningItemsReadModel` — `description` = global brief; `product_description` = Product gallery text when `post_type=product`.
@@ -231,9 +239,14 @@ Planner / SEO Audit / View project (`InteractsWithIdeaCandidates`): user **picks
 Planning notes on SEO Audit / Planner (`InteractsWithAuditNotes`):
 
 1. Suggestions = Cluster SSOT (`KeywordClusterQuery` + `SiteMcpClusterTopicalProfileBuilder`); sort **MCP share ASC** (then name). List is lightweight (DNA counts only). Filters: `all` \| `mcp_low` \| `<5%` \| `has_focus` \| `no_focus`. Page size 25.
-2. Select cluster → hydrate DNA (limit 30) into note snapshot (`cluster_ref`, name/share snapshots, `dna[]`). DNA edits are **planning override only** — never mutate Cluster DNA SSOT. Sources: `cluster` \| `manual`. Cap 50 DNA/note.
+2. Select cluster → hydrate DNA (limit 30) into note snapshot (`cluster_ref`, name/share snapshots, `dna[]`). DNA edits are **planning override only** — never mutate Cluster DNA SSOT. Sources: `cluster` \| `manual`. Cap 50 DNA/note. DNA rows carry `placement` (`before` \| `after`) aligned with Keywords SSOT (`DnaPlacement`).
 3. Prompt section: `AuditNotePromptSectionBuilder` orders DNA by weight DESC for semantic priority; MCP share is suggestion priority only.
 4. Manual topics allowed via `manual:{normalized}` — does not invent KI clusters.
+5. **Target allocation (2026-09-03):** `AuditNoteTargetAllocator` distributes `target_dna_count` across selected Topics — MANUAL topics keep their target; AUTO topics share remaining quantity by relative MCP share (largest-remainder). Specified DNA slots floor every target. System planning logic — not Prompt Management content.
+
+### Planner plan clone (cross-domain config)
+
+`PlannerPlanCloneService` (+ UI `InteractsWithPlannerPlanClone`): clone **planner configuration** (note items / content type / mode) from a source site to destination site IDs. **Never** clones generated Draft content. Exact topic match via `AuditNotePlannerExactTopicMatcher` / `PlannerExactTopicMatcher`. Allowlist: `PlannerPlanCloneAllowlist`. Result DTO: `PlannerPlanCloneResult`.
 
 ### Draft Reviewed → Create Execution Project (split)
 
@@ -562,9 +575,14 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ArchitectureHardeningLockContractTest` | Related uniqueness contracts |
 | `PublishScheduledArticlesCanonicalRunnerContractTest` | Single publish scheduler shell |
 | `NewContentSuggestionStructuredResultTest` / `DraftPlanningPostTypeAndRefreshTest` / `NewContentProductPlanningBriefTest` | Planner JSON gate + Draft post_type dblclick UX + Product brief/persist |
+| `NewContentAutoDnaPolicyTest` / `NewContentGenerationBatchingTest` / `NewContentOneClickAutoContinuationContractTest` / `NewContentQty50CompletionContractTest` | Auto DNA + batching + one-click continuation bounds |
+| `PlannerPlanCloneContractTest` | Cross-domain planner config clone (no content clone) |
+| `AuditNoteTargetAllocatorTest` / `AuditNoteManualDnaUxContractTest` / `DnaPlacementContractTest` | Target allocation + manual DNA UX + placement |
+| `ContentProjectWriterCapacitySettingsTest` | Global/per-user writer monthly capacity settings |
 | `DraftItemTableDomainAndCloneContractTest` | Shared draft table Domain column + clone idea + safe JS root |
 | `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
 | `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
+| `ContentProjectExportReviewedAtResolverTest` | Archive export reviewed_at resolution |
 
 Freeze grep invariants: no production `ContentProjectBulkRerunService`, `ContentProjectStepRerunService`, `RerunArticlePipelineJob`, Filament direct `RunEngine::start`, `ContentProjectItemAction::Restore`.
 

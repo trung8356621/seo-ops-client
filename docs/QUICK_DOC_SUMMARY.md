@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-03  
+> Updated: 2026-09-04  
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -127,7 +127,31 @@ Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons)
 - Docs: `SEO_AUDIT_AND_KEYWORDS.md`, `AGENT_AND_MCP_CONTRACTS.md`.
 - Anchor-audit eager load: `articles.wp_post_id` → `wordpress_article_links` via `sourceArticle.wordpressLink`.
 
-## 8. Fast re-entry
+## 8. Batch 2026-09-03 code → docs catch-up (pass 2026-09-04)
+
+Phạm vi: `omnichannel-addons` **0.3.0** + `omnichannel-client` **0.3.1** (commit 3/9; **không** có commit ngày 4/9). Docs pass ngày 4/9 bổ sung phần còn thiếu ngoài cannibalization.
+
+### Prompt budget / outbound gate — `ai-prompt`
+
+- `PromptBudgetPreflightService` + `AiOutboundBudgetGate` + `ModelContextCapabilityResolver`.
+- Split: `PromptSplitClass` + strategies (`DirectFit`, long-form / HTML-safe / keyword-discovery semantic split) + `SemanticSplitExecutor`.
+- Doc: `PROMPTS_AND_AI.md` §12.
+
+### Content Projects planner / New Content
+
+- One-click recovery: `NewContentAutoContinuationPolicy` (+ batch / cross-batch / auto DNA).
+- Audit Notes target alloc: `AuditNoteTargetAllocator`; DNA `placement` in planner snapshots.
+- Cross-domain **config** clone: `PlannerPlanCloneService` (không clone content).
+- Writer monthly capacity settings: `ContentProjectWriterCapacitySettingsService`.
+- Doc: `CONTENT_PROJECTS.md`.
+
+### Keywords DNA + Topics repair
+
+- Column `seo_keyword_dna.placement` (`before`\|`after`) via `DnaPlacement`.
+- Background Fix Keywords: `ReconcileTopicMembershipJob`.
+- Doc: `SEO_AUDIT_AND_KEYWORDS.md`.
+
+## 9. Fast re-entry
 
 1. `docs/README.md`
 2. `git status --short` (+ log client + addons nếu docs lag)

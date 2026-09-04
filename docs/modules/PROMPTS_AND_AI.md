@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-04  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -70,6 +70,13 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Entity context | `ArticlePromptHookEntityResolver` (array context only) |
 | AI run engine | `PromptRunnerService` |
 | Model route/failover | `AiModelRouterService` + `GeminiModelVersionPolicy` |
+| Model context window | `ModelContextCapabilityResolver` → `ModelContextCapability` (context/output ceilings + estimator family) |
+| Prompt budget preflight | `PromptBudgetPreflightService` — dual-layer: task-planning estimate + final outbound invariant |
+| Outbound budget gate | `AiOutboundBudgetGate` — verify at adapter boundary before HTTP (`verifyCompiled` / `verifyMessages`) |
+| Token estimate | `PromptTokenEstimator` |
+| Split strategies | `PromptBudget/*` + `PromptSplitStrategyRegistry` — classes `PromptSplitClass` (`direct_fit` \| `semantic_split` \| `compactable` \| `unsplittable` \| `business_split`) |
+| Semantic split exec | `SemanticSplitExecutor` + strategy-specific splitters/mergers (long-form article, HTML-safe rewrite, keyword discovery) |
+| Failure classify | `AiProviderFailureClassifier` → `AiFailureDecision` / `AiFailureClass` (route skip via `AiRouteCapabilitySkipException`) |
 | Provider resolve | `Extension/…/AiProviderResolver` + `AiProviderRegistry` |
 | Builtin AI drivers | `Extension/Builtin/AiProviders/` (`GeminiAiTextProvider`, `ClaudeAiTextProvider`) |
 | Claude exec | `AiExecutionService` |
@@ -255,6 +262,27 @@ No Prompt Hook schedule owner — workflows/CP/Agent own cadence.
 - Mode `hook`: after provider cost — **no** silent legacy fallback.
 - Invalid output: fail closed — no silent accept.
 
+### Prompt budget / context overflow (2026-09-03)
+
+Outbound AI must fit the **routed model** context window. Runtime path:
+
+```text
+PromptRunner / planner
+  → PromptBudgetPreflightService::plan (strategy by hook)
+  → (optional) SemanticSplitExecutor when plan requires split
+  → AiOutboundBudgetGate before provider HTTP
+  → PromptBudgetException if still over budget (no silent truncate of safety margins)
+```
+
+| Strategy family | Typical hooks | Behavior |
+|-----------------|---------------|----------|
+| `DirectFit` | most short hooks | Fit in one call or fail |
+| `SemanticSplit` | long-form write / HTML rewrite / `keyword.discovery.*` | Chunk → call → merge (`LongFormArticle*`, `HtmlSafe*`, `KeywordDiscoveryBudgetStrategy`) |
+| `BusinessSplit` | selected business hooks | Registry-reserved headroom |
+| `Unsplittable` / `Compactable` | registry map | Fail closed or compact-only |
+
+**Invariant:** planning estimate must not double-count continuation/schema already inlined into the compiled prompt. Final gate asserts the **exact** outbound messages/tools payload (`OutboundAiRequest`).
+
 ## 13. Compatibility paths
 
 - Legacy option prompt_id fields: migrate-on-read into bindings; keep for rollback.
@@ -273,7 +301,7 @@ No Prompt Hook schedule owner — workflows/CP/Agent own cadence.
 - Hook Engine → Eloquent domain save or WP HTTP.
 - Silent legacy fallback after hook provider already charged.
 - Jump migration `legacy` → `hook` without `shadow`.
-- Recommendations page treated as runtime routing config.
+- Silent truncate / skip `AiOutboundBudgetGate` when compiled prompt exceeds model context.
 
 ## 15. AI Center (Models / Routing / Resilience / Health)
 
@@ -363,8 +391,10 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 | RuntimeLogger (HTTP AI controllers) | `RuntimeLoggerWebAppChannelTest` |
 | Domain WP field sync | `DomainPromptContextWordPressFieldSyncTest`, `DomainPromptContextWordPressSyncUiContractTest` |
 | AI Center OR Text catalog | `OpenRouterTextRoutingCatalogTest`, `AiModelFamilyUxTest`, `AiRuntimeRoutingRefactorTest`, `AiRoutingUxTest`, `AiModelsUnifiedTableTest` |
+| Prompt budget / outbound | `PromptBudgetPreflightServiceTest`, `PromptBudgetBoundedExecutionTest`, `OutboundBudgetInvariantContractTest` |
+| Runtime failover / health | `AiRuntimeFallbackTest`, `AiRuntimeHealthStateTest`, `AiProviderFailureClassifierTest` |
 
-**Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output; AI Center Custom identity = `connectionId|familyKey`; no duplicate `provider + model_id` on OpenRouter catalog ensure.
+**Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output; AI Center Custom identity = `connectionId|familyKey`; no duplicate `provider + model_id` on OpenRouter catalog ensure; outbound payload must pass `AiOutboundBudgetGate` (no silent over-context send).
 
 ## 17. Related documents
 

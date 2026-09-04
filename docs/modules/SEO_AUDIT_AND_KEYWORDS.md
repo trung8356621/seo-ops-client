@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-09-03  
+> Last verified: 2026-09-04  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -62,8 +62,10 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | KI analysis ops | `KeywordWorkspaceAnalysisService` |
 | **Topics (UI label; code: Topic Cluster)** | `KeywordResource` Topic pages + `KeywordClusterQuery` — user-facing **Chủ đề / Topics** |
 | Canonical cluster phrase | `Canonical/CanonicalClusterPhraseResolver` + `CanonicalClusterResolverService` + merge helpers |
-| Keyword DNA | `KeywordDnaExtractor` / `KeywordDnaService` / `KeywordDnaDiagnosticsService` — tables `seo_keyword_dna`, cluster meta/alias |
-| Full-domain recluster | `ReclusterTopicClustersService` + `Jobs/ReclusterTopicClustersJob` |
+| Keyword DNA | `KeywordDnaExtractor` / `KeywordDnaService` / `KeywordDnaDiagnosticsService` — tables `seo_keyword_dna` (+ `placement` before\|after), cluster meta/alias |
+| DNA placement values | `Support/KeywordIntelligence/DnaPlacement` (`before` \| `after`; default `after`) — shared with Project Planner snapshots |
+| Full-domain recluster | `ReclusterTopicClustersService` + `Jobs/ReclusterTopicClustersJob` + state `TopicClusterReclusterState` |
+| Topic membership repair | `Jobs/ReconcileTopicMembershipJob` — background “Fix Keywords” per Topic; site-scoped membership lock; unique per site+cluster |
 | Focus Article → Topic invariant | `ReconcileFocusArticleTopicsService` + `seo:topics:reconcile-focus` |
 | Keywords language filter | `InteractsWithKeywordWorkspaceLanguageFilter` + `KeywordWorkspaceLanguageScope` |
 | Link triage (anchor-audit) | `KeywordResource/Pages/AnchorTextAuditWorkspace` — `wp_post_id` via `wordpressLink`, not `articles.wp_post_id` |
@@ -102,7 +104,7 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / KI Planner+ via `SeoAcce
 | SERP snapshots | Immutable SERP snapshot models | Mutating approved topical maps |
 | **Keyword Dictionary** | Flat `keywords` inventory (phrase + type + site meta) | Legacy `keywords.parent_id` hierarchy (dropped 2026-08-27); **not** a grouping tree |
 | **Keyword grouping / Topics** | Cluster (`cluster_key` / Topics index UI) + DNA residuals | Parent/child keyword tree; retired `KeywordRuleGroup*` tables (dropped 2026-08) |
-| **Keyword DNA** | `seo_keyword_dna` (+ cluster canonical phrase) | Raw token diff / glue / cluster echo |
+| **Keyword DNA** | `seo_keyword_dna` (+ cluster canonical phrase + `placement` before\|after) | Raw token diff / glue / cluster echo |
 | **Focus Article Topic invariant** | Every SEO-eligible keyword with ≥1 Focus Article **must** have a Topic (`ReconcileFocusArticleTopicsService`) | Leaving Focus keywords in Unassigned |
 
 Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_`, `kwt_`, `tmv_`, `kwa_`, `kwrel_`, `kwam_`, `kwtcl_`, `kci_*`, SERP `srpq_`/`srps_`/…, GSC `gscp_`/`gscs_`/….
@@ -253,7 +255,9 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 | Keyword intelligence unit suite | Quotas, tenant, public refs, analysis lock |
 | `AssignToContentProjectUiArchitectureGuardTest` | Audit + Keyword resources open canonical drawer; no Action `form()` |
 | `CanonicalClusterAndDnaTest` / `TopicIdeaCoverageAndDnaQualityTest` | DNA + canonical phrase |
+| `DnaPlacementContractTest` | `seo_keyword_dna.placement` before\|after SSOT |
 | `FullDomainReclusterRepairTest` / `FocusArticleTopicInvariantTest` | Recluster + Focus→Topic |
+| Topic membership Fix Keywords | `ReconcileTopicMembershipJob` + `TopicClusterReclusterState` (site lock) |
 | `KeywordDictionaryExcludeFromSeoVisibilityTest` / `TopicMembershipIntentGateTest` | Dictionary vs Topics eligibility |
 | `KeywordListLoadingUxTest` / `DomainContextLoadingUxTest` | Loading shell + domain GET `site_id` |
 | `SeoWorkspaceDashboardContractTest` | Dashboard widget registration + month chart presenters |
