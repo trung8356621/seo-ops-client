@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-04  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)
 
 ## 1. Purpose
@@ -77,7 +77,17 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Manual Index marker (checklist) | `ArticleManualIndexMarkerService` — `articles.indexed_at` / `previous_indexed_at` (+ patch archive `article_snapshot`); not GSC/Indexing API |
 | Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước + social evidence child rows) |
 | Archived month workbook | `ContentProjectArchivedMonthExportService` — Summary + per-writer sheets; social rows via `ContentProjectArchiveSocialExportRowExpander` |
+| Archived month **template** export | `ContentProjectArchivedMonthTemplateExportService` + `ExcelTemplate/*` (variable dictionary, managed sheets, detail columns) |
+| Excel template settings | `ContentProjectExcelTemplateSettingsService` (`WpOption` + uploaded `.xlsx`) + `ContentProjectExcelRawTemplateDownloadService` |
+| Archive historical fields | `ArchiveArticleHistoricalFieldResolver` — export/preview historical column resolution |
 | Archive social reporting | `ArticleSocialLinkService` (canonical counts/links; migrated from archive-item social rows) |
+| MCP planning +N signal | `McpPlanning/McpPlanningSignalService` + `McpPlanningMetaStore` / `McpPlanningMeta` / `McpPlanningSignalResolver` — UI pending count; **not** MCP score % |
+| Site Planning overview | `SitePlanning/SitePlanningReadModel` + `SiteMonthlyContentTargetService` (2 past + current + 1 future months) |
+| Move EP → next month | `MoveContentProjectToNextMonthService` — all active items; source ends empty; packing reused |
+| Rewrite keyword canonicalize | `ContentProjectRewriteKeywordCanonicalizer` |
+| Task canonical AI input | `Support/ContentProject/ContentProjectTaskCanonicalInputBuilder` |
+| Batch circuit breaker | `Support/RunEngine/ContentProjectBatchCircuitBreakerState` + `ContentProjectBatchFailureSignature` (threshold **3** consecutive same signature) |
+| Project `meta` JSON | Migration `seo_projects.meta` — stores MCP planning payload among other keys |
 | Draft planning domain column | `DraftItemDomainRepairService` + inline domain edit in shared draft table (`content-project-draft-items`) |
 | Draft clone idea | `CloneDraftCreateIdeaService` — duplicate CREATE row within draft |
 | Dashboard month charts | `DashboardDomainArticlesChartWidget` / `DashboardWriterArticlesChartWidget` + `ResolvesContentProjectMonthDashboardCharts` |
@@ -443,6 +453,19 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Archive social reporting (2026-09-01):** Preview (`ContentProjectArchivePreview` / `ArchivePreviewArticlePresenter`) and Excel exports show **social link counts** from `ArticleSocialLinkService` (`seo_article_social_links`). Monthly workbook `ContentProjectArchivedMonthExportService` emits parent article rows plus **social evidence child rows** (`ContentProjectArchiveSocialExportRowExpander`). Reporting only — not share-action buttons (those remain on GSC MCP drawer).
 
+**Archived-month Excel template (2026-09-04/05):** Optional uploaded workbook via `ContentProjectExcelTemplateSettingsService` (`DATA_LAYOUT_MODE` + block extents). `ContentProjectArchivedMonthTemplateExportService` applies `ExcelTemplateVariableDictionary` / `ExcelTemplateVariableApplicator` (scalar + table variables, detail column registry). Raw starter: `ContentProjectExcelRawTemplateDownloadService`. Historical column values: `ArchiveArticleHistoricalFieldResolver`. Tests: `ContentProjectExcelTemplateExportContractTest`, `ArchiveArticleHistoricalExportFieldsTest`.
+
+### MCP planning signal + Site Planning (2026-09-04)
+
+- **MCP +N:** `McpPlanningSignalService` counts Draft-reviewed **or** `seo_projects.meta.mcp_planning` (never both). Presentation-only pending pipeline count — does **not** mutate MCP share %.
+- **Site Planning:** `SitePlanningReadModel` month grid + per-site detail; targets via `SiteMonthlyContentTargetService`. Blade: `content-project-site-planning` (compat shell).
+- **Move to next month:** `MoveContentProjectToNextMonthService::preview` / execute — writer unchanged; reuses `ContentProjectExecutionPackingService`; MCP meta moved with items.
+- Tests: `McpPlanningAndSitePlanningContractTest`.
+
+### Batch run circuit breaker (2026-09-04)
+
+`ContentProjectRunEngine` persists consecutive-failure state under `settings.php_engine`. Signature from `ContentProjectBatchFailureSignature` (systemic routing vs content/validation; strips ids/titles/UUIDs). After **3** identical signatures → `circuit_breaker.stopped`. Canonical task input for AI: `ContentProjectTaskCanonicalInputBuilder`. Tests: `ContentProjectBatchCircuitBreakerTest`, `ContentProjectCanonicalInputAndCircuitBreakerTest`.
+
 ### Publish writes
 
 See [PUBLISHING.md](PUBLISHING.md). All schedule/publish/retry/skip/cancel via CommandBus handlers → `ContentProjectPublishingQueueService` + transition guard.
@@ -582,6 +605,11 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `DraftItemTableDomainAndCloneContractTest` | Shared draft table Domain column + clone idea + safe JS root |
 | `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
 | `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
+| `ContentProjectExcelTemplateExportContractTest` | Template variable apply + raw download schema |
+| `ArchiveArticleHistoricalExportFieldsTest` | Historical archive export field resolver |
+| `McpPlanningAndSitePlanningContractTest` | MCP +N signal + Site Planning read model |
+| `ContentProjectBatchCircuitBreakerTest` / `ContentProjectCanonicalInputAndCircuitBreakerTest` | Batch stop after 3 identical failures; canonical AI input |
+| `PublishOverflowAndWorkspaceRegressionTest` / `DomainNeutralGenerateAndPublishWarningTest` | Publish overflow + domain-neutral generate warnings |
 | `ContentProjectExportReviewedAtResolverTest` | Archive export reviewed_at resolution |
 
 Freeze grep invariants: no production `ContentProjectBulkRerunService`, `ContentProjectStepRerunService`, `RerunArticlePipelineJob`, Filament direct `RunEngine::start`, `ContentProjectItemAction::Restore`.
@@ -591,6 +619,7 @@ Freeze grep invariants: no production `ContentProjectBulkRerunService`, `Content
 - [PUBLISHING.md](PUBLISHING.md) — publisher registry, schedule, WP vs Site Sync
 - [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](../contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md)
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md) — Agent/MCP surface (owned elsewhere)
+- [SEEDING.md](SEEDING.md) — social seeding topics (separate product surface)
 - [SITE_SYNC.md](SITE_SYNC.md) — catalog sync ≠ publish
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — editor save vs CP publish; Sync WP hidden while in active CP
 - [ARTICLE_EXECUTION_HISTORY.md](ARTICLE_EXECUTION_HISTORY.md) — per-article Workflow tab (canvas + AI Calls overlay)

@@ -1,14 +1,14 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-04  
+> Updated: 2026-09-05  
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
 
 - `docs/README.md` — index + precedence.
 - `docs/architecture/*` — boundaries, ADR, handoff.
-- `docs/modules/*` — 16 module docs (thêm `CONTEXTUAL_HELP.md` 2026-09-01).
+- `docs/modules/*` — 17 module docs (thêm `SEEDING.md` 2026-09-05; `CONTEXTUAL_HELP.md` 2026-09-01).
 - `docs/contracts/*`, `docs/operations/*`, `docs/audits/*`.
 - `docs/archive/*` — historical only.
 - `resources/help-seed/` — human-facing Help topics (48); không override canonical dev docs.
@@ -88,7 +88,7 @@ Canonical đã sync: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICL
 - Canonical docs chỉ ở `omnichannel-client/docs`.
 - `git status --short` trước khi sửa — tránh revert unrelated.
 
-## 6. Batch 2026-09-01 (pass này)
+## 6. Batch 2026-09-01
 
 Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons).
 
@@ -129,7 +129,7 @@ Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons)
 
 ## 8. Batch 2026-09-03 code → docs catch-up (pass 2026-09-04)
 
-Phạm vi: `omnichannel-addons` **0.3.0** + `omnichannel-client` **0.3.1** (commit 3/9; **không** có commit ngày 4/9). Docs pass ngày 4/9 bổ sung phần còn thiếu ngoài cannibalization.
+Phạm vi: `omnichannel-addons` **0.3.0** + `omnichannel-client` **0.3.1** (commit 3/9). Docs pass ngày 4/9 bổ sung phần còn thiếu ngoài cannibalization.
 
 ### Prompt budget / outbound gate — `ai-prompt`
 
@@ -159,3 +159,35 @@ Phạm vi: `omnichannel-addons` **0.3.0** + `omnichannel-client` **0.3.1** (comm
 4. Code + test gần nhất
 5. deploy-diff cho application-code changes
 6. Verification focused hoặc báo skip có lý do
+
+## 10. Batch 2026-09-04 → 2026-09-05 (pass này)
+
+Phạm vi: `omnichannel-addons` **0.3.1–0.3.2** + `omnichannel-client` **0.3.2–0.3.4**. `wp-seo-ai` không đổi sau 1.0.87.
+
+### Seeding Topic V2 — peer `seeding`
+
+- Tables: `seeding_topics` (+ `archived_at`), `link_resources`, `seeding_topic_links`.
+- React workspace + API `/api/seo/seeding-topics*`; Filament `SeedingTopicsPage`.
+- Caps: `seeding.topic`, `link.intelligence`.
+- Module doc mới: `SEEDING.md`.
+
+### Content Projects — Excel template / MCP planning / circuit breaker
+
+- Archived-month **Excel template** export (`ContentProjectExcelTemplateSettingsService`, `ExcelTemplate/*`).
+- MCP planning +N (`McpPlanningSignalService`) + Site Planning (`SitePlanningReadModel`).
+- `MoveContentProjectToNextMonthService`; batch circuit breaker (threshold 3).
+- Doc: `CONTENT_PROJECTS.md`.
+
+### AI — split outline markerless + DeepSeek eligibility
+
+- Markerless structure/vocabulary hooks; `PromptHookBindingRunner`; `AiProductionRouteEligibility`.
+- Docs: `PROMPTS_AND_AI.md`, `ARTICLE_EXECUTION_HISTORY.md`.
+
+### Keywords Topics modal UX
+
+- Client-first dissolve/move modals + skeleton; `KeywordModalLoadingUxTest`.
+- Doc: `SEO_AUDIT_AND_KEYWORDS.md`.
+
+### Architecture index
+
+- `ADDON_ARCHITECTURE.md` + `NEW_AGENT_HANDOFF.md` thêm `seeding`.

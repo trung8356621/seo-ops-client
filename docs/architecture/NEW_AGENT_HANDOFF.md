@@ -1,11 +1,11 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-09-04  
+> Last verified: 2026-09-05  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§7–8 = 2026-09-03 addons 0.3.0 catch-up)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§10 = 2026-09-04→05 addons 0.3.1–0.3.2 / client 0.3.2–0.3.4)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -48,6 +48,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Article meta inventory / WP body cache | `content` `ArticleMetaKeyCatalog`; `wordpress` `ArticleWpContentCacheService` — see [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`WORDPRESS_BRIDGE.md`](../modules/WORDPRESS_BRIDGE.md) |
 | Agent / MCP | `omnichannel-addons/agent` |
 | Social Profile / manual share | `omnichannel-addons/social` |
+| Seeding Topic V2 / Link Intelligence | `omnichannel-addons/seeding` — see [`SEEDING.md`](../modules/SEEDING.md) |
 | SEO DB connection bootstrap | `omnichannel-addons/search-foundation` |
 | System User placeholder (not a writer) | Client `App\Services\Users\SeoOpsSystemUser` |
 | Save transport / SaveCoordinator | `omnichannel-client/resources/js/client-core` |

@@ -1,7 +1,7 @@
 # Addon Architecture (authoritative)
 
 > Status: Canonical after Task 9 refactor closure  
-> Last verified: 2026-08-10  
+> Last verified: 2026-09-05  
 > Handoff: [NEW_AGENT_HANDOFF.md](NEW_AGENT_HANDOFF.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Column map: [ARTICLE_COLUMN_OWNERSHIP.json](ARTICLE_COLUMN_OWNERSHIP.json)
 
@@ -27,10 +27,11 @@ All product domains live under `/addons/{slug}` as **peers** (no parent/child hi
 | `media` | Media library, featured/gallery, media editor domain |
 | `wordpress` | WP bridge write/sync, wordpress_article_links |
 | `publishing` | Publish queue/schedule, publishing_article_states |
-| `site-sync` | Site Sync v2 orchestration |
+| `site-sync` | Site Sync v2/v3 orchestration |
 | `agent` | Agent/MCP, Extension Builtin discovery |
 | `social` | Social domain |
 | `commerce` | Commerce domain |
+| `seeding` | Seeding Topic V2 + Link Intelligence |
 
 ## SeoContentAi = compatibility only
 

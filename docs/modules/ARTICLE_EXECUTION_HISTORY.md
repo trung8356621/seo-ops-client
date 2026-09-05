@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `content` (+ shared canvas: `content-projects`)  
-> Last verified: 2026-08-24  
+> Last verified: 2026-09-05  
 > Route: `/seo/{connection_hash}/articles/{article}/prompts` → tab **Workflow** (Execution History)
 
 ## 1. Purpose
@@ -58,7 +58,7 @@ Outline logical step uses **two provider calls** when the workflow node is recog
 
 **Trigger (`TaskWorkflowTestRunner`):** `isOutlineRoleNode($node, $hookBinding->hookKey)` — includes legacy combined hook `article.outline.generate` on bound prompt (not only node title «Dàn ý»).
 
-**Executor:** `ArticleOutlineVocabularySplitExecutor` — assembles legacy marker ports (`task_1_outline`, `task_2_vocabulary`, `total`) for downstream compatibility.
+**Executor:** `ArticleOutlineVocabularySplitExecutor` — provider contract is **markerless** direct final content (2026-09-04); still exposes logical Task 1 / Task 2 ports for workflow canvas + history overlay. Presentation: `ArticlePromptRunHistoryService` split grouping.
 
 **Bindings (Settings):** `SeoCreateArticleSettingsService::getBoundPromptId()` for structure + vocabulary hooks. Install defaults:
 

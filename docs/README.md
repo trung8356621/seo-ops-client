@@ -1,7 +1,7 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-09-04
+> Last verified: 2026-09-05
 
 ## Workspace repos
 | Repo | Role |
@@ -77,6 +77,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Media / Gallery | [MEDIA_AND_GALLERY.md](modules/MEDIA_AND_GALLERY.md) |
 | Extension SDK | [EXTENSION_SDK.md](modules/EXTENSION_SDK.md) |
 | Contextual Help | [CONTEXTUAL_HELP.md](modules/CONTEXTUAL_HELP.md) |
+| Seeding Topic / Link Intelligence | [SEEDING.md](modules/SEEDING.md) |
 | Operations / Observability | [OPERATIONS_AND_OBSERVABILITY.md](modules/OPERATIONS_AND_OBSERVABILITY.md) |
 
 ## Contracts

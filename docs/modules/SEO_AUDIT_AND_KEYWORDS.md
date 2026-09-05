@@ -1,8 +1,8 @@
 # SEO Audit and Keywords
 
 > Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-09-04  
+> Owner: `search-intelligence` (+ `seo` audit/scoring surfaces)  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)
 
 ## 1. Purpose
@@ -131,6 +131,7 @@ Public ref prefixes (opaque only — numeric IDs rejected): `kww_`, `kw_`, `kwc_
 - Hub **Social Top 10:** `GscSocialTop10Builder` — deterministic share candidates from GSC MCP; links to [`SITE_MCP_AND_DOMAINS.md`](SITE_MCP_AND_DOMAINS.md) Social Profiles. No AI.
 - GSC Intelligence overlay additive — Overview/Queries/Pages/Opportunities may be placeholders; Sync CSV preview wired.
 - List loading: Keywords / Topics use the same Article-style `list-table-loading-shell` + `panelLoading.js` as Content Projects (domain switch → panel bar; table filter/pagination → shell overlay).
+- **Modal / dissolve UX (2026-09-04):** Topic dissolve + move-cluster modals use client-side open + skeleton (`modal-loading-placeholder`); Livewire only for data/actions. Tests: `KeywordModalLoadingUxTest`, `DissolveTopicClusterUiTest`. Client rule: `.cursor/rules/modal-loading-feedback.mdc`.
 
 ## 6. Write path
 
@@ -260,7 +261,9 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 | Topic membership Fix Keywords | `ReconcileTopicMembershipJob` + `TopicClusterReclusterState` (site lock) |
 | `KeywordDictionaryExcludeFromSeoVisibilityTest` / `TopicMembershipIntentGateTest` | Dictionary vs Topics eligibility |
 | `KeywordListLoadingUxTest` / `DomainContextLoadingUxTest` | Loading shell + domain GET `site_id` |
+| `KeywordModalLoadingUxTest` / `DissolveTopicClusterUiTest` | Client-first modal open + dissolve row actions |
 | `SeoWorkspaceDashboardContractTest` | Dashboard widget registration + month chart presenters |
+| `SeoAuditGlobalDomainF5ContractTest` | Global domain F5 / planner domain context |
 
 ## 16. Related documents
 
@@ -269,6 +272,7 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI.
 - [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) — 2026-08 assign consolidation
 - [SITE_MCP_AND_DOMAINS.md](SITE_MCP_AND_DOMAINS.md) — domain sync feeding articles
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
+- [SEEDING.md](SEEDING.md) — Seeding Topic / Link Intelligence (separate from Keywords)
 - Archive detail: `docs/archive/audit-keywords/*`, `docs/archive/maps/MAP_SEO_AUDIT.md`
 
 ### Quick ref — retired Keyword Cannibalization (2026-09-03)

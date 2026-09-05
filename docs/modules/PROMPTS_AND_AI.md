@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-04  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -66,6 +66,8 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Hook catalog (UI) | `PromptHookEditorCatalog` |
 | Hook execute (Phase-1 path) | `PromptHookExecutionService` |
 | Hook runtime engine | `PromptHooks/Runtime/*` (`PromptHookCallerBridge`, DefinitionLoader, …) |
+| Hook binding runner | `PromptHookBindingRunner` → `PromptHookExplicitBindingExecutor` (DI bind in `AiPromptServiceProvider`) |
+| Production route eligibility | `Support/AiProductionRouteEligibility` — DeepSeek allowed for keyword.* / KD longform; **not** TextReasoning Outline/Vocabulary or `article.*` longform |
 | Manifest load | `resources/prompt-hooks/*.json` + `PromptHooks/` |
 | Entity context | `ArticlePromptHookEntityResolver` (array context only) |
 | AI run engine | `PromptRunnerService` |
@@ -90,7 +92,7 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Prompt Editor form | `PromptResource` — MarkdownEditor `minHeight(280px)` + `maxHeight(600px)` (EasyMDE single scrollbar); section title Runtime Rules (Built-in). |
 | Default comment | `DefaultCommentPromptInstaller` + hook `article.comment.generate` — `{{comment_count}}` default **3** (align `ProductReviewCreationPolicy::DEFAULT_TARGET_COUNT`) |
 | Vocabulary research persist | Workflow action `save_vocabulary_research` / BusinessAction `keyword.vocabulary.save` (`SaveKeywordVocabularyAction`) → `WorkflowKeywordResearchService::ingestVocabularySuggestGroupsSafe` |
-| Split outline markers | `[START_TASK_2_VOCABULARY]`…`[END_TASK_2_VOCABULARY]` (`DefaultSplitOutlinePromptsInstaller`) — Task 2 port; business SoT after Save is keyword suggest rows, **not** Prompt History |
+| Split outline / vocabulary | Hooks `article.outline.structure.generate` + `article.vocabulary.generate` via `ArticleOutlineVocabularySplitExecutor` — **markerless direct output** (migrations `2026_09_04_120000_*` / `140000_*` refresh contracts); installer `DefaultSplitOutlinePromptsInstaller`; business SoT after Save is keyword suggest rows, **not** Prompt History |
 | API connections list | `ApiConnectionsListService` + `AiConnectionResource` |
 | SEO provider matrix | `SeoProviderRegistry` + `SeoProviderCapabilityResolver` |
 | Outline input any-of | `article.outline.generate` — `post_title` and `keyword` individually optional; `metadata.require_any_of` enforced by `PromptHookRequireAnyOf` / ExplicitBinding. Project item requires at least one of keyword or post_title. Both may be provided. AI outline/article generation may generate or optimize the final title. |
@@ -392,6 +394,8 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 | Domain WP field sync | `DomainPromptContextWordPressFieldSyncTest`, `DomainPromptContextWordPressSyncUiContractTest` |
 | AI Center OR Text catalog | `OpenRouterTextRoutingCatalogTest`, `AiModelFamilyUxTest`, `AiRuntimeRoutingRefactorTest`, `AiRoutingUxTest`, `AiModelsUnifiedTableTest` |
 | Prompt budget / outbound | `PromptBudgetPreflightServiceTest`, `PromptBudgetBoundedExecutionTest`, `OutboundBudgetInvariantContractTest` |
+| Split outline markerless | `SplitOutlineDirectOutputContractTest`, `SplitOutlineInputContractAndDeepSeekEligibilityTest`, `ArticlePromptRunHistorySplitPresentationTest` |
+| OpenAI-compatible extract | `OpenAiCompatibleTextExtractionAndCheckpointTest` |
 | Runtime failover / health | `AiRuntimeFallbackTest`, `AiRuntimeHealthStateTest`, `AiProviderFailureClassifierTest` |
 
 **Invariants:** bindings SoT; Task-owned prompts separate; Hook ≠ domain write; provider via resolver; no dual-write legacy+bindings; fail-closed provider/output; AI Center Custom identity = `connectionId|familyKey`; no duplicate `provider + model_id` on OpenRouter catalog ensure; outbound payload must pass `AiOutboundBudgetGate` (no silent over-context send).
