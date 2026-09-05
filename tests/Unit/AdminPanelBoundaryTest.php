@@ -6,9 +6,12 @@ namespace Tests\Unit;
 
 use App\Filament\Pages\ControlServer;
 use App\Filament\Pages\ManageServices;
+use App\Filament\Pages\ServiceStatusOverview;
+use App\Filament\Resources\SeedingDatabaseConnectionResource;
 use App\Filament\Resources\SeoDatabaseConnectionResource;
 use App\Filament\Resources\SiteServiceResource;
 use App\Filament\Resources\UserResource;
+use App\Filament\Widgets\ServiceQuickShortcutsWidget;
 use App\Models\Service;
 use App\Models\SiteService;
 use App\Models\User;
@@ -95,11 +98,20 @@ final class AdminPanelBoundaryTest extends TestCase
         $this->assertContains(Dashboard::class, $panel->getPages());
         $this->assertContains(UserResource::class, $panel->getResources());
         $this->assertContains(SeoDatabaseConnectionResource::class, $panel->getResources());
+        $this->assertContains(SeedingDatabaseConnectionResource::class, $panel->getResources());
+        $this->assertContains(ServiceStatusOverview::class, $panel->getPages());
+        $this->assertContains(\App\Filament\Pages\ServiceConfigure::class, $panel->getPages());
+        $this->assertContains(ServiceQuickShortcutsWidget::class, $panel->getWidgets());
+        $this->assertFalse(SeoDatabaseConnectionResource::shouldRegisterNavigation());
+        $this->assertFalse(SeedingDatabaseConnectionResource::shouldRegisterNavigation());
+        $this->assertSame('services', ServiceStatusOverview::getSlug());
 
         $this->actingAs($this->userWithRole(User::ROLE_OWNER));
         $this->assertTrue(UserResource::canAccess());
         $this->assertTrue(ControlServer::canAccess());
         $this->assertContains(ControlServer::class, $panel->getPages());
+        $this->assertTrue(SeedingDatabaseConnectionResource::canAccess());
+        $this->assertTrue(ServiceStatusOverview::canAccess());
         $this->assertTrue(\App\Filament\Pages\HelpTopicsAdmin::canAccess());
         $this->assertContains(\App\Filament\Pages\HelpTopicsAdmin::class, $panel->getPages());
         $this->assertContains(\App\Filament\Pages\HelpTopicEdit::class, $panel->getPages());

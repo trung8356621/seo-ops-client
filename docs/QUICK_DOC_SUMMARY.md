@@ -162,14 +162,14 @@ Phạm vi: `omnichannel-addons` **0.3.0** + `omnichannel-client` **0.3.1** (comm
 
 ## 10. Batch 2026-09-04 → 2026-09-05 (pass này)
 
-Phạm vi: `omnichannel-addons` **0.3.1–0.3.2** + `omnichannel-client` **0.3.2–0.3.4**. `wp-seo-ai` không đổi sau 1.0.87.
+Phạm vi: `omnichannel-addons` **0.3.1–0.3.2** + `omnichannel-client` **0.3.2–0.3.4**. WP bridge notes moved to §11 (1.0.86–1.0.87).
 
-### Seeding Topic V2 — peer `seeding`
+### Seeding Topic V2 — peer `seeding` (superseded by §11)
 
-- Tables: `seeding_topics` (+ `archived_at`), `link_resources`, `seeding_topic_links`.
-- React workspace + API `/api/seo/seeding-topics*`; Filament `SeedingTopicsPage`.
-- Caps: `seeding.topic`, `link.intelligence`.
-- Module doc mới: `SEEDING.md`.
+- **Historical:** tables on `omi_seo_ai` + API `/api/seo/seeding-topics*` (experimental).
+- **Current (2026-09-05):** independent `/seeding` panel + localStorage SoT + `omi_seeding` plane — see §11 / `SEEDING.md`.
+- Caps (retained): `seeding.topic`, `link.intelligence` (+ `seeding.workspace`).
+- Module doc: `SEEDING.md`.
 
 ### Content Projects — Excel template / MCP planning / circuit breaker
 
@@ -191,3 +191,27 @@ Phạm vi: `omnichannel-addons` **0.3.1–0.3.2** + `omnichannel-client` **0.3.2
 ### Architecture index
 
 - `ADDON_ARCHITECTURE.md` + `NEW_AGENT_HANDOFF.md` thêm `seeding`.
+
+## 11. Batch 2026-09-05 — Service Architecture + Seeding plane
+
+Phạm vi: uncommitted / WIP trên `omnichannel-client` + `omnichannel-addons` (sau client **0.3.5** / addons **0.3.2**). `wp-seo-ai` **1.0.86–1.0.87** (đã tag).
+
+### Service Architecture (Core)
+
+- Doc mới: `SERVICE_ARCHITECTURE.md` — Addon ≠ Service; ops-server `services.apply`; `service_key`; `service_database_connections` 1:1.
+- Admin: `/admin/services` + `/admin/services/{seo|seeding}`; legacy SEO/Seeding DB list → redirect.
+- Fixture: `php artisan service:simulate` (local/testing only).
+- Index: `docs/README.md`, `ADDON_ARCHITECTURE.md`, `FINAL_DATABASE_ARCHITECTURE.md`, `DB_REPOSITORY_OWNERSHIP.json`, `SYSTEM_OVERVIEW.md`, `DATA_AND_RUNTIME_BOUNDARIES.md`, `API_AND_AUTHORIZATION.md`.
+
+### Seeding — independent service plane
+
+- Panel `/seeding` + APIs `/api/seeding/bootstrap|health`.
+- Business SoT = **localStorage** (`seeding:v3:…`); `omi_seeding` infrastructure-ready (no business schema).
+- Legacy experimental V2 migrations → `database/legacy-experimental/` (not registered).
+- Module doc rewrite: `SEEDING.md` (supersedes “Topic V2 on omi_seo_ai” description in §10).
+
+### WP bridge catch-up
+
+- **1.0.86:** V3 `status=trash` + content cursor `after_modified_gmt`.
+- **1.0.87:** V2 profile `site_name` for Domain Prompt Context sync.
+- Docs: `WORDPRESS_BRIDGE.md`, `SITE_SYNC.md`.

@@ -41,6 +41,15 @@ class SeoDatabaseConnectionResource extends Resource
         return 'SEO Database Connection';
     }
 
+    /**
+     * Deprecated top-level product nav — use Admin → Dịch vụ → SEO Cấu hình.
+     * Resource kept for legacy hash/runtime adapters; routes redirect.
+     */
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function canAccess(): bool
     {
         return SeoDatabaseConnectionAccess::canAccessResource();
@@ -48,7 +57,7 @@ class SeoDatabaseConnectionResource extends Resource
 
     public static function canCreate(): bool
     {
-        return SeoDatabaseConnectionAccess::canCreateConnection();
+        return false;
     }
 
     public static function canEdit(Model $record): bool

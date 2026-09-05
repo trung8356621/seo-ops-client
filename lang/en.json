@@ -1,6 +1,8 @@
 {
     "Avatar": "Avatar",
-    "Full name": "Full name",
+    "Full name": "Display name",
+    "Display name": "Display name",
+    "Members": "Members",
     "Rule": "Rule",
     "Status": "Status",
     "Wallet balance": "Wallet balance",

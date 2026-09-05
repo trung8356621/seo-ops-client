@@ -2,28 +2,33 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-09-05  
 > Supersedes: auth slices formerly scattered across MAP_SEO_TEAM, CONTENT_PROJECT_APPLICATION_API, Agent security satellites
 
 ## 1. Purpose
 
-Public HTTP / Sanctum / Filament access boundaries for SEO Content AI. Complements Agent confirmation rules in [AGENT_AND_MCP_CONTRACTS.md](AGENT_AND_MCP_CONTRACTS.md).
+Public HTTP / Sanctum / Filament access boundaries for SEO + Seeding product surfaces. Complements Agent confirmation rules in [AGENT_AND_MCP_CONTRACTS.md](AGENT_AND_MCP_CONTRACTS.md).
 
 ## 2. Surfaces
 
 | Surface | Auth | Notes |
 |---------|------|-------|
 | Filament SEO panel `/seo/{connection_hash}/…` | Session + `SeoAccessControl` | Connection hash scopes tenant DB |
+| Filament Seeding panel `/seeding` | Session + `SeedingAccess` / Service active | Independent panel; see [SEEDING.md](../modules/SEEDING.md) |
+| Seeding APIs `/api/seeding/bootstrap\|health` | Session auth | Namespace only — no topic CRUD on canonical UI |
 | Agent MCP HTTP `/api/v1/agent/mcp/*` | Sanctum | Read token cannot write |
 | Agent execute `/api/v1/agent/execute` | Sanctum | Capability + confirmation gated |
 | WordPress bridge REST | Site token / HMAC (bridge) | See [WORDPRESS_BRIDGE.md](../modules/WORDPRESS_BRIDGE.md) |
 | Site Sync inbound callback | Signed callback | See [SITE_SYNC.md](../modules/SITE_SYNC.md) |
+| Admin Service pages `/admin/services*` | Admin session | Read entitlement + DB upsert only — no Create/Activate |
 
 ## 3. Tenant and connection
 
-- SEO models use runtime connection `omi_seo_ai` bootstrapped from core `seo_database_connections`.
+- SEO models use runtime connection `omi_seo_ai` — canonical via Core `service_database_connections`; legacy hash via `seo_database_connections` + Search Foundation.
+- Seeding logical connection `omi_seeding` via Core `ServiceDatabaseConnection` (never SEO DB).
 - Fail closed when connection hash / site scope missing or mismatched.
 - Non-admin Filament queries must scope by permitted owner/site/domain (`SeoAccessControl` / policies).
+- **Addon installed ≠ Service active** — see [SERVICE_ARCHITECTURE.md](../architecture/SERVICE_ARCHITECTURE.md).
 
 ## 4. Capability vs UI permission
 

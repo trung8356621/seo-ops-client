@@ -2,19 +2,20 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/MAP_SEO_WP.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (plugin/general sections), Site Sync–adjacent WP notes formerly rooted in MAP_SEO_WP
 
 ## 1. Purpose
 
-Durable contract between Laravel SeoContentAi and the WordPress plugin **`omi-seo-ai-bridge`** (`wp-seo-ai`).
+Durable contract between Laravel peer addons (`wordpress` / `site-sync`) and the WordPress plugin **`omi-seo-ai-bridge`** (`wp-seo-ai`).
 
 Principles:
 
 - Laravel article = **working copy** (edit, schedule, trash/delete **on Laravel**).
 - WordPress = **live public** post/SEO/media for published content.
-- Outbound Laravel → WP **does not** trash/delete WP posts.
-- Outbound sync status is **`publish`** only (+ `post_date` clamp ≤ now) — never WP `draft` / `future` for SEO schedule.
+- Outbound Laravel → WP **publish path** does not trash/delete WP posts.
+- **Exception (plugin ≥ 1.0.86):** Site Sync V3 may send write status `trash` for tombstone / lifecycle acceptance (`wp_trash_post`) — not the SEO schedule publish path.
+- Outbound sync status for SEO schedule is **`publish`** only (+ `post_date` clamp ≤ now) — never WP `draft` / `future` for SEO schedule.
 - Schedule lives on Laravel (`articles.status=scheduled`); system cron publishes when due.
 - Catalog/SEO delta ownership for V2 sites: **Site Sync** (`SITE_SYNC.md`), not legacy push enrich.
 
@@ -44,7 +45,14 @@ Durable groups (plugin `Rest_Controller`):
 | Taxonomy | `/taxonomies/{taxonomy}/terms`, term editor-sync |
 | Reviews / FAQ | `/posts/{id}/comment-reviews`, `/virtual-comments`, `/seo-faq` |
 
-Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION`). Current plugin line may be newer (features additive).
+Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION`). Verified plugin line through this docs pass: **1.0.87**.
+
+Additive since min contract (selected):
+
+| Version | Contract note |
+|---------|----------------|
+| **1.0.86** | V3 write accepts explicit `status=trash` → `wp_trash_post`; V3 content delta cursor adds `after_modified_gmt` |
+| **1.0.87** | V2 `/sync/v2/profile` exposes `site_name` from `get_bloginfo('name')` (with existing `short_description`) — used by Domain Prompt Context field sync |
 
 ## 3. Main components
 
@@ -66,7 +74,7 @@ Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION
 | WP | `omi-seo-ai-bridge.php` | Plugin bootstrap |
 | WP | `Capability_Manifest` | Provider capability SoT for Site Sync |
 | WP | `Score_Exporter` | Provider scores into sync batches |
-| WP | `Site_Sync_Outbox` / `Site_Sync_V2_Provider` | Auto delta producer |
+| WP | `Site_Sync_Outbox` / `Site_Sync_V2_Provider` / `Site_Sync_V3_Provider` | Delta producers; V2 profile includes `site_name` |
 | WP | Provider adapters | Rank Math / Yoast / AIOSEO / None |
 | WP | `Laravel_Push_Sync` | Outbound push + suppress loop |
 | WP | WP-Cron disabler / missed-schedule fixer | Laravel owns schedule; cleanup legacy `future` |

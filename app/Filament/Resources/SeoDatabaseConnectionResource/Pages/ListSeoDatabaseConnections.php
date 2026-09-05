@@ -13,6 +13,11 @@ class ListSeoDatabaseConnections extends ListRecords
 {
     protected static string $resource = SeoDatabaseConnectionResource::class;
 
+    public function mount(): void
+    {
+        $this->redirect(\App\Filament\Pages\ServiceConfigure::getUrl(['service' => 'seo']));
+    }
+
     protected function getHeaderActions(): array
     {
         return [

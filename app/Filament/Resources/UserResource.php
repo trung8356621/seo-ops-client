@@ -20,11 +20,17 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-users';
 
     protected static ?string $navigationGroup = 'Quản lý';
 
     protected static ?int $navigationSort = 0;
+
+    protected static ?string $navigationLabel = 'Thành viên';
+
+    protected static ?string $modelLabel = 'Thành viên';
+
+    protected static ?string $pluralModelLabel = 'Thành viên';
 
     public static function canAccess(): bool
     {
@@ -34,6 +40,7 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         $hierarchy = app(UserHierarchyService::class);
+        $addonSections = app(\App\Core\Members\MembersSectionRegistry::class)->formSections();
 
         return $form
             ->schema([
@@ -41,7 +48,8 @@ class UserResource extends Resource
                     ->extraAttributes(['class' => 'max-w-4xl'])
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label(__('Full name'))
+                            ->label(__('Display name'))
+                            ->helperText('Biệt danh / tên hiển thị (users.name).')
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('email')
@@ -100,7 +108,7 @@ class UserResource extends Resource
                         Forms\Components\Select::make('parent_id')
                             ->label(__('Owner'))
                             ->options(fn (): array => $hierarchy->ownersForSelect()
-                                ->mapWithKeys(fn (User $u): array => [$u->id => $u->name.' ('.$u->email.')'])
+                                ->mapWithKeys(fn (User $u): array => [$u->id => $u->display_name.' ('.$u->email.')'])
                                 ->all())
                             ->default(fn (): ?int => (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER
                                 ? (int) auth()->id()
@@ -124,7 +132,7 @@ class UserResource extends Resource
                                 }
 
                                 return $hierarchy->managersForOwner($ownerId !== null && $ownerId !== '' ? (int) $ownerId : null)
-                                    ->mapWithKeys(fn (User $u): array => [$u->id => $u->name.' ('.$u->email.')'])
+                                    ->mapWithKeys(fn (User $u): array => [$u->id => $u->display_name.' ('.$u->email.')'])
                                     ->all();
                             })
                             ->searchable()
@@ -139,6 +147,8 @@ class UserResource extends Resource
                         [User::ROLE_MANAGER, User::ROLE_STAFF],
                         true,
                     )),
+
+                ...$addonSections,
             ]);
     }
 
@@ -156,7 +166,7 @@ class UserResource extends Resource
                     ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name='.urlencode($record->name)),
 
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Full name'))
+                    ->label(__('Display name'))
                     ->searchable()
                     ->sortable(),
 
@@ -232,6 +242,50 @@ class UserResource extends Resource
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
+                Tables\Actions\Action::make('customizeMember')
+                    ->label('Tùy chỉnh')
+                    ->icon('heroicon-o-cog-6-tooth')
+                    ->modalHeading('Tùy chỉnh thành viên')
+                    ->modalSubmitActionLabel(__('Lưu'))
+                    ->modalCancelActionLabel(__('Huỷ'))
+                    ->modalWidth('md')
+                    ->fillForm(function (User $record): array {
+                        $addon = app(\App\Core\Members\MembersSectionRegistry::class)
+                            ->fillCustomizeModal($record);
+
+                        return array_merge([
+                            'name' => (string) ($record->name ?? ''),
+                        ], $addon);
+                    })
+                    ->form(function (): array {
+                        $addonFields = app(\App\Core\Members\MembersSectionRegistry::class)
+                            ->customizeModalSchema();
+
+                        return [
+                            Forms\Components\Section::make('Tài khoản')
+                                ->schema([
+                                    Forms\Components\TextInput::make('name')
+                                        ->label(__('Display name'))
+                                        ->helperText('Biệt danh / tên hiển thị — lưu vào users.name')
+                                        ->required()
+                                        ->maxLength(255),
+                                ]),
+                            ...$addonFields,
+                        ];
+                    })
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'name' => trim((string) ($data['name'] ?? '')),
+                        ]);
+
+                        app(\App\Core\Members\MembersSectionRegistry::class)
+                            ->afterUserSaved($record->fresh() ?? $record, $data);
+
+                        \Filament\Notifications\Notification::make()
+                            ->title('Đã lưu tùy chỉnh thành viên')
+                            ->success()
+                            ->send();
+                    }),
                 Tables\Actions\EditAction::make(),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn (User $record): bool => ! $record->isSystemUser())

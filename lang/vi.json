@@ -1,6 +1,8 @@
 {
     "Avatar": "Ảnh",
-    "Full name": "Họ và tên",
+    "Full name": "Biệt danh / Tên hiển thị",
+    "Display name": "Biệt danh / Tên hiển thị",
+    "Members": "Thành viên",
     "Rule": "Vai trò",
     "Status": "Trạng thái",
     "Wallet balance": "Số dư ví",

@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Addons\SeoContentAi\Console\RepairContentProjectCommand::class,
         \App\Console\Commands\CleanupMisplacedTablesCommand::class,
         \App\Console\Commands\MigrateAutomationToCoreCommand::class,
+        \App\Console\Commands\SimulateServiceCommand::class,
         \App\Console\Commands\TestDoctorCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {

@@ -1,51 +1,53 @@
 # Data and Runtime Boundaries
 
 > Status: Canonical  
-> Owner: Core + SeoContentAi  
-> Last verified: 2026-08-01  
-> Supersedes: scattered MAP notes on multi-DB, logging, and addon isolation (durable rules only)
+> Owner: Core + peer addons  
+> Last verified: 2026-09-05  
+> Supersedes: scattered MAP notes on multi-DB, logging, and addon isolation (durable rules only)  
+> Related: [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [FINAL_DATABASE_ARCHITECTURE.md](FINAL_DATABASE_ARCHITECTURE.md)
 
 ## 1. Database connections
 
 | Name | Config source | Typical owners |
 |------|---------------|----------------|
-| **`mysql`** (default) | Core `.env` | `User`, `Site`, `SiteMeta`, `Service*`, wallets/orders, `SeoDatabaseConnection`, `ApiConnection`, GSC **OAuth** `seo_gsc_master_connections` / property mappings, WpOption |
-| **`omi_seo_ai`** | Runtime from core table `seo_database_connections` | SeoArticle, SeoProject*, SeoMedia, keyword/SERP/GSC **facts**, runs, prompt results |
+| **`mysql`** (default) | Core `.env` | `User`, `Site`, `SiteMeta`, `Service`, `ServiceDatabaseConnection`, wallets/orders, legacy `SeoDatabaseConnection`, `ApiConnection`, GSC **OAuth** masters |
+| **`omi_seo_ai`** | Canonical: `service_database_connections` via `ServiceDatabaseConnectionResolver`; legacy hash adapters: `seo_database_connections` + Search Foundation bootstrap | Articles, projects, media, keyword/SERP/GSC **facts**, runs, prompt results |
+| **`omi_seeding`** | Canonical: `service_database_connections` (+ env `SEEDING_DB_*` fallback for local); never `omi_seo_ai` | Seeding infrastructure plane — business workspace = localStorage this phase |
 
 Rules:
 
-- SEO Content AI credentials are **not** in addon.json or core `.env` DB_* for tenant data.
-- No FK constraints across connections — store scalar IDs; enforce in Eloquent/app (`BelongsToOnDefaultConnection` pattern).
-- Addon migrations for SEO target `$connection = 'omi_seo_ai'` (or equivalent) after bootstrap.
+- Service DB credentials are **not** in addon.json. Prefer Core `service_database_connections` (1:1 with Service).
+- No FK constraints across connections — store scalar IDs; enforce in Eloquent/app.
+- SEO addon migrations target `omi_seo_ai` after bootstrap; Seeding ownership → `omi_seeding` via `config/addon_migration_ownership.php`.
 - Other addons may use `RegistersAddonDatabase` + addon.json — do not assume they share `omi_seo_ai`.
 
-## 2. SEO connection bootstrap
+## 2. Service + SEO connection bootstrap
 
-Class: `App\Addons\SeoContentAi\Services\SeoDatabaseConnectionService`  
-Constant runtime name: `SeoDatabaseConnectionService::CONNECTION_NAME` = `omi_seo_ai` (overridable via `config('seo-content-ai.connection')`).
+**Canonical (Service infrastructure):** `App\Services\ServiceDatabaseConnectionResolver` — resolve/upsert/test/health for SEO + Seeding logical names. Admin: `/admin/services/{seo|seeding}`.
 
-| Method | Use |
+**Legacy SEO hash panel:** `Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService`  
+Constant runtime name: `omi_seo_ai` (overridable via config).
+
+| Method (Search Foundation) | Use |
 |--------|-----|
-| `bootstrapByHash(string $hashId)` | Panel/URL connection hash → active `SeoDatabaseConnection` + configure Laravel connection |
+| `bootstrapByHash(string $hashId)` | Panel/URL connection hash → active `SeoDatabaseConnection` |
 | `bootstrapFromConnection(SeoDatabaseConnection)` | Already-loaded credential row |
 | `bootstrapByConnectionId(int)` | By PK |
-| `bootstrapBySiteId(int)` / `bootstrapSeoDatabaseConnection` | Site-bound resolution |
-| `bootstrapLegacySharedConnection()` | Shared/legacy single-tenant bootstrap path |
+| `bootstrapBySiteId(int)` / `bootstrapLegacySharedConnection()` | Site-bound / shared paths |
 
-Request path: middleware (`SetDynamicSeoDatabaseByHash` / SEO panel connection context) must run before SEO models query.
+Request path: SEO panel middleware must run before SEO models query.  
+Seeding: `SeedingDatabaseConnectionService::bootstrap()` on provider boot (failures soft — health endpoints report).
 
-Admin UI: Filament **SEO Database Connections** — CRUD + **Run migrations** against bootstrapped connection.
-
-Fingerprint cache avoids re-decrypt/reconfigure identical hash within process (`$bootstrappedHashes`).
+Legacy Admin list URLs for SEO/Seeding DB connections redirect to Service detail pages.
 
 ## 3. Addon boundary
 
-| Inside `app/Addons/SeoContentAi/` | Outside (core) |
+| Peer addons (`omnichannel-addons`) | Core (`omnichannel-client`) |
 |----------------------------------|----------------|
-| SEO Filament pages/resources, SEO routes, SEO jobs, SEO services/models/migrations | Auth users, sites, billing, addon registry, SEO DB credential **rows**, plugin ZIP release |
-| Extension SDK contracts under addon | `bootstrap/app.php` only for true app middleware / narrow CSRF |
+| Business Filament pages, models, migrations, jobs, React islands | Auth users, sites, billing, Service catalog + DB credentials, addon registry, Settings/Members registries |
+| Capability / command / DTO cross-addon | `bootstrap/app.php` only for true app middleware / narrow CSRF |
 
-Do not implement SEO product features by editing core randomly. Core changes only when shared identity/site/credential infrastructure requires it.
+`seo-content-ai-compat` = views/lang/panel bootstrap only — no new business.
 
 `config/addons.php` `skip_slugs`: discovered folders still skipped (e.g. retired `wp-headless`).
 
@@ -92,6 +94,7 @@ Ops: `tail -f storage/logs/web-app-$(date +%F).log` for editor/panel errors.
 ## 7. Related documents
 
 - [SYSTEM_OVERVIEW.md](SYSTEM_OVERVIEW.md)
+- [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md)
 - [ARCHITECTURE_FREEZE_V1.md](ARCHITECTURE_FREEZE_V1.md)
 - [ARCHITECTURE_DECISIONS.md](ARCHITECTURE_DECISIONS.md)
 - Module maps under `docs/modules/`

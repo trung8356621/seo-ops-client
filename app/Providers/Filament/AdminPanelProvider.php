@@ -65,6 +65,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
+                \App\Filament\Widgets\ServiceQuickShortcutsWidget::class,
                 Widgets\AccountWidget::class,
                 Widgets\FilamentInfoWidget::class,
             ])
@@ -88,25 +89,47 @@ class AdminPanelProvider extends PanelProvider
     }
 
     /**
-     * Register Automation product UI on /admin (owner-only shell).
-     * SEO business UI stays on /seo; legacy /seo/automation/* redirects here.
+     * Host the full Settings shell + Automation on /admin.
+     * Same page classes as SEO settings — canonical Admin URLs; SEO menu shortcuts here.
      */
     private function discover_addons(Panel $panel): Panel
     {
+        $pages = [
+            Pages\Dashboard::class,
+            HelpTopicsAdmin::class,
+            HelpTopicEdit::class,
+            HelpTopicCreate::class,
+            AutomationFlowsPage::class,
+            AutomationOperationsDashboard::class,
+            AutomationSettings::class,
+            AutomationWorkflowBuilder::class,
+        ];
+        $resources = [
+            AutomationRuleResource::class,
+            AutomationExecutionResource::class,
+        ];
+
+        foreach ([
+            \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsGeneral::class,
+            \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsWorkflows::class,
+            \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsEditor::class,
+            \Omnichannel\Addons\SearchIntelligence\Filament\Pages\SeoSettingsKeywords::class,
+            \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsScoring::class,
+            \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsConfigurationTransfer::class,
+            \Omnichannel\Addons\AiPrompt\Filament\Pages\SeoSettingsAiCenter::class,
+        ] as $pageClass) {
+            if (class_exists($pageClass)) {
+                $pages[] = $pageClass;
+            }
+        }
+
+        $apiConnections = \Omnichannel\Addons\AiPrompt\Filament\Resources\AiConnectionResource::class;
+        if (class_exists($apiConnections)) {
+            $resources[] = $apiConnections;
+        }
+
         return $panel
-            ->pages([
-                Pages\Dashboard::class,
-                HelpTopicsAdmin::class,
-                HelpTopicEdit::class,
-                HelpTopicCreate::class,
-                AutomationFlowsPage::class,
-                AutomationOperationsDashboard::class,
-                AutomationSettings::class,
-                AutomationWorkflowBuilder::class,
-            ])
-            ->resources([
-                AutomationRuleResource::class,
-                AutomationExecutionResource::class,
-            ]);
+            ->pages($pages)
+            ->resources($resources);
     }
 }

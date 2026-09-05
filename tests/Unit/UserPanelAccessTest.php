@@ -75,6 +75,29 @@ final class UserPanelAccessTest extends TestCase
         $this->assertTrue($user->canAccessPanel($panel));
     }
 
+    public function test_authenticated_non_blocked_user_can_access_seeding_panel(): void
+    {
+        $owner = new User([
+            'role' => User::ROLE_OWNER,
+            'status' => User::STATUS_NORMAL,
+        ]);
+        $staff = new User([
+            'role' => User::ROLE_STAFF,
+            'parent_id' => 10,
+            'status' => User::STATUS_NORMAL,
+        ]);
+        $blocked = new User([
+            'role' => User::ROLE_OWNER,
+            'status' => User::STATUS_BLOCK,
+        ]);
+
+        $panel = $this->panelWithId('seeding');
+
+        $this->assertTrue($owner->canAccessPanel($panel));
+        $this->assertTrue($staff->canAccessPanel($panel));
+        $this->assertFalse($blocked->canAccessPanel($panel));
+    }
+
     private function panelWithId(string $id): Panel
     {
         $panel = $this->createMock(Panel::class);

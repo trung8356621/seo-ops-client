@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserResource\Pages;
 
+use App\Core\Members\MembersSectionRegistry;
 use App\Filament\Resources\UserResource;
 use App\Models\User;
 use App\Services\Users\UserHierarchyService;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Hash;
 class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
+
+    /** @var array<string, mixed> */
+    private array $addonFormState = [];
 
     protected function getHeaderActions(): array
     {
@@ -56,6 +60,15 @@ class EditUser extends EditRecord
             $data['password'] = Hash::make((string) $data['password']);
         }
 
+        $this->addonFormState = is_array($this->data) ? $this->data : [];
+
         return $data;
+    }
+
+    protected function afterSave(): void
+    {
+        /** @var User $record */
+        $record = $this->getRecord();
+        app(MembersSectionRegistry::class)->afterUserSaved($record, $this->addonFormState);
     }
 }

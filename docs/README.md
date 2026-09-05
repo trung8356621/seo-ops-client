@@ -31,6 +31,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 |-----|------|
 | [SYSTEM_OVERVIEW.md](architecture/SYSTEM_OVERVIEW.md) | System map |
 | [ADDON_ARCHITECTURE.md](architecture/ADDON_ARCHITECTURE.md) | Peer-addon rules (Core protocol-only; SeoContentAi compat) |
+| [SERVICE_ARCHITECTURE.md](architecture/SERVICE_ARCHITECTURE.md) | Service vs Addon, service_key, ServiceDatabaseConnection, Admin UX |
 | [NEW_AGENT_HANDOFF.md](architecture/NEW_AGENT_HANDOFF.md) | Post-refactor operational handoff for new agents |
 | [REPO_SPLIT.md](architecture/REPO_SPLIT.md) | Canonical multi-repo layout + boot/composer/vite |
 | [DB_REPOSITORY_OWNERSHIP.json](architecture/DB_REPOSITORY_OWNERSHIP.json) | DB / package ownership after split |

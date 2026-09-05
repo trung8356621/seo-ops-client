@@ -16,8 +16,12 @@ use App\Core\Automation\TriggerRegistry;
 use App\Core\Capability\CapabilityRegistry;
 use App\Core\Command\CommandBus;
 use App\Core\Event\EventBus;
+use App\Core\Members\MembersSectionRegistry;
 use App\Core\Operations\OperationLogger;
 use App\Core\Queue\ScheduleRegistry;
+use App\Core\Settings\CoreSettingsBootstrap;
+use App\Core\Settings\SettingsSectionRegistry;
+use App\Core\Sites\SiteAccess;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -47,6 +51,10 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(ScheduleRegistry::class);
         $this->app->singleton(OperationLogger::class);
         $this->app->singleton(AddonEntitlementGate::class);
+        $this->app->singleton(SiteAccess::class);
+        $this->app->singleton(MembersSectionRegistry::class);
+        $this->app->singleton(SettingsSectionRegistry::class);
+        $this->app->singleton(CoreSettingsBootstrap::class);
         $this->app->singleton(\App\Core\Database\AddonMigrationRegistrar::class);
         $this->app->singleton(\App\Core\Database\DestructiveMigrationGuard::class);
         $this->app->singleton(\App\Core\Database\RefactorMigrationRunner::class);
@@ -58,6 +66,11 @@ final class ClientCoreServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadOwnedMigrations();
+
+        if ($this->app->bound(SettingsSectionRegistry::class)) {
+            $this->app->make(CoreSettingsBootstrap::class)
+                ->seed($this->app->make(SettingsSectionRegistry::class));
+        }
 
         if ($this->app->runningInConsole()) {
             $this->commands([

@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: site-sync (peer addon)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/SITE_SYNC_V2.md`, `docs/SITE_SYNC_V2_*.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (Site Sync sections), `docs/archive/site-sync/*`
 
 ## 1. Purpose
@@ -92,7 +92,7 @@ Pull from WP (orchestrator / reconcile):
 
 Reconcile scheduler scans sites with `seo_read_token` meta (`whereHas(metas…)`), **not** a non-existent `sites.settings` column.
 
-**Lightweight profile reads (2026-09-01):** Domain Edit form field sync (`DomainPromptContextWordPressFieldSyncService`) calls `WordPressSiteProfileReader` → same `/sync/v2/profile` endpoint but **does not** create a Site Sync run, mutate catalog, or write `articles.body`. Do not route through `RunSiteSyncOrchestrator`.
+**Lightweight profile reads (2026-09-01; plugin ≥ 1.0.87 for `site_name`):** Domain Edit form field sync (`DomainPromptContextWordPressFieldSyncService`) calls `WordPressSiteProfileReader` → same `/sync/v2/profile` endpoint but **does not** create a Site Sync run, mutate catalog, or write `articles.body`. Do not route through `RunSiteSyncOrchestrator`. Profile fields: `site_name`, `short_description` (+ legacy `schema_org`).
 
 ## 6. Write path
 
@@ -264,8 +264,9 @@ Pointers also in `docs/operations/TESTING.md`.
 | Resources | `content`, `terms` |
 | Modes | `force_full`, `delta` |
 | Phases | `discover`, `import`, `reconcile_stale`, `catch_up`, `verify`, `complete`, `needs_attention` |
-| Pagination | Keyset cursors only — **never** offset |
+| Pagination | Keyset cursors only — **never** offset; plugin ≥ **1.0.86** content cursor includes `after_modified_gmt` |
 | Body rule | V3 **must not** write `articles.body` or `wp_post_content*` article_meta keys |
+| Trash | Plugin ≥ **1.0.86** accepts write `status=trash` for tombstone lifecycle (not SEO publish schedule) |
 | Baseline meta | `seo_site_sync_v3_baseline_completed_at`, `seo_site_sync_v3_baseline_generation` |
 | Run state | Migration `2026_08_31_160000_site_sync_v3_run_state`; receipt model `SeoSiteSyncV3Receipt` |
 | WAL index | Migration `2026_08_31_161000_add_wal_site_wp_post_composite_index` |

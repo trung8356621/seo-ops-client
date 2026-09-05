@@ -2,10 +2,10 @@
 
 > Status: Canonical operational handoff  
 > Last verified: 2026-09-05  
-> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
+> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§10 = 2026-09-04→05 addons 0.3.1–0.3.2 / client 0.3.2–0.3.4)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§11 = Service Architecture + Seeding plane; §10 = 2026-09-04→05 product batch)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -48,8 +48,9 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Article meta inventory / WP body cache | `content` `ArticleMetaKeyCatalog`; `wordpress` `ArticleWpContentCacheService` — see [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`WORDPRESS_BRIDGE.md`](../modules/WORDPRESS_BRIDGE.md) |
 | Agent / MCP | `omnichannel-addons/agent` |
 | Social Profile / manual share | `omnichannel-addons/social` |
-| Seeding Topic V2 / Link Intelligence | `omnichannel-addons/seeding` — see [`SEEDING.md`](../modules/SEEDING.md) |
-| SEO DB connection bootstrap | `omnichannel-addons/search-foundation` |
+| Seeding service (localStorage workspace + `omi_seeding`) | `omnichannel-addons/seeding` — see [`SEEDING.md`](../modules/SEEDING.md) |
+| Service catalog / `service_key` / Service DB | Client Core — [`SERVICE_ARCHITECTURE.md`](SERVICE_ARCHITECTURE.md) |
+| SEO DB connection bootstrap (hash/legacy) | `omnichannel-addons/search-foundation` (`SeoDatabaseConnectionService`) |
 | System User placeholder (not a writer) | Client `App\Services\Users\SeoOpsSystemUser` |
 | Save transport / SaveCoordinator | `omnichannel-client/resources/js/client-core` |
 | Filament Blade `seo-content-ai::` | `omnichannel-addons/seo-content-ai-compat` |
@@ -62,7 +63,7 @@ Column ownership detail: [ARTICLE_COLUMN_OWNERSHIP.json](ARTICLE_COLUMN_OWNERSHI
 
 | Kind | Names / command |
 |------|-----------------|
-| **Protected** | `omi_client`, `omi_seo_ai` — never destroy / never `fresh` |
+| **Protected** | `omi_client`, `omi_seo_ai`, `omi_seeding` — never destroy / never `fresh` |
 | **Retired** | `omi_channel` → renamed `omi_channel__pre_client_split_backup` (not runtime) |
 | **Non-destructive verify** | `php artisan refactor:migrate --verify --via-mysql` (safe to re-run; expect idempotent) |
 | **Disposable** | `*_test` DBs only |
@@ -74,8 +75,10 @@ Do **not** run destructive fresh against protected DBs.
 |------------|----------|------|
 | `mysql` / core | `omi_client` | Client shell + automation runtime |
 | `omi_seo_ai` | `omi_seo_ai` | SEO/content peer-addon business tables |
+| `omi_seeding` | `omi_seeding` | Seeding service plane — infrastructure-ready; business SoT is localStorage this phase |
 
-SEO runtime connection name: `omi_seo_ai` (bootstrapped from core `seo_database_connections` via Search Foundation).
+SEO runtime connection name: `omi_seo_ai` — canonical via Core `ServiceDatabaseConnection`; legacy hash panel via Search Foundation + `seo_database_connections`.
+Seeding runtime connection name: `omi_seeding` — Core `ServiceDatabaseConnection` (+ env `SEEDING_DB_*` local); never `omi_seo_ai`.
 Automation runtime: `AUTOMATION_DB_CONNECTION=mysql` (never `omi_seo_ai`).
 
 ---
@@ -164,8 +167,9 @@ $PHP_BIN vendor/bin/phpunit --testsuite ContentAddon
 Then read:
 
 1. `docs/architecture/ADDON_ARCHITECTURE.md`  
-2. `docs/architecture/SEO_CONTENT_AI_COMPAT_SHELL.md`  
-3. `docs/architecture/POST_REFACTOR_MANUAL_CHECKLIST.md`  
-4. Relevant `docs/modules/*` for the feature under change  
+2. `docs/architecture/SERVICE_ARCHITECTURE.md`  
+3. `docs/architecture/SEO_CONTENT_AI_COMPAT_SHELL.md`  
+4. `docs/architecture/POST_REFACTOR_MANUAL_CHECKLIST.md`  
+5. Relevant `docs/modules/*` for the feature under change  
 
 Deploy tracking (backend only): `.secure/deploy-diff.ps1` with a kebab-case `-Id`. Plugin repo `wp-seo-ai` is **not** covered by that script.

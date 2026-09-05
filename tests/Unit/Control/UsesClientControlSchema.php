@@ -26,6 +26,7 @@ trait UsesClientControlSchema
             $table->string('db_connection')->default('mysql');
             $table->boolean('is_active')->default(true);
             $table->json('config')->nullable();
+            $table->text('service_key')->nullable();
             $table->timestamps();
         });
 

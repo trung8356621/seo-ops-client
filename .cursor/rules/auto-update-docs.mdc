@@ -39,9 +39,10 @@ alwaysApply: true
 | Site Sync v2/v3, catalog reconcile | `docs/modules/SITE_SYNC.md` |
 | Content projects, workflow | `docs/modules/CONTENT_PROJECTS.md` |
 | Settings, prompts, AI | `docs/modules/PROMPTS_AND_AI.md` |
-| Seeding Topic / Link Intelligence | `docs/modules/SEEDING.md` |
+| Seeding service / Link Intelligence | `docs/modules/SEEDING.md` |
 | Contextual Help, help-seed, HelpUi | `docs/modules/CONTEXTUAL_HELP.md` |
 | Core shell (không addon SEO) | `docs/architecture/SYSTEM_OVERVIEW.md` |
+| Service catalog / service_key / ServiceDatabaseConnection | `docs/architecture/SERVICE_ARCHITECTURE.md` |
 | Ownership / handoff | `docs/architecture/NEW_AGENT_HANDOFF.md` |
 
 Nhiều vùng → nhiều file trong cùng một pass.

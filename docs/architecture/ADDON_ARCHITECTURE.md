@@ -9,8 +9,12 @@
 
 **Core = protocol / runtime only.**
 
-Core owns identity, tenancy, billing, addon discovery/registry, SEO DB credential rows, shared HTTP/logging/queue plumbing, and frontend **transport/runtime** (e.g. `resources/js/core/saveCoordinator.js`).  
+Core owns identity, tenancy, billing, addon discovery/registry, **Service catalog + `service_key` + `ServiceDatabaseConnection`**, shared HTTP/logging/queue plumbing, and frontend **transport/runtime** (e.g. `resources/js/core/saveCoordinator.js`).  
 Core does **not** own SEO/content business models, article domain state, or peer-addon Filament product pages.
+
+**Addon installed ≠ Service active.** See [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md).
+
+Legacy `seo_database_connections` remains for hash-route / owner adapters; **canonical** DB credentials for a Service live on `service_database_connections` (1:1).
 
 ## Peer addons
 
@@ -31,7 +35,7 @@ All product domains live under `/addons/{slug}` as **peers** (no parent/child hi
 | `agent` | Agent/MCP, Extension Builtin discovery |
 | `social` | Social domain |
 | `commerce` | Commerce domain |
-| `seeding` | Seeding Topic V2 + Link Intelligence |
+| `seeding` | Independent Seeding service (localStorage workspace + `omi_seeding` plane) |
 
 ## SeoContentAi = compatibility only
 
@@ -44,8 +48,9 @@ Active business code lives in `/addons/*`.
 
 | Plane | Laravel connection | Physical DB | Owns |
 |-------|--------------------|-------------|------|
-| Client core | `mysql` (default / `core_connection`) | `omi_client` | SaaS core, automation `automation_*` + `business_events`, SEO credentials |
+| Client core | `mysql` (default / `core_connection`) | `omi_client` | SaaS core, automation, Service catalog + `service_database_connections`, legacy SEO credential adapters |
 | SEO addon | `omi_seo_ai` | `omi_seo_ai` | Articles, keywords, prompts, media, projects, `seo_link_maps`, … |
+| Seeding addon | `omi_seeding` | `omi_seeding` | Infrastructure-ready; business workspace = localStorage (no business schema yet) |
 | WP Headless | `wp_headless` | (addon local) | Headless site tables |
 
 `omi_channel` is **retired** (renamed to `omi_channel__pre_client_split_backup`). Do not target it for runtime or `migrate:fresh`.

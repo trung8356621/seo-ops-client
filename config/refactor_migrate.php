@@ -23,6 +23,7 @@ return [
     'protected_database_names' => [
         'omi_client',
         'omi_seo_ai',
+        'omi_seeding',
         'omi_channel',
         'omi_channel__pre_client_split_backup',
         'omi_channel_real',

@@ -70,7 +70,12 @@ return [
             'connection' => 'omi_seo_ai',
             'path' => 'addons/social/database/migrations',
         ],
-        // _legacy-obsolete intentionally omitted from active discovery (fresh install).
+        'seeding' => [
+            // Infrastructure plane only — no business schema yet (localStorage SoT).
+            'connection' => 'omi_seeding',
+            'path' => 'addons/seeding/database/migrations',
+        ],
+        // _legacy-obsolete / seeding legacy-experimental intentionally omitted from active discovery.
     ],
 
     /*

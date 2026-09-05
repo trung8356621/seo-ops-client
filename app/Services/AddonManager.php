@@ -36,13 +36,19 @@ class AddonManager
 
         $discovered = [];
         foreach ($manifests as $manifest) {
+            $attrs = [
+                'name' => $manifest->name,
+                'addon_namespace' => $manifest->provider,
+                'config' => $manifest->raw,
+            ];
+            $dbConnection = trim((string) ($manifest->raw['db_connection'] ?? ''));
+            if ($dbConnection !== '') {
+                $attrs['db_connection'] = $dbConnection;
+            }
+
             Service::updateOrCreate(
                 ['slug' => $manifest->slug],
-                [
-                    'name' => $manifest->name,
-                    'addon_namespace' => $manifest->provider,
-                    'config' => $manifest->raw,
-                ]
+                $attrs,
             );
             $discovered[] = $manifest->slug;
         }

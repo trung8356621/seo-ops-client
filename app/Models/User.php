@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Omnichannel\Addons\Seo\Support\SeoAccessControl;
 use App\Models\Concerns\UsesCoreDatabaseConnection;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -118,9 +117,32 @@ class User extends Authenticatable implements FilamentUser
         return match ($panel->getId()) {
             'admin' => in_array((string) $this->role, [self::ROLE_OWNER, self::ROLE_ADMIN], true),
             'tools' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
-            'seo', 'seo-main' => SeoAccessControl::canAccessSeoPanel($this),
+            // Seeding panel: authenticated non-blocked account (addon enablement is separate).
+            'seeding' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
+            // SEO panel gate uses Core user fields only (role / seo_role / hierarchy).
+            // SEO addon access helper delegates to canAccessSeoPanel() — Core must not import SEO.
+            'seo', 'seo-main' => $this->canAccessSeoPanel(),
             default => false,
         };
+    }
+
+    /**
+     * Whether this user may enter the SEO Filament panel.
+     * Uses Core columns only — safe when SEO addon is disabled.
+     */
+    public function canAccessSeoPanel(): bool
+    {
+        if ((string) ($this->status ?? '') === self::STATUS_BLOCK) {
+            return false;
+        }
+
+        if ((string) $this->role === self::ROLE_OWNER) {
+            return true;
+        }
+
+        return $this->isStaff()
+            && (int) $this->parent_id > 0
+            && filled($this->seo_role);
     }
 
     /**

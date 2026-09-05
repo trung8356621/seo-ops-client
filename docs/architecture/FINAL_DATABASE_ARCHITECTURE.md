@@ -1,15 +1,19 @@
 # Final Database Architecture (Client cutover)
 
-> Status: Canonical after 2026-08-10 DB plane cutover  
-> Related: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [NEW_AGENT_HANDOFF.md](NEW_AGENT_HANDOFF.md) · [DB_REPOSITORY_OWNERSHIP.json](DB_REPOSITORY_OWNERSHIP.json)
+> Status: Canonical after 2026-08-10 DB plane cutover (+ 2026-09-05 Service / Seeding planes)  
+> Last verified: 2026-09-05  
+> Related: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [NEW_AGENT_HANDOFF.md](NEW_AGENT_HANDOFF.md) · [DB_REPOSITORY_OWNERSHIP.json](DB_REPOSITORY_OWNERSHIP.json)
 
 ## Planes
 
 | Plane | Connection | Physical DB | Role |
 |-------|------------|-------------|------|
-| Client Core | `mysql` (`database.default` / `core_connection`) | **`omi_client`** | Users, billing, sites, SEO DB credentials, queue/cache, **automation** |
-| SEO Content | `omi_seo_ai` | **`omi_seo_ai`** | Articles, keywords, prompts, media, projects, link maps, WP sync state |
+| Client Core | `mysql` (`database.default` / `core_connection`) | **`omi_client`** | Users, billing, sites, **Service catalog + ServiceDatabaseConnection**, queue/cache, automation |
+| SEO Service | `omi_seo_ai` | **`omi_seo_ai`** (via ServiceDatabaseConnection) | Articles, keywords, prompts, media, projects, link maps, WP sync state |
+| Seeding Service | `omi_seeding` | **`omi_seeding`** (via ServiceDatabaseConnection) | Infrastructure plane; business workspace = localStorage this phase |
 | WP Headless | `wp_headless` | addon-local | Headless templates/sites |
+
+Canonical: one Service → at most one `service_database_connections` row. Legacy `seo_database_connections` retained for hash-route adapters until explicit drop.
 
 ## Retired
 

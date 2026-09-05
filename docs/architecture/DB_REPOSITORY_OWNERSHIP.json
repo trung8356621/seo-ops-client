@@ -1,6 +1,6 @@
 ﻿{
-    "generated_at": "2026-08-10",
-    "note": "Physical repo ownership after Task 12 cutover + DB plane cutover (omi_client). DB schema ownership by peer addon unchanged.",
+    "generated_at": "2026-09-05",
+    "note": "Physical repo ownership after Task 12 cutover + DB plane cutover (omi_client) + Seeding omi_seeding plane. Canonical Service DB credentials: Core service_database_connections (1:1). Legacy seo_database_connections / seeding_database_connections retained pending drop.",
     "repositories": {
         "omnichannel-client": {
             "owns_migrations": [
@@ -16,6 +16,7 @@
         },
         "omnichannel-addons": {
             "connection_default_for_addon_migrations": "omi_seo_ai",
+            "seeding_connection": "omi_seeding",
             "addons": {
                 "search-foundation": "search-foundation/database/migrations",
                 "seo": "seo/database/migrations",
@@ -30,6 +31,13 @@
                 "agent": "agent/database/migrations",
                 "social": "social/database/migrations",
                 "commerce": "commerce/database/migrations",
+                "seeding": {
+                    "path": "seeding/database/migrations",
+                    "connection": "omi_seeding",
+                    "phase": "infrastructure-ready",
+                    "business_persistence": "localStorage",
+                    "notes": "No finalized business schema yet. Experimental V2 tables on omi_seo_ai are orphaned / legacy-experimental."
+                },
                 "seo-content-ai-compat": "none (compat shell; no new business migrations)",
                 "_legacy-obsolete": "_legacy-obsolete/database/migrations (historical only)"
             }
@@ -37,7 +45,8 @@
     },
     "protected_databases": [
         "omi_client",
-        "omi_seo_ai"
+        "omi_seo_ai",
+        "omi_seeding"
     ],
     "retired_databases": [
         {

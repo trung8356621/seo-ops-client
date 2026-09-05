@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core User hierarchy)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-05  
 > Supersedes: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md` (high-level — discard prompt dumps / exhaustive file indexes)
 
 ## 1. Purpose
@@ -126,7 +126,7 @@ EditDomain action (company_short_identity | short_description)
 
 | Field | WP source | Rules |
 |-------|-----------|-------|
-| `company_short_identity` | `site_name` (fallback `schema_org.name`) | Clamped to 80 chars; notifies when clamped |
+| `company_short_identity` | `site_name` (fallback `schema_org.name`) | Clamped to 80 chars; notifies when clamped; requires bridge ≥ **1.0.87** for canonical `site_name` |
 | `short_description` | `short_description` | Rejects empty or > `MAX_SHORT_DESCRIPTION_WORDS` |
 
 Gate: `WordPressFieldSyncAccessGate::canSync()`. Endpoint: `GET /omi-seo-ai/v1/sync/v2/profile` (read token).

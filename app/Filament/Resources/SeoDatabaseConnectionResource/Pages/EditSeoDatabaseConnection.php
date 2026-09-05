@@ -23,6 +23,11 @@ class EditSeoDatabaseConnection extends EditRecord
 {
     protected static string $resource = SeoDatabaseConnectionResource::class;
 
+    public function mount(int|string $record): void
+    {
+        $this->redirect(\App\Filament\Pages\ServiceConfigure::getUrl(['service' => 'seo']));
+    }
+
     protected function getHeaderActions(): array
     {
         return [

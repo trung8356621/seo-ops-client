@@ -16,6 +16,10 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Connect this client installation to ops-server and show control status.
+ * Does NOT manage Service entitlement (ops-server owns services.apply).
+ */
 class ControlServer extends Page implements HasForms
 {
     use InteractsWithForms;
@@ -81,6 +85,7 @@ class ControlServer extends Page implements HasForms
                     ->url()
                     ->required()
                     ->maxLength(255)
+                    ->placeholder('https://ops.example.com')
                     ->visible(fn (): bool => $this->canEnroll()),
                 Forms\Components\TextInput::make('api_key')
                     ->label(__('client_control.api_key'))
@@ -89,6 +94,7 @@ class ControlServer extends Page implements HasForms
                     ->required()
                     ->dehydrated()
                     ->autocomplete('new-password')
+                    ->helperText(__('client_control.api_key_help'))
                     ->visible(fn (): bool => $this->canEnroll()),
             ])
             ->statePath('data');
@@ -104,6 +110,7 @@ class ControlServer extends Page implements HasForms
             (string) ($data['api_key'] ?? ''),
         );
 
+        // Never keep API key in Livewire state after attempt.
         $this->data['api_key'] = '';
         $this->form->fill([
             'control_server_url' => (string) ($data['control_server_url'] ?? ''),
@@ -141,15 +148,32 @@ class ControlServer extends Page implements HasForms
     public function getInstallationViewData(): array
     {
         $state = $this->controlState();
+        $status = $state?->status ?? ClientControlStatus::Unregistered;
+        $isLocked = $status === ClientControlStatus::Locked;
+        $isRevoked = $status === ClientControlStatus::Revoked;
+        $isConnected = in_array($status, [ClientControlStatus::Active, ClientControlStatus::Locked], true);
 
         return [
-            'status' => $state?->status->value ?? ClientControlStatus::Unregistered->value,
+            'status' => $status->value,
+            'status_label' => match ($status) {
+                ClientControlStatus::Unregistered => __('client_control.status_unregistered'),
+                ClientControlStatus::Active => __('client_control.status_active'),
+                ClientControlStatus::Locked => __('client_control.status_locked'),
+                ClientControlStatus::Revoked => __('client_control.status_revoked'),
+            },
+            'control_lock_label' => $isLocked
+                ? __('client_control.lock_locked')
+                : __('client_control.lock_unlocked'),
+            'is_locked' => $isLocked,
+            'is_revoked' => $isRevoked,
+            'is_connected' => $isConnected,
+            'show_status_panel' => $isConnected || $isRevoked,
             'control_server_url' => $state?->control_server_url,
             'installation_id' => $state?->installation_id,
-            'client_version' => (string) config('client_control.client_version'),
+            'client_version' => (string) ($state?->client_version ?: config('client_control.client_version')),
+            'services_revision' => $state?->services_revision,
             'last_command_id' => $state?->last_command_id,
             'last_command_at' => $state?->last_command_at?->timezone(config('app.timezone'))->toDateTimeString(),
-            'is_locked' => $state?->isLocked() ?? false,
             'locked_at' => $state?->locked_at?->timezone(config('app.timezone'))->toDateTimeString(),
             'connected_at' => $state?->connected_at?->timezone(config('app.timezone'))->toDateTimeString(),
             'can_enroll' => $this->canEnroll(),
