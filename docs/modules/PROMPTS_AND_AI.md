@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-06  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -129,10 +129,32 @@ Owner: `ai-prompt` service + `search-foundation` Edit Domain UI (`SyncsDomainPro
 
 | Flag | Meaning |
 |------|---------|
-| `settings_visible=true` | Global Settings binding slot |
-| `settings_visible=false` | Task/editor only (e.g. `article.content.generate`, `article.content.rewrite`) |
+| `settings_visible=true` | Operator-configurable binding slot on Workflows Settings |
+| `settings_visible=false` | Hook may still be **enabled** at runtime — either task/editor-only **or** system-managed |
 
-Hook does **not** activate a Prompt; Settings or Task reference does.
+Three distinct concepts (do not conflate):
+
+| Concept | Meaning |
+|---------|---------|
+| **Runtime hook** | Enabled capability (`enabled=true`) loaded by the registry |
+| **System-managed binding** | `settings_visible=false` + installer/system owns `prompt_hook_bindings` entry; not on Workflows form |
+| **Operator-managed binding** | `settings_visible=true`; Workflows Settings may change the Prompt |
+
+**Product Gallery** — system-managed pipeline (sprite / parent-child via existing capability resolver). **No** operator Prompt/Workflow/source controls on `/settings/workflows`. Legacy keys `create_product_gallery_source` / `create_product_gallery_image_task_id` remain in storage for rollback only.
+
+**News thumbnail** (`article.featured_image.generate` / “Create news thumbnail”) — system-managed Prompt via `DefaultNewsThumbnailPromptInstaller`. Not shown on Workflows Settings.
+
+**Product reviews / comments** — operator configures `article.comment.generate` only. Legacy `post_review_task_id` (“Đăng bình luận” Workflow) is not on Settings; Quick Create uses `ProductReviewGenerateService`.
+
+**Outline** — Settings shows `article.outline.structure.generate` + `article.vocabulary.generate` only. Legacy combined `article.outline.generate` remains loadable (`settings_visible=false`).
+
+**Optional media** — Typography / Video source may be `none` | `prompt` | `workflow`. Empty must not coerce to `workflow`.
+
+**Rewrite** — Content Project Rewrite uses `article.content.generate` + existing article source; `article.content.rewrite` and `rewrite_article_task_id` are legacy only. Keep `article.content.improve` as a separate Improve capability.
+
+Workflows save must call `mergePreservingNonUserEditableBindings()` so SYSTEM bindings are never wiped when the form only POSTs USER hooks.
+
+Hook does **not** activate a Prompt; Settings or Task reference does. System installers may seed bindings when missing without overwriting valid existing ones.
 
 ## 5. Read path
 
