@@ -42,7 +42,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [FINAL_LOCAL_RELEASE_MANIFEST.md](architecture/FINAL_LOCAL_RELEASE_MANIFEST.md) | Historical ZIP inventory (Task 10) |
 | [DATA_AND_RUNTIME_BOUNDARIES.md](architecture/DATA_AND_RUNTIME_BOUNDARIES.md) | DB / logging / addon boundaries |
 | [ARCHITECTURE_FREEZE_V1.md](architecture/ARCHITECTURE_FREEZE_V1.md) | Frozen public contracts |
-| [ARCHITECTURE_DECISIONS.md](architecture/ARCHITECTURE_DECISIONS.md) | ADR-001.. |
+| [ARCHITECTURE_DECISIONS.md](architecture/ARCHITECTURE_DECISIONS.md) | ADR-001..018 |
 | [ARTICLE_EDITOR_SEPARATION_INVENTORY.md](architecture/ARTICLE_EDITOR_SEPARATION_INVENTORY.md) | Article Editor island / lock / separation inventory |
 | [ARTICLE_EDITOR_SESSION_LOCK.md](architecture/ARTICLE_EDITOR_SESSION_LOCK.md) | Phase 1 server edit-session lock + document_version |
 | [ARTICLE_EDITOR_MEDIA_SNAPSHOT.md](architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) | Phase 2A Featured/Gallery media snapshot ownership |

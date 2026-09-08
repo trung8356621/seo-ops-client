@@ -279,3 +279,17 @@ Mỗi ADR bất biến sau khi `Status: Accepted`. Muốn đổi hành vi đã k
 **Forbidden alternatives:** Sửa signature contract public trực tiếp không qua ADR; bump `SdkVersion::MAJOR` mà không có ADR tương ứng.
 
 **Enforcement:** `ExtensionArchitectureFreezeTest`, `ExtensionSdkFoundationTest`, [ARCHITECTURE_FREEZE_V1.md](ARCHITECTURE_FREEZE_V1.md).
+
+---
+
+## ADR-018 — AI Center Model Authority for Article Generation
+
+**Status:** Accepted
+
+**Context:** `generation_mode_override` (FastEconomy / BestQuality) historically reordered article routing candidates and overrode AI Center sortable order.
+
+**Decision:** For `article.content.generate` / `article.content.rewrite`, AI Center sortable order is authoritative. Runtime may filter unavailable candidates but must preserve relative order. Explicit `model_override_id` is the only intentional reorder. FastEconomy / BestQuality must not reorder article models. System adapts the prompt to the selected model — not the reverse.
+
+**Full text:** [decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md](decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md)
+
+**Enforcement:** `ArticleModelOrderAuthorityTest`, `AiModelRouterService::applyItemRoutingPreferences` + `ArticleModelOrderAuthority`.

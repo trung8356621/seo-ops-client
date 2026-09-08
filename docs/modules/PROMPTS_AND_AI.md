@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-06  
+> Last verified: 2026-09-08  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
 
 ## 1. Purpose
@@ -346,6 +346,8 @@ Main tabs (locked order): **Models | Routing | Resilience | Health**.
 
 Canonical execution identity: `connectionId|familyKey` (example: `3|openai.gpt54_mini`).  
 Custom Allowed Models store `allowed_execution_keys` (full keys) + derived family keys; order still comes from Models priority.
+
+**Article generation model authority (ADR-018):** For `article.content.generate` / `article.content.rewrite`, AI Center sortable order is authoritative. `generation_mode_override` (FastEconomy / BestQuality) must **not** reorder article candidates. Runtime may filter (health, Free Only, credentials) but preserves relative order of survivors. Explicit per-item `model_override_id` is the only intentional reorder. See [`AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](../architecture/decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md).
 
 **Text Routing cards** show that order follows Models (`text_routing_follows_models`). They do **not** expose a “Manage model order” shortcut — reorder only on the **Models** tab.
 
