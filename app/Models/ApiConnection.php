@@ -22,8 +22,23 @@ class ApiConnection extends Model
     protected $casts = [
         'api_key' => 'encrypted',
         'is_global' => 'boolean',
+        'paid_locked' => 'boolean',
         'metadata' => 'array',
     ];
+
+    /**
+     * User-facing Free only preference (skip paid candidates; free remain eligible).
+     * Distinct from inactive status and from runtime health budget locks.
+     */
+    public function isPaidLocked(): bool
+    {
+        return (bool) ($this->getAttribute('paid_locked') ?? false);
+    }
+
+    public function isActiveConnection(): bool
+    {
+        return (string) $this->getAttribute('status') === 'active';
+    }
 
     public function user(): BelongsTo
     {
