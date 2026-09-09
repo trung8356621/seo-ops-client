@@ -1,7 +1,7 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-09-05
+> Last verified: 2026-09-09
 
 ## Workspace repos
 | Repo | Role |
@@ -32,6 +32,9 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [SYSTEM_OVERVIEW.md](architecture/SYSTEM_OVERVIEW.md) | System map |
 | [ADDON_ARCHITECTURE.md](architecture/ADDON_ARCHITECTURE.md) | Peer-addon rules (Core protocol-only; SeoContentAi compat) |
 | [SERVICE_ARCHITECTURE.md](architecture/SERVICE_ARCHITECTURE.md) | Service vs Addon, service_key, ServiceDatabaseConnection, Admin UX |
+| [AI_EXECUTION_ROUTING.md](architecture/AI_EXECUTION_ROUTING.md) | **AI execution & routing SoT** (sortable order, free/paid, health vs eligibility, budget, validation, failure taxonomy) |
+| [AI_HISTORY_PROMPT_VERSION.md](architecture/AI_HISTORY_PROMPT_VERSION.md) | Prompt Version + lightweight AI History + routing attempts |
+| [CONTENT_PROJECT_AI_INTEGRATION.md](architecture/CONTENT_PROJECT_AI_INTEGRATION.md) | Content Project ↔ AI stage sequence, correlation, domain-per-item |
 | [NEW_AGENT_HANDOFF.md](architecture/NEW_AGENT_HANDOFF.md) | Post-refactor operational handoff for new agents |
 | [REPO_SPLIT.md](architecture/REPO_SPLIT.md) | Canonical multi-repo layout + boot/composer/vite |
 | [DB_REPOSITORY_OWNERSHIP.json](architecture/DB_REPOSITORY_OWNERSHIP.json) | DB / package ownership after split |
@@ -99,6 +102,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Scheduler / Workers | [SCHEDULER_AND_WORKERS.md](operations/SCHEDULER_AND_WORKERS.md) |
 | Testing | [TESTING.md](operations/TESTING.md) |
 | Troubleshooting | [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) |
+| AI routing debug playbook | [AI_DEBUG_PLAYBOOK.md](operations/AI_DEBUG_PLAYBOOK.md) |
 
 ## Archive
 

@@ -284,12 +284,14 @@ Mỗi ADR bất biến sau khi `Status: Accepted`. Muốn đổi hành vi đã k
 
 ## ADR-018 — AI Center Model Authority for Article Generation
 
-**Status:** Accepted
+**Status:** Accepted (superseding runtime scope documented in SoT)
 
 **Context:** `generation_mode_override` (FastEconomy / BestQuality) historically reordered article routing candidates and overrode AI Center sortable order.
 
 **Decision:** For `article.content.generate` / `article.content.rewrite`, AI Center sortable order is authoritative. Runtime may filter unavailable candidates but must preserve relative order. Explicit `model_override_id` is the only intentional reorder. FastEconomy / BestQuality must not reorder article models. System adapts the prompt to the selected model — not the reverse.
 
+**Stabilized extension (2026-09-09):** `ArticleModelOrderAuthority::allowsGenerationModeReorder` is always `false` for every hook; full order/cost/health/budget/validation contracts live in [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md).
+
 **Full text:** [decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md](decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md)
 
-**Enforcement:** `ArticleModelOrderAuthorityTest`, `AiModelRouterService::applyItemRoutingPreferences` + `ArticleModelOrderAuthority`.
+**Enforcement:** `ArticleModelOrderAuthorityTest`, `ManualSortableOrderRoutingTest`, `AiModelRouterService::applyItemRoutingPreferences` + `ArticleModelOrderAuthority`.

@@ -1,11 +1,11 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-09-05  
-> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
+> Last verified: 2026-09-09  
+> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§11 = Service Architecture + Seeding plane; §10 = 2026-09-04→05 product batch)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§1b = AI routing docs freeze 2026-09-09; §11 = Service Architecture + Seeding plane)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -42,6 +42,8 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Topics / Keyword DNA / Recluster | `omnichannel-addons/search-intelligence` — UI label Topics; see [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md) |
 | Product review create / AI history | `omnichannel-addons/commerce` (`ProductReviewCreationPolicy`, `ProductReviewGenerationHistoryRecorder`) |
 | Prompt / provider | `omnichannel-addons/ai-prompt` |
+| AI execution / routing (SoT) | [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md) · History [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md) · Debug [`AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md) · rule `.cursor/rules/debug-fix-discipline.mdc` |
+| Content Project × AI boundary | [`CONTENT_PROJECT_AI_INTEGRATION.md`](CONTENT_PROJECT_AI_INTEGRATION.md) |
 | Site Sync | `omnichannel-addons/site-sync` |
 | Site Sync V3 (protocol 3) | `site-sync` — `SiteSyncV3Schema`, `RunSiteSyncV3Orchestrator`, `SiteSyncProtocolRouter` — see [`SITE_SYNC.md`](../modules/SITE_SYNC.md) §17 |
 | Contextual Help (in-app) | Client `app/Help/*` + `resources/help-seed/` — see [`CONTEXTUAL_HELP.md`](../modules/CONTEXTUAL_HELP.md) |

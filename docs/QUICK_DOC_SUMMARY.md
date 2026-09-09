@@ -1,17 +1,36 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-05  
+> Updated: 2026-09-09  
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
 
 - `docs/README.md` — index + precedence.
-- `docs/architecture/*` — boundaries, ADR, handoff.
-- `docs/modules/*` — 17 module docs (thêm `SEEDING.md` 2026-09-05; `CONTEXTUAL_HELP.md` 2026-09-01).
-- `docs/contracts/*`, `docs/operations/*`, `docs/audits/*`.
+- `docs/architecture/*` — boundaries, ADR, handoff; **AI routing SoT** `AI_EXECUTION_ROUTING.md` (2026-09-09).
+- `docs/modules/*` — module docs.
+- `docs/contracts/*`, `docs/operations/*` (incl. `AI_DEBUG_PLAYBOOK.md`), `docs/audits/*`.
 - `docs/archive/*` — historical only.
-- `resources/help-seed/` — human-facing Help topics (48); không override canonical dev docs.
+- `.cursor/rules/debug-fix-discipline.mdc` — project-wide DEBUG ≠ FIX (`alwaysApply: true`).
+- `resources/help-seed/` — human-facing Help topics; không override canonical dev docs.
+
+## 1b. Batch 2026-09-09 — AI execution layer stabilized (docs only)
+
+Governance pass after routing core freeze. **No product code in this batch.**
+
+| Doc | Role |
+|-----|------|
+| `architecture/AI_EXECUTION_ROUTING.md` | SoT: sortable order, logical vs physical, free/paid, health vs static, budget, validation, failure taxonomy, resolved incidents, open items |
+| `architecture/AI_HISTORY_PROMPT_VERSION.md` | PromptVersion fingerprint, compiled_prompt_hash, routing attempts, History UX/lifecycle |
+| `architecture/CONTENT_PROJECT_AI_INTEGRATION.md` | Outline→vocab→content sequence, correlation, task.site_id authority |
+| `operations/AI_DEBUG_PLAYBOOK.md` | Inspect order + “why didn’t model X run?” |
+| `.cursor/rules/debug-fix-discipline.mdc` | DEBUG FIRST / REPORT ROOT CAUSE / FIX ONLY AUTHORIZED |
+
+Open items recorded in SoT (do not fix without separate task): Split Outline/Vocabulary verification (next), DeepSeek Reasoning UX vs static eligibility, CP correlation completeness, archive History cleanup, queue config, equal-priority tie-break.
+
+Corrected stale module claim: DeepSeek **is** allowed on long-form article content; excluded from TextReasoning Outline/Vocabulary only (`PROMPTS_AND_AI.md`).
+
+---
 
 ## 2. Documentation update policy (2026-09-01)
 

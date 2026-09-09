@@ -1,0 +1,213 @@
+---
+description: DEBUG ≠ FIX — observe, classify root cause, fix only authorized cause
+alwaysApply: true
+---
+
+# DEBUG_AND_FIX_DISCIPLINE
+
+Project-wide rule for **all** agents in this repository / workspace.
+
+Canonical AI contracts:
+
+- `docs/architecture/AI_EXECUTION_ROUTING.md`
+- `docs/architecture/AI_HISTORY_PROMPT_VERSION.md`
+- `docs/architecture/CONTENT_PROJECT_AI_INTEGRATION.md`
+- `docs/operations/AI_DEBUG_PLAYBOOK.md`
+
+## CORE RULE
+
+**NEVER MAKE THE SYSTEM "RUN" BY HIDING WHY IT WAS BROKEN.**
+
+OBSERVE FIRST.  
+PROVE THE FAILING LAYER.  
+REPORT ROOT CAUSE.  
+FIX ONLY AUTHORIZED ROOT CAUSE.  
+TEST THE CONTRACT.
+
+---
+
+## RULE: DEBUG TASK ≠ FIX TASK
+
+When the user asks to: debug, investigate, trace, inspect, audit, reproduce, test, find root cause, report —
+
+the task is **DEBUG ONLY** unless the user **explicitly** authorizes fixes.
+
+### DEBUG MUST
+
+- reproduce  
+- collect evidence  
+- identify failing layer  
+- classify root cause  
+- report  
+
+### DEBUG MUST NOT
+
+- opportunistically refactor  
+- change business logic  
+- reorder models  
+- change free/paid policy  
+- change retry limits  
+- bypass validation  
+- clear health merely to make a test pass  
+- change workflow sequencing  
+- silently fix adjacent bugs  
+
+---
+
+## RULE: ONLY DEBUG BLOCKERS MAY BE FIXED DURING DEBUG
+
+Allowed **only** when the issue prevents:
+
+- execution from running at all  
+- required observability / history from being persisted  
+- requested trace from being collected  
+
+Example: duplicate routing-attempt sequence crashes persistence → minimal unblock fix allowed.
+
+Anything else: **report first**.
+
+---
+
+## RULE: FINDING CLASSIFICATION
+
+Every finding must be exactly one of:
+
+| Code | Meaning |
+|------|---------|
+| A | DEBUG BLOCKER |
+| B | CONFIRMED PRODUCT BUG |
+| C | EXPECTED BEHAVIOR |
+| D | TEST / ENVIRONMENT STATE |
+| E | UNKNOWN |
+
+Only **A. DEBUG BLOCKER** may be minimally fixed during DEBUG.
+
+---
+
+## RULE: FIX ONE ROOT CAUSE
+
+For an explicitly authorized FIX task, state **before editing**:
+
+- ROOT CAUSE  
+- FAILING CONTRACT  
+- RESPONSIBLE LAYER  
+- EXPECTED FILES  
+
+Then:
+
+- smallest responsible fix  
+- preserve unrelated behavior  
+- add / run regression coverage  
+- targeted tests  
+- report behavioral impact  
+
+Do not bundle unrelated cleanup.
+
+---
+
+## RULE: DO NOT FIX SYMPTOMS
+
+Not valid product fixes unless explicitly requested:
+
+- raise `MAX_AI_ATTEMPTS` / `MAX_FREE_ATTEMPTS`  
+- reorder models to make a test pass  
+- disable health  
+- unlock connection permanently  
+- force provider / force cost mode  
+- lower validator threshold  
+- swallow exception  
+- retry indefinitely  
+- delete state so the error disappears  
+
+Temporary manipulation is **TEST SETUP only**. Report:
+
+- STATE BEFORE  
+- TEMPORARY CHANGE  
+- WHY  
+- RESULT  
+- STATE AFTER  
+
+---
+
+## RULE: RESPECT ARCHITECTURE LAYERS
+
+| Bug class | Fix layer |
+|-----------|-----------|
+| Routing eligibility | eligibility / planner |
+| Budget | budget policy |
+| Provider classification | classifier |
+| Health scope | health layer |
+| Validation | validation contract |
+| History | History persistence / presenter |
+| Content Project sequencing | workflow layer |
+
+Do not weaken another layer to compensate.
+
+---
+
+## RULE: AI ROUTING CONTRACT
+
+- Manual AI Center sortable order is runtime order.  
+- Cost class does **not** reorder.  
+- Health may skip but does not reorder.  
+- Static exclusion is not Health.  
+- Logical model ≠ physical route.  
+- Sibling physical routes remain independent.  
+- Skipped route = zero API attempts.  
+- Provider success + validation failure ≠ provider failure.  
+
+---
+
+## RULE: OBSERVE BEFORE MODIFY
+
+If root cause is not observable: improve debug trace first.  
+Do not alter behavior based on guesses.
+
+---
+
+## RULE: DATABASE / DESTRUCTIVE ACTIONS
+
+Never truncate, reset history, clear health, delete project data, run destructive migrations, or modify production-like state **without explicit user approval**.
+
+---
+
+## RULE: GIT SAFETY
+
+Do not commit, push, `reset --hard`, revert unrelated edits, or clean untracked files unless explicitly requested.  
+Preserve unrelated user changes.
+
+---
+
+## RULE: RESOURCE CONSTRAINT
+
+Development machine is resource-constrained.
+
+Default:
+
+- one substantial agent  
+- no parallel heavy agents  
+- targeted tests first  
+- no concurrent heavy PHPUnit suites  
+- sequential runtime fixtures  
+- avoid unnecessary rebuild / index commands  
+
+---
+
+## RULE: REPORT CHANGES DURING DEBUG
+
+Every DEBUG report must include:
+
+- OBSERVATIONS  
+- ROOT CAUSES  
+- CLASSIFICATION  
+- CHANGES MADE DURING DEBUG  
+- TEMP TEST STATE CHANGES  
+- UNFIXED PRODUCT BUGS  
+- NEXT RECOMMENDED FIX  
+
+For every changed file:
+
+- why changed  
+- why it qualified as DEBUG BLOCKER  
+- behavioral impact  
+- regression test  

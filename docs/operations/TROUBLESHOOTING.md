@@ -100,6 +100,8 @@ See `DEPLOYMENT.md` + `QUEUE_SCHEDULER_AND_IDEMPOTENCY.md`.
 
 - `docs/operations/DEPLOYMENT.md`
 - `docs/operations/SCHEDULER_AND_WORKERS.md`
+- `docs/operations/AI_DEBUG_PLAYBOOK.md` — AI routing / History debug order
+- `docs/architecture/AI_EXECUTION_ROUTING.md`
 - `docs/modules/OPERATIONS_AND_OBSERVABILITY.md`
 - `docs/modules/SITE_SYNC.md`
 - `docs/modules/AGENT_WORKSPACE.md`

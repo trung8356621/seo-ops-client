@@ -138,3 +138,6 @@ npm run build
 - [ARTICLE_EDITOR.md](./ARTICLE_EDITOR.md) — `/articles/{id}/prompts` AI History apply (separate from Execution History)
 - [CONTENT_PROJECTS.md](./CONTENT_PROJECTS.md) — runs, rerun, generate pending
 - [PROMPTS_AND_AI.md](./PROMPTS_AND_AI.md) — hooks, routing, prompt bindings
+- [AI_EXECUTION_ROUTING.md](../architecture/AI_EXECUTION_ROUTING.md) — AI routing SoT
+- [AI_HISTORY_PROMPT_VERSION.md](../architecture/AI_HISTORY_PROMPT_VERSION.md) — Prompt Version + History storage
+- [AI_DEBUG_PLAYBOOK.md](../operations/AI_DEBUG_PLAYBOOK.md) — routing debug order

@@ -46,4 +46,5 @@ Article hooks (`article.content.generate`, `article.content.rewrite`): skip `ord
 ## Related
 
 - [PROMPTS_AND_AI.md](../../modules/PROMPTS_AND_AI.md)
+- **Full stabilized routing SoT:** [AI_EXECUTION_ROUTING.md](../AI_EXECUTION_ROUTING.md) (`ArticleModelOrderAuthority` now denies generation-mode reorder for every hook)
 - Output ceiling quarantine remains separate from model order authority.

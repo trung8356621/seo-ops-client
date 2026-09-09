@@ -2,12 +2,15 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-08  
-> Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`
+> Last verified: 2026-09-09  
+> Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`  
+> **AI execution / routing SoT:** [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md) · History/versions: [`AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md) · Debug: [`AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md)
 
 ## 1. Purpose
 
 Canonical map for **prompt ownership**, **hook contracts**, **AI provider resolve**, Filament settings/API surfaces, and forbidden dual-write.
+
+Stabilized **runtime order / free-paid / health / budget / validation / failure taxonomy** live in the architecture SoT above — this module doc is the surface/ownership map, not a second routing contract.
 
 Layers (must stay separate):
 
@@ -67,7 +70,12 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Hook execute (Phase-1 path) | `PromptHookExecutionService` |
 | Hook runtime engine | `PromptHooks/Runtime/*` (`PromptHookCallerBridge`, DefinitionLoader, …) |
 | Hook binding runner | `PromptHookBindingRunner` → `PromptHookExplicitBindingExecutor` (DI bind in `AiPromptServiceProvider`) |
-| Production route eligibility | `Support/AiProductionRouteEligibility` — DeepSeek allowed for keyword.* / KD longform; **not** TextReasoning Outline/Vocabulary or `article.*` longform |
+| Production route eligibility | `Support/AiProductionRouteEligibility` — DeepSeek **allowed** for TextLongform (incl. `article.content.*` / KD longform) on every physical route; **excluded** from TextReasoning Outline/Vocabulary. Static eligibility ≠ Health. See routing SoT. |
+| Routing plan / budget | `AiCandidatePlanner`, `AiRoutingPlan`, `AiAttemptBudgetPolicy` — sortable order authoritative; `free_phase`/`paid_phase` diagnostics only |
+| Order authority | `ArticleModelOrderAuthority` (`allowsGenerationModeReorder` always false); `ItemGenerationRoutingPreference::orderCandidates` = identity |
+| Output validation contracts | `OutputValidationContractRegistry` — article min-words must not leak into Outline/Vocabulary/Meta/FAQ |
+| Primary failure | `AiPrimaryFailureSelector` + `AiFailureCategory` — do not overwrite root cause with `AI_ROUTES_EXHAUSTED` |
+| Prompt Version / History | `PromptVersionService`, `PromptReconstructor`, `prompt_result_routing_attempts` — see [`AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md) |
 | Manifest load | `resources/prompt-hooks/*.json` + `PromptHooks/` |
 | Entity context | `ArticlePromptHookEntityResolver` (array context only) |
 | AI run engine | `PromptRunnerService` |
@@ -347,7 +355,7 @@ Main tabs (locked order): **Models | Routing | Resilience | Health**.
 Canonical execution identity: `connectionId|familyKey` (example: `3|openai.gpt54_mini`).  
 Custom Allowed Models store `allowed_execution_keys` (full keys) + derived family keys; order still comes from Models priority.
 
-**Article generation model authority (ADR-018):** For `article.content.generate` / `article.content.rewrite`, AI Center sortable order is authoritative. `generation_mode_override` (FastEconomy / BestQuality) must **not** reorder article candidates. Runtime may filter (health, Free Only, credentials) but preserves relative order of survivors. Explicit per-item `model_override_id` is the only intentional reorder. See [`AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](../architecture/decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md).
+**Model order authority (stabilized):** AI Center sortable order is runtime order for **all** hooks (`ArticleModelOrderAuthority::allowsGenerationModeReorder` always false). `generation_mode_override` (FastEconomy / BestQuality) must **not** reorder candidates. Runtime may filter (health, Free Only, credentials, static eligibility) but preserves relative order of survivors. Explicit per-item `model_override_id` is the only intentional reorder. SoT: [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md). ADR: [`AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](../architecture/decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md).
 
 **Text Routing cards** show that order follows Models (`text_routing_follows_models`). They do **not** expose a “Manage model order” shortcut — reorder only on the **Models** tab.
 
@@ -426,6 +434,10 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 
 ## 17. Related documents
 
+- `docs/architecture/AI_EXECUTION_ROUTING.md` — **routing SoT**
+- `docs/architecture/AI_HISTORY_PROMPT_VERSION.md`
+- `docs/architecture/CONTENT_PROJECT_AI_INTEGRATION.md`
+- `docs/operations/AI_DEBUG_PLAYBOOK.md`
 - `docs/modules/EXTENSION_SDK.md`
 - `docs/contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md`
 - `docs/modules/AUTOMATION.md`

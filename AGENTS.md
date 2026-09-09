@@ -26,3 +26,5 @@ Editor widget locks: all registered Editor widgets locked except `seo` (intentio
 
 ## Docs maintenance
 Bulk canonical updates only — no per-agent `XONG!` trigger. When the user asks to sync/summarize docs, run `$docs-bulk-update` (`.agents/skills/docs-update-on-xong/SKILL.md`) and follow `.cursor/rules/auto-update-docs.mdc`. Canonical docs: `docs/modules|contracts|architecture|operations` — not `docs/archive/*`. Human-facing help: `resources/help-seed/` + `docs/modules/CONTEXTUAL_HELP.md`.
+
+AI execution SoT (stabilized): `docs/architecture/AI_EXECUTION_ROUTING.md`. Debug discipline: `.cursor/rules/debug-fix-discipline.mdc` (alwaysApply).
