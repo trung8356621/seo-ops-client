@@ -40,12 +40,13 @@ final class HelpRuntimePayloadBuilder
 
         $legacy = SeoHelpRegistry::clientPayload();
         $sourcePrefix = HelpLocalRepo::shouldUseLocal() ? 'local-repo' : 'git-cache';
+        $legacyTopicByKey = $this->legacyTopicByKeyMap($legacy['groups'] ?? []);
 
         if ($topics === []) {
             return [
                 'groups' => $legacy['groups'],
                 'contexts' => $legacy['contexts'],
-                'topic_by_key' => [],
+                'topic_by_key' => $legacyTopicByKey,
                 'context_keys' => HelpContextKeyRegistry::keys(),
                 'help_version' => $this->cache->cachedVersion(),
                 'source' => 'legacy',
@@ -57,7 +58,8 @@ final class HelpRuntimePayloadBuilder
         return [
             'groups' => $this->mergeGroups($legacy['groups'] ?? [], $gitGroups),
             'contexts' => $this->mergedContexts(),
-            'topic_by_key' => $this->topicByKeyMap($topics),
+            // Git/cache topics win over legacy same key.
+            'topic_by_key' => array_merge($legacyTopicByKey, $this->topicByKeyMap($topics)),
             'context_keys' => HelpContextKeyRegistry::keys(),
             'help_version' => $this->cache->cachedVersion(),
             'source' => $sourcePrefix.'+legacy',
@@ -224,6 +226,43 @@ final class HelpRuntimePayloadBuilder
                 'groupId' => $topic->group,
                 'topicId' => $topic->key,
             ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * Map legacy SeoHelpRegistry topics that declare a contextual `key` (or dotted id).
+     *
+     * @param  list<array<string, mixed>>  $groups
+     * @return array<string, array{groupId: string, topicId: string}>
+     */
+    private function legacyTopicByKeyMap(array $groups): array
+    {
+        $map = [];
+        foreach ($groups as $group) {
+            if (! is_array($group)) {
+                continue;
+            }
+            $groupId = trim((string) ($group['id'] ?? ''));
+            if ($groupId === '') {
+                continue;
+            }
+            $topics = is_array($group['topics'] ?? null) ? $group['topics'] : [];
+            foreach ($topics as $topic) {
+                if (! is_array($topic)) {
+                    continue;
+                }
+                $topicId = trim((string) ($topic['id'] ?? ''));
+                $key = trim((string) ($topic['key'] ?? $topicId));
+                if ($key === '' || ! str_contains($key, '.')) {
+                    continue;
+                }
+                $map[$key] = [
+                    'groupId' => $groupId,
+                    'topicId' => $topicId !== '' ? $topicId : $key,
+                ];
+            }
         }
 
         return $map;

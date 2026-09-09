@@ -260,6 +260,11 @@ final class HelpContextKeyRegistry
                 'label' => 'AI Model Updates',
             ],
             [
+                'key' => 'settings.ai.free_single_split',
+                'group' => 'settings',
+                'label' => 'Free, Single và Split hoạt động thế nào?',
+            ],
+            [
                 'key' => 'settings.workflow.prompt_design',
                 'group' => 'settings',
                 'label' => 'Prompt Design',
