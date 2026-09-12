@@ -23,16 +23,38 @@ class ApiConnection extends Model
         'api_key' => 'encrypted',
         'is_global' => 'boolean',
         'paid_locked' => 'boolean',
+        'paid_lock_reasons' => 'array',
         'metadata' => 'array',
     ];
 
     /**
-     * User-facing Free only preference (skip paid candidates; free remain eligible).
-     * Distinct from inactive status and from runtime health budget locks.
+     * Authoritative paid-lane lock (api_connections.paid_locked).
+     * Reasons live in paid_lock_reasons; free routes ignore this flag.
+     * Runtime health must not own a parallel paid-lock authority.
      */
     public function isPaidLocked(): bool
     {
         return (bool) ($this->getAttribute('paid_locked') ?? false);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function paidLockReasons(): array
+    {
+        $raw = $this->getAttribute('paid_lock_reasons');
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($raw as $item) {
+            if (is_string($item) && $item !== '' && ! in_array($item, $out, true)) {
+                $out[] = $item;
+            }
+        }
+
+        return $out;
     }
 
     public function isActiveConnection(): bool

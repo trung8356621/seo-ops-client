@@ -7,8 +7,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * User preference: Free only mode for AI connections.
- * Independent of runtime health budget locks (ai_runtime_health_states.paid_locked).
+ * Authoritative paid-lane lock column on api_connections.
+ * Reasons added later (paid_lock_reasons). ai_runtime_health_states.paid_locked is deprecated/non-authoritative.
  */
 return new class extends Migration
 {
