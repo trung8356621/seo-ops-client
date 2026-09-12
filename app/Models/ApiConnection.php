@@ -25,7 +25,37 @@ class ApiConnection extends Model
         'paid_locked' => 'boolean',
         'paid_lock_reasons' => 'array',
         'metadata' => 'array',
+        'balance' => 'float',
+        'balance_warning_threshold' => 'float',
+        'balance_checked_at' => 'datetime',
     ];
+
+    public function isBalanceSupported(): bool
+    {
+        return (string) $this->getAttribute('balance_status') !== 'unsupported';
+    }
+
+    public function isLowBalance(): bool
+    {
+        return (string) $this->getAttribute('balance_status') === 'low_balance';
+    }
+
+    public function isCheckFailed(): bool
+    {
+        return (string) $this->getAttribute('balance_status') === 'check_failed';
+    }
+
+    public function formattedBalance(): string
+    {
+        if ($this->getAttribute('balance') === null) {
+            return '—';
+        }
+
+        $currency = (string) ($this->getAttribute('currency') ?: 'USD');
+        $sym = $currency === 'USD' ? '$' : $currency . ' ';
+
+        return $sym . number_format((float) $this->getAttribute('balance'), 2);
+    }
 
     /**
      * Authoritative paid-lane lock (api_connections.paid_locked).

@@ -67,7 +67,7 @@ class AdminPanelProvider extends PanelProvider
             ->widgets([
                 \App\Filament\Widgets\ServiceQuickShortcutsWidget::class,
                 Widgets\AccountWidget::class,
-                Widgets\FilamentInfoWidget::class,
+                \App\Filament\Widgets\OperationalAlertsDashboardWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,

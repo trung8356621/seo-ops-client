@@ -6,6 +6,7 @@ use App\Addons\SeoContentAi\Models\SeoMedia;
 use App\Addons\SeoContentAi\Services\SeoMediaPathAllocator;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Storage;
 
 Artisan::command('inspire', function () {
@@ -154,3 +155,6 @@ Artisan::command('seo:media-flatten-paths {--dry-run}', function () {
     $this->line("Article meta replacements: {$metaReplaced}");
     $this->line("Deleted empty dirs: {$deletedDirs}");
 })->purpose('Flatten seo_media paths and sync DB URLs');
+
+Schedule::command('ai:wallet-check-balance')->hourly();
+

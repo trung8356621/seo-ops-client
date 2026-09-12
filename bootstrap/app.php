@@ -31,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\MigrateAutomationToCoreCommand::class,
         \App\Console\Commands\SimulateServiceCommand::class,
         \App\Console\Commands\TestDoctorCommand::class,
+        \App\Console\Commands\CheckAiProviderBalancesCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(static function (): string {
