@@ -1,7 +1,7 @@
 # Content Project ↔ AI Execution Integration
 
 > Status: Canonical boundary doc  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Owners: `content-projects` (workflow / domain) · `ai-prompt` (PromptResult / routing)  
 > Routing SoT: [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md)  
 > History SoT: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md)  
@@ -98,7 +98,8 @@ Legacy `project.site_id` mismatch vs item site is **allowed** (multi-domain / do
 
 Evidence / tests:
 
-- `ContentProjectCreateGenerationSiteAuthorityTest`  
+- `ContentProjectBindArticleAuthority` / `ContentProjectBindArticleSiteAuthorityTest`
+- `ContentProjectCreateGenerationGuard` / `ContentProjectCreateGenerationSiteAuthorityTest`  
 - `ContentProjectLegacyTaskForensicContractTest`  
 - related packing notes in `CONTENT_PROJECTS.md` (Execution Project `site_id=null`; item-level site on task)
 

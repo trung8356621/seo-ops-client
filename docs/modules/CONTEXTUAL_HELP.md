@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: omnichannel-client (`app/Help/*`)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-12  
 > Human content SoT: `resources/help-seed/` (public repo `seo-ops-help`)
 
 ## 1. Purpose
@@ -24,7 +24,7 @@ In-app contextual Help for SEO Ops — **separate** from Prompt Guidance and Set
 | Admin list | `Filament/Pages/HelpTopicsAdmin` | Grouped topic management |
 | Admin create/edit | `HelpTopicCreate`, `HelpTopicEdit` | Frontmatter + markdown body |
 | CLI sync | `php artisan help:sync` (`HelpSyncCommand`) | Pull/publish from GitHub or local repo |
-| Seed (dev) | `resources/help-seed/docs/{group}/*.md` | 48 topics at VERSION `2026.08.31.1` |
+| Seed (dev) | `resources/help-seed/docs/{group}/*.md` | VERSION `2026.09.09.1` (incl. `settings/free-single-split.md`) |
 
 Config: `config/help.php` — groups, GitHub repo, local junction `.local/help-repo`.
 

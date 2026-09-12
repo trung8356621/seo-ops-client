@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)  
 > **AI integration boundary:** [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md) · routing SoT: [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)
 
@@ -74,7 +74,13 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Capabilities | `ContentProjectCapabilityRegistry` + `CanonicalCapabilityRegistry` |
 | Agent build | `Agent/ContentProjectAgentCommandFactory` |
 | Project archive | `ArchiveContentProjectService` |
+| Archive access scope | `ContentProjectArchiveAccessScope` — tenant-safe list/filter (multi-domain via accessible items; never unconditional null `site_id`) |
+| Archive vault list UI | `ContentProjectArchive` + `CanonicalArchiveListDashboardBuilder` |
 | Archive preview UI | `ContentProjectArchivePreview` + `ArchivePreviewArticlePresenter` |
+| AI workspace destroy | `ContentProjectAiWorkspaceDestroyer` + `ContentProjectWorkspaceArticleOwnershipGuard` |
+| Legacy archive import | `ImportLegacyContentArchiveService` + `seo:import-legacy-content-archive` → global “Legacy articles” (`ContentProjectGlobalLegacyArchive`) |
+| Bind article site authority | `ContentProjectBindArticleAuthority` — `article.site_id === task.site_id` |
+| Create generation site guard | `ContentProjectCreateGenerationGuard` |
 | Manual Index marker (checklist) | `ArticleManualIndexMarkerService` — `articles.indexed_at` / `previous_indexed_at` (+ patch archive `article_snapshot`); not GSC/Indexing API |
 | Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước + social evidence child rows) |
 | Archived month workbook | `ContentProjectArchivedMonthExportService` — Summary + per-writer sheets; social rows via `ContentProjectArchiveSocialExportRowExpander` |
@@ -110,6 +116,7 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Execution packing (max 30) | `ContentProjectExecutionPackingService` + `ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS` |
 | Writer monthly capacity settings | `ContentProjectWriterCapacitySettingsService` — global WpOption + per-user meta override (default 30; independent of EP pack size) |
 | Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — display/allocator input; not a hard monthly gate |
+| Monthly workload (ops) | `ContentProjectMonthlyWorkloadService` + `ContentProjectArchivedMonthlyWorkloadService` — may include archived cardinality; **excludes** global Legacy archive |
 | Writer assignment display | `ContentProjectWriterAssignment` — System User id = unassigned |
 | Archive export reviewed_at | `Support/ContentProject/ContentProjectExportReviewedAtResolver` |
 | Projects list buckets | `Support/ContentProject/ContentProjectListBucket` (`all` \| `draft` \| `project` \| `archived`) |
@@ -456,6 +463,12 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Archived-month Excel template (2026-09-04/05):** Optional uploaded workbook via `ContentProjectExcelTemplateSettingsService` (`DATA_LAYOUT_MODE` + block extents). `ContentProjectArchivedMonthTemplateExportService` applies `ExcelTemplateVariableDictionary` / `ExcelTemplateVariableApplicator` (scalar + table variables, detail column registry). Raw starter: `ContentProjectExcelRawTemplateDownloadService`. Historical column values: `ArchiveArticleHistoricalFieldResolver`. Tests: `ContentProjectExcelTemplateExportContractTest`, `ArchiveArticleHistoricalExportFieldsTest`.
 
+**Archive vault + access (2026-09-12):** List/filter through `ContentProjectArchiveAccessScope` (single-domain = archive.site_id; multi-domain `site_id` null/0 only if an item resolves to an accessible site). Dashboard list: `CanonicalArchiveListDashboardBuilder`. Archive destroys AI workspace via `ContentProjectAiWorkspaceDestroyer` (ownership guard prevents stealing foreign articles).
+
+**Legacy content archive import (2026-09-12):** `ImportLegacyContentArchiveService` materializes historical `seo_content_archive_items` into a pinned global Legacy Content Project (`meta.import_source = seo_content_archive_items` via `ContentProjectGlobalLegacyArchive`). Does **not** run the strong archive destroy path; task shells keep `article_id=null`. Excluded from monthly workload / export / restore. CLI: `seo:import-legacy-content-archive`. Tests: `LegacyContentArchiveImport*`, `ContentProjectGlobalLegacyArchive*`, `ContentProjectArchiveAccessScope*`, `ContentProjectArchiveWorkspaceCleanup*`.
+
+**Site authority on bind/create (2026-09-09/12):** `ContentProjectBindArticleAuthority` + `ContentProjectCreateGenerationGuard` — `article.site_id === task.site_id`; `project.site_id` is legacy metadata only. See [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md).
+
 ### MCP planning signal + Site Planning (2026-09-04)
 
 - **MCP +N:** `McpPlanningSignalService` counts Draft-reviewed **or** `seo_projects.meta.mcp_planning` (never both). Presentation-only pending pipeline count — does **not** mutate MCP share %.
@@ -607,6 +620,12 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
 | `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
 | `ContentProjectExcelTemplateExportContractTest` | Template variable apply + raw download schema |
+| `ContentProjectArchiveAccessScopeContractTest` / `…IntegrationTest` | Tenant-safe archive list/filter |
+| `ContentProjectArchiveWorkspaceCleanupContractTest` / `…IntegrationTest` | Workspace destroy ownership |
+| `ContentProjectGlobalLegacyArchiveContractTest` / `…IntegrationTest` | Pinned Legacy archive predicate |
+| `LegacyContentArchiveImportContractTest` / `…IntegrationTest` | Import without strong archive destroy |
+| `ContentProjectBindArticleSiteAuthorityTest` / `ContentProjectCreateGenerationSiteAuthorityTest` | task.site_id authority |
+| `ContentProjectArchivedMonthlyCanonicalArticleCardinalityTest` | Archived monthly workload cardinality |
 | `ArchiveArticleHistoricalExportFieldsTest` | Historical archive export field resolver |
 | `McpPlanningAndSitePlanningContractTest` | MCP +N signal + Site Planning read model |
 | `ContentProjectBatchCircuitBreakerTest` / `ContentProjectCanonicalInputAndCircuitBreakerTest` | Batch stop after 3 identical failures; canonical AI input |

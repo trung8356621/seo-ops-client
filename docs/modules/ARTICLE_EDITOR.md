@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content (+ seo / media / publishing peers)  
-> Last verified: 2026-09-01  
+> Last verified: 2026-09-12  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -48,7 +48,7 @@ Route binding: edit/view **does not** 404 when global domain ≠ `article.site_i
 | Client analyzer | `seoAnalyzer.js` + `seoScoreCalculator.js` + `SeoScorePanel.jsx` |
 | Meta key catalog | `Support/ArticleMetaKeyCatalog` | Canonical inventory + class (canonical/cache/legacy/orphan) |
 | Required data registry | `Support/ArticleRequiredDataRegistry` | Health/readiness required fields |
-| Content lifecycle | `Support/ArticleEditorContentLifecycle` | Persist/readiness gates |
+| Content lifecycle | `Support/ArticleEditorContentLifecycle` | `articles.body` = only SoT for “has local content”; WP-linked + empty body → `CONTENT_LOADING` (auto-hydrate) |
 | Score job | `AnalyzeArticleSeoJob` via `SeoArticleScoringQueueService` |
 | Violations | `SeoRuleViolationsResolver` / `SeoAnalyzerService` |
 | FAQ matcher | `Support/FaqHeadingMatcher` |
@@ -312,11 +312,26 @@ Refactored consumers (same pass): `ArticleEditorPersistService`, `ArticleEditorR
 
 Tests: `ArticleMetaMapTest`, `ArticleRequiredDataRegistryTest` in `addons/content/tests/Unit/`.
 
+## 15b. Content lifecycle (2026-09-12)
+
+Contract (`ArticleEditorContentLifecycle`):
+
+| Fact | Semantic |
+|------|----------|
+| `articles.body` non-empty | Local content present (SoT) |
+| `editor_document` / WP cache / bootstrapHtml | Must **not** flip “has local content” |
+| WP-linked + empty body | `CONTENT_LOADING` — client `useWpEditorContentAutoLoad` hydrates WP → persist body |
+| `SYNC_REQUIRED` | Legacy alias → normalize to `CONTENT_LOADING` |
+| Reject code | `local_content_sync_required` when persist attempted on empty unhydrated WP-backed article |
+
+UI: `ArticleContentSyncRequiredBlocker.jsx` (loading/blocker while hydrating). Persist gates in `ArticleEditorPersistService` / `EditArticle`. Tests: `ArticleEditorContentLifecycleTest`, `ArticleEditorWpAutoLoadInsertLinkOrphanTest`, wordpress `ArticleWpContentLifecycleContractTest`.
+
 ## 16. Tests and invariants
 
 | Test / area | Invariant |
 |-------------|-----------|
 | `RuntimeLoggerWebAppChannelTest` | HTTP → `web_app`; no laravel.log fallback |
+| `ArticleEditorContentLifecycleTest` | `articles.body` SoT; WP empty → CONTENT_LOADING |
 | `ArticleReviewServiceTest` / cutover | `review_status` SoT |
 | Scoring unit / audit integration | Deduction registry; audit reads cache |
 | Editor performance audits | Bootstrap size budgets (docs/audits) |

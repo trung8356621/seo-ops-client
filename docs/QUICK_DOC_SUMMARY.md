@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-09  
+> Updated: 2026-09-12  
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -234,3 +234,36 @@ Phạm vi: uncommitted / WIP trên `omnichannel-client` + `omnichannel-addons` (
 - **1.0.86:** V3 `status=trash` + content cursor `after_modified_gmt`.
 - **1.0.87:** V2 profile `site_name` for Domain Prompt Context sync.
 - Docs: `WORDPRESS_BRIDGE.md`, `SITE_SYNC.md`.
+
+## 12. Batch 2026-09-09 → 2026-09-12 (pass này)
+
+Phạm vi: `omnichannel-client` **0.4.3–0.4.5** + `omnichannel-addons` **0.5.3–0.5.6**. `wp-seo-ai`: không commit trong cửa sổ. AI routing SoT đã freeze **2026-09-09** (§1b) — pass này chỉ bổ sung symbol/behavior mới.
+
+### Seeding — shared topics on `omi_seeding`
+
+- Tables `seeding_topics` + `seeding_reports`; share/feed/report APIs.
+- LocalStorage = draft only; share commits DB snapshot (`SeedingSharedTopicService` / `SeedingTargetCalculator`).
+- Legacy topic CRUD → 410. Doc rewrite: `SEEDING.md`.
+
+### AI — paid lock + generation shape + sectioned free
+
+- `ConnectionPaidLockService` / `PaidLockReason` / `paid_lock_reasons`.
+- Shape: first usable route cost → sectioned (free) / single_pass (paid) via `GenerationShapeResolver` (không dùng WritingSplit preference).
+- Sectioned assemble owns headings; isolation compiler; repair CLI; result ownership.
+- Docs: `AI_EXECUTION_ROUTING.md`, `PROMPTS_AND_AI.md`, `AI_HISTORY_PROMPT_VERSION.md`.
+
+### Content Projects — archive vault / legacy import / site authority
+
+- `ContentProjectArchiveAccessScope`, vault dashboard builder, workspace destroyer.
+- `ImportLegacyContentArchiveService` → pinned Legacy archive (`ContentProjectGlobalLegacyArchive`).
+- Bind/create: `ContentProjectBindArticleAuthority` + `ContentProjectCreateGenerationGuard`.
+- Docs: `CONTENT_PROJECTS.md`, `CONTENT_PROJECT_AI_INTEGRATION.md`.
+
+### Article Editor / WP — body SoT lifecycle
+
+- `articles.body` only SoT; WP empty → `CONTENT_LOADING` auto-hydrate.
+- Docs: `ARTICLE_EDITOR.md` §15b, `WORDPRESS_BRIDGE.md`, `ARTICLE_EXECUTION_HISTORY.md`.
+
+### Help
+
+- Topic `settings/free-single-split`; seed VERSION `2026.09.09.1` — `CONTEXTUAL_HELP.md`.

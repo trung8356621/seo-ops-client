@@ -1,7 +1,7 @@
 # AI Debug Playbook
 
 > Status: Canonical operational playbook (developer-facing)  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > SoT: [`architecture/AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)  
 > History: [`architecture/AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md)  
 > Discipline rule: `.cursor/rules/debug-fix-discipline.mdc`
@@ -18,12 +18,13 @@ Never debug only from the final red UI message.
 4. AI Center sortable order (`AiModelPriorityService::areaEnabledModels`)  
 5. Static candidate eligibility (`AiProductionRouteEligibility`, area/capability, FreeOnly)  
 6. Ordered `AiRoutingPlan` (`execution_order` / `ordered_routes`)  
-7. Health skips (`attempted=false`, cooldown / paid_lock / auth)  
+7. Health skips (`attempted=false`, cooldown / paid_lock / auth) — paid lock write = `ConnectionPaidLockService` only  
 8. Budget skips (`AiAttemptBudgetPolicy`)  
-9. Actual API attempts (`attempted=true`)  
-10. Provider result (HTTP / classifier / health mutation)  
-11. Validation (`OutputValidationContractRegistry`)  
-12. Normalized final failure (`AiPrimaryFailureSelector`)
+9. Generation shape snapshot (`GenerationShapeDecision` — free→sectioned / paid→single; independent of FreeOnly reorder)  
+10. Actual API attempts (`attempted=true`)  
+11. Provider result (HTTP / classifier / health mutation)  
+12. Validation (`OutputValidationContractRegistry`)  
+13. Normalized final failure (`AiPrimaryFailureSelector`)
 
 Prefer: PromptResult + `prompt_result_routing_attempts` + plan debug array over UI copy alone.
 

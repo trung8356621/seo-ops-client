@@ -1,7 +1,7 @@
 # AI History & Prompt Version — Single Source of Truth
 
 > Status: Canonical  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Owner: `omnichannel-addons/ai-prompt`  
 > Routing SoT: [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md)  
 > Module map: [`PROMPTS_AND_AI.md`](../modules/PROMPTS_AND_AI.md) · [`ARTICLE_EXECUTION_HISTORY.md`](../modules/ARTICLE_EXECUTION_HISTORY.md)
@@ -173,6 +173,17 @@ States must distinguish:
 | Provider success + validation failed | VALIDATION (not provider failure) |
 
 Presenter / list: `ArticlePromptRunHistoryService` (and related Filament pages).
+
+### Result ownership + multi-pass assemble (2026-09-09/12)
+
+| Concern | Owner |
+|---------|--------|
+| Which PromptResult “owns” the article body / typed artifact | `ArticlePromptResultOwnershipResolver` |
+| Raw call detail for History UI | `ArticleAiCallRawDetailService` (content) |
+| Sectioned assemble / headings | `SectionedFreeAssembleArticle` (assembler owns headings; child sections do not invent H2) |
+| Multi-pass history grouping | `ArticlePromptRunHistoryService` + `MultiplePassHistoryAndAssembleAuthorityTest` |
+
+Do not treat every child section PromptResult as independently applyable body authority — assemble/ownership resolver is SoT.
 
 ---
 

@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `content` (+ shared canvas: `content-projects`)  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-12  
 > Route: `/seo/{connection_hash}/articles/{article}/prompts` → tab **Workflow** (Execution History)
 
 ## 1. Purpose
@@ -99,6 +99,8 @@ Runs before split-outline deploy may show **1 AI call** on outline node (legacy 
 | History service | `content/src/Services/ArticleExecutionHistory/ArticleExecutionHistoryService.php` |
 | Node visibility | `content/src/Services/ArticleExecutionHistory/ExecutionHistoryNodeVisibility.php` |
 | Raw call detail | `content/src/Services/ArticleAiHistory/ArticleAiCallRawDetailService.php` |
+| Result ownership | `ai-prompt/src/Services/ArticlePromptResultOwnershipResolver.php` |
+| Run history present | `ai-prompt/src/Services/ArticlePromptRunHistoryService.php` |
 | React UI | `content/resources/js/article-execution-history.jsx` |
 | Graph projection | `content/resources/js/executionHistoryGraphProjection.js` |
 | Prompt title `(n)` | `content/resources/js/executionHistoryNodeTitle.js` |

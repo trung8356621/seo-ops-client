@@ -1,11 +1,11 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§1b = AI routing docs freeze 2026-09-09; §11 = Service Architecture + Seeding plane)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§1b = AI routing docs freeze 2026-09-09; §12 = 9→12 batch: Seeding DB + paid lock/shape + archive vault)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).

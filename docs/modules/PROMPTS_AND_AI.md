@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`  
 > **AI execution / routing SoT:** [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md) · History/versions: [`AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md) · Debug: [`AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md)
 
@@ -73,6 +73,12 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Production route eligibility | `Support/AiProductionRouteEligibility` — DeepSeek **allowed** for TextLongform (incl. `article.content.*` / KD longform) on every physical route; **excluded** from TextReasoning Outline/Vocabulary. Static eligibility ≠ Health. See routing SoT. |
 | Routing plan / budget | `AiCandidatePlanner`, `AiRoutingPlan`, `AiAttemptBudgetPolicy` — sortable order authoritative; `free_phase`/`paid_phase` diagnostics only |
 | Order authority | `ArticleModelOrderAuthority` (`allowsGenerationModeReorder` always false); `ItemGenerationRoutingPreference::orderCandidates` = identity |
+| Paid lock (connection) | `ConnectionPaidLockService` + `PaidLockReason` — sole writer for `paid_locked` / `paid_lock_reasons` |
+| FreeOnly resolve | `EffectiveAiCostPolicyResolver`, `PromptTaskFreeOnlyPolicy`, `SetAiConnectionFreeOnly` |
+| Generation shape | `GenerationShapeResolver` → `GenerationShapeDecision` (`free`→sectioned, `paid`→single_pass); not FreeOnly reorder |
+| Sectioned / multi-pass | `SectionedFree/*`, `WritingSectionPromptCompiler`, `WritingMultiplePassPromptIsolationGuard`, `SectionedFreeArticleRepairService` |
+| Outline→content handoff | `SplitOutlineContentSemanticBinder` |
+| Result ownership | `ArticlePromptResultOwnershipResolver` + History raw detail |
 | Output validation contracts | `OutputValidationContractRegistry` — article min-words must not leak into Outline/Vocabulary/Meta/FAQ |
 | Primary failure | `AiPrimaryFailureSelector` + `AiFailureCategory` — do not overwrite root cause with `AI_ROUTES_EXHAUSTED` |
 | Prompt Version / History | `PromptVersionService`, `PromptReconstructor`, `prompt_result_routing_attempts` — see [`AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md) |
@@ -427,6 +433,9 @@ Persist via `AiRoutingTargetService::saveSimplifiedSelection` (`allowed_executio
 | AI Center OR Text catalog | `OpenRouterTextRoutingCatalogTest`, `AiModelFamilyUxTest`, `AiRuntimeRoutingRefactorTest`, `AiRoutingUxTest`, `AiModelsUnifiedTableTest` |
 | Prompt budget / outbound | `PromptBudgetPreflightServiceTest`, `PromptBudgetBoundedExecutionTest`, `OutboundBudgetInvariantContractTest` |
 | Split outline markerless | `SplitOutlineDirectOutputContractTest`, `SplitOutlineInputContractAndDeepSeekEligibilityTest`, `ArticlePromptRunHistorySplitPresentationTest` |
+| Paid lock / FreeOnly / shape | `ConnectionPaidLockSsotTest`, `ApiConnectionFreeOnlyToggleTest`, `ArticleGenerationModeFreeOnlyContractTest`, `RouteCostGenerationShapeContractTest` |
+| Sectioned free / isolation | `WritingSectionIsolationCompilerTest`, `SectionedFreeAssemblerOwnsHeadingsTest`, `SectionedFreeMetaAndMarkdownPipelineTest`, `MultiplePassHistoryAndAssembleAuthorityTest` |
+| Prompt result ownership | `ArticlePromptResultOwnershipAndRawDetailTest`, `ExactExecutionPromptAuthorityTest` |
 | OpenAI-compatible extract | `OpenAiCompatibleTextExtractionAndCheckpointTest` |
 | Runtime failover / health | `AiRuntimeFallbackTest`, `AiRuntimeHealthStateTest`, `AiProviderFailureClassifierTest` |
 

@@ -1,7 +1,7 @@
 # AI Execution & Routing — Single Source of Truth
 
 > Status: Canonical (stabilized AI execution layer)  
-> Last verified: 2026-09-09  
+> Last verified: 2026-09-12  
 > Owner addon: `omnichannel-addons/ai-prompt` (+ Content Project preference helpers in `content-projects`)  
 > Module map: [`PROMPTS_AND_AI.md`](../modules/PROMPTS_AND_AI.md)  
 > Related: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md) · [`CONTENT_PROJECT_AI_INTEGRATION.md`](CONTENT_PROJECT_AI_INTEGRATION.md) · [`operations/AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md) · ADR-018 [`decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md)
@@ -155,6 +155,33 @@ Under FREE_ONLY:
 2. Free Pool → first actual provider attempt  
 
 FreeOnly **filters** eligibility; it does **not** reorder remaining free candidates.
+
+Effective FreeOnly for a run may also come from connection / task policy (`EffectiveAiCostPolicyResolver`, `PromptTaskFreeOnlyPolicy`) — still a **filter**, never a reorder.
+
+### Paid lock (connection)
+
+`api_connections.paid_locked` + `paid_lock_reasons` (JSON list). Write authority: **`ConnectionPaidLockService` only** (Health must not own a parallel paid-lock writer).
+
+| Reason (`PaidLockReason`) | Meaning |
+|---------------------------|---------|
+| `manual_free_only` | Operator toggled Free Only on the connection |
+| `budget_limited` | Budget / quota policy locked paid lane |
+| `admin_lock` | Admin explicit lock |
+
+Invariant: `paid_locked === (reasons not empty)`. Runtime treats paid_locked routes as **health/eligibility skips** (zero API attempts), without reordering survivors. Tests: `ConnectionPaidLockSsotTest`.
+
+### Generation shape (article body)
+
+Independent of FreeOnly **routing** filter:
+
+| First usable route `cost_class` | Shape |
+|---------------------------------|-------|
+| `free` | `ArticleGenerationShape::Sectioned` (multi-pass / sectioned-free pipeline) |
+| `paid` | `ArticleGenerationShape::SinglePass` |
+
+Authority: `GenerationShapeResolver` → immutable `GenerationShapeDecision` snapshotted for the run (`SOURCE_ROUTE_COST_AUTO`). Manual `WritingSplitPreference` / legacy preference helpers are **deprecated** — must not control new runs. Mid-run shape must not change. Tests: `RouteCostGenerationShapeContractTest`, `ArticleGenerationModeFreeOnlyContractTest`.
+
+Sectioned pipeline owners (`ai-prompt`): `SectionedFree/*` (assemble owns headings), `WritingSectionPromptCompiler`, `WritingMultiplePassPromptIsolationGuard`, repair `SectionedFreeArticleRepairService` / `seo:repair-multiple-pass-article`. Outline handoff: `SplitOutlineContentSemanticBinder`. Result ownership: `ArticlePromptResultOwnershipResolver`.
 
 ---
 
@@ -415,5 +442,9 @@ Concise architectural history — not a full changelog:
 | Validate | `OutputValidationContractRegistry` (+ validators) |
 | Primary failure | `AiPrimaryFailureSelector`, `AiFailureCategory`, `AiNormalizedFailure` |
 | Physical key | `RoutedAiCandidate::physicalRouteKey` |
+| Paid lock write | `ConnectionPaidLockService`, `PaidLockReason` |
+| Cost policy resolve | `EffectiveAiCostPolicyResolver`, `PromptTaskFreeOnlyPolicy` |
+| Generation shape | `GenerationShapeResolver`, `GenerationShapeDecision`, `ArticleGenerationShape` |
+| First-attemptable route | `FirstAttemptableAiRouteResolver` |
 
-Regression suites (non-exhaustive): `ManualSortableOrderRoutingTest`, `ArticleModelOrderAuthorityTest`, `LogicalModelFallbackArchitectureTest`, `LongFormRoutingContractTest`, `AiProviderFailureClassifierTest`, `AiExecutionLayerObservabilityRefactorTest`, `SplitOutlineInputContractAndDeepSeekEligibilityTest`.
+Regression suites (non-exhaustive): `ManualSortableOrderRoutingTest`, `ArticleModelOrderAuthorityTest`, `LogicalModelFallbackArchitectureTest`, `LongFormRoutingContractTest`, `AiProviderFailureClassifierTest`, `AiExecutionLayerObservabilityRefactorTest`, `SplitOutlineInputContractAndDeepSeekEligibilityTest`, `ConnectionPaidLockSsotTest`, `RouteCostGenerationShapeContractTest`, `WritingSectionIsolationCompilerTest`, `MultiplePassHistoryAndAssembleAuthorityTest`.

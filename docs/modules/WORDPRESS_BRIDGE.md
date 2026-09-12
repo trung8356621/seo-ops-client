@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-12  
 > Supersedes: `docs/MAP_SEO_WP.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (plugin/general sections), Site Sync–adjacent WP notes formerly rooted in MAP_SEO_WP
 
 ## 1. Purpose
@@ -62,7 +62,8 @@ Additive since min contract (selected):
 | Laravel | `SiteSyncInboundGateway` / delta ingest | Site Sync callbacks |
 | Laravel | `WordPressArticleSyncService` | Outbound hub (`syncForArticle`, `publishForArticle`) |
 | Laravel | `WordPressFieldConflictService` | Field-level WP/Laravel sync baseline + same-field conflict detection |
-| Laravel | `WordPressArticleContentService` | `editor-sync` HTTP |
+| Laravel | `WordPressArticleContentService` | `editor-sync` HTTP + editor auto-load hydrate path |
+| Laravel | `SyncDomainContentService` | Domain content sync helpers (must not rewrite editor body SoT) |
 | Laravel | `WordPressLocalMediaSyncService` / `ArticleMediaLocalService` | Local media → WP |
 | Laravel | `WordPressArticleMediaService` / `WordPressArticleAttachmentService` | Featured/gallery/rename/meta |
 | Laravel | `WordPressManualSyncService` + `ManualWordPressSyncJob` | Manual editor/list sync (queue `seo`) |
@@ -92,6 +93,7 @@ Additive since min contract (selected):
 | Product review **create** gate | `ProductReviewCreationPolicy` + `WordPressProductReviewStatusService` | Must fetch WP comment-reviews first; `block_if_real_reviews_exist` default true; no invent before `wp_post_id` |
 | Catalog links/keywords/scores (V2) | Site Sync / WP provider | Not dual-written by push-content |
 | WP post body cache | `article_wp_content_cache` (wordpress addon) | **Not** `article_meta` `wp_post_content*` (deleted 2026-08-31). Site Sync V3 must not write body/meta either. |
+| Editor local body | `articles.body` | Sole SoT for “has local content”; WP cache hydrate fills body then editor owns it — see [`ARTICLE_EDITOR.md`](ARTICLE_EDITOR.md) §15b |
 | Manual Domain overrides | Laravel Manual | See SITE_SYNC ownership |
 
 ## 5. Read path
@@ -240,7 +242,7 @@ Site Sync outbox/callback — see [SITE_SYNC.md](SITE_SYNC.md). Compat push stil
 | Site Sync schema/min bridge | `SiteSyncV2ArchitectureFreezeTest` |
 | Publish scheduled runner ownership | `PublishScheduledArticlesCanonicalRunnerContractTest` |
 | Automation / dispatcher ownership | `AutomationDispatcherOwnershipContractTest` |
-| WP content cache lifecycle | `ArticleWpContentLifecycleContractTest` (wordpress addon) |
+| WP content cache lifecycle | `ArticleWpContentLifecycleContractTest` (wordpress addon) — hydrate → body SoT |
 | Architecture locks (unique jobs, etc.) | `ArchitectureHardeningLockContractTest` |
 
 ```text
