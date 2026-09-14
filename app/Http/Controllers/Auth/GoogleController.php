@@ -60,7 +60,7 @@ class GoogleController extends Controller
                 return $intended;
             }
 
-            return '/';
+            return '/workspace';
         }
 
         if ($hasSafeIntended) {

@@ -45,7 +45,7 @@ final class CoreMembersCustomizeModalContractTest extends TestCase
         self::assertStringContainsString('seo_capacity_use_default', $source);
         self::assertStringContainsString('seo_monthly_capacity_override', $source);
         self::assertStringContainsString('Giới hạn bài SEO / tháng', $source);
-        self::assertStringContainsString('Dùng mặc định', $source);
+        self::assertStringContainsString('Dùng hạn mức mặc định', $source);
         self::assertStringContainsString('ContentProjectWriterCapacitySettingsService', $source);
 
         $registry = new MembersSectionRegistry();

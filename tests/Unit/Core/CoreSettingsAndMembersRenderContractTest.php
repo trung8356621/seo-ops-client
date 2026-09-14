@@ -38,7 +38,7 @@ final class CoreSettingsAndMembersRenderContractTest extends TestCase
         foreach ([
             'seo_capacity_use_default',
             'seo_monthly_capacity_override',
-            'Dùng mặc định',
+            'Dùng hạn mức mặc định',
             'Giới hạn bài SEO / tháng',
             'ContentProjectWriterCapacitySettingsService',
             'AddonEnablement::seoStackEnabled',

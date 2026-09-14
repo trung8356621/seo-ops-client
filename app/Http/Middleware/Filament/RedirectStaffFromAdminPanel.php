@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Client /admin setup is owner or legacy admin. Other roles are denied.
+ * Staff may hit /admin (panel home) only to be redirected to the Access Hub.
+ * Other /admin/* routes fall through to Filament Authenticate + canAccessPanel (403).
+ * Owner/Admin behavior is unchanged.
  */
 final class RedirectStaffFromAdminPanel
 {
@@ -19,8 +21,17 @@ final class RedirectStaffFromAdminPanel
     {
         $user = Auth::user();
 
-        if ($user instanceof User && ! $user->isOwner() && (string) $user->role !== User::ROLE_ADMIN) {
-            return redirect('/seo');
+        if (! $user instanceof User) {
+            return $next($request);
+        }
+
+        if ($user->isOwner() || (string) $user->role === User::ROLE_ADMIN) {
+            return $next($request);
+        }
+
+        $path = '/'.trim($request->path(), '/');
+        if ($path === '/admin') {
+            return redirect('/workspace');
         }
 
         return $next($request);

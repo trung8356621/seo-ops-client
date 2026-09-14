@@ -25,6 +25,8 @@ use App\Core\Queue\ScheduleRegistry;
 use App\Core\Settings\CoreSettingsBootstrap;
 use App\Core\Settings\SettingsSectionRegistry;
 use App\Core\Sites\SiteAccess;
+use App\Core\Workspace\WorkspaceDestination;
+use App\Core\Workspace\WorkspaceDestinationRegistry;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -56,6 +58,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(AddonEntitlementGate::class);
         $this->app->singleton(SiteAccess::class);
         $this->app->singleton(MembersSectionRegistry::class);
+        $this->app->singleton(WorkspaceDestinationRegistry::class);
         $this->app->singleton(AddonPermissionRegistry::class);
         $this->app->singleton(AddonAuthorization::class);
         $this->app->singleton(LegacySeoRoleBridge::class);
@@ -72,6 +75,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadOwnedMigrations();
+        $this->registerCoreWorkspaceDestinations();
 
         if ($this->app->bound(SettingsSectionRegistry::class)) {
             $this->app->make(CoreSettingsBootstrap::class)
@@ -87,6 +91,32 @@ final class ClientCoreServiceProvider extends ServiceProvider
                 \App\Core\Console\Commands\SyncAddonPermissionsCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Core-owned destinations only (Tools). SEO/Seeding register from their providers.
+     */
+    private function registerCoreWorkspaceDestinations(): void
+    {
+        if (! $this->app->bound(WorkspaceDestinationRegistry::class)) {
+            return;
+        }
+
+        /** @var WorkspaceDestinationRegistry $registry */
+        $registry = $this->app->make(WorkspaceDestinationRegistry::class);
+        if ($registry->has('tools')) {
+            return;
+        }
+
+        $registry->register(new WorkspaceDestination(
+            key: 'tools',
+            label: 'Tools',
+            url: url('/tools'),
+            sort: 30,
+            description: 'Công cụ SEO phụ trợ',
+            icon: 'heroicon-o-wrench-screwdriver',
+            panelId: 'tools',
+        ));
     }
 
     private function loadOwnedMigrations(): void

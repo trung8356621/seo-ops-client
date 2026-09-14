@@ -33,7 +33,11 @@ class EditUser extends EditRecord
     {
         $data['password'] = '';
 
-        return $data;
+        /** @var User $record */
+        $record = $this->getRecord();
+        $addon = app(MembersSectionRegistry::class)->fillCustomizeModal($record);
+
+        return array_merge($data, $addon);
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
@@ -59,7 +63,16 @@ class EditUser extends EditRecord
             $data['password'] = Hash::make((string) $data['password']);
         }
 
-        $this->addonFormState = is_array($this->data) ? $this->data : [];
+        // Capture addon UI state (incl. capacity toggle) before stripping non-User keys.
+        $this->addonFormState = array_merge(
+            is_array($this->data) ? $this->data : [],
+            $data,
+        );
+
+        unset(
+            $data['seo_capacity_use_default'],
+            $data['seo_monthly_capacity_override'],
+        );
 
         return $data;
     }

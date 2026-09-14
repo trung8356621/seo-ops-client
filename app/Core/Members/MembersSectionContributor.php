@@ -7,21 +7,33 @@ namespace App\Core\Members;
 use App\Models\User;
 
 /**
- * Addon contributes Filament form sections for Core Members (UserResource) without Core owning addon business.
+ * Addon contributes Filament form tabs/sections for Core Members (UserResource)
+ * without Core owning addon business.
  */
 interface MembersSectionContributor
 {
     public function addonSlug(): string;
 
     /**
-     * Sort order among addon sections (lower first). Core account section stays first.
+     * Tab label on the Edit User form (e.g. "SEO", "Seeding").
+     */
+    public function tabLabel(): string;
+
+    /**
+     * Optional Heroicon name for the tab (e.g. heroicon-o-magnifying-glass).
+     */
+    public function tabIcon(): ?string;
+
+    /**
+     * Sort order among addon tabs (lower first). Core "Tài khoản" tab stays first.
      */
     public function sort(): int;
 
     public function isAvailable(): bool;
 
     /**
-     * Sections for full Edit User form.
+     * Schema for the addon tab on the full Edit User form.
+     * Return [] to skip rendering a tab.
      *
      * @return list<\Filament\Forms\Components\Component>
      */

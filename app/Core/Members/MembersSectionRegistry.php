@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Core\Members;
 
+use Filament\Forms\Components\Tabs\Tab;
+
 /**
- * Registry of addon Members form section contributors.
+ * Registry of addon Members form section / tab contributors.
  */
 final class MembersSectionRegistry
 {
@@ -41,6 +43,8 @@ final class MembersSectionRegistry
     }
 
     /**
+     * Flat sections for callers that still merge vertically (customize modal helpers, tests).
+     *
      * @return list<\Filament\Forms\Components\Component>
      */
     public function formSections(): array
@@ -53,6 +57,34 @@ final class MembersSectionRegistry
         }
 
         return $sections;
+    }
+
+    /**
+     * Filament Tabs for Edit User — one tab per available contributor with non-empty schema.
+     *
+     * @return list<Tab>
+     */
+    public function formTabs(): array
+    {
+        $tabs = [];
+        foreach ($this->available() as $contributor) {
+            $schema = $contributor->formSections();
+            if ($schema === []) {
+                continue;
+            }
+
+            $tab = Tab::make($contributor->tabLabel())
+                ->schema($schema);
+
+            $icon = $contributor->tabIcon();
+            if (is_string($icon) && $icon !== '') {
+                $tab->icon($icon);
+            }
+
+            $tabs[] = $tab;
+        }
+
+        return $tabs;
     }
 
     /**

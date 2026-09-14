@@ -40,9 +40,10 @@ class UserResource extends Resource
     public static function form(Form $form): Form
     {
         $hierarchy = app(UserHierarchyService::class);
-        $addonSections = app(\App\Core\Members\MembersSectionRegistry::class)->formSections();
+        $addonTabs = app(\App\Core\Members\MembersSectionRegistry::class)->formTabs();
 
-        return $form
+        $coreTab = Forms\Components\Tabs\Tab::make('Tài khoản')
+            ->icon('heroicon-o-user-circle')
             ->schema([
                 Forms\Components\Section::make(__('Account'))
                     ->extraAttributes(['class' => 'max-w-4xl'])
@@ -123,8 +124,17 @@ class UserResource extends Resource
                     ])
                     ->columns(2)
                     ->visible(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF),
+            ]);
 
-                ...$addonSections,
+        return $form
+            ->schema([
+                Forms\Components\Tabs::make('member_tabs')
+                    ->tabs([
+                        $coreTab,
+                        ...$addonTabs,
+                    ])
+                    ->persistTabInQueryString('tab')
+                    ->columnSpanFull(),
             ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\UserResource\Pages;
 
+use App\Core\Members\MembersSectionRegistry;
 use App\Filament\Resources\UserResource;
 use App\Models\User;
 use App\Services\Users\UserHierarchyService;
@@ -11,6 +12,9 @@ use Illuminate\Support\Facades\Hash;
 class CreateUser extends CreateRecord
 {
     protected static string $resource = UserResource::class;
+
+    /** @var array<string, mixed> */
+    private array $addonFormState = [];
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
@@ -27,6 +31,23 @@ class CreateUser extends CreateRecord
 
         $data['password'] = Hash::make((string) ($data['password'] ?? UserResource::generateRandomPassword()));
 
+        $this->addonFormState = array_merge(
+            is_array($this->data) ? $this->data : [],
+            $data,
+        );
+
+        unset(
+            $data['seo_capacity_use_default'],
+            $data['seo_monthly_capacity_override'],
+        );
+
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        /** @var User $record */
+        $record = $this->getRecord();
+        app(MembersSectionRegistry::class)->afterUserSaved($record, $this->addonFormState);
     }
 }

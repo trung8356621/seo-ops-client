@@ -6,6 +6,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/seo');
 
+Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/workspace', \App\Http\Controllers\WorkspaceHubController::class)
+        ->name('workspace.hub');
+});
+
 Route::get('/client-locked', function (ClientLockGuard $lockGuard) {
     return response()->view('client-locked', [
         'message' => $lockGuard->publicMessage(),
