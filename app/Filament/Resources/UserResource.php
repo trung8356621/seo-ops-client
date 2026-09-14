@@ -86,9 +86,6 @@ class UserResource extends Resource
                                     $set('parent_id', null);
                                     $set('manager_id', null);
                                 }
-                                if ($state === User::ROLE_MANAGER) {
-                                    $set('manager_id', null);
-                                }
                             }),
                         Forms\Components\Select::make('status')
                             ->label(__('Status'))
@@ -106,7 +103,7 @@ class UserResource extends Resource
                     ->extraAttributes(['class' => 'max-w-4xl'])
                     ->schema([
                         Forms\Components\Select::make('parent_id')
-                            ->label(__('Owner'))
+                            ->label('Chủ tài khoản (Owner)')
                             ->options(fn (): array => $hierarchy->ownersForSelect()
                                 ->mapWithKeys(fn (User $u): array => [$u->id => $u->display_name.' ('.$u->email.')'])
                                 ->all())
@@ -117,36 +114,15 @@ class UserResource extends Resource
                             ->preload()
                             ->native(false)
                             ->live()
-                            ->visible(fn (Get $get): bool => in_array((string) $get('role'), [User::ROLE_MANAGER, User::ROLE_STAFF], true))
-                            ->required(fn (Get $get): bool => in_array((string) $get('role'), [User::ROLE_MANAGER, User::ROLE_STAFF], true))
+                            ->visible(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF)
+                            ->required(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF
+                                && (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER)
                             ->disabled(fn (): bool => (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER)
                             ->dehydrated()
-                            ->afterStateUpdated(fn (Set $set) => $set('manager_id', null)),
-
-                        Forms\Components\Select::make('manager_id')
-                            ->label(__('Manager'))
-                            ->options(function (Get $get) use ($hierarchy): array {
-                                $ownerId = $get('parent_id');
-                                if ((string) (auth()->user()?->role ?? '') === User::ROLE_OWNER) {
-                                    $ownerId = auth()->id();
-                                }
-
-                                return $hierarchy->managersForOwner($ownerId !== null && $ownerId !== '' ? (int) $ownerId : null)
-                                    ->mapWithKeys(fn (User $u): array => [$u->id => $u->display_name.' ('.$u->email.')'])
-                                    ->all();
-                            })
-                            ->searchable()
-                            ->preload()
-                            ->native(false)
-                            ->visible(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF)
-                            ->helperText(__('Optional. Leave empty for Staff managed directly by Owner.')),
+                            ->helperText('Staff thuộc Owner này (parent_id). Không còn cấp Manager trung gian.'),
                     ])
                     ->columns(2)
-                    ->visible(fn (Get $get): bool => in_array(
-                        (string) $get('role'),
-                        [User::ROLE_MANAGER, User::ROLE_STAFF],
-                        true,
-                    )),
+                    ->visible(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF),
 
                 ...$addonSections,
             ]);
@@ -184,18 +160,19 @@ class UserResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'admin' => 'danger',
                         'owner' => 'success',
-                        'manager' => 'warning',
                         'staff' => 'info',
                         default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'owner' => 'Owner',
+                        'staff' => 'Staff',
+                        'admin' => 'Admin',
+                        'manager' => 'Staff (legacy manager)',
+                        default => $state,
                     }),
 
                 Tables\Columns\TextColumn::make('owner.name')
-                    ->label(__('Owner'))
-                    ->placeholder('—')
-                    ->toggleable(),
-
-                Tables\Columns\TextColumn::make('manager.name')
-                    ->label(__('Manager'))
+                    ->label('Chủ tài khoản')
                     ->placeholder('—')
                     ->toggleable(),
 
@@ -221,24 +198,13 @@ class UserResource extends Resource
                     ->label(__('Filter by rule'))
                     ->options([
                         'owner' => 'Owner',
-                        'manager' => 'Manager',
                         'staff' => 'Staff',
                     ]),
                 Tables\Filters\SelectFilter::make('parent_id')
-                    ->label(__('Owner'))
+                    ->label('Chủ tài khoản')
                     ->relationship('owner', 'name', fn (Builder $query) => $query->where('role', User::ROLE_OWNER))
                     ->searchable()
                     ->preload(),
-                Tables\Filters\SelectFilter::make('manager_id')
-                    ->label(__('Manager'))
-                    ->relationship('manager', 'name', fn (Builder $query) => $query->where('role', User::ROLE_MANAGER))
-                    ->searchable()
-                    ->preload(),
-                Tables\Filters\Filter::make('unassigned_staff')
-                    ->label(__('Unassigned staff'))
-                    ->query(fn (Builder $query): Builder => $query
-                        ->where('role', User::ROLE_STAFF)
-                        ->whereNull('manager_id')),
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->actions([
@@ -291,7 +257,6 @@ class UserResource extends Resource
                     ->visible(fn (User $record): bool => ! $record->isSystemUser())
                     ->before(function (User $record): void {
                         app(UserHierarchyService::class)->assertCanDelete($record);
-                        app(UserHierarchyService::class)->detachStaffFromManager($record);
                     }),
             ])
             ->bulkActions([
@@ -309,7 +274,7 @@ class UserResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->with(['owner', 'manager'])
+            ->with(['owner', 'roles'])
             ->where(function (Builder $builder): void {
                 $builder->where('is_system', false)->orWhereNull('is_system');
             });
@@ -344,7 +309,6 @@ class UserResource extends Resource
      */
     private static function roleOptionsForActor(): array
     {
-        // Client installation roles: owner | staff only (no legacy admin / org-manager).
         if ((string) (auth()->user()?->role ?? '') === User::ROLE_OWNER) {
             return [
                 User::ROLE_STAFF => 'Nhân viên (Staff)',
@@ -352,7 +316,7 @@ class UserResource extends Resource
         }
 
         return [
-            User::ROLE_OWNER => 'Chủ sở hữu (Owner)',
+            User::ROLE_OWNER => 'Chủ tài khoản (Owner)',
             User::ROLE_STAFF => 'Nhân viên (Staff)',
         ];
     }

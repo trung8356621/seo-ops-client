@@ -19,12 +19,10 @@ class CreateUser extends CreateRecord
         $role = (string) ($data['role'] ?? '');
         if (
             (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER
-            && in_array($role, [User::ROLE_MANAGER, User::ROLE_STAFF], true)
+            && $role === User::ROLE_STAFF
         ) {
             $data['parent_id'] = auth()->id();
-            if ($role === User::ROLE_MANAGER) {
-                $data['manager_id'] = null;
-            }
+            $data['manager_id'] = null;
         }
 
         $data['password'] = Hash::make((string) ($data['password'] ?? UserResource::generateRandomPassword()));

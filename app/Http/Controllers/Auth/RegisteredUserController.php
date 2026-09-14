@@ -30,8 +30,9 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->string('password')),
-            'role' => 'owner', // Gán mặc định là owner cho người dùng đăng ký mới
-            'status' => 'normal',
+            'role' => User::ROLE_STAFF,
+            'status' => User::STATUS_NORMAL,
+            'parent_id' => null,
         ]);
 
         event(new Registered($user));

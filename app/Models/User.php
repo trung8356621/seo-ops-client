@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Core\Permissions\LegacySeoRoleBridge;
 use App\Models\Concerns\UsesCoreDatabaseConnection;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -12,28 +13,38 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory;
+    use HasRoles;
     use Notifiable;
     use SoftDeletes;
     use UsesCoreDatabaseConnection;
+
+    /** Spatie guard — independent from Core users.role account type. */
+    protected string $guard_name = 'web';
 
     const ROLE_ADMIN = 'admin';
 
     const ROLE_OWNER = 'owner';
 
-    /** Organizational manager under an Owner (not seo_role). */
+    /**
+     * @deprecated Core no longer has organizational Manager. Kept for legacy reads / migration.
+     */
     const ROLE_MANAGER = 'manager';
 
     const ROLE_STAFF = 'staff';
 
+    /** @deprecated Prefer Spatie role seo.manager via LegacySeoRoleBridge */
     const SEO_ROLE_MANAGER = 'manager';
 
+    /** @deprecated Prefer Spatie role seo.planner via LegacySeoRoleBridge */
     const SEO_ROLE_PLANNER = 'planner';
 
+    /** @deprecated Prefer Spatie role seo.content_manager via LegacySeoRoleBridge */
     const SEO_ROLE_CONTENT_MANAGER = 'content_manager';
 
     const STATUS_NORMAL = 'normal';
@@ -43,8 +54,8 @@ class User extends Authenticatable implements FilamentUser
     const STATUS_PENDING = 'pending';
 
     /**
-     * parent_id = Owner FK (legacy column name; semantics = owner_id).
-     * manager_id = Manager FK for Staff.
+     * parent_id = Owner FK (legacy column name; semantics = owner_id / account scope).
+     * manager_id = deprecated org-hierarchy artifact (no longer written by Core UI).
      */
     protected $fillable = [
         'parent_id',
@@ -81,6 +92,26 @@ class User extends Authenticatable implements FilamentUser
                 throw new \RuntimeException('System user cannot be deleted.');
             }
         });
+
+        static::saved(function (User $user): void {
+            if (! $user->wasChanged('seo_role')) {
+                return;
+            }
+
+            try {
+                $bridge = app(LegacySeoRoleBridge::class);
+                $legacy = strtolower(trim((string) ($user->seo_role ?? '')));
+                if ($legacy === '') {
+                    $bridge->assign($user, null);
+
+                    return;
+                }
+
+                $bridge->syncFromLegacyColumn($user);
+            } catch (\Throwable) {
+                // Permission tables may not exist yet during early migrate/tests.
+            }
+        });
     }
 
     public function isSystemUser(): bool
@@ -94,6 +125,9 @@ class User extends Authenticatable implements FilamentUser
         return $this->role === self::ROLE_STAFF;
     }
 
+    /**
+     * @deprecated Organizational manager removed; always false for new data.
+     */
     public function isManager(): bool
     {
         return $this->role === self::ROLE_MANAGER;
@@ -117,10 +151,7 @@ class User extends Authenticatable implements FilamentUser
         return match ($panel->getId()) {
             'admin' => in_array((string) $this->role, [self::ROLE_OWNER, self::ROLE_ADMIN], true),
             'tools' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
-            // Seeding panel: authenticated non-blocked account (addon enablement is separate).
             'seeding' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
-            // SEO panel gate uses Core user fields only (role / seo_role / hierarchy).
-            // SEO addon access helper delegates to canAccessSeoPanel() — Core must not import SEO.
             'seo', 'seo-main' => $this->canAccessSeoPanel(),
             default => false,
         };
@@ -128,7 +159,8 @@ class User extends Authenticatable implements FilamentUser
 
     /**
      * Whether this user may enter the SEO Filament panel.
-     * Uses Core columns only — safe when SEO addon is disabled.
+     * Owner: full account access (no addon role required).
+     * Staff: must belong to an owner (parent_id) and hold SEO Spatie role or legacy seo_role.
      */
     public function canAccessSeoPanel(): bool
     {
@@ -140,9 +172,22 @@ class User extends Authenticatable implements FilamentUser
             return true;
         }
 
-        return $this->isStaff()
-            && (int) $this->parent_id > 0
-            && filled($this->seo_role);
+        if (! $this->isStaff() || (int) $this->parent_id <= 0) {
+            return false;
+        }
+
+        $rank = null;
+        try {
+            $rank = app(LegacySeoRoleBridge::class)->resolveLegacyRank($this);
+        } catch (\Throwable) {
+            $rank = null;
+        }
+
+        if ($rank !== null) {
+            return true;
+        }
+
+        return filled($this->seo_role);
     }
 
     /**
@@ -153,7 +198,7 @@ class User extends Authenticatable implements FilamentUser
     ];
 
     /**
-     * Owner of this Manager/Staff (column parent_id).
+     * Owner of this Staff (column parent_id = account scope).
      */
     public function owner(): BelongsTo
     {
@@ -169,7 +214,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Manager of this Staff.
+     * @deprecated Core Manager hierarchy removed. Relation kept for legacy column reads.
      */
     public function manager(): BelongsTo
     {
@@ -177,7 +222,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Managers belonging to this Owner.
+     * @deprecated Core Manager hierarchy removed.
      */
     public function managers(): HasMany
     {
@@ -185,7 +230,15 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Staff belonging to this Manager (manager_id).
+     * Staff belonging to this Owner (parent_id). Preferred team listing.
+     */
+    public function teamStaff(): HasMany
+    {
+        return $this->hasMany(User::class, 'parent_id')->where('role', self::ROLE_STAFF);
+    }
+
+    /**
+     * @deprecated Use teamStaff(). Previously meant staff under manager_id.
      */
     public function staffMembers(): HasMany
     {
@@ -193,7 +246,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Staff under this Owner with no Manager assigned.
+     * @deprecated Manager hierarchy removed; equivalent to teamStaff().
      */
     public function directStaffMembers(): HasMany
     {
@@ -203,7 +256,7 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * All users with parent_id = this user (managers + staff). Legacy alias.
+     * All users with parent_id = this user. Legacy alias.
      */
     public function staffs(): HasMany
     {
@@ -211,7 +264,8 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
-     * Owner account id for scoping (Owner self, or parent_id for Manager/Staff).
+     * Owner account id for scoping (Owner self, or parent_id for Staff).
+     * Legacy role=manager also resolves via parent_id.
      */
     public function accountOwnerId(): ?int
     {

@@ -8,8 +8,9 @@ use App\Models\User;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Organizational hierarchy validation (Owner → Manager → Staff).
- * Does not replace RBAC / seo_role.
+ * Core account hierarchy: Owner → Staff (via parent_id = owner scope).
+ *
+ * Organizational Manager is NOT a Core role. Addon ranks (seo.manager, …) live in Spatie.
  */
 final class UserHierarchyService
 {
@@ -27,53 +28,38 @@ final class UserHierarchyService
 
         $role = (string) ($data['role'] ?? $existing?->role ?? '');
 
+        // Legacy org-manager submissions → staff (addon roles are separate).
+        if ($role === User::ROLE_MANAGER) {
+            $role = User::ROLE_STAFF;
+            $data['role'] = User::ROLE_STAFF;
+        }
+
         $parentId = isset($data['parent_id']) && $data['parent_id'] !== '' && $data['parent_id'] !== null
             ? (int) $data['parent_id']
             : null;
-        $managerId = isset($data['manager_id']) && $data['manager_id'] !== '' && $data['manager_id'] !== null
-            ? (int) $data['manager_id']
-            : null;
 
-        if (in_array($role, [User::ROLE_OWNER], true)) {
+        // manager_id is deprecated — never persist new org-manager links.
+        $data['manager_id'] = null;
+
+        if ($role === User::ROLE_OWNER) {
             $parentId = null;
-            $managerId = null;
-        } elseif ($role === User::ROLE_MANAGER) {
-            $managerId = null;
         } elseif ($role !== User::ROLE_STAFF) {
             throw ValidationException::withMessages([
-                'role' => 'Role không hợp lệ cho hierarchy.',
+                'role' => 'Role không hợp lệ. Core chỉ hỗ trợ owner|staff.',
             ]);
         }
 
-        // Owner actor chỉ được gán team của mình (Manager/Staff).
+        // Owner actor chỉ được gán Staff vào team của mình.
         if (
             $actor instanceof User
             && (string) $actor->role === User::ROLE_OWNER
-            && in_array($role, [User::ROLE_MANAGER, User::ROLE_STAFF], true)
+            && $role === User::ROLE_STAFF
         ) {
             $parentId = (int) $actor->id;
         }
 
-        if ($role === User::ROLE_MANAGER) {
-            if ($parentId === null || $parentId <= 0) {
-                throw ValidationException::withMessages([
-                    'parent_id' => 'Manager bắt buộc thuộc một Owner.',
-                ]);
-            }
+        if ($role === User::ROLE_STAFF && $parentId !== null && $parentId > 0) {
             $this->assertIsOwner($parentId);
-        }
-
-        if ($role === User::ROLE_STAFF) {
-            if ($parentId === null || $parentId <= 0) {
-                throw ValidationException::withMessages([
-                    'parent_id' => 'Staff bắt buộc thuộc một Owner.',
-                ]);
-            }
-            $this->assertIsOwner($parentId);
-
-            if ($managerId !== null) {
-                $this->assertManagerBelongsToOwner($managerId, $parentId);
-            }
         }
 
         if ($existing instanceof User) {
@@ -89,7 +75,7 @@ final class UserHierarchyService
         }
 
         $data['parent_id'] = $parentId;
-        $data['manager_id'] = $managerId;
+        $data['manager_id'] = null;
 
         return $data;
     }
@@ -105,45 +91,30 @@ final class UserHierarchyService
         if ((string) $user->role === User::ROLE_OWNER) {
             $hasTeam = User::query()
                 ->where('parent_id', $user->id)
-                ->whereIn('role', [User::ROLE_MANAGER, User::ROLE_STAFF])
+                ->where('role', User::ROLE_STAFF)
                 ->exists();
             if ($hasTeam) {
                 throw ValidationException::withMessages([
-                    'role' => 'Owner đang có Manager/Staff. Hãy chuyển team sang Owner khác trước khi xóa.',
+                    'role' => 'Owner đang có Staff. Hãy chuyển team sang Owner khác trước khi xóa.',
                 ]);
             }
         }
     }
 
     /**
-     * When deleting a Manager: keep staff under same Owner, clear manager_id.
+     * @deprecated No-op — org Manager hierarchy removed.
      */
     public function detachStaffFromManager(User $manager): void
     {
-        if ((string) $manager->role !== User::ROLE_MANAGER) {
-            return;
-        }
-
-        User::query()
-            ->where('manager_id', $manager->id)
-            ->where('role', User::ROLE_STAFF)
-            ->update(['manager_id' => null]);
+        // Intentionally empty.
     }
 
     /**
-     * When Manager demoted/changed: unassign their staff.
+     * @deprecated No-op — org Manager hierarchy removed.
      */
     public function handleManagerRoleChange(User $user, string $newRole): void
     {
-        if ((string) $user->role !== User::ROLE_MANAGER) {
-            return;
-        }
-
-        if ($newRole === User::ROLE_MANAGER) {
-            return;
-        }
-
-        $this->detachStaffFromManager($user);
+        // Intentionally empty.
     }
 
     private function assertIsOwner(int $ownerId): void
@@ -152,20 +123,6 @@ final class UserHierarchyService
         if (! $owner instanceof User || (string) $owner->role !== User::ROLE_OWNER) {
             throw ValidationException::withMessages([
                 'parent_id' => 'Owner được chọn không hợp lệ.',
-            ]);
-        }
-    }
-
-    private function assertManagerBelongsToOwner(int $managerId, int $ownerId): void
-    {
-        $manager = User::query()->find($managerId);
-        if (
-            ! $manager instanceof User
-            || (string) $manager->role !== User::ROLE_MANAGER
-            || (int) $manager->parent_id !== $ownerId
-        ) {
-            throw ValidationException::withMessages([
-                'manager_id' => 'Manager phải thuộc Owner đã chọn.',
             ]);
         }
     }
@@ -180,18 +137,13 @@ final class UserHierarchyService
         if ($oldRole === User::ROLE_OWNER && $newRole !== User::ROLE_OWNER) {
             $hasTeam = User::query()
                 ->where('parent_id', $existing->id)
-                ->whereIn('role', [User::ROLE_MANAGER, User::ROLE_STAFF])
+                ->where('role', User::ROLE_STAFF)
                 ->exists();
             if ($hasTeam) {
                 throw ValidationException::withMessages([
                     'role' => 'Owner đang có team. Hãy reassignment trước khi đổi role.',
                 ]);
             }
-        }
-
-        if ($oldRole === User::ROLE_MANAGER && $newRole !== User::ROLE_MANAGER) {
-            // Staff will be unassigned in mutate before save.
-            return;
         }
     }
 
@@ -211,18 +163,12 @@ final class UserHierarchyService
     }
 
     /**
+     * @deprecated Org Manager select removed.
+     *
      * @return \Illuminate\Support\Collection<int, User>
      */
     public function managersForOwner(?int $ownerId)
     {
-        if ($ownerId === null || $ownerId <= 0) {
-            return collect();
-        }
-
-        return User::query()
-            ->where('role', User::ROLE_MANAGER)
-            ->where('parent_id', $ownerId)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
+        return collect();
     }
 }

@@ -18,6 +18,9 @@ use App\Core\Command\CommandBus;
 use App\Core\Event\EventBus;
 use App\Core\Members\MembersSectionRegistry;
 use App\Core\Operations\OperationLogger;
+use App\Core\Permissions\AddonAuthorization;
+use App\Core\Permissions\AddonPermissionRegistry;
+use App\Core\Permissions\LegacySeoRoleBridge;
 use App\Core\Queue\ScheduleRegistry;
 use App\Core\Settings\CoreSettingsBootstrap;
 use App\Core\Settings\SettingsSectionRegistry;
@@ -53,6 +56,9 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(AddonEntitlementGate::class);
         $this->app->singleton(SiteAccess::class);
         $this->app->singleton(MembersSectionRegistry::class);
+        $this->app->singleton(AddonPermissionRegistry::class);
+        $this->app->singleton(AddonAuthorization::class);
+        $this->app->singleton(LegacySeoRoleBridge::class);
         $this->app->singleton(SettingsSectionRegistry::class);
         $this->app->singleton(CoreSettingsBootstrap::class);
         $this->app->singleton(\App\Core\Database\AddonMigrationRegistrar::class);
@@ -78,6 +84,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
                 \App\Core\Console\Commands\RefactorMigrateFreshCommand::class,
                 \App\Core\Console\Commands\RefactorReconcileMigrationsCommand::class,
                 \App\Core\Console\Commands\RefactorDataCountsCommand::class,
+                \App\Core\Console\Commands\SyncAddonPermissionsCommand::class,
             ]);
         }
     }

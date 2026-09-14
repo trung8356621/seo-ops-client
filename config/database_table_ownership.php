@@ -78,6 +78,12 @@ return [
                 'team_messages',
                 'team_chat_read_cursors',
                 'support_tickets',
+                // Spatie laravel-permission (addon roles/permissions; account scope = users.parent_id)
+                'roles',
+                'permissions',
+                'model_has_roles',
+                'model_has_permissions',
+                'role_has_permissions',
                 'user_meta',
 
                 // SEO external API credentials — migration trong addon nhưng connection = mysql (core)

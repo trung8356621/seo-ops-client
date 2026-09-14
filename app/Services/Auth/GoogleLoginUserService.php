@@ -55,6 +55,9 @@ final class GoogleLoginUserService
         $user->email = $email;
         $user->name = $googleName !== '' ? $googleName : $email;
         $user->password = Hash::make(Str::random(16));
+        $user->role = User::ROLE_STAFF;
+        $user->status = User::STATUS_NORMAL;
+        $user->parent_id = null;
         $this->syncProviderFields($user, $googleId, $avatar);
         $user->save();
 

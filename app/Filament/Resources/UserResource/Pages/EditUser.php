@@ -25,7 +25,6 @@ class EditUser extends EditRecord
                     /** @var User $record */
                     $record = $this->getRecord();
                     app(UserHierarchyService::class)->assertCanDelete($record);
-                    app(UserHierarchyService::class)->detachStaffFromManager($record);
                 }),
         ];
     }
@@ -44,14 +43,14 @@ class EditUser extends EditRecord
         $hierarchy = app(UserHierarchyService::class);
 
         $newRole = (string) ($data['role'] ?? $record->role);
-        $hierarchy->handleManagerRoleChange($record, $newRole);
         $data = $hierarchy->normalizeFormData($data, $record);
 
         if (
             (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER
-            && in_array($newRole, [User::ROLE_MANAGER, User::ROLE_STAFF], true)
+            && $newRole === User::ROLE_STAFF
         ) {
             $data['parent_id'] = auth()->id();
+            $data['manager_id'] = null;
         }
 
         if (blank($data['password'] ?? null)) {

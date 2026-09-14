@@ -10,6 +10,22 @@ use Tests\TestCase;
 
 final class RoleAxesMatrixTest extends TestCase
 {
+    public function test_owner_without_seo_role_gets_full_manager_rank(): void
+    {
+        $user = new User([
+            'role' => User::ROLE_OWNER,
+            'seo_role' => null,
+            'status' => User::STATUS_NORMAL,
+        ]);
+
+        $this->actingAs($user);
+
+        $this->assertTrue($user->canAccessPanel(filament()->getPanel('admin')));
+        $this->assertTrue(SeoAccessControl::canAccessSeoPanel($user));
+        $this->assertSame(SeoAccessControl::ROLE_MANAGER, SeoAccessControl::actualRole());
+        $this->assertTrue(SeoAccessControl::canAccessManagerFeatures());
+    }
+
     public function test_owner_with_content_manager_seo_role_keeps_axes_independent(): void
     {
         $user = new User([

@@ -34,9 +34,12 @@ final class GoogleLoginUserServiceTest extends TestCase
         $this->assertSame('Nguyễn Văn A', $user->display_name);
         $this->assertSame('nguyenvana@example.com', $user->email);
         $this->assertSame('google-1', $user->google_id);
+        $this->assertSame(User::ROLE_STAFF, $user->role);
+        $this->assertNull($user->parent_id);
         $this->assertDatabaseHas('users', [
             'email' => 'nguyenvana@example.com',
             'name' => 'Nguyễn Văn A',
+            'role' => User::ROLE_STAFF,
         ]);
     }
 
