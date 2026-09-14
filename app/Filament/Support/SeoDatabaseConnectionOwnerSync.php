@@ -86,9 +86,16 @@ final class SeoDatabaseConnectionOwnerSync
 
     public static function promoteOwnerToSeoManager(int $ownerId): void
     {
-        User::query()
+        $owner = User::query()
             ->whereKey($ownerId)
             ->where('role', User::ROLE_OWNER)
-            ->update(['seo_role' => User::SEO_ROLE_MANAGER]);
+            ->first();
+
+        if (! $owner instanceof User) {
+            return;
+        }
+
+        app(\App\Core\Permissions\SeoRoleAssignment::class)
+            ->assign($owner, User::SEO_ROLE_MANAGER);
     }
 }

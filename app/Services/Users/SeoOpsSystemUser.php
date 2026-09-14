@@ -59,12 +59,15 @@ final class SeoOpsSystemUser
                 $existing->name = self::NAME;
                 $dirty = true;
             }
-            if (trim((string) ($existing->seo_role ?? '')) === '') {
-                $existing->seo_role = User::SEO_ROLE_MANAGER;
-                $dirty = true;
-            }
             if ($dirty) {
                 $existing->save();
+            }
+
+            try {
+                app(\App\Core\Permissions\SeoRoleAssignment::class)
+                    ->assign($existing, User::SEO_ROLE_MANAGER);
+            } catch (\Throwable) {
+                // Permission tables may be missing during early migrate.
             }
 
             self::$cachedId = (int) $existing->getKey();
@@ -77,13 +80,18 @@ final class SeoOpsSystemUser
             'email' => self::EMAIL,
             'password' => Hash::make(Str::random(64)),
             'role' => User::ROLE_ADMIN,
-            // NOT NULL column — not a real writer (role=admin excludes staff writer lists).
-            'seo_role' => User::SEO_ROLE_MANAGER,
             'status' => User::STATUS_BLOCK,
             'is_system' => true,
             'parent_id' => null,
             'manager_id' => null,
         ]);
+
+        try {
+            app(\App\Core\Permissions\SeoRoleAssignment::class)
+                ->assign($user, User::SEO_ROLE_MANAGER);
+        } catch (\Throwable) {
+            // Permission tables may be missing during early migrate.
+        }
 
         self::$cachedId = (int) $user->getKey();
 

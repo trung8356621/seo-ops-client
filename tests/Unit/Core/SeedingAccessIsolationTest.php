@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Core;
 
 use App\Core\Permissions\AddonPermissionRegistry;
-use App\Core\Permissions\LegacySeoRoleBridge;
+use App\Core\Permissions\SeoRoleAssignment;
 use App\Core\Sites\SiteAccess;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
@@ -34,9 +34,9 @@ final class SeedingAccessIsolationTest extends TestCase
 
         $registry = app(AddonPermissionRegistry::class);
         $registry->register('seo', [
-            LegacySeoRoleBridge::ROLE_MANAGER,
-            LegacySeoRoleBridge::ROLE_PLANNER,
-            LegacySeoRoleBridge::ROLE_CONTENT_MANAGER,
+            SeoRoleAssignment::ROLE_MANAGER,
+            SeoRoleAssignment::ROLE_PLANNER,
+            SeoRoleAssignment::ROLE_CONTENT_MANAGER,
         ]);
         $registry->register('seeding', [
             SeedingAccess::ROLE_MANAGER,
@@ -70,28 +70,16 @@ final class SeedingAccessIsolationTest extends TestCase
     public function test_staff_with_seo_manager_only_is_not_seeding_manager(): void
     {
         $staff = $this->makeUser(User::ROLE_STAFF, parentId: 1);
-        $staff->assignRole(LegacySeoRoleBridge::ROLE_MANAGER);
+        $staff->assignRole(SeoRoleAssignment::ROLE_MANAGER);
 
-        self::assertTrue($staff->fresh()->hasRole(LegacySeoRoleBridge::ROLE_MANAGER));
+        self::assertTrue($staff->fresh()->hasRole(SeoRoleAssignment::ROLE_MANAGER));
         self::assertFalse($this->access->isManager($staff->fresh()));
-    }
-
-    public function test_staff_with_legacy_seo_role_manager_only_is_not_seeding_manager(): void
-    {
-        $staff = $this->makeUser(
-            User::ROLE_STAFF,
-            parentId: 1,
-            seoRole: User::SEO_ROLE_MANAGER,
-        );
-
-        self::assertSame(User::SEO_ROLE_MANAGER, $staff->seo_role);
-        self::assertFalse($this->access->isManager($staff));
     }
 
     public function test_staff_with_seo_and_seeding_manager_is_seeding_manager(): void
     {
         $staff = $this->makeUser(User::ROLE_STAFF, parentId: 1);
-        $staff->assignRole(LegacySeoRoleBridge::ROLE_MANAGER);
+        $staff->assignRole(SeoRoleAssignment::ROLE_MANAGER);
         $staff->assignRole(SeedingAccess::ROLE_MANAGER);
 
         self::assertTrue($this->access->isManager($staff->fresh()));
@@ -145,7 +133,6 @@ final class SeedingAccessIsolationTest extends TestCase
     private function makeUser(
         string $role,
         ?int $parentId = null,
-        ?string $seoRole = null,
         string $status = User::STATUS_NORMAL,
     ): User {
         static $n = 0;
@@ -158,7 +145,6 @@ final class SeedingAccessIsolationTest extends TestCase
             'role' => $role,
             'status' => $status,
             'parent_id' => $parentId,
-            'seo_role' => $seoRole,
         ]);
     }
 
@@ -174,6 +160,7 @@ final class SeedingAccessIsolationTest extends TestCase
             'permissions',
             'user_meta',
             'users',
+            'services',
         ] as $table) {
             Schema::connection($connection)->dropIfExists($table);
         }
@@ -186,7 +173,6 @@ final class SeedingAccessIsolationTest extends TestCase
             $table->string('email')->unique();
             $table->string('password');
             $table->string('role')->default('staff');
-            $table->string('seo_role')->nullable();
             $table->string('status')->default('normal');
             $table->boolean('is_system')->default(false);
             $table->timestamps();

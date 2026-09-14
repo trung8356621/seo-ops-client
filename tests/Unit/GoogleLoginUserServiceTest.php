@@ -83,7 +83,6 @@ final class GoogleLoginUserServiceTest extends TestCase
             $table->string('google_id')->nullable();
             $table->string('avatar')->nullable();
             $table->string('role')->nullable();
-            $table->string('seo_role')->nullable();
             $table->string('status')->nullable();
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->unsignedBigInteger('manager_id')->nullable();

@@ -32,6 +32,13 @@ interface MembersSectionContributor
     public function isAvailable(): bool;
 
     /**
+     * Form state keys that must never be written onto the User model.
+     *
+     * @return list<string>
+     */
+    public function formOnlyStateKeys(): array;
+
+    /**
      * Schema for the addon tab on the full Edit User form.
      * Return [] to skip rendering a tab.
      *

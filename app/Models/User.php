@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Core\Permissions\LegacySeoRoleBridge;
+use App\Core\Permissions\SeoRoleAssignment;
 use App\Models\Concerns\UsesCoreDatabaseConnection;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -38,13 +38,11 @@ class User extends Authenticatable implements FilamentUser
 
     const ROLE_STAFF = 'staff';
 
-    /** @deprecated Prefer Spatie role seo.manager via LegacySeoRoleBridge */
+    /** Short SEO rank codes — Spatie SSOT is seo.manager / seo.planner / seo.content_manager */
     const SEO_ROLE_MANAGER = 'manager';
 
-    /** @deprecated Prefer Spatie role seo.planner via LegacySeoRoleBridge */
     const SEO_ROLE_PLANNER = 'planner';
 
-    /** @deprecated Prefer Spatie role seo.content_manager via LegacySeoRoleBridge */
     const SEO_ROLE_CONTENT_MANAGER = 'content_manager';
 
     const STATUS_NORMAL = 'normal';
@@ -61,7 +59,6 @@ class User extends Authenticatable implements FilamentUser
         'parent_id',
         'manager_id',
         'role',
-        'seo_role',
         'status',
         'is_system',
         'name',
@@ -90,26 +87,6 @@ class User extends Authenticatable implements FilamentUser
         static::forceDeleting(function (User $user): void {
             if ($user->isSystemUser()) {
                 throw new \RuntimeException('System user cannot be deleted.');
-            }
-        });
-
-        static::saved(function (User $user): void {
-            if (! $user->wasChanged('seo_role')) {
-                return;
-            }
-
-            try {
-                $bridge = app(LegacySeoRoleBridge::class);
-                $legacy = strtolower(trim((string) ($user->seo_role ?? '')));
-                if ($legacy === '') {
-                    $bridge->assign($user, null);
-
-                    return;
-                }
-
-                $bridge->syncFromLegacyColumn($user);
-            } catch (\Throwable) {
-                // Permission tables may not exist yet during early migrate/tests.
             }
         });
     }
@@ -160,7 +137,7 @@ class User extends Authenticatable implements FilamentUser
     /**
      * Whether this user may enter the SEO Filament panel.
      * Owner: full account access (no addon role required).
-     * Staff: must belong to an owner (parent_id) and hold SEO Spatie role or legacy seo_role.
+     * Staff: must belong to an owner (parent_id) and hold an SEO Spatie role.
      */
     public function canAccessSeoPanel(): bool
     {
@@ -176,18 +153,11 @@ class User extends Authenticatable implements FilamentUser
             return false;
         }
 
-        $rank = null;
         try {
-            $rank = app(LegacySeoRoleBridge::class)->resolveLegacyRank($this);
+            return app(SeoRoleAssignment::class)->resolveShortRank($this) !== null;
         } catch (\Throwable) {
-            $rank = null;
+            return false;
         }
-
-        if ($rank !== null) {
-            return true;
-        }
-
-        return filled($this->seo_role);
     }
 
     /**

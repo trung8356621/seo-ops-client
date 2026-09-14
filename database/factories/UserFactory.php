@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Core\Permissions\SeoRoleAssignment;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -32,8 +34,21 @@ class UserFactory extends Factory
             'role' => 'owner',
             'status' => 'normal',
             'parent_id' => null,
-            'seo_role' => 'manager',
         ];
+    }
+
+    /**
+     * Assign exclusive SEO Spatie role after create.
+     */
+    public function withSeoRole(string $shortOrSpatie): static
+    {
+        return $this->afterCreating(function (User $user) use ($shortOrSpatie): void {
+            try {
+                app(SeoRoleAssignment::class)->assign($user, $shortOrSpatie);
+            } catch (\Throwable) {
+                // Permission tables may be absent in isolated unit schemas.
+            }
+        });
     }
 
     /**

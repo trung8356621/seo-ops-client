@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Core\Console\Commands;
 
 use App\Core\Permissions\AddonPermissionRegistry;
-use App\Core\Permissions\LegacySeoRoleBridge;
+use App\Core\Permissions\SeoRoleAssignment;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +24,7 @@ final class SyncAddonPermissionsCommand extends Command
 
     public function handle(
         AddonPermissionRegistry $registry,
-        LegacySeoRoleBridge $seoBridge,
+        SeoRoleAssignment $seoRoles,
     ): int {
         if (! $registry->permissionTablesReady()) {
             $this->error('Spatie permission tables are missing. Run migrations first.');
@@ -40,7 +40,7 @@ final class SyncAddonPermissionsCommand extends Command
         ));
 
         if ($this->option('backfill-seo')) {
-            $result = $seoBridge->backfillAll();
+            $result = $seoRoles->backfillFromLegacyColumnIfPresent();
             $this->info(sprintf(
                 'SEO backfill: scanned=%d assigned=%d skipped=%d',
                 $result['scanned'],

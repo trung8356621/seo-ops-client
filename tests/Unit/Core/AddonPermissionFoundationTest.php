@@ -6,7 +6,7 @@ namespace Tests\Unit\Core;
 
 use App\Core\Permissions\AddonAuthorization;
 use App\Core\Permissions\AddonPermissionRegistry;
-use App\Core\Permissions\LegacySeoRoleBridge;
+use App\Core\Permissions\SeoRoleAssignment;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Artisan;
@@ -32,9 +32,9 @@ final class AddonPermissionFoundationTest extends TestCase
         /** @var AddonPermissionRegistry $registry */
         $registry = app(AddonPermissionRegistry::class);
         $registry->register('seo', [
-            LegacySeoRoleBridge::ROLE_MANAGER,
-            LegacySeoRoleBridge::ROLE_PLANNER,
-            LegacySeoRoleBridge::ROLE_CONTENT_MANAGER,
+            SeoRoleAssignment::ROLE_MANAGER,
+            SeoRoleAssignment::ROLE_PLANNER,
+            SeoRoleAssignment::ROLE_CONTENT_MANAGER,
         ]);
         $registry->register('seeding', [
             'seeding.manager',
@@ -57,13 +57,13 @@ final class AddonPermissionFoundationTest extends TestCase
         );
     }
 
-    public function test_seo_legacy_backfill_and_repeat_is_idempotent(): void
+    public function test_seo_role_assign_is_exclusive_and_idempotent(): void
     {
         $registry = app(AddonPermissionRegistry::class);
         $registry->register('seo', [
-            LegacySeoRoleBridge::ROLE_MANAGER,
-            LegacySeoRoleBridge::ROLE_PLANNER,
-            LegacySeoRoleBridge::ROLE_CONTENT_MANAGER,
+            SeoRoleAssignment::ROLE_MANAGER,
+            SeoRoleAssignment::ROLE_PLANNER,
+            SeoRoleAssignment::ROLE_CONTENT_MANAGER,
         ]);
         $registry->syncToDatabase();
 
@@ -74,14 +74,20 @@ final class AddonPermissionFoundationTest extends TestCase
             'role' => User::ROLE_STAFF,
             'status' => User::STATUS_NORMAL,
             'parent_id' => 1,
-            'seo_role' => User::SEO_ROLE_MANAGER,
         ]);
 
-        $bridge = app(LegacySeoRoleBridge::class);
-        self::assertTrue($bridge->syncFromLegacyColumn($user->fresh()));
-        self::assertTrue($user->fresh()->hasRole(LegacySeoRoleBridge::ROLE_MANAGER));
-        self::assertFalse($bridge->syncFromLegacyColumn($user->fresh()));
+        $seo = app(SeoRoleAssignment::class);
+        $seo->assign($user, User::SEO_ROLE_MANAGER);
+        self::assertTrue($user->fresh()->hasRole(SeoRoleAssignment::ROLE_MANAGER));
+
+        $seo->assign($user->fresh(), User::SEO_ROLE_MANAGER);
         self::assertSame(1, $user->fresh()->roles()->where('name', 'like', 'seo.%')->count());
+
+        $seo->assign($user->fresh(), User::SEO_ROLE_PLANNER);
+        $fresh = $user->fresh();
+        self::assertTrue($fresh->hasRole(SeoRoleAssignment::ROLE_PLANNER));
+        self::assertFalse($fresh->hasRole(SeoRoleAssignment::ROLE_MANAGER));
+        self::assertSame(1, $fresh->roles()->where('name', 'like', 'seo.%')->count());
     }
 
     public function test_owner_has_seo_panel_access_without_addon_role(): void
@@ -89,7 +95,6 @@ final class AddonPermissionFoundationTest extends TestCase
         $owner = new User([
             'role' => User::ROLE_OWNER,
             'status' => User::STATUS_NORMAL,
-            'seo_role' => null,
         ]);
 
         self::assertTrue($owner->canAccessSeoPanel());
@@ -100,7 +105,7 @@ final class AddonPermissionFoundationTest extends TestCase
     public function test_staff_account_isolation_helper(): void
     {
         $registry = app(AddonPermissionRegistry::class);
-        $registry->register('seo', [LegacySeoRoleBridge::ROLE_MANAGER]);
+        $registry->register('seo', [SeoRoleAssignment::ROLE_MANAGER]);
         $registry->syncToDatabase();
 
         $ownerA = User::query()->create([
@@ -124,27 +129,43 @@ final class AddonPermissionFoundationTest extends TestCase
             'role' => User::ROLE_STAFF,
             'status' => User::STATUS_NORMAL,
             'parent_id' => $ownerA->id,
-            'seo_role' => User::SEO_ROLE_MANAGER,
         ]);
 
-        app(LegacySeoRoleBridge::class)->syncFromLegacyColumn($staffA->fresh());
+        app(SeoRoleAssignment::class)->assign($staffA, User::SEO_ROLE_MANAGER);
 
         /** @var AddonAuthorization $auth */
         $auth = app(AddonAuthorization::class);
         self::assertTrue($auth->sharesAccountScope($staffA->fresh(), $ownerA->fresh()));
         self::assertFalse($auth->sharesAccountScope($staffA->fresh(), $ownerB->fresh()));
         self::assertSame((int) $ownerA->id, (int) $staffA->fresh()->accountOwnerId());
-        self::assertTrue($staffA->fresh()->hasRole(LegacySeoRoleBridge::ROLE_MANAGER));
+        self::assertTrue($staffA->fresh()->hasRole(SeoRoleAssignment::ROLE_MANAGER));
     }
 
     public function test_permissions_sync_command_runs(): void
     {
         $registry = app(AddonPermissionRegistry::class);
-        $registry->register('seo', [LegacySeoRoleBridge::ROLE_MANAGER]);
+        $registry->register('seo', [SeoRoleAssignment::ROLE_MANAGER]);
         $registry->register('seeding', ['seeding.manager']);
 
         $exit = Artisan::call('permissions:sync-addons', ['--backfill-seo' => true]);
         self::assertSame(0, $exit);
+    }
+
+    public function test_users_table_has_no_seo_role_column_after_drop_migration(): void
+    {
+        $connection = (string) config('database.core_connection', 'sqlite');
+
+        Schema::connection($connection)->table('users', function (Blueprint $table): void {
+            $table->string('seo_role')->nullable();
+        });
+        self::assertTrue(Schema::connection($connection)->hasColumn('users', 'seo_role'));
+
+        Artisan::call('migrate', [
+            '--path' => 'database/migrations/2026_09_14_120000_drop_legacy_seo_role_from_users_table.php',
+            '--force' => true,
+        ]);
+
+        self::assertFalse(Schema::connection($connection)->hasColumn('users', 'seo_role'));
     }
 
     private function createPermissionSchema(): void
@@ -171,7 +192,6 @@ final class AddonPermissionFoundationTest extends TestCase
             $table->string('email')->unique();
             $table->string('password');
             $table->string('role')->default('staff');
-            $table->string('seo_role')->nullable();
             $table->string('status')->default('normal');
             $table->boolean('is_system')->default(false);
             $table->timestamps();

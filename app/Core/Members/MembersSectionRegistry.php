@@ -60,6 +60,23 @@ final class MembersSectionRegistry
     }
 
     /**
+     * Form-only keys from available contributors (stripped before User model save).
+     *
+     * @return list<string>
+     */
+    public function formOnlyStateKeys(): array
+    {
+        $keys = [];
+        foreach ($this->available() as $contributor) {
+            foreach ($contributor->formOnlyStateKeys() as $key) {
+                $keys[] = $key;
+            }
+        }
+
+        return array_values(array_unique($keys));
+    }
+
+    /**
      * Filament Tabs for Edit User — one tab per available contributor with non-empty schema.
      *
      * @return list<Tab>

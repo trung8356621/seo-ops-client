@@ -69,10 +69,9 @@ class EditUser extends EditRecord
             $data,
         );
 
-        unset(
-            $data['seo_capacity_use_default'],
-            $data['seo_monthly_capacity_override'],
-        );
+        foreach (app(MembersSectionRegistry::class)->formOnlyStateKeys() as $key) {
+            unset($data[$key]);
+        }
 
         return $data;
     }

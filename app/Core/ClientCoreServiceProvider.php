@@ -20,7 +20,7 @@ use App\Core\Members\MembersSectionRegistry;
 use App\Core\Operations\OperationLogger;
 use App\Core\Permissions\AddonAuthorization;
 use App\Core\Permissions\AddonPermissionRegistry;
-use App\Core\Permissions\LegacySeoRoleBridge;
+use App\Core\Permissions\SeoRoleAssignment;
 use App\Core\Queue\ScheduleRegistry;
 use App\Core\Settings\CoreSettingsBootstrap;
 use App\Core\Settings\SettingsSectionRegistry;
@@ -61,7 +61,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(WorkspaceDestinationRegistry::class);
         $this->app->singleton(AddonPermissionRegistry::class);
         $this->app->singleton(AddonAuthorization::class);
-        $this->app->singleton(LegacySeoRoleBridge::class);
+        $this->app->singleton(SeoRoleAssignment::class);
         $this->app->singleton(SettingsSectionRegistry::class);
         $this->app->singleton(CoreSettingsBootstrap::class);
         $this->app->singleton(\App\Core\Database\AddonMigrationRegistrar::class);

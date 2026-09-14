@@ -61,6 +61,11 @@ final class MembersTabsAndWorkspaceHubTest extends TestCase
                 return true;
             }
 
+            public function formOnlyStateKeys(): array
+            {
+                return [];
+            }
+
             public function formSections(): array
             {
                 return [
@@ -106,6 +111,11 @@ final class MembersTabsAndWorkspaceHubTest extends TestCase
             public function isAvailable(): bool
             {
                 return true;
+            }
+
+            public function formOnlyStateKeys(): array
+            {
+                return [];
             }
 
             public function formSections(): array
@@ -358,7 +368,6 @@ final class MembersTabsAndWorkspaceHubTest extends TestCase
             $table->string('email')->unique();
             $table->string('password');
             $table->string('role')->default('staff');
-            $table->string('seo_role')->nullable();
             $table->string('status')->default('normal');
             $table->boolean('is_system')->default(false);
             $table->timestamps();
