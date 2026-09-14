@@ -1,0 +1,198 @@
+{
+  "schema_version": 1,
+  "diagram_type": "lifecycle",
+  "meta": {
+    "title": "Content Project Item Execution Lifecycle",
+    "output": "docs/architecture/content-project-run.lifecycle.html",
+    "quality_profile": "showcase",
+    "viewBox": [1030, 680]
+  },
+  "lanes": [
+    { "id": "main", "label": "Persisted execution" },
+    { "id": "waiting", "label": "UI does not own this rail" },
+    { "id": "exceptions", "label": "Retry loop" },
+    { "id": "terminal", "label": "Terminal outcomes" }
+  ],
+  "states": [
+    {
+      "id": "accepted",
+      "type": "start",
+      "label": "Run accepted",
+      "sublabel": "runs.status=running",
+      "lane": "main",
+      "col": 0,
+      "step": "01",
+      "tag": "DB"
+    },
+    {
+      "id": "item_pending",
+      "type": "waiting",
+      "label": "Item pending",
+      "sublabel": "queued / claimed",
+      "lane": "main",
+      "col": 1,
+      "step": "02",
+      "tag": "queue"
+    },
+    {
+      "id": "processing",
+      "type": "active",
+      "label": "Item processing",
+      "sublabel": "job + heartbeat",
+      "lane": "main",
+      "col": 2,
+      "step": "03",
+      "tag": "worker"
+    },
+    {
+      "id": "content_gate",
+      "type": "decision",
+      "label": "Content precondition",
+      "sublabel": "outline + writing",
+      "lane": "main",
+      "col": 3,
+      "step": "04",
+      "tag": "gate"
+    },
+    {
+      "id": "item_success",
+      "type": "success",
+      "label": "Item success",
+      "sublabel": "then dispatchNext",
+      "lane": "main",
+      "col": 4,
+      "step": "05",
+      "tag": "done"
+    },
+    {
+      "id": "ui_observe",
+      "type": "external",
+      "label": "Poll / F5",
+      "sublabel": "read-model only",
+      "lane": "waiting",
+      "col": 0,
+      "tag": "UI"
+    },
+    {
+      "id": "retryable",
+      "type": "failure",
+      "label": "Transient AI fail",
+      "sublabel": "waiting_ai_retry",
+      "lane": "exceptions",
+      "col": 0,
+      "yOffset": 78,
+      "tag": "retryable"
+    },
+    {
+      "id": "missing_outline",
+      "type": "failure",
+      "label": "Missing artifact",
+      "sublabel": "outline+writing",
+      "lane": "terminal",
+      "col": 1,
+      "tag": "data"
+    },
+    {
+      "id": "item_failed",
+      "type": "failure",
+      "label": "Item failed",
+      "sublabel": "or Stopped / breaker",
+      "lane": "terminal",
+      "col": 0,
+      "tag": "terminal"
+    },
+    {
+      "id": "run_completed",
+      "type": "success",
+      "label": "Run completed",
+      "sublabel": "no pending items",
+      "lane": "terminal",
+      "col": 2,
+      "tag": "terminal"
+    }
+  ],
+  "transitions": [
+    {
+      "id": "observe",
+      "from": "processing",
+      "to": "ui_observe",
+      "label": "reconstruct",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "ai-retryable",
+      "from": "processing",
+      "to": "retryable",
+      "label": "retryable exhaustion",
+      "variant": "security",
+      "fromSide": "left",
+      "toSide": "left",
+      "via": [[320, 157], [320, 385]]
+    },
+    {
+      "id": "retry-resume",
+      "from": "retryable",
+      "to": "processing",
+      "label": "delayed job",
+      "variant": "emphasis",
+      "fromSide": "left",
+      "toSide": "top",
+      "via": [[20, 385], [20, 80], [402, 80]]
+    },
+    {
+      "id": "retry-exhausted",
+      "from": "retryable",
+      "to": "item_failed",
+      "label": "attempt ≥ 3",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "outline-reject",
+      "from": "content_gate",
+      "to": "missing_outline",
+      "label": "assembleForPrompt null",
+      "variant": "security",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    },
+    {
+      "id": "run-done",
+      "from": "item_success",
+      "to": "run_completed",
+      "label": "finalizeIfDone",
+      "variant": "emphasis",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "straight",
+      "labelDy": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Execution Invariants",
+      "items": [
+        "Generate persists the run, then engine.start() queues the first job before HTTP returns. PHP engine owns dispatchNext.",
+        "Modal close / F5 only reconstruct. Retries persist. Item failed is written by the worker, not missing UI."
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Regression Hotspots",
+      "items": [
+        "Alpine processingRows vs resolver isActive; ops poll is lazyRefreshOps; JS pollRunProgress is missing.",
+        "Legacy startQueue can still advance items if phpEngine is false. ResumeExecution never calls engine.resume()."
+      ]
+    }
+  ]
+}

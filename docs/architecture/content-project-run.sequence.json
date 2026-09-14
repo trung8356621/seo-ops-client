@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "Generate Click to Worker Handoff",
+    "output": "docs/architecture/content-project-run.sequence.html",
+    "quality_profile": "showcase",
+    "column_fit": "spread",
+    "viewBox": [1020, 980]
+  },
+  "participants": [
+    { "id": "ui", "type": "frontend", "label": "Browser", "sublabel": "modal" },
+    { "id": "http", "type": "frontend", "label": "Livewire", "sublabel": "ops page" },
+    { "id": "cmd", "type": "backend", "label": "Command", "sublabel": "Generate" },
+    { "id": "db", "type": "database", "label": "omi_seo_ai", "sublabel": "run+items" },
+    { "id": "queue", "type": "messagebus", "label": "Queue", "sublabel": "run queue" },
+    { "id": "worker", "type": "backend", "label": "Worker", "sublabel": "ArticleJob" },
+    { "id": "poll", "type": "external", "label": "Poll / F5", "sublabel": "read-model" }
+  ],
+  "segments": [
+    { "from": 150, "to": 340, "label": "Accept + persist" },
+    { "from": 360, "to": 620, "label": "Worker owns execution" },
+    { "from": 638, "to": 820, "label": "UI reconstructs" }
+  ],
+  "messages": [
+    { "id": "click", "from": "ui", "to": "http", "y": 180, "label": "Generate click", "variant": "emphasis" },
+    { "id": "dispatch-cmd", "from": "http", "to": "cmd", "y": 222, "label": "GenerateProjectItemsCommand", "variant": "emphasis" },
+    { "id": "persist", "from": "cmd", "to": "db", "y": 264, "label": "startRun + prepareRunQueue", "variant": "emphasis" },
+    { "id": "enqueue", "from": "cmd", "to": "queue", "y": 306, "label": "engine.start → dispatch job", "variant": "emphasis" },
+    { "id": "ack", "from": "cmd", "to": "ui", "y": 328, "label": "ITEMS_GENERATE_REQUESTED", "variant": "return" },
+    { "id": "deliver", "from": "queue", "to": "worker", "y": 410, "label": "RunContentProjectArticleJob", "variant": "emphasis" },
+    { "id": "claim", "from": "worker", "to": "db", "y": 452, "label": "status=processing + heartbeat", "variant": "default" },
+    { "id": "finish", "from": "worker", "to": "db", "y": 494, "label": "success / failed / pending retry", "variant": "emphasis" },
+    { "id": "next", "from": "worker", "to": "queue", "y": 536, "label": "handleArticleFinished → dispatchNext", "variant": "emphasis" },
+    { "id": "poll-req", "from": "poll", "to": "http", "y": 670, "label": "lazyRefreshOps or remount", "variant": "dashed" },
+    { "id": "read", "from": "http", "to": "db", "y": 712, "label": "operations read-model", "variant": "dashed" },
+    { "id": "paint", "from": "db", "to": "ui", "y": 754, "label": "runtime badges from DB", "variant": "return" }
+  ],
+  "activations": [
+    { "participant": "http", "from": 174, "to": 356, "type": "frontend" },
+    { "participant": "cmd", "from": 216, "to": 356, "type": "backend" },
+    { "participant": "queue", "from": 300, "to": 418, "type": "messagebus" },
+    { "participant": "worker", "from": 404, "to": 544, "type": "backend" },
+    { "participant": "db", "from": 258, "to": 510, "type": "database" },
+    { "participant": "http", "from": 664, "to": 762, "type": "frontend" }
+  ],
+  "cards": [
+    {
+      "dot": "emerald",
+      "title": "Ownership after accept",
+      "items": [
+        "HTTP returns after the first job is queued; the browser is not on the dispatch path.",
+        "dispatchNext runs inside the worker after each article, independent of the modal."
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "What F5 can see",
+      "items": [
+        "Poll/F5 only reads run, run_item, php_engine.active_dispatch, ai_transient_retry",
+        "Missing Alpine continuation cannot strand pending items that the engine already queued"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,136 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Content Project AI Routing Flow",
+    "quality_profile": "showcase",
+    "output": "docs/architecture/ai-routing.workflow.html"
+  },
+  "lanes": [
+    { "id": "ui", "label": "UI + Command" },
+    { "id": "routing", "label": "Snapshot / Planner" },
+    { "id": "exec", "label": "Execution + History", "variant": "exception" }
+  ],
+  "phases": [
+    { "id": "intake", "label": "Entry", "fromCol": 0, "toCol": 1 },
+    { "id": "context", "label": "Context + shape", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "runtime", "label": "Attempt + record", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "entries", "label": "Entry points", "lane": "ui", "fromCol": 0, "toCol": 2, "variant": "emphasis" }
+  ],
+  "mainPath": [
+    "launch",
+    "ep-bulk",
+    "handlers",
+    "snapshot",
+    "shape-plan",
+    "attempt",
+    "history"
+  ],
+  "nodes": [
+    {
+      "id": "launch",
+      "lane": "ui",
+      "col": 0,
+      "type": "frontend",
+      "label": "Launch Settings",
+      "sublabel": "NORMAL/FREE_ONLY",
+      "width": 124
+    },
+    {
+      "id": "ep-bulk",
+      "lane": "ui",
+      "col": 1,
+      "type": "frontend",
+      "label": "Bulk Generate",
+      "sublabel": "stamps policy",
+      "width": 124
+    },
+    {
+      "id": "ep-alt",
+      "lane": "ui",
+      "col": 2,
+      "type": "frontend",
+      "label": "Single / Resume",
+      "sublabel": "mixed stamps",
+      "width": 124
+    },
+    {
+      "id": "handlers",
+      "lane": "routing",
+      "col": 2,
+      "type": "backend",
+      "label": "Command Handlers",
+      "sublabel": "CommandBus",
+      "width": 124
+    },
+    {
+      "id": "snapshot",
+      "lane": "routing",
+      "col": 3,
+      "type": "database",
+      "label": "Snapshot + Scope",
+      "sublabel": "immutable",
+      "width": 124
+    },
+    {
+      "id": "shape-plan",
+      "lane": "routing",
+      "col": 4,
+      "type": "backend",
+      "label": "Shape + Planner",
+      "sublabel": "FREE→SPLIT",
+      "width": 124
+    },
+    {
+      "id": "attempt",
+      "lane": "exec",
+      "col": 4,
+      "type": "cloud",
+      "label": "Physical Attempt",
+      "sublabel": "first usable",
+      "width": 124
+    },
+    {
+      "id": "fail-health",
+      "lane": "exec",
+      "col": 5,
+      "type": "security",
+      "label": "Fail / Health",
+      "sublabel": "401–5xx · 402",
+      "width": 124
+    },
+    {
+      "id": "history",
+      "lane": "routing",
+      "col": 5,
+      "type": "database",
+      "label": "PromptResult",
+      "sublabel": "routing_attempts",
+      "width": 124
+    }
+  ],
+  "edges": [
+    { "id": "launch-bulk", "from": "launch", "to": "ep-bulk", "variant": "emphasis" },
+    { "id": "bulk-handlers", "from": "ep-bulk", "to": "handlers", "variant": "emphasis" },
+    { "id": "alt-handlers", "from": "ep-alt", "to": "handlers", "variant": "dashed", "role": "branch" },
+    { "id": "handlers-snapshot", "from": "handlers", "to": "snapshot", "variant": "emphasis" },
+    { "id": "snapshot-shape", "from": "snapshot", "to": "shape-plan", "label": "first usable", "variant": "emphasis" },
+    { "id": "shape-attempt", "from": "shape-plan", "to": "attempt", "variant": "emphasis" },
+    { "id": "attempt-history", "from": "attempt", "to": "history", "label": "record", "variant": "emphasis" },
+    { "id": "attempt-fail", "from": "attempt", "to": "fail-health", "variant": "security", "role": "error" },
+    { "id": "fail-history", "from": "fail-health", "to": "history", "label": "skip|402", "variant": "security", "role": "error" }
+  ],
+  "cards": [
+    {
+      "dot": "rose",
+      "title": "Routing Contract / Regression Hotspots",
+      "items": [
+        "OPERATIONAL_KEYS + startRun fallback: ai_cost_policy must survive Bulk/Relation stamps and Rerun/Resume gaps",
+        "orderCandidates identity; GenerationShapeResolver FREE→SPLIT / PAID→SINGLE; planner phases ≠ order",
+        "Entry diffs: Bulk/View/Relation stamp; View Rerun/Resume/step often fallback; history via PromptExecutionPersistence"
+      ]
+    }
+  ]
+}
