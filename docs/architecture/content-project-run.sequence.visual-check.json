@@ -7,8 +7,8 @@
   "visualReview": "pending",
   "artifact": {
     "path": "D:\\work\\omnichannel-client\\docs\\architecture\\content-project-run.sequence.html",
-    "sha256": "ce1e9bd95a76174c5d25b002fac0050ce4c6b5e3f64487bf26809b5918c278ff",
-    "bytes": 812238
+    "sha256": "c7c7d070a0589f3eef2233e95b4b2066bed2f165abc0638ba8c8e135373f1ba2",
+    "bytes": 812248
   },
   "state": {
     "detail": "read",
@@ -35,7 +35,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true
       },
@@ -131,7 +131,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true
       },
@@ -174,7 +174,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true,
         "ok": false,
@@ -304,7 +304,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true,
         "ok": false,
@@ -433,7 +433,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true,
         "ok": false,
@@ -562,7 +562,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true,
         "ok": false,
@@ -594,7 +594,7 @@
         "innerWidth": 1440,
         "innerHeight": 900,
         "scrollWidth": 1440,
-        "scrollHeight": 1533,
+        "scrollHeight": 1549,
         "overflowX": false,
         "overflowY": true,
         "ok": false,

@@ -5598,7 +5598,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </div>
         <ul>
           <li>&bull; HTTP returns after the first job is queued; the browser is not on the dispatch path.</li>
-          <li>&bull; dispatchNext runs inside the worker after each article, independent of the modal.</li>
+          <li>&bull; dispatchNext is worker-owned. ResumeExecution also calls engine.resume() then dispatchNext.</li>
         </ul>
       </div>
 

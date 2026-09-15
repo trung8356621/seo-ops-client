@@ -96,7 +96,7 @@
       "id": "item_failed",
       "type": "failure",
       "label": "Item failed",
-      "sublabel": "or Stopped / breaker",
+      "sublabel": "hard fail / breaker",
       "lane": "terminal",
       "col": 0,
       "tag": "terminal"
@@ -183,15 +183,15 @@
       "title": "Execution Invariants",
       "items": [
         "Generate persists the run, then engine.start() queues the first job before HTTP returns. PHP engine owns dispatchNext.",
-        "Modal close / F5 only reconstruct. Retries persist. Item failed is written by the worker, not missing UI."
+        "ResumeExecution now calls engine.resume(): stopping→running then dispatchNext. Attempt on engine claims is 1→2→3 (Pending does not bump)."
       ]
     },
     {
       "dot": "rose",
       "title": "Regression Hotspots",
       "items": [
-        "Alpine processingRows vs resolver isActive; ops poll is lazyRefreshOps; JS pollRunProgress is missing.",
-        "Legacy startQueue can still advance items if phpEngine is false. ResumeExecution never calls engine.resume()."
+        "Alpine processingRows vs resolver isActive; ops poll is lazyRefreshOps; JS still calls missing pollRunProgress.",
+        "Legacy startQueue can still advance items if phpEngine is false. Circuit-breaker Failed is not ResumeExecution (handler still requires stopping)."
       ]
     }
   ]

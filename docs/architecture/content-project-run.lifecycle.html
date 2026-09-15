@@ -5282,8 +5282,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         <text data-detail="fine" x="556" y="497" class="t-security" font-size="7" text-anchor="middle">data</text>
         </g>
 
-        <g id="node-item_failed" data-node-id="item_failed" data-node-label="Item failed" tabindex="0" role="button" aria-label="Focus Item failed, or Stopped / breaker, Terminal outcomes" aria-pressed="false" data-node-kind="failure" data-node-sublabel="or Stopped / breaker" data-node-tag="terminal" data-node-context="Terminal outcomes">
-          <title>Item failed · or Stopped / breaker · Terminal outcomes · terminal</title>
+        <g id="node-item_failed" data-node-id="item_failed" data-node-label="Item failed" tabindex="0" role="button" aria-label="Focus Item failed, hard fail / breaker, Terminal outcomes" aria-pressed="false" data-node-kind="failure" data-node-sublabel="hard fail / breaker" data-node-tag="terminal" data-node-context="Terminal outcomes">
+          <title>Item failed · hard fail / breaker · Terminal outcomes · terminal</title>
           <rect x="343" y="450" width="118" height="58" rx="7" class="c-mask"/>
           <rect x="343" y="450" width="118" height="58" rx="7" class="c-security" stroke-width="1.5"/>
           <g aria-hidden="true" data-semantic-sigil="failure" class="semantic-sigil s-security" transform="translate(444 456) scale(0.6875)">
@@ -5291,7 +5291,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
             <path d="m5.7 5.7 4.6 4.6m0-4.6-4.6 4.6"/>
           </g>
           <text data-node-label="" data-detail-anchor="" x="402" y="471" class="t-primary" font-size="10" font-weight="600" text-anchor="middle">Item failed</text>
-          <text data-detail="context" x="402" y="487" class="t-muted" font-size="7" text-anchor="middle">or Stopped / breaker</text>
+          <text data-detail="context" x="402" y="487" class="t-muted" font-size="7" text-anchor="middle">hard fail / breaker</text>
         <text data-detail="fine" x="402" y="497" class="t-security" font-size="7" text-anchor="middle">terminal</text>
         </g>
 
@@ -5559,7 +5559,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
         </div>
         <ul>
           <li>&bull; Generate persists the run, then engine.start() queues the first job before HTTP returns. PHP engine owns dispatchNext.</li>
-          <li>&bull; Modal close / F5 only reconstruct. Retries persist. Item failed is written by the worker, not missing UI.</li>
+          <li>&bull; ResumeExecution now calls engine.resume(): stopping→running then dispatchNext. Attempt on engine claims is 1→2→3 (Pending does not bump).</li>
         </ul>
       </div>
 
@@ -5569,8 +5569,8 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
           <h3>Regression Hotspots</h3>
         </div>
         <ul>
-          <li>&bull; Alpine processingRows vs resolver isActive; ops poll is lazyRefreshOps; JS pollRunProgress is missing.</li>
-          <li>&bull; Legacy startQueue can still advance items if phpEngine is false. ResumeExecution never calls engine.resume().</li>
+          <li>&bull; Alpine processingRows vs resolver isActive; ops poll is lazyRefreshOps; JS still calls missing pollRunProgress.</li>
+          <li>&bull; Legacy startQueue can still advance items if phpEngine is false. Circuit-breaker Failed is not ResumeExecution (handler still requires stopping).</li>
         </ul>
       </div>
     </div>

@@ -50,7 +50,7 @@
       "title": "Ownership after accept",
       "items": [
         "HTTP returns after the first job is queued; the browser is not on the dispatch path.",
-        "dispatchNext runs inside the worker after each article, independent of the modal."
+        "dispatchNext is worker-owned. ResumeExecution also calls engine.resume() then dispatchNext."
       ]
     },
     {
