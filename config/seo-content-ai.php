@@ -175,6 +175,16 @@ return [
          */
         'heartbeat_stale_minutes' => (int) env('CONTENT_PROJECT_HEARTBEAT_STALE_MINUTES', 20),
 
+        /**
+         * Hard worker-death lease (seconds). Must exceed article job timeout (900).
+         * 0 = derive from max(active_dispatch_ttl_minutes*60, 960).
+         * Watchdog only declares WORKER_LOST after this threshold — never on heartbeat alone.
+         */
+        'worker_death_seconds' => (int) env('CONTENT_PROJECT_WORKER_DEATH_SECONDS', 0),
+
+        /** Mirrors RunContentProjectArticleJob::$timeout — used for death-threshold floor. */
+        'article_job_timeout_seconds' => (int) env('CONTENT_PROJECT_ARTICLE_JOB_TIMEOUT_SECONDS', 900),
+
         /** Queue name for RunContentProjectArticleJob. */
         'run_queue' => env('CONTENT_PROJECT_RUN_QUEUE', 'seo-content-run'),
 
