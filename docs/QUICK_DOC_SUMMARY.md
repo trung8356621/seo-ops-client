@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-12  
+> Updated: 2026-09-15
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -267,3 +267,12 @@ Phạm vi: `omnichannel-client` **0.4.3–0.4.5** + `omnichannel-addons` **0.5.3
 ### Help
 
 - Topic `settings/free-single-split`; seed VERSION `2026.09.09.1` — `CONTEXTUAL_HELP.md`.
+
+## 13. Batch 2026-09-12 → 2026-09-15 — Content Project × AI Router stabilization
+
+- Direct DeepSeek `deepseek-v4-pro` remained eligible after OpenRouter paid lock; provider HTTP 200 + empty outline was caused by thinking consuming the 2048-token output limit, not depleted funds. Route-specific 8192 output planning, split-hook thinking default off, provider model ID unchanged, `OUTPUT_TRUNCATED` on length-limited empty content. General 2048 split reserve stays for other/free routes.
+- Content Project run #238 one-item smoke completed structure outline, vocabulary, and article content with 0 failed items; this does not prove the second paid OpenRouter route. Project 497 was reset after that smoke before the user's later manual run; do not treat that reset as current project state.
+- Batch breaker stops at 3 aggregate failed items or 3 consecutive same-signature failures. Emergency stop records `stop_requested_at`; an item finishing after the request presents `stopped_after_request` / `Dừng sau lệnh` rather than ordinary completed.
+- Same-tab ops: `dispatchGenerate()` forces server refresh; runtime poll uses `lazyRefreshOps()` + `runtime_revision`, queues a force refresh when busy, and retries failed polls. `Last activity` is server-morphed per row; Alpine only owns the immediate command overlay. 2026-09-15 Blade compilation, targeted PHPUnit, and rendered-cell checks passed; browser-session visual verification remains outstanding.
+- Canonical detail: `architecture/AI_EXECUTION_ROUTING.md`, `architecture/CONTENT_PROJECT_AI_INTEGRATION.md`, `modules/CONTENT_PROJECTS.md`, `modules/PROMPTS_AND_AI.md`, `operations/AI_DEBUG_PLAYBOOK.md`.
+- Archify workflow spec/HTML lives under `architecture/content-project-ai-router-*`: showcase artifact validation 9/9, automated browser containment passed at 1440×900, 1600×1000, 1920×1080, and 2048×1320, with light/dark screenshots reviewed. The v2 compiler owns the intrinsic `viewBox`; do not force a taller one.

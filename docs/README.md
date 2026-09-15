@@ -1,7 +1,7 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-09-12
+> Last verified: 2026-09-15
 
 ## Workspace repos
 | Repo | Role |
@@ -35,6 +35,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [AI_EXECUTION_ROUTING.md](architecture/AI_EXECUTION_ROUTING.md) | **AI execution & routing SoT** (sortable order, free/paid, health vs eligibility, budget, validation, failure taxonomy) |
 | [AI_HISTORY_PROMPT_VERSION.md](architecture/AI_HISTORY_PROMPT_VERSION.md) | Prompt Version + lightweight AI History + routing attempts |
 | [CONTENT_PROJECT_AI_INTEGRATION.md](architecture/CONTENT_PROJECT_AI_INTEGRATION.md) | Content Project ↔ AI stage sequence, correlation, domain-per-item |
+| [content-project-ai-router-workflow.html](architecture/content-project-ai-router-workflow.html) | Explorable CP ↔ AI Router workflow; showcase artifact and desktop browser checks pass |
 | [NEW_AGENT_HANDOFF.md](architecture/NEW_AGENT_HANDOFF.md) | Post-refactor operational handoff for new agents |
 | [REPO_SPLIT.md](architecture/REPO_SPLIT.md) | Canonical multi-repo layout + boot/composer/vite |
 | [DB_REPOSITORY_OWNERSHIP.json](architecture/DB_REPOSITORY_OWNERSHIP.json) | DB / package ownership after split |

@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-12  
+> Last verified: 2026-09-15
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)  
 > **AI integration boundary:** [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md) · routing SoT: [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)
 
@@ -93,7 +93,7 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Move EP → next month | `MoveContentProjectToNextMonthService` — all active items; source ends empty; packing reused |
 | Rewrite keyword canonicalize | `ContentProjectRewriteKeywordCanonicalizer` |
 | Task canonical AI input | `Support/ContentProject/ContentProjectTaskCanonicalInputBuilder` |
-| Batch circuit breaker | `Support/RunEngine/ContentProjectBatchCircuitBreakerState` + `ContentProjectBatchFailureSignature` (threshold **3** consecutive same signature) |
+| Batch circuit breaker | `Support/RunEngine/ContentProjectBatchCircuitBreakerState` + `ContentProjectBatchFailureSignature` (stop after **3 aggregate failed items**, or 3 consecutive same-signature failures) |
 | Project `meta` JSON | Migration `seo_projects.meta` — stores MCP planning payload among other keys |
 | Draft planning domain column | `DraftItemDomainRepairService` + inline domain edit in shared draft table (`content-project-draft-items`) |
 | Draft clone idea | `CloneDraftCreateIdeaService` — duplicate CREATE row within draft |
@@ -313,6 +313,8 @@ Draft (planning) + Reviewed items
 
 **Test run:** independently gated; not blocked by unrelated item processing or mixed project state.
 
+**Emergency stop:** the header action `emergency_stop_generation` confirms and dispatches `StopProjectExecutionCommand`, then refreshes ops. Run engine records `settings.php_engine.stop_requested_at` and prevents further dispatch. A terminal run-item whose `finished_at` is at/after that request is presented as `stopped_after_request` / `Dừng sau lệnh` (warning), distinct from an ordinary completed item; items not visited stay pending. Read-model runtime fingerprint includes stop context so a polling tab can remorph that distinction.
+
 **Operator skip generation (not `skip_publish`):** durable columns on `seo_project_tasks` — `generation_blocked_at` / `generation_blocked_by` / `generation_block_reason`. Canonical scope `SeoProjectTask::eligibleForGeneration()` (+ `isGenerationBlocked()`). Classifier preview uses the scope; `classifySnapshot` skips with reason `generation_blocked`; rerun/resume/Generate fail closed with message `Item đã được đánh dấu bỏ qua tạo bài.` Commands: `BlockProjectItemGenerationCommand` / `UnblockProjectItemGenerationCommand` (planner/manager via `canAccessContentProjectRun`). UI: **Bỏ qua tạo bài** / **Cho phép tạo lại** + badge Skipped. Does not delete article/content.
 
 Archived project note: Article Editor FAQ/CTA body mutations blocked via session `assertArticleEditable` — see [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md).
@@ -394,7 +396,7 @@ Require explicit `item_refs` (fail-closed — empty selection never expands to a
 
 **Shared ops UI (CP ↔ PQ):** both pages reuse `content-project-ops-styles`, `content-project-summary-cards`, `content-project-filter-toolbar` (`variant`), `content-project-bulk-selection-toolbar` (`variant`), `content-project-items-list` (`variant`), thumbnail/meta/status-badge. CP actions: `content-project-item-actions-menu` + `ContentProjectItemActionsPresenter`. PQ actions: `publishing-queue-item-actions-menu` + `PublishingQueueItemActionsPresenter` (includes **View on WordPress** when publish state = published and stored `wp_permalink` is a valid URL). Edit-article anchors use real `href` + `target="_blank"` / `rel="noopener noreferrer"` (claim Needs Review is side-effect only — no `preventDefault` navigation).
 
-**Ops table realtime refresh (generation):** Client-only optimistic row state (`processingRows` + `cp-ops-row-processing`) gives instant **Running** feedback on row actions / bulk generate — **not** authoritative. After bulk **Generate working items** succeeds, `ViewSeoProject::dispatchGenerate()` invalidates ops cache and dispatches `cp-ops-generation-started` with affected task IDs. Alpine `startGenerationTablePoll()` polls `doLazyRefresh(true)` → `manualRefreshOps()` (full table remorph) on an interval until summary `running` returns to 0; toolbar shows `ops_lazy_refreshing` («Checking updates…» / «Đang kiểm tra cập nhật…») while `lazyBusy`. On failure / zero eligible items, `cp-ops-generation-failed` clears optimistic processing. Modal «Chạy lại với từ khóa» uses the same refresh pattern on terminal completion (`waitRestartKeywordTerminal` → `doLazyRefresh(true)`). Summary-only lazy fetch (`fetchOpsSummaryOnly` + `skipRender`) updates KPI cards only — never remorphs the item table.
+**Ops table realtime refresh (generation, verified 2026-09-15):** `processingRows` is a client-only command overlay, not runtime authority. `ViewSeoProject::dispatchGenerate()` calls `manualRefreshOps()` before dispatching `cp-ops-generation-started`; Alpine `onGenerationStarted()` starts `startRuntimePoll()` and forces a refresh. A force refresh arriving during another poll is queued, not dropped. `lazyRefreshOps()` compares the normalized runtime fingerprint (including `runtime_revision`), remorphs rows when it changes, and skips rendering only when unchanged. Poll retries failed refreshes and stops after the terminal state is applied. In `content-project-items-list.blade.php`, `Last activity` uses server-morphed row content for active vs completed; Alpine `x-show` only switches the command overlay, never a baked-in server `true/false` that could stick to the wrong row. Failure/zero eligible dispatch clears the overlay. The old summary-only `fetchOpsSummaryOnly()` cannot refresh row markup.
 
 **Keyword column (inline edit):** component `content-project-keyword-cell` — double-click Keywords cell; save/revert via `SetItemGenerationKeywordOverrideCommand`. Display partial shows original → override + dirty badge when generation input changed.
 
@@ -478,7 +480,7 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 ### Batch run circuit breaker (2026-09-04)
 
-`ContentProjectRunEngine` persists consecutive-failure state under `settings.php_engine`. Signature from `ContentProjectBatchFailureSignature` (systemic routing vs content/validation; strips ids/titles/UUIDs). After **3** identical signatures → `circuit_breaker.stopped`. Canonical task input for AI: `ContentProjectTaskCanonicalInputBuilder`. Tests: `ContentProjectBatchCircuitBreakerTest`, `ContentProjectCanonicalInputAndCircuitBreakerTest`.
+`ContentProjectRunEngine` persists consecutive and aggregate failure state under `settings.php_engine`. Signature from `ContentProjectBatchFailureSignature` (systemic routing vs content/validation; strips ids/titles/UUIDs). Breaker trips after **3 total failed items in the run** or **3 consecutive identical signatures**, whichever comes first; it records `trigger` and stops future dispatches. A successful item resets only the consecutive counter. `clearForResume()` clears aggregate/breaker state. Canonical task input for AI: `ContentProjectTaskCanonicalInputBuilder`. Tests: `ContentProjectBatchCircuitBreakerTest`, `ContentProjectCanonicalInputAndCircuitBreakerTest`.
 
 ### Publish writes
 
@@ -628,7 +630,7 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ContentProjectArchivedMonthlyCanonicalArticleCardinalityTest` | Archived monthly workload cardinality |
 | `ArchiveArticleHistoricalExportFieldsTest` | Historical archive export field resolver |
 | `McpPlanningAndSitePlanningContractTest` | MCP +N signal + Site Planning read model |
-| `ContentProjectBatchCircuitBreakerTest` / `ContentProjectCanonicalInputAndCircuitBreakerTest` | Batch stop after 3 identical failures; canonical AI input |
+| `ContentProjectBatchCircuitBreakerTest` / `ContentProjectCanonicalInputAndCircuitBreakerTest` | Batch stop after 3 aggregate failed items or 3 consecutive same-signature failures; canonical AI input |
 | `PublishOverflowAndWorkspaceRegressionTest` / `DomainNeutralGenerateAndPublishWarningTest` | Publish overflow + domain-neutral generate warnings |
 | `ContentProjectExportReviewedAtResolverTest` | Archive export reviewed_at resolution |
 
@@ -682,4 +684,3 @@ Retry/Skip/Cancel ProjectItemPublishing,
 StopProjectExecution, ResumeProjectExecution,
 ArchiveContentProject, ArchiveProjectItems, RestoreContentProject
 ```
-

@@ -1,0 +1,41 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Content Project ↔ AI Router",
+    "quality_profile": "showcase"
+  },
+  "lanes": [
+    { "id": "production", "label": "Content Project → Workflow → AI Router" },
+    { "id": "exceptions", "label": "Paid / free fallback & stop", "variant": "exception" },
+    { "id": "evidence", "label": "Typed output & ops UI" }
+  ],
+  "mainPath": ["item", "run", "split", "router", "direct", "artifact", "article", "ops"],
+  "nodes": [
+    { "id": "item", "lane": "production", "col": 0, "type": "frontend", "label": "Project item", "sublabel": "task.site_id là SoT" },
+    { "id": "run", "lane": "production", "col": 1, "type": "backend", "label": "Run engine", "sublabel": "run-item + dispatch" },
+    { "id": "split", "lane": "production", "col": 2, "type": "backend", "label": "Prompt hooks", "sublabel": "split + write" },
+    { "id": "router", "lane": "production", "col": 3, "type": "backend", "label": "AI Router", "sublabel": "order → gates" },
+    { "id": "direct", "lane": "production", "col": 4, "type": "cloud", "label": "DeepSeek", "sublabel": "V4 Pro · split 8192" },
+    { "id": "article", "lane": "production", "col": 5, "type": "backend", "label": "Article write", "sublabel": "typed body only" },
+    { "id": "openrouter", "lane": "exceptions", "col": 3, "type": "cloud", "label": "OpenRouter", "sublabel": "paid lock → skip" },
+    { "id": "freepool", "lane": "exceptions", "col": 4, "type": "cloud", "label": "Free pool", "sublabel": "eligible + budget" },
+    { "id": "breaker", "lane": "exceptions", "col": 1, "type": "security", "label": "Stop at 3", "sublabel": "failed items" },
+    { "id": "emergency", "lane": "exceptions", "col": 0, "type": "security", "label": "Dừng khẩn cấp", "sublabel": "stop_requested_at" },
+    { "id": "artifact", "lane": "evidence", "col": 4, "type": "database", "label": "Typed artifact", "sublabel": "article_content" },
+    { "id": "ops", "lane": "evidence", "col": 5, "type": "frontend", "label": "Ops table", "sublabel": "row morph" }
+  ],
+  "edges": [
+    { "from": "item", "to": "run" },
+    { "from": "run", "to": "split", "label": "dispatch" },
+    { "from": "split", "to": "router", "label": "mỗi hook" },
+    { "from": "router", "to": "direct", "label": "eligible" },
+    { "from": "direct", "to": "artifact", "label": "valid output" },
+    { "from": "artifact", "to": "article", "label": "declared dependency" },
+    { "from": "article", "to": "ops", "label": "runtime revision" },
+    { "from": "router", "to": "openrouter", "label": "paid lock", "role": "branch", "variant": "dashed" },
+    { "from": "router", "to": "freepool", "label": "fallback nếu reachable", "role": "branch", "variant": "dashed" },
+    { "from": "run", "to": "breaker", "label": "3 lỗi", "role": "error", "variant": "security" },
+    { "from": "emergency", "to": "run", "label": "stop command", "role": "branch", "variant": "security" }
+  ]
+}

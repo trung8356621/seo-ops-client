@@ -1,7 +1,7 @@
 # AI Debug Playbook
 
 > Status: Canonical operational playbook (developer-facing)  
-> Last verified: 2026-09-12  
+> Last verified: 2026-09-15
 > SoT: [`architecture/AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)  
 > History: [`architecture/AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md)  
 > Discipline rule: `.cursor/rules/debug-fix-discipline.mdc`
@@ -60,6 +60,10 @@ Logical model ≠ physical route.
 | Primary vs terminal | `failure_category` / `failure_code` vs `routing_terminal_reason` |
 | Compiled prompt bloat? | Must be hash + PromptVersion, not hot `compiled_prompt` |
 | CP context? | `content_project_id`, `project_item_id`, `run_id`, `node_id`, `correlation_id` |
+
+### HTTP 200, empty DeepSeek outline
+
+For `article.outline.structure.generate` / `article.vocabulary.generate`, inspect the **physical route** and `prompt_result_routing_attempts` first. In the 2026-09-15 incident, OpenRouter was skipped (`connection_paid_locked`, `attempted=false`) and Direct DeepSeek was actually called (`attempted=true`). DeepSeek returned HTTP 200 with empty `content`, `finish_reason=length`, and reasoning tokens consuming the 2048-token output limit. Check `token_usage.budget.requested_max_output_tokens`, `provider_finish_reason`, and reasoning-token usage before blaming connection balance or output validation. The direct V4 Pro split-hook path now requests 8192 and disables thinking by default; an empty length-limited response is `OUTPUT_TRUNCATED`. Do not globally raise the split reserve: smaller-cap free/OpenRouter routes must remain eligible.
 
 ---
 
