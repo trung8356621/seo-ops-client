@@ -25,6 +25,6 @@ See workspace root docs / sibling `omnichannel-addons/AGENTS.md`.
 Editor widget locks: all registered Editor widgets locked except `seo` (intentionally unlocked for active development). See `addons/content/editor-widget-locks.json`, `npm run check:editor-widget-locks`, `npm run widget-lock -- status`.
 
 ## Docs maintenance
-Bulk canonical updates only — no per-agent `XONG!` trigger. When the user asks to sync/summarize docs, run `$docs-bulk-update` (`.agents/skills/docs-update-on-xong/SKILL.md`) and follow `.cursor/rules/auto-update-docs.mdc`. Canonical docs: `docs/modules|contracts|architecture|operations` — not `docs/archive/*`. Human-facing help: `resources/help-seed/` + `docs/modules/CONTEXTUAL_HELP.md`.
+Docs updates are **manual / bulk on request** only — no per-repo auto-scan rule. Optional skill: `$docs-bulk-update` (`.agents/skills/docs-update-on-xong/SKILL.md`). Canonical docs: `docs/modules|contracts|architecture|operations` — not `docs/archive/*`. Human-facing help: `resources/help-seed/` + `docs/modules/CONTEXTUAL_HELP.md` (and `seo-ops-help` for public Help).
 
-AI execution SoT (stabilized): `docs/architecture/AI_EXECUTION_ROUTING.md`. Debug discipline: `.cursor/rules/debug-fix-discipline.mdc` (alwaysApply).
+AI execution SoT (stabilized): `docs/architecture/AI_EXECUTION_ROUTING.md`. Debug discipline: shared `seo-ops-workspace/.cursor/rules/debug-fix-discipline.mdc` (description-triggered).

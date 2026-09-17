@@ -15,18 +15,20 @@ Keep canonical docs aligned via **one consolidated pass** — not per-agent micr
 
 # Required context
 
-- `git log` / `git diff` on `omnichannel-client`, `omnichannel-addons`, `wp-seo-ai` if relevant.
+- `git log` / `git diff` on `omnichannel-client`, `seo-ops-addons`, `wp-seo-ai` if relevant.
 - `docs/README.md` module index.
 - `docs/QUICK_DOC_SUMMARY.md` for digest section.
 
 # Workflow
 
 1. Identify all changed symbols, routes, services, jobs, migrations, contracts since last doc pass.
-2. Select every affected canonical doc from mapping in `.cursor/rules/auto-update-docs.mdc`.
+2. Map to canonical docs via `docs/README.md` (and module docs under `docs/modules|architecture|contracts|operations`).
 3. Patch all files in one pass; bump `Last verified` dates.
 4. Update `docs/QUICK_DOC_SUMMARY.md` digest (not SoT).
 5. Update `docs/README.md` if new module doc added.
 6. Route feature ownership: content/media/seo/wordpress/publishing/content-projects/ai-prompt/search-intelligence/site-sync/agent — not SeoContentAi compat shell.
+
+There is **no** always-on auto-update-docs rule — run this skill only when the user asks.
 
 # Verification
 

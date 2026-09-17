@@ -1,0 +1,34 @@
+---
+description: Apply when editing omnichannel-client: presentation/UI shell only — no backend domain inventiveness
+alwaysApply: false
+---
+
+# omnichannel-client — presentation boundary
+
+This repo is the **thin Laravel shell + UI/presentation** concern (`app/Core` runtime, Filament/React surfaces, Vite assets).
+
+## Must
+
+- Consume addon/server contracts and APIs; do not invent backend domain state.
+- Preserve existing frontend stack conventions (React/Vite/Tailwind, Filament v3, `<x-select>`, lucide-react).
+- Keep `app/Addons/SeoContentAi` as compatibility shell only — no new business Models/Services/JS here.
+- Peer business modules live in `seo-ops-addons` (junction `addons/` → that repo).
+
+## Must not
+
+- Implement backend business/domain logic that belongs in an addon.
+- Silently redefine backend business rules via UI-only workarounds.
+- Treat archived `D:\work-bk\omnichannel-backend` as SoT.
+
+## When API/contract is missing
+
+If the task needs business behavior the API does not support → **report the backend/addon requirement**; do not embed domain rules in the client.
+
+## Related
+
+- Debug discipline (shared, description-triggered): `seo-ops-workspace/.cursor/rules/debug-fix-discipline.mdc`
+- Editor locks / Chat / Assign UI / modal loading: existing glob rules
+
+## Terminal noise
+
+For verbose terminal inspection, use the `rtk` skill only if `rtk` is on PATH; else native command.
