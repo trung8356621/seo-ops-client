@@ -148,3 +148,7 @@ Mandatory Interactivity Loading States:
   * Apply `opacity-50 pointer-events-none` to the clicked button to prevent double-submissions.
   * Swap or append text/icons with a revolving SVG spinner indicator.
   * Target only the specific method being executed to avoid global, accidental UI locking.
+
+11. RTK (RUST TOKEN KILLER) — CONTEXT WINDOW OPTIMIZATION
+
+CRITICAL RULE: To save context window tokens and prevent context bloat, EVERY TIME you execute a terminal command that might produce long logs or outputs (e.g., git diff, npm run build, cargo test, pytest, etc.), you MUST prepend the command with `rtk`. For example: run `rtk npm test` instead of `npm test`. Never output raw long terminal logs into the chat.
