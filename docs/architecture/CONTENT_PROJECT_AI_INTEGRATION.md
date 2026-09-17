@@ -1,7 +1,7 @@
 # Content Project ↔ AI Execution Integration
 
 > Status: Canonical boundary doc  
-> Last verified: 2026-09-15
+> Last verified: 2026-09-17
 > Owners: `content-projects` (workflow / domain) · `ai-prompt` (PromptResult / routing)  
 > Routing SoT: [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md)  
 > History SoT: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md)  
@@ -118,6 +118,8 @@ Cost / generation mode must not rewrite AI Center order. See routing SoT §3–4
 
 For the observed failure, OpenRouter's paid connection was skipped before HTTP (`connection_paid_locked`), while the independent DeepSeek Direct route returned HTTP 200. Its `thinking` tokens consumed a 2048-token output budget and yielded empty `content` with `finish_reason=length`; this was an output-budget/provider-response issue, not lack of DeepSeek funds. Direct `deepseek-v4-pro` split hooks now plan 8192 output tokens and disable thinking by default; other physical routes retain their own preflight ceilings. See `DeepSeekChatClient`, `PromptRunnerService`, and `ModelContextCapabilityResolver` in `ai-prompt`.
 
+**Worker death vs heartbeat (2026-09-15+):** Client config `CONTENT_PROJECT_WORKER_DEATH_SECONDS` (0 ⇒ derive from TTL floor ≥960s) + `CONTENT_PROJECT_ARTICLE_JOB_TIMEOUT_SECONDS` (default 900). Watchdog declares `WORKER_LOST` only after hard lease — heartbeat stale alone must not kill. Resume re-queues the interrupted item; no auto-jump to next article. Lazy bulk decides generate/resume/restart/skip at claim (`lazy_bulk`). See [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md) § Generate.
+
 ---
 
 ## 5. Known open items (CP × AI)
@@ -126,6 +128,7 @@ For the observed failure, OpenRouter's paid connection was skipped before HTTP (
 - PromptResult correlation completeness vs run engine metadata  
 - Project archive → Prompt History cleanup  
 - Dedicated queue / worker configuration for CP AI jobs if still unresolved  
+- Browser-session visual verification of ops `lazyRefreshOps` / batch-waiting badges remains outstanding after 2026-09-15 Blade checks.
 
 Do not mix these into unrelated routing or validation fixes.
 

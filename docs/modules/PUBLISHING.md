@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-13  
+> Last verified: 2026-09-17  
 > Supersedes: `docs/archive/content-projects/CONTENT_PROJECT_PUBLISHING_DELIVERY.md`, publish sections of `CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md` / `CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md`, publish routes in `docs/MAP_SEO_PROJECTS.md`
 
 ## 1. Purpose
@@ -12,6 +12,10 @@
 **Content Project** owns content production only (Draft / Pending / Needs Review / In Review / Failed generation). CP does **not** show Scheduled/Published as active workflow cards.
 
 Handoff: `content_project.send_to_publishing_queue` stamps `seo_project_tasks.publishing_queued_at` (+ `publishing_queued_by`) → Unscheduled. No WordPress. No auto schedule. Return via `content_project.return_to_content_project` before Published (not archive).
+
+### Publish category options (lang-scoped)
+
+Editor / publish sidebar categories: `PublishCategoryOptionsAssembler::forSite($siteId, ?$lang)` → `PublishingTaxonomyCatalog` → `WordPressTaxonomyCatalogClient` → plugin `GET …/taxonomy-catalog/{taxonomy}?lang=` (article language; empty = all). Memo key `siteId:taxonomy:lang`. Tests: `PublishCategoryOptionsAssemblerTest`, `WordPressTaxonomyCatalogClientTest`.
 
 ## 2. Canonical routes
 

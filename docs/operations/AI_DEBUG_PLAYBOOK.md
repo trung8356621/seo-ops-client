@@ -1,7 +1,7 @@
 # AI Debug Playbook
 
 > Status: Canonical operational playbook (developer-facing)  
-> Last verified: 2026-09-15
+> Last verified: 2026-09-17
 > SoT: [`architecture/AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)  
 > History: [`architecture/AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md)  
 > Discipline rule: `.cursor/rules/debug-fix-discipline.mdc`
@@ -20,11 +20,12 @@ Never debug only from the final red UI message.
 6. Ordered `AiRoutingPlan` (`execution_order` / `ordered_routes`)  
 7. Health skips (`attempted=false`, cooldown / paid_lock / auth) — paid lock write = `ConnectionPaidLockService` only  
 8. Budget skips (`AiAttemptBudgetPolicy`)  
+8b. Capacity skips (`AiRouteCapacityPolicy` / wallet floor / output capacity — not Health)  
 9. Generation shape snapshot (`GenerationShapeDecision` — free→sectioned / paid→single; independent of FreeOnly reorder)  
 10. Actual API attempts (`attempted=true`)  
-11. Provider result (HTTP / classifier / health mutation)  
+11. Provider result (HTTP / classifier / health mutation) — after `OUTPUT_TRUNCATED`, expect prefer-paid skip of remaining free  
 12. Validation (`OutputValidationContractRegistry`)  
-13. Normalized final failure (`AiPrimaryFailureSelector`)
+13. Normalized final failure (`AiPrimaryFailureSelector`) — distinguish `AI_PROVIDER_REFUSED` vs `AI_ROUTES_EXHAUSTED`→`ProviderFailed`
 
 Prefer: PromptResult + `prompt_result_routing_attempts` + plan debug array over UI copy alone.
 
@@ -64,6 +65,18 @@ Logical model ≠ physical route.
 ### HTTP 200, empty DeepSeek outline
 
 For `article.outline.structure.generate` / `article.vocabulary.generate`, inspect the **physical route** and `prompt_result_routing_attempts` first. In the 2026-09-15 incident, OpenRouter was skipped (`connection_paid_locked`, `attempted=false`) and Direct DeepSeek was actually called (`attempted=true`). DeepSeek returned HTTP 200 with empty `content`, `finish_reason=length`, and reasoning tokens consuming the 2048-token output limit. Check `token_usage.budget.requested_max_output_tokens`, `provider_finish_reason`, and reasoning-token usage before blaming connection balance or output validation. The direct V4 Pro split-hook path now requests 8192 and disables thinking by default; an empty length-limited response is `OUTPUT_TRUNCATED`. Do not globally raise the split reserve: smaller-cap free/OpenRouter routes must remain eligible.
+
+### CP run stuck / WORKER_LOST
+
+1. Confirm job queue (`CONTENT_PROJECT_RUN_QUEUE` / `seo-content-run`) and worker listening.  
+2. Heartbeat stale alone ≠ death — check `worker_death_seconds` lease vs `article_job_timeout_seconds`.  
+3. Watchdog log / `recoverable.reason` ∈ `worker_lost` | `circuit_breaker`.  
+4. Resume should re-queue **same** interrupted item (attempt N→N+1), not skip ahead.  
+5. Empty-body “success”: `seo:content-project:repair-project-state --fix-empty-success --dry-run` then `--apply`.
+
+### Capacity / wallet deny
+
+If route never attempted and plan shows capacity skip: inspect `AiRouteCapacityDecision` + balance snapshot cache — not paid lock / cooldown.
 
 ---
 

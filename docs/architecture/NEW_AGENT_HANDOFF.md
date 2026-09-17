@@ -1,11 +1,11 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-09-12  
+> Last verified: 2026-09-17  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§1b = AI routing docs freeze 2026-09-09; §12 = 9→12 batch: Seeding DB + paid lock/shape + archive vault)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§14 = 2026-09-15→17: CP ops + KW retirement + WP 1.0.88)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -39,7 +39,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Content Project | `omnichannel-addons/content-projects` |
 | Draft → Execution Project split / packing | `SplitDraftContentProjectService` + `ContentProjectExecutionPackingService` — [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md) |
 | Assign to Content Project UI | Contract/ActionFactory: `content-projects/Support/AssignToContentProject`. Drawer/trigger/React opener: `content`. Compat mounts only. **No** second modal. See [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md) |
-| Topics / Keyword DNA / Recluster | `omnichannel-addons/search-intelligence` — UI label Topics; see [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md) |
+| Keywords (Dictionary / Focus / Anchor) | `omnichannel-addons/search-intelligence` — KI workspace + Topics/`cluster_key`/DNA **retired 2026-09-17**; see [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md) |
 | Product review create / AI history | `omnichannel-addons/commerce` (`ProductReviewCreationPolicy`, `ProductReviewGenerationHistoryRecorder`) |
 | Prompt / provider | `omnichannel-addons/ai-prompt` |
 | AI execution / routing (SoT) | [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md) · History [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md) · Debug [`AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md) · rule `.cursor/rules/debug-fix-discipline.mdc` |

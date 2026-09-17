@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-15
+> Updated: 2026-09-17
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -52,7 +52,7 @@ Canonical đã sync: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICL
 
 ### Topics / Keyword DNA
 
-- UI **Topics / Chủ đề** (`cluster_key` trong code).
+- UI **Topics / Chủ đề** (`cluster_key` trong code) — **historical**; retired 2026-09-17 (see §14).
 - Keyword Dictionary **flat**; DNA + recluster + focus reconcile (`seo:topics:reconcile-focus`).
 - `PaginationWindow` (±2 desktop). Keywords + CP dùng `list-table-loading-shell`.
 
@@ -276,3 +276,28 @@ Phạm vi: `omnichannel-client` **0.4.3–0.4.5** + `omnichannel-addons` **0.5.3
 - Same-tab ops: `dispatchGenerate()` forces server refresh; runtime poll uses `lazyRefreshOps()` + `runtime_revision`, queues a force refresh when busy, and retries failed polls. `Last activity` is server-morphed per row; Alpine only owns the immediate command overlay. 2026-09-15 Blade compilation, targeted PHPUnit, and rendered-cell checks passed; browser-session visual verification remains outstanding.
 - Canonical detail: `architecture/AI_EXECUTION_ROUTING.md`, `architecture/CONTENT_PROJECT_AI_INTEGRATION.md`, `modules/CONTENT_PROJECTS.md`, `modules/PROMPTS_AND_AI.md`, `operations/AI_DEBUG_PLAYBOOK.md`.
 - Archify workflow spec/HTML lives under `architecture/content-project-ai-router-*`: showcase artifact validation 9/9, automated browser containment passed at 1440×900, 1600×1000, 1920×1080, and 2048×1320, with light/dark screenshots reviewed. The v2 compiler owns the intrinsic `viewBox`; do not force a taller one.
+
+## 14. Batch 2026-09-15 → 2026-09-17 — CP ops + KW retirement + WP 1.0.88
+
+Phạm vi: `omnichannel-addons` **0.7.1–0.7.9.1** + commits `3dd18c8` / `d4e82cb`; `omnichannel-client` **0.5.6–0.5.7.2** (docs+config+build); `wp-seo-ai` **1.0.88**.
+
+### Content Projects / AI
+
+- Worker-death hard lease (`CONTENT_PROJECT_WORKER_DEATH_SECONDS` / `article_job_timeout_seconds`); watchdog `WORKER_LOST`; resume same interrupted item; heartbeat ≠ death.
+- Lazy bulk JIT + `STATE_BATCH_WAITING`; false-success repair CLI; compact success / `generator_done` partition.
+- SEO Audit Planner `?month=` + `planning_month` / consumption / attribution / Topic History; writer capacity **hard gate**; Site Planning includes completed/published/archived.
+- `AiRouteCapacityPolicy` + prefer-paid-after-`OUTPUT_TRUNCATED` + `ProviderRefused` vs routes exhausted.
+- Docs: `CONTENT_PROJECTS.md`, `CONTENT_PROJECT_AI_INTEGRATION.md`, `AI_EXECUTION_ROUTING.md`, `AI_DEBUG_PLAYBOOK.md`, `PROMPTS_AND_AI.md`.
+
+### Keywords — KI / Topics retired
+
+- Keywords nav = Dictionary \| Focus \| Anchor Audit only.
+- Dropped KI workspace + Topics/`cluster_key` + DNA / topical map / Agent+MCP `keyword_intelligence.*` tables & skills (`3dd18c8`).
+- Planning DNA = Audit Notes snapshots only; cluster suggestions empty until future Topic rebuild.
+- Docs: `SEO_AUDIT_AND_KEYWORDS.md` rewrite, `AGENT_AND_MCP_CONTRACTS.md`, `NEW_AGENT_HANDOFF.md`.
+
+### WordPress / Publishing / Editor / Site Sync
+
+- Plugin **1.0.88**: taxonomy-catalog `?lang=`, Polylang `url_prefix`/`home_url`, permalink post_types/page, canonical attachment URLs.
+- Laravel: lang-scoped `PublishCategoryOptionsAssembler`; `WordPressPermalinkBuilder`; `WordPressInternalLinkTargetPolicy`; body/metadata independence on domain pull; link catalog `wp_post_type`.
+- Docs: `WORDPRESS_BRIDGE.md`, `PUBLISHING.md`, `ARTICLE_EDITOR.md`, `SITE_SYNC.md`.

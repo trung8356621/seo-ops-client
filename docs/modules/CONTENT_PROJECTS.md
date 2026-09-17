@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-15
+> Last verified: 2026-09-17
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)  
 > **AI integration boundary:** [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md) · routing SoT: [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)
 
@@ -89,7 +89,18 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Archive historical fields | `ArchiveArticleHistoricalFieldResolver` — export/preview historical column resolution |
 | Archive social reporting | `ArticleSocialLinkService` (canonical counts/links; migrated from archive-item social rows) |
 | MCP planning +N signal | `McpPlanning/McpPlanningSignalService` + `McpPlanningMetaStore` / `McpPlanningMeta` / `McpPlanningSignalResolver` — UI pending count; **not** MCP score % |
-| Site Planning overview | `SitePlanning/SitePlanningReadModel` + `SiteMonthlyContentTargetService` (2 past + current + 1 future months) |
+| Site Planning overview | `SitePlanning/SitePlanningReadModel` + `SiteMonthlyContentTargetService` — window anchored on Planner `activeMonth` (−2…+1); matrix counts `site_id`×`planning_month` including completed/published/archived |
+| Planner active month | `ContentProjectSeoAuditPlanner::$activeMonth` (`?month=YYYY-MM`) — SSOT for Site Planning highlight, draft filter, attribution, draft split target |
+| Task planning month | `seo_project_tasks.planning_month` + `ContentProjectTaskPlanningMonthStamp` / `PlanningMonthBackfill` |
+| Planning attribution | `SeoContentProjectTaskPlanningAttribution` + `PlanningAttributionWriter` / `PlanningDataBackfillService` |
+| Topic History (Month Detail) | `SeoContentProjectTopicHistory` + `TopicHistoryReadModel` / `TopicHistoryWriter` |
+| Idea consumption tombstone | `SeoContentProjectConsumedIdea` + `IdeaCandidateConsumptionService` |
+| New Content cluster gate | `NewContentClusterAttributionValidator` — reject silent wrong-`cluster_ref` |
+| Compact success (gom bài đã xong) | `ContentProjectGeneratorDoneClassifier` + `ContentProjectCompactSuccessPlanner` / `Service` / `SafetyGuard` + list action `compact_success_items` |
+| Writer capacity hard gate | `WriterMonthlyCapacityGate` (`WRITER_CAPACITY_EXCEEDED`) — blocks EP workload before pack; draft planning does not consume |
+| Worker-death watchdog | `ContentProjectWorkerLostWatchdogCommand` (`seo:content-project-run:watchdog-worker-lost`, everyMinute) + `ContentProjectRunRecoverableState` |
+| False-success repair | `ContentProjectFalseSuccessRepairService` + `seo:content-project:repair-project-state` (`--fix-empty-success`) |
+| Ops batch-waiting badge | `ContentProjectArticleRuntimeStatus::STATE_BATCH_WAITING` + `ContentProjectItemOpsEvidencePresenter` / `ContentProjectRunItemEvidenceIndex` |
 | Move EP → next month | `MoveContentProjectToNextMonthService` — all active items; source ends empty; packing reused |
 | Rewrite keyword canonicalize | `ContentProjectRewriteKeywordCanonicalizer` |
 | Task canonical AI input | `Support/ContentProject/ContentProjectTaskCanonicalInputBuilder` |
@@ -115,12 +126,12 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Writer fair allocation | `Support/ContentProject/ContentProjectWriterAllocator` |
 | Execution packing (max 30) | `ContentProjectExecutionPackingService` + `ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS` |
 | Writer monthly capacity settings | `ContentProjectWriterCapacitySettingsService` — global WpOption + per-user meta override (default 30; independent of EP pack size) |
-| Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — display/allocator input; not a hard monthly gate |
+| Writer month workload (display) | `ContentProjectWriterMonthlyCapacityService` — display/allocator input; **hard gate** is `WriterMonthlyCapacityGate` (above) |
 | Monthly workload (ops) | `ContentProjectMonthlyWorkloadService` + `ContentProjectArchivedMonthlyWorkloadService` — may include archived cardinality; **excludes** global Legacy archive |
 | Writer assignment display | `ContentProjectWriterAssignment` — System User id = unassigned |
 | Archive export reviewed_at | `Support/ContentProject/ContentProjectExportReviewedAtResolver` |
 | Projects list buckets | `Support/ContentProject/ContentProjectListBucket` (`all` \| `draft` \| `project` \| `archived`) |
-| SEO Audit Notes (cluster→DNA) | `AuditNotes/AuditNoteClusterSuggestionQuery` + `AuditNoteDnaNormalizer` + `AuditNotePromptSectionBuilder` + `AuditNoteTargetAllocator` (+ `InteractsWithAuditNotes`) |
+| SEO Audit Notes (note-owned DNA) | `AuditNotes/AuditNoteClusterSuggestionQuery` (empty post-KI retirement) + `AuditNoteDnaNormalizer` + `AuditNotePromptSectionBuilder` + `AuditNoteTargetAllocator` (+ `InteractsWithAuditNotes`) |
 | Idea Candidates (Vocabulary Suggest → Draft) | `IdeaCandidates/*` + Livewire `InteractsWithIdeaCandidates` → `AddIdeaCandidatesCommand` |
 | EP naming / packing repair | `seo:repair-execution-project-naming` / `seo:repair-execution-project-packing` |
 
@@ -250,17 +261,20 @@ Planner / SEO Audit / View project (`InteractsWithIdeaCandidates`): user **picks
 - Source catalog: `IdeaCandidateSourceCatalog` — currently **`vocabulary_suggest` only** (hook-ready for later sources). **Not** GSC MCP / Social Top 10.
 - Read: `IdeaCandidateQueryService` → `VocabularySuggestStagingQuery::forSite` (`TYPE_SUGGEST` + `ai_generated` staging rows). No separate Ideas table.
 - Actions Create / Rewrite / Improve → Draft via `AddIdeaCandidatesCommand` → `IdeaCandidateDraftPlannerService`.
+- Consumption tombstone: `IdeaCandidateConsumptionService` + `SeoContentProjectConsumedIdea` (claimed / already_consumed / schema_not_ready).
 - Dismiss: `DismissVocabularySuggestCandidateService` (does not touch GSC MCP).
+- AI New Content: `NewContentClusterAttributionValidator` gates by allowed `cluster_ref` (reject silent wrong-cluster).
 
-### SEO Audit Notes (cluster → topic → DNA)
+### SEO Audit Notes (note-owned DNA — post KI retirement)
 
 Planning notes on SEO Audit / Planner (`InteractsWithAuditNotes`):
 
-1. Suggestions = Cluster SSOT (`KeywordClusterQuery` + `SiteMcpClusterTopicalProfileBuilder`); sort **MCP share ASC** (then name). List is lightweight (DNA counts only). Filters: `all` \| `mcp_low` \| `<5%` \| `has_focus` \| `no_focus`. Page size 25.
-2. Select cluster → hydrate DNA (limit 30) into note snapshot (`cluster_ref`, name/share snapshots, `dna[]`). DNA edits are **planning override only** — never mutate Cluster DNA SSOT. Sources: `cluster` \| `manual`. Cap 50 DNA/note. DNA rows carry `placement` (`before` \| `after`) aligned with Keywords SSOT (`DnaPlacement`).
-3. Prompt section: `AuditNotePromptSectionBuilder` orders DNA by weight DESC for semantic priority; MCP share is suggestion priority only.
+1. **Live cluster suggestions are empty** after 2026-09-17 (`AuditNoteClusterSuggestionQuery` — no KW Topics/`cluster_key`/DNA tables). Site MCP topical profile is also empty until a future Topic rebuild.
+2. DNA for prompts is **note-owned only**: manual seeds + persisted note snapshots via `AuditNoteDnaNormalizer`. Cap 50 DNA/note. Rows carry `placement` (`before` \| `after`) via shared enum `DnaPlacement` (planner policy — **not** live KW DNA SSOT).
+3. Prompt section: `AuditNotePromptSectionBuilder` orders DNA by weight DESC for semantic priority.
 4. Manual topics allowed via `manual:{normalized}` — does not invent KI clusters.
-5. **Target allocation (2026-09-03):** `AuditNoteTargetAllocator` distributes `target_dna_count` across selected Topics — MANUAL topics keep their target; AUTO topics share remaining quantity by relative MCP share (largest-remainder). Specified DNA slots floor every target. System planning logic — not Prompt Management content.
+5. **Target allocation:** `AuditNoteTargetAllocator` still distributes `target_dna_count` across selected note topics (MANUAL keep target; AUTO share by relative MCP share when present). System planning logic — not Prompt Management content.
+6. `NewContentAutoDnaPolicy` remains; cluster branch treats live `cluster_key` DNA as unavailable and falls back to note label + MCP signals + keyword inventory.
 
 ### Planner plan clone (cross-domain config)
 
@@ -282,7 +296,7 @@ Draft (planning) + Reviewed items
 
 - Only `isDraftPlanning()` Drafts. Blocked while a planner materialization run is queued/running.
 - Eligible items = `planning_reviewed_at IS NOT NULL` (column missing → fail-closed empty). Unreviewed never split.
-- Target month = **current calendar month only** (`Carbon::now()->startOfMonth()`). Not multi-month pack; not month metadata on a single project.
+- Target month = Planner `activeMonth` / `draft_split_target_month` via `SplitDraftContentProjectService::resolveTargetMonth` (not hard-coded “current calendar only”). Tasks stamp `planning_month`.
 - Creates/reuses **real** `SeoProject` rows (`status=pending`, `kind=monthly`, `user_id=writer`, `site_id=null`, `source_draft_project_id`). Domain/site is **not** a packing key — item-level site stays on the task.
 - Packing: fill free slots on reusable writer+month EPs first, then new chunks of ≤30 (`ContentProjectExecutionLimits::MAX_EXECUTION_PROJECT_ITEMS`). Reusable = not draft/archived; not `running|completed|paused`; never started execution. One writer+month may get **multiple** EPs when over 30 items.
 - Naming: `project n/Y`, then `-2`, `-3`… scoped per writer+month.
@@ -315,6 +329,14 @@ Draft (planning) + Reviewed items
 
 **Emergency stop:** the header action `emergency_stop_generation` confirms and dispatches `StopProjectExecutionCommand`, then refreshes ops. Run engine records `settings.php_engine.stop_requested_at` and prevents further dispatch. A terminal run-item whose `finished_at` is at/after that request is presented as `stopped_after_request` / `Dừng sau lệnh` (warning), distinct from an ordinary completed item; items not visited stay pending. Read-model runtime fingerprint includes stop context so a polling tab can remorph that distinction.
 
+**Worker death / WORKER_LOST (2026-09-15+):** Hard lease from client config `seo-content-ai.content_project.worker_death_seconds` (`CONTENT_PROJECT_WORKER_DEATH_SECONDS`; `0` ⇒ `max(active_dispatch_ttl*60, 960)`). Floor mirrors `article_job_timeout_seconds` (default 900). Heartbeat stale is **warning only** — watchdog `seo:content-project-run:watchdog-worker-lost` declares `WORKER_LOST` / `EXECUTION_INTERRUPTED` only after lease expiry (`ContentProjectRunEngine::declareWorkerLostIfConfirmed`). Does **not** auto-dispatch the next article. STOPPING + dead worker → `cancelled` (not `WORKER_LOST`). Resume: `tryResumeAfterWorkerLost` + `ResumeProjectExecutionHandler` re-queues the interrupted item (attempt N→N+1). Recoverable reason ∈ `circuit_breaker` \| `worker_lost` (`ContentProjectRunRecoverableState`).
+
+**Lazy bulk JIT:** `dispatchNextArticle` + `lazy_bulk` decide generate/resume/restart/skip **at claim time** — not from a frozen partition at launch. Unvisited bulk items may show `STATE_BATCH_WAITING` / “Chờ trong batch”. `isActive` requires dispatch evidence (not sticky task status alone).
+
+**Compact success / Gom bài đã xong:** `ContentProjectGeneratorDoneClassifier` (`generator_done` = body present + lifecycle review/approved/waiting_publish/published, or generation completed; false-success / mid-rerun ≠ done) → `ContentProjectCompactSuccessService` auto-partitions DONE vs WORK without creating projects or calling AI. Packing prefers WORK buckets (0 `generator_done`). List action `compact_success_items`.
+
+**False-success repair (no AI):** `seo:content-project:repair-project-state --fix-empty-success` via `ContentProjectFalseSuccessRepairService`.
+
 **Operator skip generation (not `skip_publish`):** durable columns on `seo_project_tasks` — `generation_blocked_at` / `generation_blocked_by` / `generation_block_reason`. Canonical scope `SeoProjectTask::eligibleForGeneration()` (+ `isGenerationBlocked()`). Classifier preview uses the scope; `classifySnapshot` skips with reason `generation_blocked`; rerun/resume/Generate fail closed with message `Item đã được đánh dấu bỏ qua tạo bài.` Commands: `BlockProjectItemGenerationCommand` / `UnblockProjectItemGenerationCommand` (planner/manager via `canAccessContentProjectRun`). UI: **Bỏ qua tạo bài** / **Cho phép tạo lại** + badge Skipped. Does not delete article/content.
 
 Archived project note: Article Editor FAQ/CTA body mutations blocked via session `assertArticleEditable` — see [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](../architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md).
@@ -331,7 +353,7 @@ Archived project note: Article Editor FAQ/CTA body mutations blocked via session
 
 ### «Chạy lại với từ khóa» (fresh keyword restart)
 
-Canonical: `ContentProjectFreshKeywordRestart` (`generation_mode = fresh_keyword_restart`) + `ContentProjectFreshKeywordWorkspaceResetService`.
+Canonical: `ContentProjectFreshKeywordRestart` (`generation_mode = fresh_keyword_restart`) + `ContentProjectFreshKeywordResetService` (renamed from `…WorkspaceResetService`).
 
 - Isolated generation input: stamps `generation_keyword_override`; does **not** inherit previous generation / existing outline.
 - UI label: `item_action_restart_with_keyword` → «Chạy lại với từ khóa».
@@ -471,12 +493,14 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Site authority on bind/create (2026-09-09/12):** `ContentProjectBindArticleAuthority` + `ContentProjectCreateGenerationGuard` — `article.site_id === task.site_id`; `project.site_id` is legacy metadata only. See [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md).
 
-### MCP planning signal + Site Planning (2026-09-04)
+### MCP planning signal + Site Planning (2026-09-04 → 2026-09-16)
 
 - **MCP +N:** `McpPlanningSignalService` counts Draft-reviewed **or** `seo_projects.meta.mcp_planning` (never both). Presentation-only pending pipeline count — does **not** mutate MCP share %.
-- **Site Planning:** `SitePlanningReadModel` month grid + per-site detail; targets via `SiteMonthlyContentTargetService`. Blade: `content-project-site-planning` (compat shell).
+- **Planner month selector:** `ContentProjectSeoAuditPlanner::$activeMonth` (`?month=YYYY-MM`) — SSOT for Site Planning highlight, draft filters, attribution, and draft-split target month. Global SEO bar shows the select on Planner routes.
+- **Site Planning:** `SitePlanningReadModel` window = `activeMonth` −2…+1; matrix = count tasks by `site_id`×`planning_month` **including** completed/published/archived. `SitePlanningActiveUnitPredicate` **removed** (do not document active-only). Month Detail = Topic History only (`TopicHistoryReadModel`). Attribution: `PlanningAttributionWriter` (live keyword→`cluster_key` resolve removed). Blade: `content-project-site-planning` (compat shell).
+- **Writer capacity:** `WriterMonthlyCapacityGate` hard-blocks EP workload with `WRITER_CAPACITY_EXCEEDED` before pack; Draft planning does not consume capacity. Settings still via `ContentProjectWriterCapacitySettingsService`.
 - **Move to next month:** `MoveContentProjectToNextMonthService::preview` / execute — writer unchanged; reuses `ContentProjectExecutionPackingService`; MCP meta moved with items.
-- Tests: `McpPlanningAndSitePlanningContractTest`.
+- Packing prefers Execution Projects with 0 `generator_done` items when compacting WORK buckets.
 
 ### Batch run circuit breaker (2026-09-04)
 
@@ -519,6 +543,8 @@ Result contract: `ContentProjectActionResult` + `ContentProjectActionCodes` — 
 | Demoted KI write caps | On bus but not Agent/MCP advertised |
 | Run Engine recovery CLI | `ContentProjectRunRecoverCommand` / status — ops tooling |
 | Stale generation recover | `seo:content-project:recover-stale-generation --apply` (schedule) |
+| Worker-lost watchdog | `seo:content-project-run:watchdog-worker-lost` (everyMinute) |
+| False-success repair | `seo:content-project:repair-project-state` |
 
 ## 9. Authorization and confirmation
 
@@ -537,6 +563,7 @@ Summary for CP:
 - Generate/rerun queue ownership: `ContentProjectRunEngine` + `RunContentProjectArticleJob` (`ShouldBeUnique`, queue from `ContentProjectRunEngineFeature::queueName()`).
 - Publish due sweep: single schedule `seo:publish-scheduled-articles` → `ScheduledArticlePublishRunner` → CP runner → CommandBus.
 - Stale gen: `seo:content-project:recover-stale-generation --apply` every 10m (`withoutOverlapping`).
+- Worker death: `seo:content-project-run:watchdog-worker-lost` everyMinute (`withoutOverlapping`).
 
 ## 11. Transactions and side effects
 
@@ -616,8 +643,9 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `NewContentSuggestionStructuredResultTest` / `DraftPlanningPostTypeAndRefreshTest` / `NewContentProductPlanningBriefTest` | Planner JSON gate + Draft post_type dblclick UX + Product brief/persist |
 | `NewContentAutoDnaPolicyTest` / `NewContentGenerationBatchingTest` / `NewContentOneClickAutoContinuationContractTest` / `NewContentQty50CompletionContractTest` | Auto DNA + batching + one-click continuation bounds |
 | `PlannerPlanCloneContractTest` | Cross-domain planner config clone (no content clone) |
-| `AuditNoteTargetAllocatorTest` / `AuditNoteManualDnaUxContractTest` / `DnaPlacementContractTest` | Target allocation + manual DNA UX + placement |
+| `AuditNoteTargetAllocatorTest` / `AuditNoteManualDnaUxContractTest` | Target allocation + manual DNA UX (live KW DNA tests deleted with KI retirement) |
 | `ContentProjectWriterCapacitySettingsTest` | Global/per-user writer monthly capacity settings |
+| `WriterMonthlyCapacityGate` (handlers/tests) | Hard gate `WRITER_CAPACITY_EXCEEDED` before EP workload |
 | `DraftItemTableDomainAndCloneContractTest` | Shared draft table Domain column + clone idea + safe JS root |
 | `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
 | `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
@@ -629,7 +657,7 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ContentProjectBindArticleSiteAuthorityTest` / `ContentProjectCreateGenerationSiteAuthorityTest` | task.site_id authority |
 | `ContentProjectArchivedMonthlyCanonicalArticleCardinalityTest` | Archived monthly workload cardinality |
 | `ArchiveArticleHistoricalExportFieldsTest` | Historical archive export field resolver |
-| `McpPlanningAndSitePlanningContractTest` | MCP +N signal + Site Planning read model |
+| `McpPlanningAndSitePlanningContractTest` | Historical — suite removed with KI/cluster planning contracts; use Site Planning read-model + Topic History tests if reintroduced |
 | `ContentProjectBatchCircuitBreakerTest` / `ContentProjectCanonicalInputAndCircuitBreakerTest` | Batch stop after 3 aggregate failed items or 3 consecutive same-signature failures; canonical AI input |
 | `PublishOverflowAndWorkspaceRegressionTest` / `DomainNeutralGenerateAndPublishWarningTest` | Publish overflow + domain-neutral generate warnings |
 | `ContentProjectExportReviewedAtResolverTest` | Archive export reviewed_at resolution |

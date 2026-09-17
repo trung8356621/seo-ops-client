@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-09-12  
+> Last verified: 2026-09-17  
 > Supersedes: `docs/MAP_SEO_WP.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (plugin/general sections), Site Sync–adjacent WP notes formerly rooted in MAP_SEO_WP
 
 ## 1. Purpose
@@ -42,10 +42,10 @@ Durable groups (plugin `Rest_Controller`):
 | Legacy sync | `/sync`, `/sync/manifest`, `/sync/items`, `/site-info` |
 | Posts | `/posts`, `/posts/{id}`, `/posts/find-by-article`, `/posts/{id}/editor-sync` |
 | Media | `/attachments/import`, `…/replace-binary`, `…/delete`, `…/rename`, `…/update-meta` |
-| Taxonomy | `/taxonomies/{taxonomy}/terms`, term editor-sync |
+| Taxonomy | `/taxonomies/{taxonomy}/terms`, term editor-sync; **`GET /taxonomy-catalog/{taxonomy}?lang=`** (plugin ≥ 1.0.88; empty lang = all terms) |
 | Reviews / FAQ | `/posts/{id}/comment-reviews`, `/virtual-comments`, `/seo-faq` |
 
-Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION`). Verified plugin line through this docs pass: **1.0.87**.
+Min Site Sync contract bridge: **`1.0.64`** (`SiteSyncSchema::MIN_BRIDGE_VERSION`). Verified plugin line through this docs pass: **1.0.88**.
 
 Additive since min contract (selected):
 
@@ -53,6 +53,7 @@ Additive since min contract (selected):
 |---------|----------------|
 | **1.0.86** | V3 write accepts explicit `status=trash` → `wp_trash_post`; V3 content delta cursor adds `after_modified_gmt` |
 | **1.0.87** | V2 `/sync/v2/profile` exposes `site_name` from `get_bloginfo('name')` (with existing `short_description`) — used by Domain Prompt Context field sync |
+| **1.0.88** | Taxonomy catalog optional `?lang=` (Polylang term filter); Polylang languages include `url_prefix` + `home_url`; permalink settings expose `templates.page` + `post_types` rewrite map; sync featured/gallery/term images use `wp_get_attachment_url` (canonical), not size variants |
 
 ## 3. Main components
 
@@ -63,7 +64,10 @@ Additive since min contract (selected):
 | Laravel | `WordPressArticleSyncService` | Outbound hub (`syncForArticle`, `publishForArticle`) |
 | Laravel | `WordPressFieldConflictService` | Field-level WP/Laravel sync baseline + same-field conflict detection |
 | Laravel | `WordPressArticleContentService` | `editor-sync` HTTP + editor auto-load hydrate path |
-| Laravel | `SyncDomainContentService` | Domain content sync helpers (must not rewrite editor body SoT) |
+| Laravel | `SyncDomainContentService` | Domain content sync helpers — metadata (slug/permalink/SEO/tax) may update independently; body write only when content hash changed / force (see `SyncBodyMetadataIndependenceTest`) |
+| Laravel | `WordPressTaxonomyCatalogClient` / `WordPressPublishingTaxonomyCatalog` | Publishing category options; passes article lang → plugin `?lang=` |
+| Laravel | `WordPressPermalinkBuilder` | Permalink candidates using stored Polylang `url_prefix` — do not invent `/en/` |
+| Laravel | `WordPressInternalLinkTargetPolicy` | Internal-link eligibility: requires `wp_post_id` + WP permalink (`observed_permalink` / `wp_permalink`); no domain+slug guess |
 | Laravel | `WordPressLocalMediaSyncService` / `ArticleMediaLocalService` | Local media → WP |
 | Laravel | `WordPressArticleMediaService` / `WordPressArticleAttachmentService` | Featured/gallery/rename/meta |
 | Laravel | `WordPressManualSyncService` + `ManualWordPressSyncJob` | Manual editor/list sync (queue `seo`) |
@@ -73,7 +77,8 @@ Additive since min contract (selected):
 | Laravel | `ScheduledArticlePublishRunner` | Due scheduled → publish |
 | Laravel | `WordPressPluginUpdateService` | Manual check/update/verify via WP REST; persist site plugin status |
 | WP | `omi-seo-ai-bridge.php` | Plugin bootstrap |
-| WP | `Capability_Manifest` | Provider capability SoT for Site Sync |
+| WP | `Capability_Manifest` | Provider capability SoT for Site Sync (taxonomy_catalog_v1 documents `?lang=`) |
+| WP | `Taxonomy_Catalog` / `Polylang_Sync` / `Seo_Plugin_Resolver` / `Sync_Provider` | Catalog lang filter; Polylang prefixes; permalink post_types/page templates; canonical attachment URLs in sync |
 | WP | `Score_Exporter` | Provider scores into sync batches |
 | WP | `Site_Sync_Outbox` / `Site_Sync_V2_Provider` / `Site_Sync_V3_Provider` | Delta producers; V2 profile includes `site_name` |
 | WP | Provider adapters | Rank Math / Yoast / AIOSEO / None |

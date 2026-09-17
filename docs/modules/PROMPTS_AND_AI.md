@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: `ai-prompt` (runtime) + `seo-content-ai-compat` (Filament page/views/lang)  
-> Last verified: 2026-09-15
+> Last verified: 2026-09-17
 > Supersedes: `docs/MAP_SEO_SETTINGS.md` (prompts/settings/AI slices), `docs/archive/maps/MAP_SEO_SETTINGS.md`, `docs/archive/prompts/*`, `docs/archive/automation/prompt/*` (durable ownership/runtime only — not phase rollout dumps), `docs/archive/extension-sdk/AI_PROVIDER_SDK.md`  
 > **AI execution / routing SoT:** [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md) · History/versions: [`AI_HISTORY_PROMPT_VERSION.md`](../architecture/AI_HISTORY_PROMPT_VERSION.md) · Debug: [`AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md)
 
@@ -71,6 +71,9 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Hook runtime engine | `PromptHooks/Runtime/*` (`PromptHookCallerBridge`, DefinitionLoader, …) |
 | Hook binding runner | `PromptHookBindingRunner` → `PromptHookExplicitBindingExecutor` (DI bind in `AiPromptServiceProvider`) |
 | Production route eligibility | `Support/AiProductionRouteEligibility` — no DeepSeek brand exclusion; TextReasoning Outline/Vocabulary and TextLongform use area/capability, physical-route, cost, connection, health, and budget gates. Static eligibility ≠ Health. See routing SoT. |
+| Route capacity preflight | `AiRouteCapacityPolicy` + `AiProviderBalanceSnapshotCache` — wallet/output capacity skips before HTTP; not `AiCapacityStatusService` as route authority |
+| Prefer paid after truncation | `AiModelRouterService::preferPaidAfterOutputTruncation` after `OUTPUT_TRUNCATED` |
+| Provider refused vs exhausted | `AI_PROVIDER_REFUSED` / `ProviderRefused` ≠ `AI_ROUTES_EXHAUSTED` → `ProviderFailed` |
 | Routing plan / budget | `AiCandidatePlanner`, `AiRoutingPlan`, `AiAttemptBudgetPolicy` — sortable order authoritative; `free_phase`/`paid_phase` diagnostics only |
 | Order authority | `ArticleModelOrderAuthority` (`allowsGenerationModeReorder` always false); `ItemGenerationRoutingPreference::orderCandidates` = identity |
 | Paid lock (connection) | `ConnectionPaidLockService` + `PaidLockReason` — sole writer for `paid_locked` / `paid_lock_reasons` |
@@ -88,6 +91,7 @@ Gates: Manager for most settings (`canAccessManagerFeatures`); Prompt CRUD plann
 | Model route/failover | `AiModelRouterService` + `GeminiModelVersionPolicy` |
 | Model context window | `ModelContextCapabilityResolver` → `ModelContextCapability` (context/output ceilings + estimator family) |
 | Direct DeepSeek split-hook output | `DeepSeekChatClient` sends provider-catalog model ID and defaults split hooks to `thinking.type=disabled` unless explicitly enabled; `PromptRunnerService` requests 8192 output tokens only for Direct `deepseek-v4-pro` split hooks, using the route-specific ceiling from `ModelContextCapabilityResolver`. Empty content with provider `finish_reason=length` is `OUTPUT_TRUNCATED`. |
+| Article content internal links | `article.content.generate@0.1.0` tip: use `[text](#)` when no verified WP permalink yet; destination gate `WordPressAiGeneratedLinkDestinationGate` / `WordPressInternalLinkTargetPolicy` |
 | Prompt budget preflight | `PromptBudgetPreflightService` — dual-layer: task-planning estimate + final outbound invariant |
 | Outbound budget gate | `AiOutboundBudgetGate` — verify at adapter boundary before HTTP (`verifyCompiled` / `verifyMessages`) |
 | Token estimate | `PromptTokenEstimator` |

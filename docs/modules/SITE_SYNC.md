@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: site-sync (peer addon)  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-17  
 > Supersedes: `docs/SITE_SYNC_V2.md`, `docs/SITE_SYNC_V2_*.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (Site Sync sections), `docs/archive/site-sync/*`
 
 ## 1. Purpose
@@ -54,7 +54,7 @@ Auth for bridge callbacks: Bearer `sites.seo_read_token` (+ site/domain binding)
 | V3 orchestrator | `RunSiteSyncV3Orchestrator` | Phases: discover → import → reconcile_stale → catch_up → verify → complete |
 | V3 job | `ProcessSiteSyncV3Job` | Queue `seo`; unique per run |
 | V3 client | `WordPressSiteSyncV3Client` | Pull records/discover from WP when plugin ships V3 |
-| V3 importer | `SiteSyncV3BulkImporter` | Bulk content import without touching `articles.body` |
+| V3 importer | `SiteSyncV3BulkImporter` | Bulk content import without touching `articles.body`; link type prefers `wp_post_type`, default `post` (not `article`) |
 | Handler | `SiteSyncCommandHandler` / `SiteSyncCutoverCommandHandler` | CommandBus |
 | Presenters | `SiteSyncStatusPresenter`, `SiteSyncSourceLabelPresenter` | Ops / Domain UI |
 | WP outbox | `wp-seo-ai` `Site_Sync_Outbox` | Debounced auto delta → Laravel callback |
@@ -93,6 +93,10 @@ Pull from WP (orchestrator / reconcile):
 Reconcile scheduler scans sites with `seo_read_token` meta (`whereHas(metas…)`), **not** a non-existent `sites.settings` column.
 
 **Lightweight profile reads (2026-09-01; plugin ≥ 1.0.87 for `site_name`):** Domain Edit form field sync (`DomainPromptContextWordPressFieldSyncService`) calls `WordPressSiteProfileReader` → same `/sync/v2/profile` endpoint but **does not** create a Site Sync run, mutate catalog, or write `articles.body`. Do not route through `RunSiteSyncOrchestrator`. Profile fields: `site_name`, `short_description` (+ legacy `schema_org`).
+
+**Sync image URLs (plugin ≥ 1.0.88):** Featured / gallery / term images in sync payloads use canonical `wp_get_attachment_url` (not size variants).
+
+**Domain pull body vs metadata:** `SyncDomainContentService` may refresh slug/permalink/SEO/tax independently of body; body write only when content hash changed / force (`SyncBodyMetadataIndependenceTest`). Link catalog reconcile: `SiteLinkCatalogReconciler` uses `wp_post_type` SoT.
 
 ## 6. Write path
 

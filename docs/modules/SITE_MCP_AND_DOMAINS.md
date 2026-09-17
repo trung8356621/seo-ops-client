@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core User hierarchy)  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-17  
 > Supersedes: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md` (high-level — discard prompt dumps / exhaustive file indexes)
 
 ## 1. Purpose
@@ -48,7 +48,7 @@ Widgets: All-domains list / projects / team productivity.
 | WP profile reader | `site-sync` `WordPressSiteProfileReader` — lightweight GET `/sync/v2/profile` via `WordPressSiteSyncClient::fetchProfile()` |
 | Edit Domain sync UI | `SyncsDomainPromptContextFromWordPress` on `EditDomain` — per-field actions with `wire:loading` on `company_short_identity` / `short_description` |
 | Persist form | `PersistsDomainPromptContext` / `PersistsSeoDomainMetas` |
-| Site MCP draft | `Services/SiteMcp/*` (`SiteMcpDraft`, `Discovery`, `Generator`, `OfficialGuard`, …) |
+| Site MCP draft | `Services/SiteMcp/*` (`SiteMcpDraft`, `Discovery`, `Generator`, `OfficialGuard`, …) — `SiteMcpGenerator::resolveTopicalProfile` returns empty after KI Topics retirement (2026-09-17); official profile topics remain note/draft owned |
 | CTA / links editor | `DomainCtaEditorService`, `DomainLinkListEditorService` |
 | Global CTA | `SeoDomainCtaGlobalSettingsService` |
 | Overview | `DomainOverviewService` |

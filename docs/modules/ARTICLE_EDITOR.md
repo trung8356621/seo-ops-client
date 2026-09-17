@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: content (+ seo / media / publishing peers)  
-> Last verified: 2026-09-12  
+> Last verified: 2026-09-17  
 > Supersedes: `docs/archive/maps/MAP_SEO_EDITOR.md`, `MAP_SEO_EDITOR_SCORING.md`, `MAP_SEO_FRONTEND.md` (editor cluster), `docs/archive/media-editor/image-slug-rename.md`
 
 ## 1. Purpose
@@ -185,6 +185,8 @@ Two contracts:
 | CP not yet Published | Sync button hidden / blocked | Initial WordPress create owned by Publishing Queue only. |
 
 Existing/imported/rewrite posts are not record-level immutable. Explicit Sync WP is authorization to push Laravel title/body/SEO/slug/media fields unless `WordPressFieldConflictService` detects same-field concurrent changes against `wp_last_synced_field_snapshot` / `wp_latest_field_snapshot`. `wp_post_id` alone is not a conflict. Laravel slug remains editable and is sent as WP `post_name`; if WordPress canonicalizes it (for example duplicate slug suffix), Laravel stores the returned slug/permalink and surfaces a warning in the sync result.
+
+**Internal links / permalink display (2026-09-16+):** Link eligibility via `WordPressInternalLinkTargetPolicy` (needs `wp_post_id` + WP permalink). Permalink candidates via `WordPressPermalinkBuilder` using Polylang `url_prefix` from stored site info. Publish categories: lang-scoped catalog (`EditArticle` → `PublishCategoryOptionsAssembler`). Tests: `EditArticlePermalinkDisplayContractTest`, `InternalLinkWordPressUrlPolicyContractTest`, `PublishCategoryOptionsAssemblerTest`.
 
 Images panel labels: **Laravel managed** for rows with Laravel media record/local source/pending version markers; **WP only** for unmanaged WordPress attachments; **Conflict** only for verified same-field conflict. Laravel-managed media may sync alt/title/caption/description/attachment slug/featured-gallery assignment and pending binary replacement; WP-only media remains protected from automatic binary replacement.
 

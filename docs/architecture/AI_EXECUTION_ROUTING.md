@@ -1,7 +1,7 @@
 # AI Execution & Routing — Single Source of Truth
 
 > Status: Canonical (stabilized AI execution layer)  
-> Last verified: 2026-09-15
+> Last verified: 2026-09-17
 > Owner addon: `omnichannel-addons/ai-prompt` (+ Content Project preference helpers in `content-projects`)  
 > Module map: [`PROMPTS_AND_AI.md`](../modules/PROMPTS_AND_AI.md)  
 > Related: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md) · [`CONTENT_PROJECT_AI_INTEGRATION.md`](CONTENT_PROJECT_AI_INTEGRATION.md) · [`operations/AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md) · ADR-018 [`decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md)
@@ -355,6 +355,10 @@ This is **NOT** a DeepSeek provider failure.
 **DeepSeek V4 Pro split-hook output budget:** `ModelContextCapabilityResolver` gives the direct `deepseek-v4-pro` route an observed output ceiling of at least 8192 tokens; `PromptRunnerService` requests 8192 for `article.outline.generate`, `article.outline.structure.generate`, and `article.vocabulary.generate` on that route only. `PromptSplitStrategyRegistry` keeps its general 2048-token reserve, so an OpenRouter/free candidate with a smaller cap remains preflight-eligible. `DeepSeekChatClient` sends the provider-catalog model ID unchanged and defaults `thinking.type=disabled` for those split hooks unless explicitly enabled.
 
 If DeepSeek returns HTTP 200 with empty `content` and `finish_reason=length`, classify as `OUTPUT_TRUNCATED` (including reasoning-token evidence), not generic `provider_empty_output`. Provider success with nonempty output but failed content validation remains a separate validation failure.
+
+**Prefer paid after truncation:** `AiModelRouterService` `preferPaidAfterOutputTruncation` — after `OUTPUT_TRUNCATED`, remaining free routes are skipped in favor of paid survivors for that attempt stream.
+
+**Route capacity preflight (2026-09-15+):** `AiRouteCapacityPolicy` + `AiProviderBalanceSnapshotCache` (+ rules `ProfileBudgetSuppressionRule`, `KnownWalletFloorRule`, `KnownOutputCapacityRule` → `AiRouteCapacityDecision`). Capacity deny is a routing skip — **not** `AiCapacityStatusService` as route authority. Adapter: map `AI_ROUTES_EXHAUSTED` → `ProviderFailed`; do not confuse with `ProviderRefused` / `AI_PROVIDER_REFUSED`.
 
 Contracts are keyed by canonical prompt type via `OutputValidationContractRegistry`:
 
