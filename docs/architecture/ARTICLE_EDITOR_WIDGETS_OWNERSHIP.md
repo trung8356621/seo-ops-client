@@ -68,11 +68,11 @@ See [`ARTICLE_EDITOR_WIDGET_LOCKS.md`](ARTICLE_EDITOR_WIDGET_LOCKS.md).
 
 ## Domain link list (Links panel)
 
-- Catalog SoT: SEO `EffectiveDomainLinkResolver` (custom → product_cat → main_domain).
+- Composition SoT: `SiteLinkPolicyResolver::forArticleEditor()` (Domain Link List + verified all-depth product_cat + main domain); Editor adapter `EffectiveDomainLinkResolver`.
 - Live match/count/locate/insert: **client-only** soft lexical stack — isolated from Internal Links.
 - `(n)` = in-article occurrence candidates; **hide `0`**.
 - Locate expands collapsed sections via `scrollToLink` + optional `blockId`.
-- Canonical detail: [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](ARTICLE_EDITOR_DOMAIN_LINK_LIST.md).
+- Canonical detail: [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](ARTICLE_EDITOR_DOMAIN_LINK_LIST.md); addons policy: `omnichannel-addons/docs/modules/SITE_LINK_POLICY.md`.
 
 ## Insertion context
 

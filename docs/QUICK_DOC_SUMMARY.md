@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-17
+> Updated: 2026-09-18
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -11,8 +11,28 @@
 - `docs/modules/*` — module docs.
 - `docs/contracts/*`, `docs/operations/*` (incl. `AI_DEBUG_PLAYBOOK.md`), `docs/audits/*`.
 - `docs/archive/*` — historical only.
+- Sibling addons docs: `omnichannel-addons/docs/modules/` (e.g. `SITE_LINK_POLICY.md`, `TOPIC_CORE.md`, `WEBSITE_TYPE.md`).
 - `.cursor/rules/debug-fix-discipline.mdc` — project-wide DEBUG ≠ FIX (`alwaysApply: true`).
 - `resources/help-seed/` — human-facing Help topics; không override canonical dev docs.
+
+## 1a. Batch 2026-09-18 — Site Link Policy (Phase 1)
+
+Phạm vi: `omnichannel-addons` (`SiteLinkPolicyResolver` in `search-foundation`) + client architecture/module docs.
+
+| Concept | Ownership |
+|---------|-----------|
+| Domain Link List | Curated `seo_domain_prompt_context.links` |
+| Site Sync Link Catalog | `effectiveLinks()` = WP ∪ Manual − Excluded |
+| Verified product_cat | `SiteMcpProductCatIdentity` |
+| Site Link Policy | Read-only composition — **no storage** |
+
+- Keyword: `forKeyword()` = manual + all-depth product_cat (production/e-com); materialize Keywords; **never** write product_cat into prompt links.
+- Editor: `forArticleEditor()` via `EffectiveDomainLinkResolver` adapter; verified product_cat (not weak term classification).
+- MCP Important Pages: still root-only; runtime not rewired to policy.
+- Topic seeds: unchanged / Phase 2 (still catalog + all-depth product_cat).
+- Docs: addons `SITE_LINK_POLICY.md`, `WEBSITE_TYPE.md`, `TOPIC_CORE.md`, `AGENTS.md`; client `ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`, `ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`, `SITE_MCP_AND_DOMAINS.md`.
+
+---
 
 ## 1b. Batch 2026-09-09 — AI execution layer stabilized (docs only)
 

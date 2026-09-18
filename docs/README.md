@@ -1,13 +1,13 @@
 # Omnichannel Client — Documentation Index
 
 > Status: Canonical (multi-repo workspace at `D:\work\`)  
-> Last verified: 2026-09-17
+> Last verified: 2026-09-18
 
 ## Workspace repos
 | Repo | Role |
 |------|------|
 | `omnichannel-client` | Thin Laravel shell + embedded `App\Core` runtime (this tree) |
-| `omnichannel-addons` | Peer business addons + `seo-content-ai-compat` |
+| `omnichannel-addons` | Peer business addons + `seo-content-ai-compat` (module docs under `docs/modules/`, e.g. Site Link Policy / Topic Core) |
 | `wp-seo-ai` | WordPress bridge plugin |
 
 Open: `D:\work\omnichannel.code-workspace`. Old `omnichannel-backend` / `_split` are **not** SoT.
@@ -52,7 +52,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | [ARTICLE_EDITOR_MEDIA_SNAPSHOT.md](architecture/ARTICLE_EDITOR_MEDIA_SNAPSHOT.md) | Phase 2A Featured/Gallery media snapshot ownership |
 | [ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_ANALYSIS_OWNERSHIP.md) | Phase 2B React immediate analysis + Laravel policy |
 | [ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md](architecture/ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md) | FAQ/CTA/Reviews ownership + FAQ vs schema semantics |
-| [ARTICLE_EDITOR_DOMAIN_LINK_LIST.md](architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) | Domain link list soft match / locate / insert (Links panel) |
+| [ARTICLE_EDITOR_DOMAIN_LINK_LIST.md](architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) | Domain link list soft match / locate / insert; Laravel composition via Site Link Policy |
 | [ARTICLE_EDITOR_WIDGET_LOCKS.md](architecture/ARTICLE_EDITOR_WIDGET_LOCKS.md) | Dynamic Editor widget lock manifest / CLI / guard |
 | [ARTICLE_EDITOR_DOCUMENT_MODEL.md](architecture/ARTICLE_EDITOR_DOCUMENT_MODEL.md) | Phase 3 TipTap JSON DocumentModel + selectors |
 | [ARTICLE_EDITOR_COMMAND_LAYER.md](architecture/ARTICLE_EDITOR_COMMAND_LAYER.md) | Phase 4 Editor Command Layer + document-changed signal |
@@ -76,7 +76,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Article Execution History | [ARTICLE_EXECUTION_HISTORY.md](modules/ARTICLE_EXECUTION_HISTORY.md) |
 | Site Sync | [SITE_SYNC.md](modules/SITE_SYNC.md) |
 | WordPress Bridge | [WORDPRESS_BRIDGE.md](modules/WORDPRESS_BRIDGE.md) |
-| Site MCP / Domains | [SITE_MCP_AND_DOMAINS.md](modules/SITE_MCP_AND_DOMAINS.md) |
+| Site MCP / Domains | [SITE_MCP_AND_DOMAINS.md](modules/SITE_MCP_AND_DOMAINS.md) — Domain Link List vs catalog → sibling `omnichannel-addons/docs/modules/SITE_LINK_POLICY.md` |
 | SEO Audit / Keywords | [SEO_AUDIT_AND_KEYWORDS.md](modules/SEO_AUDIT_AND_KEYWORDS.md) |
 | Prompts / AI | [PROMPTS_AND_AI.md](modules/PROMPTS_AND_AI.md) |
 | Media / Gallery | [MEDIA_AND_GALLERY.md](modules/MEDIA_AND_GALLERY.md) |

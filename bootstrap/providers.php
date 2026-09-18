@@ -2,6 +2,7 @@
 
 return [
     App\Core\ClientCoreServiceProvider::class,
+    App\System\SystemServiceProvider::class,
     App\Providers\AppServiceProvider::class,
     App\Providers\Filament\AdminPanelProvider::class,
     App\Help\HelpServiceProvider::class,

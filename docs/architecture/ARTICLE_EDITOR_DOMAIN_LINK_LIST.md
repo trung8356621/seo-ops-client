@@ -1,9 +1,9 @@
 # Article Editor — Domain Link List
 
 > Status: Canonical (editor Links panel)  
-> Last verified: 2026-08-26  
-> Owner: `omnichannel-addons/content` (UI/matcher) + `omnichannel-addons/seo` (catalog SoT)  
-> Related: [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md), [`SITE_MCP_AND_DOMAINS.md`](../modules/SITE_MCP_AND_DOMAINS.md)
+> Last verified: 2026-09-18  
+> Owner: `omnichannel-addons/content` (UI/matcher) + `omnichannel-addons/search-foundation` (Site Link Policy) + `omnichannel-addons/seo` (Editor adapter)  
+> Related: [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md`](ARTICLE_EDITOR_WIDGETS_OWNERSHIP.md), [`SITE_MCP_AND_DOMAINS.md`](../modules/SITE_MCP_AND_DOMAINS.md), sibling addons `omnichannel-addons/docs/modules/SITE_LINK_POLICY.md`
 
 ## Purpose
 
@@ -15,16 +15,21 @@ Not AI / embedding / semantic search. Not Internal Links suggestions.
 
 ## Catalog source (Laravel)
 
-Effective list from `EffectiveDomainLinkResolver` / `DomainLinkListEditorService`:
+Composition SoT: `SiteLinkPolicyResolver::forArticleEditor()`  
+Adapter: `EffectiveDomainLinkResolver` → legacy shape for `DomainLinkListEditorService`
 
-| Order | Source | Notes |
-|-------|--------|--------|
-| 1 | `custom` | Prompt/domain manual links |
-| 2 | `product_cat` | Synced product category URLs |
-| 3 | `main_domain` | Optional main domain row |
+| Order | Policy source | Legacy source label | Notes |
+|-------|---------------|---------------------|--------|
+| 1 | `domain_link_list` | `custom` | Curated prompt Domain Link List only |
+| 2 | `product_cat` | `product_cat` | **Verified** product_cat (all depths) via `SiteMcpProductCatIdentity` |
+| 3 | `main_domain` | `main_domain` | Optional main domain row (Editor only) |
 
-Dedupe: custom wins over `product_cat` for same normalized anchor/URL.  
+Dedupe: normalized keyword; Domain Link List wins over `product_cat` / main domain.  
+**Not** Site Sync Link Catalog (`effectiveLinks` = WP ∪ Manual − Excluded).
+
 Payload: `domain_link_list_catalog` (full site catalog) + optional `domain_link_list` (legacy exact-for-article filter on server — **UI must not treat server exact filter as live occurrence SoT**).
+
+Keyword materialization uses `forKeyword()` (separate from Editor; no `main_domain`; production/e-commerce adds product_cat). Product_cat Keywords must **never** be written back into prompt `links`.
 
 ## Client runtime (React)
 
@@ -104,7 +109,7 @@ node --test addons/content/resources/js/__tests__/domainLinkMatcher.test.mjs
 
 Covers exact/soft/proximity/far/two-token/accent/count/cycle/inventory/edit + Internal exact-filter regression.
 
-PHP contract (catalog wiring only): `DomainLinkListEditorServiceContractTest`.
+PHP contract: `DomainLinkListEditorServiceContractTest`, `EffectiveDomainLinkResolverTest`, addons `SiteLinkPolicyResolverTest`.
 
 ## Manual smoke
 

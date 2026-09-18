@@ -21,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/control/v1')
                 ->middleware('throttle:60,1')
                 ->group(base_path('routes/control.php'));
+
+            Route::prefix('api/system/v1')
+                ->middleware('throttle:120,1')
+                ->group(base_path('routes/system.php'));
         },
     )
     ->withCommands([

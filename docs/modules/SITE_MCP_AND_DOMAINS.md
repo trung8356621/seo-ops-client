@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core User hierarchy)  
-> Last verified: 2026-09-17  
+> Last verified: 2026-09-18  
 > Supersedes: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md` (high-level — discard prompt dumps / exhaustive file indexes)
 
 ## 1. Purpose
@@ -228,9 +228,10 @@ No Filament Queue Manager UI.
 | Area | Invariant |
 |------|-----------|
 | SeoAccessControl consumers | Rank gates + read-only admin |
-| Site MCP product_cat | Roots only `parent_term_id===0` with live/staging preference |
-| Domain link sync | Official links ↔ keyword rows (catalog SoT) |
-| Domain link list (Article Editor) | Client soft match/locate; see [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
+| Site MCP product_cat | Roots only `parent_term_id===0` with live/staging preference → Important Pages (`SiteMcpGenerator`); missing parent ≠ root |
+| Domain Link List vs Catalog | Curated prompt links ≠ Site Sync `effectiveLinks` (WP ∪ Manual − Excluded). Composition: addons `SITE_LINK_POLICY.md` |
+| Domain link → Keyword | `SiteLinkPolicyResolver::forKeyword` → `DomainLinkListKeywordSyncService` materialize; product_cat never written into prompt `links` |
+| Domain link list (Article Editor) | Client soft match/locate; catalog via policy `forArticleEditor` — [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 | WP field sync UI | `DomainPromptContextWordPressSyncUiContractTest` — Edit Domain actions + loading states |
 | Article social links API | `ArticleSocialLinkApiContractTest` / `ArticleSocialLinkServiceTest` |
 | User hierarchy | Owner/Manager/Staff column rules |
@@ -241,6 +242,7 @@ No Filament Queue Manager UI.
 - [WORDPRESS_BRIDGE.md](WORDPRESS_BRIDGE.md)
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — project scoping by role
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — CTA/link insert; Domain link list → [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md)
+- Addons Site Link Policy — `../omnichannel-addons/docs/modules/SITE_LINK_POLICY.md` (Domain Link List ≠ Site Sync catalog)
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
 - [SYSTEM_OVERVIEW.md](../architecture/SYSTEM_OVERVIEW.md)
 - Archive: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md`
