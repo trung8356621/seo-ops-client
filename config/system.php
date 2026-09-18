@@ -35,5 +35,7 @@ return [
     'http' => [
         'base_url' => env('SYSTEM_API_BASE_URL', ''),
         'timeout_seconds' => (int) env('SYSTEM_API_TIMEOUT', 120),
+        // Service-to-service Bearer token for remote System AI HTTP calls.
+        'service_token' => env('SYSTEM_API_TOKEN', ''),
     ],
 ];

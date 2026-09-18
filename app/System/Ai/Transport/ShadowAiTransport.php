@@ -61,10 +61,25 @@ final class ShadowAiTransport implements AiTransport
                 'authority_id' => $primary->id,
                 'shadow_id' => $shadowResult->id,
             ]);
+
+            if ($shadowResult->status === 'failed') {
+                Log::warning('system.ai.remote.failure', [
+                    'capability' => $request->capability,
+                    'error_code' => $shadowResult->errorCode ?? 'shadow_failed',
+                    'message' => $shadowResult->errorMessage,
+                    'shadow_of' => $primary->id,
+                ]);
+            }
         } catch (\Throwable $e) {
             Log::warning('system.ai.shadow.failed', [
                 'capability' => $request->capability,
                 'message' => $e->getMessage(),
+            ]);
+            Log::warning('system.ai.remote.failure', [
+                'capability' => $request->capability,
+                'error_code' => 'shadow_exception',
+                'message' => $e->getMessage(),
+                'shadow_of' => $primary->id,
             ]);
         }
 

@@ -8,6 +8,7 @@ use App\System\Ai\Contracts\AiTextExecutionPort;
 use App\System\Ai\Dto\AiExecutionRequest;
 use App\System\Ai\Dto\AiExecutionResult;
 use App\System\Capability\SystemCapabilityRegistry;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -18,6 +19,10 @@ use Throwable;
  */
 final class LegacyLocalAiTransport implements AiTransport
 {
+    public const EXECUTION_CACHE_PREFIX = 'system_ai_execution:';
+
+    public const EXECUTION_CACHE_TTL_SECONDS = 3600;
+
     /** @var array<string, AiExecutionResult> */
     private array $store = [];
 
@@ -35,6 +40,7 @@ final class LegacyLocalAiTransport implements AiTransport
 
         $id = 'ai_'.Str::lower(Str::random(16));
         $started = microtime(true);
+        $viaHttp = (bool) ($request->context['via_http_api'] ?? false);
 
         try {
             if ($this->capabilities->has($capability)) {
@@ -68,35 +74,68 @@ final class LegacyLocalAiTransport implements AiTransport
                 throw new RuntimeException("No handler or AI text port for capability [{$capability}].");
             }
 
+            if ($viaHttp && is_array($output)) {
+                $output['via_http_api'] = true;
+            }
+
             $result = new AiExecutionResult(
                 id: $id,
                 status: 'completed',
                 capability: $capability,
                 output: $output,
                 trace: [
-                    'transport' => 'legacy_local',
+                    'transport' => $viaHttp ? 'http_local' : 'legacy_local',
                     'owner' => $this->capabilities->ownerOf($capability),
                     'duration_ms' => (int) round((microtime(true) - $started) * 1000),
+                    'via_http_api' => $viaHttp,
                 ],
                 meta: [
                     'correlation' => $request->correlation,
-                    'mode' => 'legacy_local',
+                    'mode' => $viaHttp ? 'http_api' : 'legacy_local',
+                    'via_http_api' => $viaHttp,
                 ],
             );
         } catch (Throwable $e) {
             $result = $this->fail($capability, 'execution_failed', $e->getMessage(), $id, [
                 'duration_ms' => (int) round((microtime(true) - $started) * 1000),
+                'via_http_api' => $viaHttp,
             ]);
         }
 
         $this->store[$id] = $result;
+        $this->persistExecutionEnvelope($id, $result);
 
         return $result;
     }
 
     public function getExecution(string $id): ?AiExecutionResult
     {
-        return $this->store[$id] ?? null;
+        if (isset($this->store[$id])) {
+            return $this->store[$id];
+        }
+
+        $cached = Cache::get(self::EXECUTION_CACHE_PREFIX.$id);
+        if (! is_array($cached)) {
+            return null;
+        }
+
+        $result = AiExecutionResult::fromArray($cached);
+        $this->store[$id] = $result;
+
+        return $result;
+    }
+
+    private function persistExecutionEnvelope(string $id, AiExecutionResult $result): void
+    {
+        try {
+            Cache::put(
+                self::EXECUTION_CACHE_PREFIX.$id,
+                $result->toArray(),
+                self::EXECUTION_CACHE_TTL_SECONDS,
+            );
+        } catch (Throwable) {
+            // Best-effort cross-request GET; in-memory store remains for same process.
+        }
     }
 
     /**

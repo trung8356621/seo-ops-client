@@ -53,6 +53,7 @@ final class SystemServiceProvider extends ServiceProvider
             $this->app->singleton(RemoteHttpAiTransport::class, function () use ($remoteBase): RemoteHttpAiTransport {
                 return new RemoteHttpAiTransport(
                     baseUrl: $remoteBase,
+                    serviceToken: (string) config('system.http.service_token', ''),
                     timeoutSeconds: (int) config('system.http.timeout_seconds', 120),
                 );
             });
