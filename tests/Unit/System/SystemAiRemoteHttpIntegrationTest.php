@@ -26,15 +26,27 @@ final class SystemAiRemoteHttpIntegrationTest extends TestCase
         config([
             'system.http.service_token' => 'test-system-token',
             'system.http.base_url' => 'http://system-ai.test',
-            'system.capabilities.article.content.generate' => 'legacy',
+            // Flat bag — mirrors config/system.php (dotted keys must not nest).
+            'system.capabilities' => [
+                'article.content.generate' => 'legacy',
+            ],
             'system.modules.ai' => 'legacy',
             'system.default_mode' => 'legacy',
         ]);
     }
 
+    private function setArticleContentMode(string $mode): void
+    {
+        config([
+            'system.capabilities' => [
+                'article.content.generate' => $mode,
+            ],
+        ]);
+    }
+
     public function test_remote_mode_fails_closed_when_transport_unbound(): void
     {
-        config(['system.capabilities.article.content.generate' => 'remote']);
+        $this->setArticleContentMode('remote');
 
         $registry = new SystemCapabilityRegistry();
         $client = new DefaultSystemAiClient(
@@ -56,10 +68,8 @@ final class SystemAiRemoteHttpIntegrationTest extends TestCase
 
     public function test_legacy_mode_works_without_remote_url(): void
     {
-        config([
-            'system.capabilities.article.content.generate' => 'legacy',
-            'system.http.base_url' => '',
-        ]);
+        $this->setArticleContentMode('legacy');
+        config(['system.http.base_url' => '']);
 
         $registry = new SystemCapabilityRegistry();
         $registry->register(new SystemCapabilityDefinition(
@@ -128,6 +138,44 @@ final class SystemAiRemoteHttpIntegrationTest extends TestCase
         self::assertTrue((bool) ($result->meta['via_http_api'] ?? false));
         self::assertSame('remote_http', $result->meta['transport'] ?? null);
         self::assertSame('from-http', $result->output['output'] ?? null);
+    }
+
+    public function test_remote_http_422_business_failure_parses_execution_envelope(): void
+    {
+        Http::fake([
+            'http://system-ai.test/api/system/v1/ai/executions' => Http::response([
+                'ok' => true,
+                'data' => [
+                    'id' => 'ai_biz_fail',
+                    'status' => 'failed',
+                    'capability' => 'article.content.generate',
+                    'output' => [],
+                    'trace' => ['transport' => 'legacy_local'],
+                    'meta' => [],
+                    'error' => [
+                        'code' => 'execution_failed',
+                        'message' => 'No active model supports "text.generate" for profile "text.longform".',
+                    ],
+                ],
+            ], 422),
+        ]);
+
+        $transport = new RemoteHttpAiTransport(
+            baseUrl: 'http://system-ai.test',
+            serviceToken: 'test-system-token',
+        );
+
+        $result = $transport->execute(new AiExecutionRequest(
+            capability: 'article.content.generate',
+            input: ['prompt_id' => 5],
+        ));
+
+        self::assertSame('failed', $result->status);
+        self::assertSame('ai_biz_fail', $result->id);
+        self::assertSame('execution_failed', $result->errorCode);
+        self::assertStringContainsString('text.longform', (string) $result->errorMessage);
+        self::assertSame('remote_http', $result->meta['transport'] ?? null);
+        self::assertNotSame('remote_http_error', $result->errorCode);
     }
 
     public function test_remote_http_wrong_token_returns_auth_failure(): void
