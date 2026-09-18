@@ -21,6 +21,7 @@ final class LegacyLocalAiTransport implements AiTransport
 {
     public const EXECUTION_CACHE_PREFIX = 'system_ai_execution:';
 
+    /** TTL for GET /executions/{id} envelope. Multi-instance deploys must use a shared cache driver (e.g. Redis). */
     public const EXECUTION_CACHE_TTL_SECONDS = 3600;
 
     /** @var array<string, AiExecutionResult> */
