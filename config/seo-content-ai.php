@@ -194,22 +194,27 @@ return [
         'max_parallel_articles' => (int) env('CONTENT_PROJECT_MAX_PARALLEL_ARTICLES', 1),
     ],
 
-    /**
-     * Full article generation length contract.
-     * article_length / {{article_length}} = Prompt target (AI aim — not a hard fail).
-     * minimum_acceptable_ratio = soft floor fraction of target; ACCEPT when
-     * actual_words >= floor(target × ratio) + 1 (e.g. target 2000 + 0.5 ⇒ >1000 words).
-     */
-    'article_writing' => [
-        'minimum_acceptable_ratio' => (float) env(
-            'SEO_ARTICLE_WRITING_MINIMUM_ACCEPTABLE_RATIO',
-            0.5,
-        ),
-        'absolute_floor_when_no_target' => (int) env(
-            'SEO_ARTICLE_WRITING_ABSOLUTE_FLOOR_WHEN_NO_TARGET',
-            300,
-        ),
-    ],
+        /**
+         * Full article generation length contract.
+         * article_length / {{article_length}} = Prompt target (desired size — warning, not hard fail).
+         * hard_floor_words = max(absolute_minimum_words, target × ratio).
+         * Below target but at/above hard floor → success_with_warning (no router fallback).
+         * Below hard floor → hard fail / OUTPUT_TRUNCATED-class failover.
+         */
+        'article_writing' => [
+            'minimum_acceptable_ratio' => (float) env(
+                'SEO_ARTICLE_WRITING_MINIMUM_ACCEPTABLE_RATIO',
+                0.5,
+            ),
+            'absolute_minimum_words' => (int) env(
+                'SEO_ARTICLE_WRITING_ABSOLUTE_MINIMUM_WORDS',
+                300,
+            ),
+            'absolute_floor_when_no_target' => (int) env(
+                'SEO_ARTICLE_WRITING_ABSOLUTE_FLOOR_WHEN_NO_TARGET',
+                300,
+            ),
+        ],
 
     /** Log Article Editor mount/SEO bootstrap timings (no body/tokens). */
     'article_editor_perf_debug' => (bool) env('ARTICLE_EDITOR_PERF_DEBUG', false),
