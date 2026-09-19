@@ -34,7 +34,13 @@ return [
 
     'http' => [
         'base_url' => env('SYSTEM_API_BASE_URL', ''),
-        'timeout_seconds' => (int) env('SYSTEM_API_TIMEOUT', 120),
+        // Must cover long-form writing (provider fallback + generation). Run #310/#8553:
+        // remote client timed out at 120s with 0 bytes while server still completed PR2108 (~121s+).
+        // Align with Content Project article job timeout (default 900).
+        'timeout_seconds' => (int) env(
+            'SYSTEM_API_TIMEOUT',
+            (int) env('CONTENT_PROJECT_ARTICLE_JOB_TIMEOUT_SECONDS', 900),
+        ),
         // Service-to-service Bearer token for remote System AI HTTP calls.
         'service_token' => env('SYSTEM_API_TOKEN', ''),
     ],
