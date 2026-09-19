@@ -1,10 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
+use Tests\Support\TestDatabaseGuard;
 use Throwable;
 
 abstract class TestCase extends BaseTestCase
@@ -12,6 +16,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Second line of defense: after traits/application boot, before test body /
+        // subclass setUp that may Schema::drop*.
+        $this->assertTestDatabasesAreSafe();
     }
 
     protected function refreshApplication(): void
@@ -20,6 +28,7 @@ abstract class TestCase extends BaseTestCase
 
         // Must run before setUpTraits (DatabaseTransactions) — afterApplicationCreated is too late.
         $this->configureTestingDatabaseConnections();
+        $this->assertTestDatabasesAreSafe();
     }
 
     /**
@@ -33,8 +42,9 @@ abstract class TestCase extends BaseTestCase
      *   Point core_connection + omi_seo_ai at the same sqlite default config so
      *   RefreshDatabase migrations run without a live MySQL daemon.
      *
-     * Server with real DB (recommended for SEO integration tests):
-     *   SEO_TEST_USE_MYSQL=true (+ reachable mysql / omi_seo_ai).
+     * Optional MySQL integration:
+     *   SEO_TEST_USE_MYSQL=true AND SEO_TEST_DATABASE / DB name ending *_test
+     *   (never omi_client / omi_seo_ai).
      */
     private function configureTestingDatabaseConnections(): void
     {
@@ -57,7 +67,8 @@ abstract class TestCase extends BaseTestCase
         Config::set('database.core_connection', $default);
         Config::set('database.connections.omi_seo_ai', $defaultConfig);
         Config::set('database.connections.omi_seeding', array_merge($defaultConfig, [
-            'database' => 'omi_seeding',
+            // Keep sqlite driver; force disposable in-memory name for seeding alias.
+            'database' => ':memory:',
         ]));
         // Tests still listing `mysql` in $connectionsToTransact must not hit
         // MySQL driver with DB_DATABASE=:memory: from phpunit.xml.
@@ -80,19 +91,28 @@ abstract class TestCase extends BaseTestCase
         $this->ensureCoreMysqlDatabaseIsConfigured();
 
         $connectionName = 'omi_seo_ai';
-        $existing = config('database.connections.'.$connectionName);
-
-        if (is_array($existing) && ($existing['driver'] ?? null) !== null) {
-            return;
-        }
-
         $mysql = config('database.connections.mysql');
         if (! is_array($mysql) || ($mysql['driver'] ?? '') !== 'mysql') {
-            return;
+            throw new RuntimeException(
+                TestDatabaseGuard::BLOCK_PREFIX."\n"
+                .'SEO_TEST_USE_MYSQL=true requires a mysql driver connection, not sqlite :memory: remapped as mysql.'
+            );
         }
 
+        $seoDatabase = (string) env('SEO_TEST_DATABASE', env('DB_TEST_DATABASE', ''));
+        if ($seoDatabase === '') {
+            // Never default to omi_seo_ai — that caused live DB wipes.
+            throw new RuntimeException(
+                TestDatabaseGuard::BLOCK_PREFIX."\n"
+                ."SEO_TEST_USE_MYSQL=true requires SEO_TEST_DATABASE (or DB_TEST_DATABASE)\n"
+                .'set to a disposable name ending in _test (e.g. omi_seo_ai_test).'
+            );
+        }
+
+        TestDatabaseGuard::make()->assertAllowed('mysql', $seoDatabase, $connectionName);
+
         Config::set('database.connections.'.$connectionName, array_merge($mysql, [
-            'database' => (string) env('SEO_TEST_DATABASE', env('SEO_DB_DATABASE', 'omi_seo_ai')),
+            'database' => $seoDatabase,
         ]));
 
         try {
@@ -101,6 +121,10 @@ abstract class TestCase extends BaseTestCase
         }
     }
 
+    /**
+     * When phpunit forces DB_DATABASE=:memory: onto the mysql connection key,
+     * restore a *test-safe* MySQL database name only — never .env omi_client.
+     */
     private function ensureCoreMysqlDatabaseIsConfigured(): void
     {
         $mysql = config('database.connections.mysql');
@@ -109,28 +133,36 @@ abstract class TestCase extends BaseTestCase
         }
 
         if (($mysql['database'] ?? '') !== ':memory:') {
+            // Still validate whatever is already configured.
+            TestDatabaseGuard::make()->assertConnectionConfig($mysql, 'mysql');
+
             return;
         }
 
-        $envPath = base_path('.env');
-        if (! is_file($envPath)) {
-            return;
+        $testDb = (string) env('SEO_TEST_DATABASE', env('DB_TEST_DATABASE', env('TEST_DB_DATABASE', '')));
+        if ($testDb === '') {
+            throw new RuntimeException(
+                TestDatabaseGuard::BLOCK_PREFIX."\n"
+                ."mysql connection is :memory: under SEO_TEST_USE_MYSQL but no disposable\n"
+                .'SEO_TEST_DATABASE / DB_TEST_DATABASE was provided. Refusing to read .env DB_DATABASE.'
+            );
         }
 
-        $contents = (string) file_get_contents($envPath);
-        if (preg_match('/^DB_DATABASE=(.+)$/m', $contents, $matches) !== 1) {
-            return;
-        }
+        TestDatabaseGuard::make()->assertAllowed('mysql', $testDb, 'mysql');
 
-        $database = trim($matches[1], " \t\n\r\0\x0B\"'");
-        if ($database === '' || $database === ':memory:') {
-            return;
-        }
-
-        Config::set('database.connections.mysql.database', $database);
+        Config::set('database.connections.mysql.database', $testDb);
         try {
             DB::purge('mysql');
         } catch (Throwable) {
         }
+    }
+
+    private function assertTestDatabasesAreSafe(): void
+    {
+        if (! app()->environment('testing')) {
+            return;
+        }
+
+        TestDatabaseGuard::make()->assertConfiguredConnectionsAreTestSafe();
     }
 }

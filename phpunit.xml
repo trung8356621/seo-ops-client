@@ -77,6 +77,7 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Never point at omi_client / omi_seo_ai. If true, set SEO_TEST_DATABASE=*_test -->
         <env name="SEO_TEST_USE_MYSQL" value="false" force="false"/>
     </php>
 </phpunit>
