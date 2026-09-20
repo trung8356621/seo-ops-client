@@ -85,15 +85,16 @@ function buildTrendOptions(payload) {
             animations: { enabled: false },
         },
         series: [
-            { name: 'Tổng', data: payload.total_series ?? [] },
-            { name: 'SEO', data: payload.seo_series ?? [] },
+            { name: 'Tổng tokens', data: payload.total_series ?? [] },
+            { name: 'SEO Action', data: payload.seo_series ?? [] },
             { name: 'Seeding', data: payload.seeding_series ?? [] },
         ],
-        colors: ['#0ea5e9', '#10b981', '#8b5cf6'],
+        colors: ['#2563eb', '#10b981', '#8b5cf6'],
         plotOptions: {
             bar: {
-                columnWidth: '55%',
-                borderRadius: 2,
+                columnWidth: '58%',
+                borderRadius: 4,
+                borderRadiusApplication: 'end',
             },
         },
         dataLabels: { enabled: false },
@@ -118,14 +119,10 @@ function buildTrendOptions(payload) {
         },
         grid: {
             borderColor: '#e5e7eb',
-            strokeDashArray: 3,
-            padding: { left: 8, right: 8 },
+            strokeDashArray: 0,
+            padding: { left: 8, right: 8, top: 0, bottom: 0 },
         },
-        legend: {
-            position: 'top',
-            horizontalAlign: 'right',
-            fontSize: '11px',
-        },
+        legend: { show: false },
         tooltip: {
             y: {
                 formatter: (value) => `${Number(value).toLocaleString()} tokens`,
@@ -136,7 +133,7 @@ function buildTrendOptions(payload) {
                 breakpoint: 768,
                 options: {
                     chart: { height: 220 },
-                    legend: { position: 'bottom' },
+                    legend: { show: false },
                 },
             },
         ],
@@ -152,28 +149,29 @@ function buildDonutOptions(payload) {
     return {
         chart: {
             type: 'donut',
-            height: 260,
+            height: 220,
             fontFamily: 'inherit',
             animations: { enabled: false },
         },
         series,
         labels,
         colors: colors.length === series.length ? colors : ['#10b981', '#8b5cf6', '#0ea5e9', '#f59e0b', '#94a3b8'],
-        legend: {
-            position: 'bottom',
-            fontSize: '11px',
-        },
+        legend: { show: false },
         dataLabels: { enabled: false },
+        stroke: {
+            width: 2,
+            colors: ['#ffffff'],
+        },
         plotOptions: {
             pie: {
                 donut: {
                     size: '68%',
                     labels: {
                         show: true,
-                        name: { show: true, fontSize: '11px' },
+                        name: { show: false },
                         value: {
                             show: true,
-                            fontSize: '14px',
+                            fontSize: '18px',
                             fontWeight: 700,
                             formatter: (val) => Number(val).toLocaleString(),
                         },
@@ -181,6 +179,7 @@ function buildDonutOptions(payload) {
                             show: true,
                             label: 'tokens',
                             fontSize: '11px',
+                            fontWeight: 600,
                             formatter: () => Number(payload.center_total || 0).toLocaleString(),
                         },
                     },

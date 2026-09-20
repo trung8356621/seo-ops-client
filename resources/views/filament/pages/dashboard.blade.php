@@ -9,7 +9,10 @@
     @php
         $dashboardChartsVite = '';
         try {
-            $dashboardChartsVite = (string) app(\Illuminate\Foundation\Vite::class)(['resources/js/admin-dashboard-usage-charts.js']);
+            $dashboardChartsVite = (string) app(\Illuminate\Foundation\Vite::class)([
+                'resources/css/filament/admin/theme.css',
+                'resources/js/admin-dashboard-usage-charts.js',
+            ]);
         } catch (\Throwable) {
             $dashboardChartsVite = '';
         }
@@ -27,15 +30,15 @@
             @include('seo-content-ai::filament.pages.partials.ai-usage.kpi-cards')
 
             {{-- ROW 3: Wallet | Alerts --}}
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                <div class="lg:col-span-8">
+            <div class="ops-split-grid grid grid-cols-1 gap-4 lg:grid-cols-12">
+                <div class="ops-split-main">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.provider-wallet', [
                         'showManageLink' => true,
                         'manageProvidersUrl' => $this->getManageProvidersUrl(),
                         'compact' => true,
                     ])
                 </div>
-                <div class="lg:col-span-4">
+                <div class="ops-split-side">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.alerts-panel', [
                         'alerts' => $alerts,
                         'scrollTarget' => '#dashboard-usage-detail',
@@ -46,13 +49,13 @@
             @include('seo-content-ai::filament.pages.partials.ai-usage.threshold-modal')
 
             {{-- ROW 4: Trend chart | Distribution --}}
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
-                <div class="lg:col-span-8">
+            <div class="ops-split-grid grid grid-cols-1 gap-4 lg:grid-cols-12">
+                <div class="ops-split-main">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.daily-trend', [
                         'useApex' => true,
                     ])
                 </div>
-                <div class="lg:col-span-4">
+                <div class="ops-split-side">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.module-allocation', [
                         'useApex' => true,
                         'scrollTarget' => '#dashboard-usage-detail',
@@ -66,15 +69,15 @@
             </script>
 
             {{-- ROW 5: Detail table | Services shortcuts (real panel; no fake activity) --}}
-            <div class="grid grid-cols-1 gap-4 lg:grid-cols-12" id="dashboard-usage-detail">
-                <div class="lg:col-span-8">
+            <div class="ops-split-grid grid grid-cols-1 gap-4 lg:grid-cols-12" id="dashboard-usage-detail">
+                <div class="ops-split-main">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.breakdown-table', [
                         'showRatio' => true,
                         'compact' => true,
                         'scrollTarget' => '#dashboard-usage-detail',
                     ])
                 </div>
-                <div class="lg:col-span-4">
+                <div class="ops-split-side">
                     @include('seo-content-ai::filament.pages.partials.ai-usage.services-panel', [
                         'cards' => $shortcutCards,
                     ])

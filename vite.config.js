@@ -16,6 +16,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/css/filament/admin/theme.css',
                 'resources/js/app.js',
                 'addons/content-projects/resources/js/task-builder.jsx',
                 'addons/content-projects/resources/js/automation-workflow-builder.jsx',
@@ -109,4 +110,3 @@ export default defineConfig({
         },
     },
 });
-

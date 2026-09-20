@@ -8,6 +8,7 @@ use App\Filament\Pages\Dashboard;
 use App\Models\ApiConnection;
 use App\Models\User;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
 use Omnichannel\Addons\AiPrompt\Services\AiTokenUsageAnalyticsService;
@@ -141,5 +142,38 @@ final class OperationalDashboardUsageOverviewTest extends TestCase
         self::assertNull($cards[0]['balance']);
         $component->assertSee('Không có số dư');
         $component->assertDontSee('$0.00');
+    }
+
+    public function test_dashboard_refresh_actions_reload_usage_and_provider_balances(): void
+    {
+        Http::fake([
+            'https://api.deepseek.com/user/balance' => Http::response([
+                'is_available' => true,
+                'balance_infos' => [[
+                    'currency' => 'USD',
+                    'total_balance' => '12.7500',
+                ]],
+            ]),
+        ]);
+
+        $connection = ApiConnection::create([
+            'name' => 'DeepSeek Refresh',
+            'provider' => 'deepseek',
+            'api_key' => 'sk-refresh',
+            'balance' => 1.0,
+            'balance_status' => 'low_balance',
+            'status' => 'active',
+        ]);
+
+        Livewire::test(Dashboard::class)
+            ->call('refreshUsageOverview')
+            ->call('refreshProviderWallets')
+            ->assertHasNoErrors();
+
+        $connection->refresh();
+        self::assertSame(12.75, (float) $connection->balance);
+        self::assertSame('normal', $connection->balance_status);
+        self::assertNotNull($connection->balance_checked_at);
+        Http::assertSentCount(1);
     }
 }
