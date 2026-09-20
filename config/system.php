@@ -9,11 +9,15 @@ declare(strict_types=1);
  * Capability-level overrides beat module-level defaults.
  * No global USE_NEW_AI flag.
  *
- * Writing cutover (Content Project Rerun from Writing):
- *   SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=remote
- * Rollback:
- *   SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=legacy
- *   (or unset)
+ * article.content.generate (Content Project Writing):
+ *   Production cutover: SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=remote
+ *   Rollback:           SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=legacy
+ *
+ * Phase 1 note: when SYSTEM_CAP_ARTICLE_CONTENT_GENERATE is UNSET, this
+ * capability still resolves to module/default "legacy" (transitional).
+ * Do not treat unset→legacy as permanent; Editor DirectGenerate cutover
+ * must finish before making remote mandatory. Fail-closed remote has no
+ * silent local fallback.
  */
 $capabilities = [];
 $articleContentMode = env('SYSTEM_CAP_ARTICLE_CONTENT_GENERATE');
