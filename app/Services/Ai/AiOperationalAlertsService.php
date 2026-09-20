@@ -127,10 +127,18 @@ final class AiOperationalAlertsService
 
     public function getAiCenterUsageUrl(): string
     {
-        if (Route::has('filament.admin.pages.seo-settings-ai-center')) {
-            return route('filament.admin.pages.seo-settings-ai-center', ['tab' => 'usage']);
+        if (class_exists(\App\Filament\Pages\Dashboard::class)) {
+            try {
+                if (Route::has('filament.admin.pages.dashboard')) {
+                    return route('filament.admin.pages.dashboard');
+                }
+
+                return \App\Filament\Pages\Dashboard::getUrl();
+            } catch (\Throwable) {
+                // Panel routes may be unavailable in isolated unit tests.
+            }
         }
 
-        return url('/admin/settings/ai-center?tab=usage');
+        return url('/admin');
     }
 }

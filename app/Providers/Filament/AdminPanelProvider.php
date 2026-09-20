@@ -12,12 +12,10 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
-use Filament\Widgets;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -58,7 +56,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Pages\Dashboard::class,
                 HelpTopicsAdmin::class,
                 HelpTopicEdit::class,
                 HelpTopicCreate::class,
@@ -66,8 +64,6 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
                 \App\Filament\Widgets\ServiceQuickShortcutsWidget::class,
-                Widgets\AccountWidget::class,
-                \App\Filament\Widgets\OperationalAlertsDashboardWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -95,7 +91,7 @@ class AdminPanelProvider extends PanelProvider
     private function discover_addons(Panel $panel): Panel
     {
         $pages = [
-            Pages\Dashboard::class,
+            \App\Filament\Pages\Dashboard::class,
             HelpTopicsAdmin::class,
             HelpTopicEdit::class,
             HelpTopicCreate::class,

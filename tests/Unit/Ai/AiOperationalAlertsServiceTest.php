@@ -65,7 +65,9 @@ final class AiOperationalAlertsServiceTest extends TestCase
         self::assertStringContainsString('3.21', $alert['message']);
         self::assertStringContainsString('5.00', $alert['message']);
         self::assertSame('Kiểm tra ví', $alert['action_label']);
-        self::assertStringContainsString('tab=usage', $alert['action_url']);
+        self::assertMatchesRegularExpression('#/admin/?$#', parse_url($alert['action_url'], PHP_URL_PATH) ?: $alert['action_url']);
+        self::assertStringNotContainsString('/admin/usage', $alert['action_url']);
+        self::assertStringNotContainsString('tab=usage', $alert['action_url']);
     }
 
     public function test_zero_or_negative_balance_is_critical_severity(): void
