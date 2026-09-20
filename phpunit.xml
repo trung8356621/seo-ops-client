@@ -79,7 +79,8 @@
         <env name="NIGHTWATCH_ENABLED" value="false"/>
         <!-- Never point at omi_client / omi_seo_ai. If true, set SEO_TEST_DATABASE=*_test -->
         <env name="SEO_TEST_USE_MYSQL" value="false" force="false"/>
-        <!-- Unit tests exercise in-process canonical writing; do not inherit developer remote cutover. -->
+        <!-- Writing unit tests use SystemAiClient → local System transport (legacy mode).
+             Does NOT mean bypass SystemAiClient. Do not inherit developer remote cutover. -->
         <env name="SYSTEM_CAP_ARTICLE_CONTENT_GENERATE" value="legacy" force="true"/>
     </php>
 </phpunit>

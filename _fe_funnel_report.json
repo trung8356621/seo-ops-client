@@ -1,0 +1,373 @@
+{
+  "A_response": 5,
+  "B_merged": 7,
+  "B_incoming_only": 5,
+  "C_partitioned_internal": 7,
+  "fresh_texts": [
+    "Lý do",
+    "Độ bền",
+    "nổi bật",
+    "Túi xách",
+    "xách quà"
+  ],
+  "results": [
+    {
+      "label": "one-block",
+      "blockCount": 1,
+      "actionableCount": 6,
+      "texts": [
+        "Túi xách",
+        "Lý do",
+        "nổi bật",
+        "Độ bền",
+        "quà tặng",
+        "chất liệu"
+      ],
+      "per": {
+        "Lý do": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 1,
+          "occurrence_eligible": 1,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Độ bền": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 4,
+          "occurrence_eligible": 4,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "nổi bật": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Túi xách": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 6,
+          "occurrence_eligible": 6,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "xách quà": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": "longest-nonoverlap or duplicate href/same target or ranking/cap",
+          "actionable": false,
+          "rendered": false
+        },
+        "chất liệu": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 3,
+          "occurrence_eligible": 3,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        },
+        "quà tặng": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 8,
+          "occurrence_eligible": 8,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        }
+      }
+    },
+    {
+      "label": "tag-split",
+      "blockCount": 86,
+      "actionableCount": 6,
+      "texts": [
+        "Túi xách",
+        "Lý do",
+        "nổi bật",
+        "Độ bền",
+        "quà tặng",
+        "chất liệu"
+      ],
+      "per": {
+        "Lý do": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 1,
+          "occurrence_eligible": 1,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Độ bền": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 4,
+          "occurrence_eligible": 4,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "nổi bật": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Túi xách": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 6,
+          "occurrence_eligible": 6,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "xách quà": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": "longest-nonoverlap or duplicate href/same target or ranking/cap",
+          "actionable": false,
+          "rendered": false
+        },
+        "chất liệu": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 3,
+          "occurrence_eligible": 3,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        },
+        "quà tặng": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 8,
+          "occurrence_eligible": 8,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        }
+      }
+    },
+    {
+      "label": "p-tags",
+      "blockCount": 60,
+      "actionableCount": 6,
+      "texts": [
+        "Túi xách",
+        "Lý do",
+        "nổi bật",
+        "Độ bền",
+        "quà tặng",
+        "chất liệu"
+      ],
+      "per": {
+        "Lý do": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 1,
+          "occurrence_eligible": 1,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Độ bền": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 4,
+          "occurrence_eligible": 4,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "nổi bật": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "Túi xách": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 6,
+          "occurrence_eligible": 6,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "xách quà": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": "longest-nonoverlap or duplicate href/same target or ranking/cap",
+          "actionable": false,
+          "rendered": false
+        },
+        "chất liệu": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 3,
+          "occurrence_eligible": 3,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        },
+        "quà tặng": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 8,
+          "occurrence_eligible": 8,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        }
+      }
+    },
+    {
+      "label": "strong-span-frag",
+      "blockCount": 1,
+      "actionableCount": 4,
+      "texts": [
+        "túi xách",
+        "Độ bền",
+        "quà tặng",
+        "chất liệu"
+      ],
+      "per": {
+        "Lý do": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 0,
+          "occurrence_eligible": 0,
+          "occurrence": "fail",
+          "reason": "normalized phrase mismatch / phrase window khác text editor",
+          "actionable": false,
+          "rendered": false
+        },
+        "Độ bền": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "nổi bật": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 0,
+          "occurrence_eligible": 0,
+          "occurrence": "fail",
+          "reason": "normalized phrase mismatch / phrase window khác text editor",
+          "actionable": false,
+          "rendered": false
+        },
+        "Túi xách": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 4,
+          "occurrence_eligible": 4,
+          "occurrence": "pass",
+          "reason": null,
+          "actionable": true,
+          "rendered": true
+        },
+        "xách quà": {
+          "backend": true,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 1,
+          "occurrence_eligible": 1,
+          "occurrence": "pass",
+          "reason": "longest-nonoverlap or duplicate href/same target or ranking/cap",
+          "actionable": false,
+          "rendered": false
+        },
+        "chất liệu": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 2,
+          "occurrence_eligible": 2,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        },
+        "quà tặng": {
+          "backend": false,
+          "merged": true,
+          "partitioned": true,
+          "occurrence_hits": 6,
+          "occurrence_eligible": 6,
+          "occurrence": "pass",
+          "actionable": true,
+          "rendered": true
+        }
+      }
+    }
+  ]
+}

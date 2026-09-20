@@ -9,15 +9,17 @@ declare(strict_types=1);
  * Capability-level overrides beat module-level defaults.
  * No global USE_NEW_AI flag.
  *
- * article.content.generate (Content Project Writing):
- *   Production cutover: SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=remote
- *   Rollback:           SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=legacy
+ * article.content.generate — ALL normal callers enter SystemAiClient.
+ * Transport is selected inside DefaultSystemAiClient:
+ *   legacy  = LegacyLocalAiTransport (in-process System boundary)
+ *   shadow  = local authority + optional remote compare
+ *   remote  = RemoteHttpAiTransport (fail-closed; no silent local fallback)
  *
- * Phase 1 note: when SYSTEM_CAP_ARTICLE_CONTENT_GENERATE is UNSET, this
- * capability still resolves to module/default "legacy" (transitional).
- * Do not treat unset→legacy as permanent; Editor DirectGenerate cutover
- * must finish before making remote mandatory. Fail-closed remote has no
- * silent local fallback.
+ * Unset SYSTEM_CAP_ARTICLE_CONTENT_GENERATE still resolves to module/default
+ * "legacy" (local System transport) — not "bypass SystemAiClient".
+ *
+ * Production may set SYSTEM_CAP_ARTICLE_CONTENT_GENERATE=remote for HTTP cutover.
+ * Making remote the unset default is a separate decision.
  */
 $capabilities = [];
 $articleContentMode = env('SYSTEM_CAP_ARTICLE_CONTENT_GENERATE');
