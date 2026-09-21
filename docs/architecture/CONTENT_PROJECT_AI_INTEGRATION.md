@@ -1,11 +1,12 @@
 # Content Project ↔ AI Execution Integration
 
 > Status: Canonical boundary doc  
-> Last verified: 2026-09-17
+> Last verified: 2026-09-21
 > Owners: `content-projects` (workflow / domain) · `ai-prompt` (PromptResult / routing)  
 > Routing SoT: [`AI_EXECUTION_ROUTING.md`](AI_EXECUTION_ROUTING.md)  
 > History SoT: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md)  
-> Module: [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md)
+> Module: [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md)  
+> **Site / domain ownership SSOT:** sibling `omnichannel-addons/docs/modules/CONTENT_PROJECT_ARCHITECTURE.md`
 
 **Purpose:** Keep future AI work from accidentally changing Content Project sequencing or domain authority.
 
@@ -80,11 +81,14 @@ Do **not** claim full correlation is production-complete without evidence.
 
 ## 3. Content Project domain authority
 
-Current domain-per-item contract:
+Full ownership boundary (project domain-neutral; one project may hold multi-site tasks):  
+`omnichannel-addons/docs/modules/CONTENT_PROJECT_ARCHITECTURE.md`.
+
+CREATE / bind contract used by AI generation (summary only):
 
 | Entity | Authority |
 |--------|-----------|
-| **Project** | Container / lifecycle / assignment (`site_id` may be null for domain-neutral / multi-domain packs) |
+| **Project** | Container / lifecycle / assignment (`site_id` may be null; **not** domain owner) |
 | **Task / Item** | **Site / domain authority** (`task.site_id`) |
 | **Article** | Must match `task.site_id` for CREATE generation |
 

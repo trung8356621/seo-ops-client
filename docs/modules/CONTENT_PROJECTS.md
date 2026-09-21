@@ -1,17 +1,20 @@
 # Content Projects
 
-> Status: Canonical  
+> Status: Canonical (module ops / routes / components)  
 > Owner: content-projects (assign drawer UI: content)  
-> Last verified: 2026-09-17
+> Last verified: 2026-09-21
 > Supersedes: `docs/MAP_SEO_PROJECTS.md` (architecture/routes/ownership/state — not historical phase dumps), `docs/archive/content-projects/CONTENT_PROJECT_CANONICAL_ARCHITECTURE.md`, `docs/archive/content-projects/CONTENT_PROJECT_BACKEND_FREEZE_V1.md`, `docs/archive/content-projects/CONTENT_PROJECT_COMMAND_BUS_CUTOVER.md` (command inventory), `docs/archive/content-projects/CONTENT_PROJECT_RUN_ENGINE_REFACTOR.md` (engine ownership invariants only), `docs/archive/content-projects/CONTENT_PROJECT_APPLICATION_API.md`, `docs/archive/content-projects/CONTENT_PROJECT_OPERATIONS.md` (dashboard/ops summary)  
+> **Site / domain ownership SSOT:** sibling `omnichannel-addons/docs/modules/CONTENT_PROJECT_ARCHITECTURE.md` (Project is domain-neutral; **`task.site_id`** owns site/domain).  
 > **AI integration boundary:** [`CONTENT_PROJECT_AI_INTEGRATION.md`](../architecture/CONTENT_PROJECT_AI_INTEGRATION.md) · routing SoT: [`AI_EXECUTION_ROUTING.md`](../architecture/AI_EXECUTION_ROUTING.md)
 
 ## 1. Purpose
 
-Monthly content planning + production for one site/domain on connection `omi_seo_ai`.
+Monthly content planning + production on connection `omi_seo_ai`.
 
-- `SeoProject` — month plan (or archive kind).
-- `SeoProjectTask` — item (create / rewrite / improve) ↔ optional `SeoArticle` (`article_id` unique).
+Projects are **domain-neutral**: `SeoProject` is an execution/planning container (month, writer, lifecycle). Site/domain ownership lives on **`SeoProjectTask.site_id`**. One project may contain tasks from multiple sites. Legacy `seo_projects.site_id` may still exist for compatibility and is **not** canonical ownership — see addons SSOT above.
+
+- `SeoProject` — month plan / execution container (or archive kind); `site_id` may be null.
+- `SeoProjectTask` — item (create / rewrite / improve) ↔ optional `SeoArticle` (`article_id` unique); **`task.site_id`** is canonical site/domain.
 - `SeoProjectRun` + `seo_project_run_items` — execution records owned by PHP Run Engine.
 - Mutations go through `ContentProjectCommandBus::dispatch()` only.
 - Item lifecycle reads go through `ContentProjectItemStateResolver` (+ `ContentProjectItemActionGuard`).
