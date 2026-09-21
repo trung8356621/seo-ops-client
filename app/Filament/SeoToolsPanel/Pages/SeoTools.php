@@ -8,7 +8,6 @@ use Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService;
 use Omnichannel\Addons\Seo\Services\SeoToolsService;
 use Omnichannel\Addons\WordPress\Services\SitePolylangService;
 use Omnichannel\Addons\Seo\Support\SeoToolsAccessControl;
-use App\Models\SeoDatabaseConnection;
 use App\Models\User;
 use Filament\Forms\Components\Actions;
 use Filament\Forms\Components\Actions\Action;
@@ -22,7 +21,6 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Database\Eloquent\Builder;
 
 class SeoTools extends Page implements HasForms
 {
@@ -258,19 +256,7 @@ class SeoTools extends Page implements HasForms
             return;
         }
 
-        $connection = SeoDatabaseConnection::query()
-            ->where('is_active', true)
-            ->whereHas('users', fn (Builder $query): Builder => $query->where('users.id', $ownerId))
-            ->orderBy('id')
-            ->first();
-
         $service = app(SeoDatabaseConnectionService::class);
-        if ($connection instanceof SeoDatabaseConnection) {
-            $service->bootstrapFromConnection($connection);
-
-            return;
-        }
-
         $service->bootstrapLegacySharedConnection();
     }
 }

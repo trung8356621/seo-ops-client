@@ -52,7 +52,12 @@ class SeoDatabaseConnectionResource extends Resource
 
     public static function canAccess(): bool
     {
-        return SeoDatabaseConnectionAccess::canAccessResource();
+        // Redirect-only shell — allow access so mount() can send users to ServiceConfigure.
+        // Must not query retired credential tables.
+        $user = auth()->user();
+
+        return $user instanceof User
+            && in_array((string) $user->role, [User::ROLE_OWNER, User::ROLE_ADMIN], true);
     }
 
     public static function canCreate(): bool
@@ -62,32 +67,18 @@ class SeoDatabaseConnectionResource extends Resource
 
     public static function canEdit(Model $record): bool
     {
-        if (! $record instanceof SeoDatabaseConnection) {
-            return false;
-        }
-
-        return SeoDatabaseConnectionAccess::canEditConnection($record);
+        return false;
     }
 
     public static function canDelete(Model $record): bool
     {
-        return $record instanceof SeoDatabaseConnection
-            && SeoDatabaseConnectionAccess::canDeleteConnection($record);
+        return false;
     }
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery();
-
-        $user = auth()->user();
-        if ($user?->role === User::ROLE_OWNER) {
-            return $query->whereHas(
-                'users',
-                fn (Builder $builder): Builder => $builder->whereKey($user->id),
-            );
-        }
-
-        return $query->whereRaw('1 = 0');
+        // Table retired — never execute against seo_database_connections.
+        return parent::getEloquentQuery()->whereRaw('0 = 1');
     }
 
     public static function form(Form $form): Form

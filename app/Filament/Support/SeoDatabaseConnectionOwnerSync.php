@@ -53,29 +53,8 @@ final class SeoDatabaseConnectionOwnerSync
 
     public static function assertOwnerSingleConnection(int $ownerId, ?int $exceptConnectionId = null): void
     {
-        if ($ownerId <= 0) {
-            return;
-        }
-
-        $query = SeoDatabaseConnection::query()
-            ->whereHas('users', fn (Builder $builder): Builder => $builder->whereKey($ownerId));
-
-        if ($exceptConnectionId !== null && $exceptConnectionId > 0) {
-            $query->whereKeyNot($exceptConnectionId);
-        }
-
-        if (! $query->exists()) {
-            return;
-        }
-
-        $user = User::query()->find($ownerId);
-
-        throw ValidationException::withMessages([
-            'owner_id' => sprintf(
-                'Owner %s đã có SEO Database Connection khác. Mỗi owner chỉ được sở hữu một connection.',
-                (string) ($user?->email ?? '#'.$ownerId),
-            ),
-        ]);
+        // Legacy seo_database_connections / pivots retired — single connection is enforced
+        // by service_database_connections (1:1 Service).
     }
 
     public static function syncOwner(SeoDatabaseConnection $connection, int $ownerId): void

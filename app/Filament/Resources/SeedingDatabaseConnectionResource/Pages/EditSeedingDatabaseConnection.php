@@ -60,12 +60,6 @@ final class EditSeedingDatabaseConnection extends EditRecord
             ]);
         }
 
-        if (! empty($data['is_active'])) {
-            SeedingDatabaseConnection::query()
-                ->whereKeyNot($record->getKey())
-                ->update(['is_active' => false]);
-        }
-
         return $data;
     }
 

@@ -38,10 +38,6 @@ final class CreateSeedingDatabaseConnection extends CreateRecord
         $data['type'] = $data['type'] ?? 'manual';
         $this->assertConnectionTest($data);
 
-        if (! empty($data['is_active'])) {
-            SeedingDatabaseConnection::query()->update(['is_active' => false]);
-        }
-
         return $data;
     }
 

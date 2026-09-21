@@ -51,11 +51,13 @@ final class SeedingDatabaseConnectionResource extends Resource
 
     public static function canCreate(): bool
     {
-        if (! static::canAccess()) {
-            return false;
-        }
+        return false;
+    }
 
-        return SeedingDatabaseConnection::query()->count() === 0;
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        // Table retired — never execute against seeding_database_connections.
+        return parent::getEloquentQuery()->whereRaw('0 = 1');
     }
 
     public static function form(Form $form): Form

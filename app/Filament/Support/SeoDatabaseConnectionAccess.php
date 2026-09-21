@@ -60,9 +60,9 @@ final class SeoDatabaseConnectionAccess
             return false;
         }
 
-        return SeoDatabaseConnection::query()
-            ->whereHas('users', fn (Builder $query): Builder => $query->whereKey($user->id))
-            ->exists();
+        // Legacy credential table retired — treat Service DB as the only connection plane.
+        return app(\App\Services\ServiceDatabaseConnectionResolver::class)
+            ->resolve(\App\Services\ServiceIdentity::PUBLIC_SEO) !== null;
     }
 
     /**

@@ -7,138 +7,58 @@ namespace Tests\Unit;
 use App\Filament\Resources\SeoDatabaseConnectionResource;
 use App\Filament\Support\SeoDatabaseConnectionAccess;
 use App\Models\SeoDatabaseConnection;
-use App\Models\Service;
-use App\Models\SiteService;
 use App\Models\User;
-use App\Services\SiteServiceBindingService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
+/**
+ * Legacy SEO Database Connection Filament resource is redirect-only;
+ * must not require / query the retired credential table.
+ */
 final class SeoDatabaseConnectionResourceAccessTest extends TestCase
 {
-    use RefreshDatabase;
-
-    protected function setUp(): void
+    public function test_resource_is_retired_redirect_shell(): void
     {
-        parent::setUp();
+        self::assertFalse(SeoDatabaseConnectionResource::shouldRegisterNavigation());
+        self::assertFalse(SeoDatabaseConnectionResource::canCreate());
 
-        Config::set('database.core_connection', 'sqlite');
-    }
-
-    public function test_eligible_owner_can_create_one_connection_and_edit_own(): void
-    {
-        $owner = $this->createOwner('owner-seo@test.test');
-        $this->grantSeoService($owner);
-        $this->actingAs($owner);
-
-        $this->assertTrue(SeoDatabaseConnectionAccess::canAccessResource());
-        $this->assertTrue(SeoDatabaseConnectionResource::canCreate());
-        $this->assertFalse(SeoDatabaseConnectionAccess::ownerHasConnection());
-
-        $connection = SeoDatabaseConnection::query()->create([
-            'name' => 'Owner DB',
+        $connection = new SeoDatabaseConnection([
+            'name' => 'Any',
             'type' => 'manual',
-            'host' => '127.0.0.1',
-            'port' => '3306',
             'database' => 'omi_seo_ai',
-            'username' => 'root',
-            'password' => 'secret',
             'is_active' => true,
         ]);
-        $connection->users()->sync([$owner->id]);
+        $connection->id = 1;
 
-        $this->assertTrue(SeoDatabaseConnectionAccess::ownerHasConnection());
-        $this->assertFalse(SeoDatabaseConnectionResource::canCreate());
-        $this->assertTrue(SeoDatabaseConnectionResource::canEdit($connection));
-        $this->assertTrue(SeoDatabaseConnectionResource::canDelete($connection));
+        self::assertFalse(SeoDatabaseConnectionResource::canEdit($connection));
+        self::assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
+
+        $list = (string) file_get_contents(
+            app_path('Filament/Resources/SeoDatabaseConnectionResource/Pages/ListSeoDatabaseConnections.php'),
+        );
+        self::assertStringContainsString("ServiceConfigure::getUrl(['service' => 'seo']", $list);
+
+        $src = (string) file_get_contents(
+            (string) (new \ReflectionClass(SeoDatabaseConnectionResource::class))->getFileName(),
+        );
+        self::assertStringContainsString("whereRaw('0 = 1')", $src);
+        self::assertStringNotContainsString('SeoDatabaseConnection::query(', $src);
     }
 
-    public function test_owner_without_seo_service_cannot_access(): void
+    public function test_access_helper_does_not_query_legacy_table_for_owner_has_connection(): void
     {
-        $owner = $this->createOwner('owner-no-seo@test.test');
-        $this->actingAs($owner);
-
-        $this->assertFalse(SeoDatabaseConnectionAccess::canAccessResource());
-        $this->assertFalse(SeoDatabaseConnectionResource::canCreate());
+        $src = (string) file_get_contents(
+            (string) (new \ReflectionClass(SeoDatabaseConnectionAccess::class))->getFileName(),
+        );
+        self::assertStringNotContainsString('SeoDatabaseConnection::query(', $src);
+        self::assertStringContainsString('ServiceDatabaseConnectionResolver', $src);
     }
 
-    public function test_owner_cannot_edit_other_owner_connection(): void
+    public function test_admin_can_access_redirect_shell_without_legacy_table(): void
     {
-        $ownerA = $this->createOwner('owner-a@test.test');
-        $ownerB = $this->createOwner('owner-b@test.test');
-        $this->grantSeoService($ownerA);
-        $this->grantSeoService($ownerB);
-
-        $connection = SeoDatabaseConnection::query()->create([
-            'name' => 'Owner B DB',
-            'type' => 'manual',
-            'database' => 'db_b',
-            'is_active' => true,
-        ]);
-        $connection->users()->sync([$ownerB->id]);
-
-        $this->actingAs($ownerA);
-
-        $this->assertFalse(SeoDatabaseConnectionResource::canEdit($connection));
-        $this->assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
-        $this->assertCount(0, SeoDatabaseConnectionResource::getEloquentQuery()->get());
-    }
-
-    public function test_legacy_admin_role_has_no_setup_privilege(): void
-    {
-        $admin = User::query()->create([
-            'name' => 'Admin',
-            'email' => 'admin@test.test',
-            'password' => bcrypt('secret'),
-            'role' => User::ROLE_ADMIN,
-            'status' => User::STATUS_NORMAL,
-        ]);
-
-        $connection = SeoDatabaseConnection::query()->create([
-            'name' => 'Any DB',
-            'type' => 'manual',
-            'database' => 'db',
-            'is_active' => true,
-        ]);
-
+        $admin = new User(['role' => User::ROLE_ADMIN]);
         $this->actingAs($admin);
 
-        $this->assertFalse(SeoDatabaseConnectionAccess::canAccessResource());
-        $this->assertFalse(SeoDatabaseConnectionResource::canCreate());
-        $this->assertFalse(SeoDatabaseConnectionResource::canEdit($connection));
-        $this->assertFalse(SeoDatabaseConnectionResource::canDelete($connection));
-    }
-
-    private function createOwner(string $email): User
-    {
-        return User::query()->create([
-            'name' => 'Owner',
-            'email' => $email,
-            'password' => bcrypt('secret'),
-            'role' => User::ROLE_OWNER,
-            'status' => User::STATUS_NORMAL,
-        ]);
-    }
-
-    private function grantSeoService(User $owner): void
-    {
-        $service = Service::query()->firstOrCreate(
-            ['slug' => 'seo-content-ai'],
-            [
-                'name' => 'SEO Content AI',
-                'addon_namespace' => 'App\\Addons\\SeoContentAi\\SeoContentAiServiceProvider',
-                'is_active' => true,
-            ],
-        );
-
-        SiteService::query()->create([
-            'bound_type' => SiteServiceBindingService::BOUND_USER,
-            'user_id' => $owner->id,
-            'site_id' => null,
-            'service_id' => $service->id,
-            'status' => 'active',
-            'settings' => ['db_config_type' => 'manual'],
-        ]);
+        self::assertTrue(SeoDatabaseConnectionResource::canAccess());
+        self::assertFalse(SeoDatabaseConnectionResource::canCreate());
     }
 }

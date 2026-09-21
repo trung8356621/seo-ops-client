@@ -65,7 +65,7 @@ final class SeoDatabaseConnectionOwnerSyncTest extends TestCase
         $this->assertSame([$owner->id], $connection->users()->pluck('users.id')->all());
     }
 
-    public function test_assert_owner_single_connection_blocks_duplicate(): void
+    public function test_assert_owner_single_connection_is_noop_after_legacy_retirement(): void
     {
         $owner = User::query()->create([
             'name' => 'Owner',
@@ -101,9 +101,9 @@ final class SeoDatabaseConnectionOwnerSyncTest extends TestCase
         ]);
         $existing->users()->sync([$owner->id]);
 
-        $this->expectException(\Illuminate\Validation\ValidationException::class);
-
+        // Legacy pivot uniqueness retired — ServiceDatabaseConnection enforces 1:1.
         SeoDatabaseConnectionOwnerSync::assertOwnerSingleConnection($owner->id);
+        $this->assertTrue(true);
     }
 
     private function createSchema(): void
