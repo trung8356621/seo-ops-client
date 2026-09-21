@@ -113,21 +113,23 @@ final class PromptAdminDualRegistrationContractTest extends TestCase
         self::assertStringNotContainsString('AdminPanelProvider', $src);
     }
 
-    public function test_admin_prompt_urls_generate_without_changing_default_panel_id(): void
+    public function test_admin_prompt_urls_default_to_admin_panel(): void
     {
-        self::assertSame('seo-main', PromptResource::panelId());
+        self::assertSame('admin', PromptResource::panelId());
 
+        $defaultIndex = PromptResource::getUrl('index');
         $adminIndex = PromptResource::getUrl('index', panel: 'admin');
         $adminCreate = PromptResource::getUrl('create', panel: 'admin');
         $adminEdit = PromptResource::getUrl('edit', ['record' => 26], panel: 'admin');
         $adminTest = PromptResource::getUrl('test', ['record' => 26], panel: 'admin');
 
+        self::assertSame($defaultIndex, $adminIndex);
         self::assertStringContainsString('/admin/prompts', $adminIndex);
         self::assertStringContainsString('/admin/prompts/create', $adminCreate);
         self::assertStringContainsString('/admin/prompts/26/edit', $adminEdit);
         self::assertStringContainsString('/admin/prompts/26/test', $adminTest);
 
-        $seoIndex = PromptResource::getUrl('index');
+        $seoIndex = PromptResource::getUrl('index', panel: 'seo-main');
         self::assertStringContainsString('/seo/prompts', $seoIndex);
         self::assertStringNotContainsString('/admin/prompts', $seoIndex);
     }
