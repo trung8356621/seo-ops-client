@@ -10,13 +10,14 @@
 
 | Name | Config source | Typical owners |
 |------|---------------|----------------|
-| **`mysql`** (default) | Core `.env` | `User`, `Site`, `SiteMeta`, `Service`, `ServiceDatabaseConnection`, wallets/orders, legacy `SeoDatabaseConnection`, `ApiConnection`, GSC **OAuth** masters |
-| **`omi_seo_ai`** | Canonical: `service_database_connections` via `ServiceDatabaseConnectionResolver`; legacy hash adapters: `seo_database_connections` + Search Foundation bootstrap | Articles, projects, media, keyword/SERP/GSC **facts**, runs, prompt results |
+| **`mysql`** (default) | Core `.env` | `User`, `Site`, `SiteMeta`, `Service`, `ServiceDatabaseConnection`, wallets/orders, `ApiConnection`, GSC **OAuth** masters |
+| **`omi_seo_ai`** | Canonical: `service_database_connections` via `ServiceDatabaseConnectionResolver` (+ Search Foundation adapter for panel bootstrap) | Articles, projects, media, keyword/SERP/GSC **facts**, runs, prompt results |
 | **`omi_seeding`** | Canonical: `service_database_connections` (+ env `SEEDING_DB_*` fallback for local); never `omi_seo_ai` | Seeding infrastructure plane — business workspace = localStorage this phase |
 
 Rules:
 
 - Service DB credentials are **not** in addon.json. Prefer Core `service_database_connections` (1:1 with Service).
+- Legacy tables `seo_database_connections`, `seo_connection_users`, `seeding_database_connections` are **retired** (tombstone drop migration).
 - No FK constraints across connections — store scalar IDs; enforce in Eloquent/app.
 - SEO addon migrations target `omi_seo_ai` after bootstrap; Seeding ownership → `omi_seeding` via `config/addon_migration_ownership.php`.
 - Other addons may use `RegistersAddonDatabase` + addon.json — do not assume they share `omi_seo_ai`.
@@ -25,18 +26,18 @@ Rules:
 
 **Canonical (Service infrastructure):** `App\Services\ServiceDatabaseConnectionResolver` — resolve/upsert/test/health for SEO + Seeding logical names. Admin: `/admin/services/{seo|seeding}`.
 
-**Legacy SEO hash panel:** `Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService`  
-Constant runtime name: `omi_seo_ai` (overridable via config).
+**SEO panel adapter:** `Omnichannel\Addons\SearchFoundation\Services\SeoDatabaseConnectionService`  
+Constant runtime name: `omi_seo_ai` (overridable via config). Prefers `ServiceDatabaseConnectionResolver`; does not require legacy credential tables.
 
 | Method (Search Foundation) | Use |
 |--------|-----|
-| `bootstrapByHash(string $hashId)` | Panel/URL connection hash → active `SeoDatabaseConnection` |
-| `bootstrapFromConnection(SeoDatabaseConnection)` | Already-loaded credential row |
-| `bootstrapByConnectionId(int)` | By PK |
-| `bootstrapBySiteId(int)` / `bootstrapLegacySharedConnection()` | Site-bound / shared paths |
+| `bootstrapCanonicalSharedConnection()` / `bootstrapLegacySharedConnection()` | Shared Service DB plane |
+| `bootstrapByHash(string $hashId)` | Hash URL → canonical Service DB (legacy table optional if present) |
+| `bootstrapFromConnection(SeoDatabaseConnection)` | Already-loaded credential row / in-memory adapter |
+| `bootstrapByConnectionId(int)` / `bootstrapBySiteId(int)` | By PK / site — fall through to canonical |
 
 Request path: SEO panel middleware must run before SEO models query.  
-Seeding: `SeedingDatabaseConnectionService::bootstrap()` on provider boot (failures soft — health endpoints report).
+Seeding: `SeedingDatabaseConnectionService::bootstrap()` on provider boot — Service DB then ENV only (failures soft — health endpoints report).
 
 Legacy Admin list URLs for SEO/Seeding DB connections redirect to Service detail pages.
 

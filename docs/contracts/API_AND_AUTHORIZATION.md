@@ -24,7 +24,7 @@ Public HTTP / Sanctum / Filament access boundaries for SEO + Seeding product sur
 
 ## 3. Tenant and connection
 
-- SEO models use runtime connection `omi_seo_ai` — canonical via Core `service_database_connections`; legacy hash via `seo_database_connections` + Search Foundation.
+- SEO models use runtime connection `omi_seo_ai` — canonical via Core `service_database_connections` + `ServiceDatabaseConnectionResolver` (Search Foundation adapter for panel bootstrap).
 - Seeding logical connection `omi_seeding` via Core `ServiceDatabaseConnection` (never SEO DB).
 - Fail closed when connection hash / site scope missing or mismatched.
 - Non-admin Filament queries must scope by permitted owner/site/domain (`SeoAccessControl` / policies).

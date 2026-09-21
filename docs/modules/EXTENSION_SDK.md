@@ -86,11 +86,11 @@ User plugins: `app/Addons/SeoContentAi/Extensions/{id}/plugin.json` + provider c
 
 | Store | Connection | Owner |
 |-------|------------|-------|
-| `seo_extension_states` | `omi_seo_ai` | enabled, status (`healthy\|error\|disabled\|needs_update`), health_payload |
+| Cache `seo_extension_state:*` | app cache | enabled, status (`healthy\|error\|disabled\|needs_update`), health_payload via `ExtensionStateStore` |
 | `plugin.json` on disk | filesystem | Manifest SoT for id/version/sdk/provider |
 | Settings namespace | options | `extensions.{id}.*` only |
 
-Enabled state SoT = `ExtensionStateStore` (DB/cache) — **not** `manifest.enabled`.
+Enabled state SoT = `ExtensionStateStore` (**Cache only**) — **not** `manifest.enabled`. Table `seo_extension_states` is permanently retired.
 
 ## 5. Read path
 

@@ -13,13 +13,15 @@
 | Seeding Service | `omi_seeding` | **`omi_seeding`** (via ServiceDatabaseConnection) | Infrastructure plane; business workspace = localStorage this phase |
 | WP Headless | `wp_headless` | addon-local | Headless templates/sites |
 
-Canonical: one Service → at most one `service_database_connections` row. Legacy `seo_database_connections` retained for hash-route adapters until explicit drop.
+Canonical: one Service → at most one `service_database_connections` row. Legacy `seo_database_connections` / `seeding_database_connections` / `seo_extension_states` are **permanently retired** (tombstone drop migrations 2026-09-22).
 
 ## Retired
 
 - **`omi_channel`** — retired; renamed to `omi_channel__pre_client_split_backup`. Not a runtime connection target.
 - Core table **`frontend_projects`** — dropped (zero consumers).
-- Core table **`seo_connection_sites`** — replaced by `seo_connection_users` (historical migration only).
+- Core table **`seo_connection_sites`** — replaced by `seo_connection_users` (historical migration only); both credential pivots later retired with `seo_database_connections`.
+- Core tables **`seo_database_connections`**, **`seo_connection_users`**, **`seeding_database_connections`** — retired; credentials SoT = `service_database_connections`.
+- SEO table **`seo_extension_states`** — retired; Extension state SoT = Cache via `ExtensionStateStore`.
 - SEO dead tables dropped: `tags`, `entities`, `entity_results`, `seo_settings`, `seo_domain_metas`, `domain_global_cta_settings`, `user_workspace_settings`, `seo_prompt_templates`, `seo_generated_images`, legacy `seo_links` / `keyword_link`.
 - SEO copies of **`automation_*`** + **`business_events`** — dropped; SoT is core/`omi_client`.
 

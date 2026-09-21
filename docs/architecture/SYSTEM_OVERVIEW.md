@@ -35,7 +35,7 @@ Omnichannel SaaS client: **Laravel 12 / PHP 8.2+ / Filament v3 / MySQL multi-con
 - **Service catalog:** `services` + encrypted `service_key`; child `service_database_connections` (≤1 per Service).
 - **Addon discovery:** `AddonManager` / `AddonEnablement`.
 - **Settings / Members hubs:** `App\Core\Settings\*`, `App\Core\Members\*` (contributors from addons).
-- **Legacy SEO credentials:** `seo_database_connections` retained for hash-route adapters; canonical Service DB via `ServiceDatabaseConnectionResolver`.
+- **SEO credentials:** canonical Service DB via `ServiceDatabaseConnectionResolver` (`service_database_connections`). Legacy `seo_database_connections` retired.
 - **Bridge plugin updates:** GitHub Releases only. Laravel observes version; no ZIP hosting.
 
 ## Product modules
@@ -67,7 +67,7 @@ CLI / cron / queue workers
 
 | Connection | Owns |
 |------------|------|
-| `mysql` (default) | Users, sites, metas, `services`, `service_database_connections`, wallets, legacy `seo_database_connections`, GSC OAuth masters |
+| `mysql` (default) | Users, sites, metas, `services`, `service_database_connections`, wallets, GSC OAuth masters |
 | `omi_seo_ai` | Articles, projects, media, keyword/GSC/SERP facts, runs |
 | `omi_seeding` | Seeding infrastructure plane (empty / ready; business SoT = localStorage this phase) |
 

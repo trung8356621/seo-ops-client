@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Seeding;
 
-use App\Models\SeedingDatabaseConnection;
+use App\Models\Service;
+use App\Models\ServiceDatabaseConnection;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Omnichannel\Addons\Seeding\Services\SeedingDatabaseConnectionService;
 use Omnichannel\Addons\Seeding\Support\SeedingServiceConfig;
@@ -21,50 +21,60 @@ final class SeedingDatabaseConnectionServiceTest extends TestCase
         parent::setUp();
 
         Schema::dropIfExists('seeding_database_connections');
-        Schema::create('seeding_database_connections', function (Blueprint $table): void {
+        Schema::dropIfExists('service_database_connections');
+        Schema::dropIfExists('services');
+
+        Schema::create('services', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('addon_namespace')->nullable();
+            $table->string('db_connection')->default('mysql');
+            $table->boolean('is_active')->default(true);
+            $table->json('config')->nullable();
+            $table->text('service_key')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('service_database_connections', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('service_id')->unique();
             $table->string('type', 16)->default('manual');
+            $table->string('driver', 32)->default('mysql');
             $table->string('host')->nullable();
             $table->string('port', 16)->nullable();
             $table->string('database')->nullable();
             $table->string('username')->nullable();
             $table->text('password')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->timestamp('last_tested_at')->nullable();
+            $table->boolean('last_test_ok')->nullable();
+            $table->text('last_error')->nullable();
             $table->timestamps();
         });
     }
 
-    public function test_password_is_encrypted_at_rest(): void
-    {
-        $row = SeedingDatabaseConnection::query()->create([
-            'name' => 'Local',
-            'type' => 'manual',
-            'host' => '127.0.0.1',
-            'port' => '3306',
-            'database' => 'omi_seeding',
-            'username' => 'root',
-            'password' => 'secret-pass',
-            'is_active' => true,
-        ]);
-
-        $raw = DB::table('seeding_database_connections')->where('id', $row->id)->value('password');
-        self::assertNotSame('secret-pass', $raw);
-        self::assertSame('secret-pass', $row->fresh()->password);
-    }
-
-    public function test_resolver_configures_omi_seeding_not_omi_seo_ai(): void
+    public function test_canonical_service_connection_configures_omi_seeding_not_omi_seo_ai(): void
     {
         Config::set('database.connections.omi_seo_ai.database', 'omi_seo_ai');
 
-        SeedingDatabaseConnection::query()->create([
-            'name' => 'Local',
+        $seeding = Service::query()->create([
+            'name' => 'Seeding',
+            'slug' => 'seeding',
+            'db_connection' => 'omi_seeding',
+            'is_active' => true,
+        ]);
+
+        $mysql = config('database.connections.mysql');
+        ServiceDatabaseConnection::query()->create([
+            'service_id' => $seeding->id,
             'type' => 'manual',
-            'host' => '127.0.0.1',
-            'port' => '3306',
+            'driver' => 'mysql',
+            'host' => $mysql['host'] ?? '127.0.0.1',
+            'port' => (string) ($mysql['port'] ?? '3306'),
             'database' => 'omi_seeding',
-            'username' => 'root',
-            'password' => 'x',
+            'username' => $mysql['username'] ?? 'root',
+            'password' => (string) ($mysql['password'] ?? ''),
             'is_active' => true,
         ]);
 
@@ -74,6 +84,8 @@ final class SeedingDatabaseConnectionServiceTest extends TestCase
         self::assertSame('omi_seeding', config('database.connections.omi_seeding.database'));
         self::assertSame('omi_seo_ai', config('database.connections.omi_seo_ai.database'));
         self::assertSame(SeedingServiceConfig::CONNECTION, $service->connectionName());
+        self::assertNull($service->activeConnection());
+        self::assertFalse(Schema::hasTable('seeding_database_connections'));
     }
 
     public function test_rejects_omi_seo_ai_database_name(): void
@@ -89,37 +101,15 @@ final class SeedingDatabaseConnectionServiceTest extends TestCase
         ], 'x');
     }
 
-    public function test_invalid_connection_is_unhealthy(): void
+    public function test_health_reports_canonical_or_env_without_legacy_table(): void
     {
-        SeedingDatabaseConnection::query()->create([
-            'name' => 'Bad',
-            'type' => 'manual',
-            'host' => '127.0.0.1',
-            'port' => '1',
-            'database' => 'omi_seeding_missing_xyz',
-            'username' => 'no_such_user',
-            'password' => 'bad',
-            'is_active' => true,
-        ]);
-
-        $health = app(SeedingDatabaseConnectionService::class)->healthCheck();
-
-        self::assertTrue($health['configured']);
-        self::assertFalse($health['reachable']);
-        self::assertSame('omi_seeding', $health['connection']);
-    }
-
-    public function test_reachable_env_fallback_reports_health_without_tables(): void
-    {
-        // Prefer existing default mysql credentials if DB is up; otherwise assert structure only.
         $service = app(SeedingDatabaseConnectionService::class);
         $health = $service->healthCheck();
 
         self::assertSame('omi_seeding', $health['connection']);
         self::assertArrayHasKey('configured', $health);
         self::assertArrayHasKey('reachable', $health);
-        self::assertArrayHasKey('database', $health);
-        // No business tables required — health does not check Schema::hasTable for topics.
-        self::assertArrayNotHasKey('tables', $health);
+        self::assertFalse(Schema::hasTable('seeding_database_connections'));
+        self::assertNotSame('legacy_seeding', $health['source'] ?? '');
     }
 }

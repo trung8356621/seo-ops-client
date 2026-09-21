@@ -116,7 +116,7 @@ Shared topics are **not** SoT in localStorage after share — feed/API is.
 Env: `SEEDING_DB_*` (see `.env.example`). Never fall back DB name to `omi_seo_ai`.
 
 Active migrations: `addons/seeding/database/migrations` (owned via `config/addon_migration_ownership.php` → `omi_seeding`).  
-Legacy experimental V2 (targeted `omi_seo_ai`): `addons/seeding/database/legacy-experimental/` — **not registered**.
+Legacy experimental V2 (`link_resources` / `seeding_topic_links` on `omi_seo_ai`) permanently removed from source (2026-09-22); do not recreate.
 
 ## 8. Gen Comment AI boundary (permanent)
 

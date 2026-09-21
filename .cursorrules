@@ -72,7 +72,7 @@ Quyền truy cập: Luôn định nghĩa rõ hàm canAccess() hoặc dùng Polic
 
 Core dùng DB mặc định `mysql`. Addon khác (vd. legacy) có thể dùng `addon.json` + `database.local.php` qua `RegistersAddonDatabase`.
 
-SEO Content AI: credential **không** nằm trong addon.json/.env core — lấy từ bảng core `seo_database_connections` (Admin → SEO Database Connections). Runtime connection tên `omi_seo_ai`; bootstrap qua `SeoDatabaseConnectionService::bootstrapLegacySharedConnection()` / `bootstrapFromConnection()`. Migrate addon SEO: nút **Run migrations** trên form connection hoặc CLI sau khi connection đã bootstrap từ bảng core.
+SEO Content AI: credential **không** nằm trong addon.json/.env core — lấy từ bảng core `service_database_connections` (Admin → Service Configure; 1:1 với Service). Runtime connection tên `omi_seo_ai`; bootstrap qua `ServiceDatabaseConnectionResolver` (canonical) / `SeoDatabaseConnectionService::bootstrapLegacySharedConnection()` (adapter). Legacy `seo_database_connections` đã retired. Migrate addon SEO: sau khi connection đã bootstrap từ Service DB.
 
 Addon slug trong `config/addons.php` → `skip_slugs` (mặc định `wp-headless`) bị bỏ qua khi discover/register dù còn thư mục hoặc `services.is_active=1`.
 

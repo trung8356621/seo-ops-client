@@ -16,7 +16,7 @@ Module UX/runtime: `docs/modules/EXTENSION_SDK.md`. Agent capability merge: `doc
 1. Paths only: `Extension/Builtin/*` and `Extensions/{id}/` (`config('seo-content-ai.extension_sdk.extensions_path')`).
 2. Valid `plugin.json` via `ExtensionManifest::fromFile`; SDK major compatible (`ExtensionCompatibilityChecker`).
 3. `class_exists($providerClass)` before `$app->make()` — missing class → `status: error`, no crash.
-4. Enabled SoT: `ExtensionStateStore` / `seo_extension_states` — not `manifest.enabled`.
+4. Enabled SoT: `ExtensionStateStore` / Cache (`seo_extension_state:*`) — not `manifest.enabled`. Table `seo_extension_states` retired.
 
 ### Forbidden
 

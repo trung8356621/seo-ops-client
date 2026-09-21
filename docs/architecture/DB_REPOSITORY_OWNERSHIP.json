@@ -1,6 +1,6 @@
 ﻿{
     "generated_at": "2026-09-05",
-    "note": "Physical repo ownership after Task 12 cutover + DB plane cutover (omi_client) + Seeding omi_seeding plane. Canonical Service DB credentials: Core service_database_connections (1:1). Legacy seo_database_connections / seeding_database_connections retained pending drop.",
+    "note": "Physical repo ownership after Task 12 cutover + DB plane cutover (omi_client) + Seeding omi_seeding plane. Canonical Service DB credentials: Core service_database_connections (1:1). Legacy seo_database_connections / seeding_database_connections / seo_extension_states permanently retired (tombstone migrations 2026-09-22).",
     "repositories": {
         "omnichannel-client": {
             "owns_migrations": [
@@ -36,7 +36,7 @@
                     "connection": "omi_seeding",
                     "phase": "infrastructure-ready",
                     "business_persistence": "localStorage",
-                    "notes": "No finalized business schema yet. Experimental V2 tables on omi_seo_ai are orphaned / legacy-experimental."
+                    "notes": "No finalized business schema beyond share/report tables. Legacy experimental V2 (link_resources / seeding_topic_links on omi_seo_ai) permanently deleted from source; do not recreate."
                 },
                 "seo-content-ai-compat": "none (compat shell; no new business migrations)",
                 "_legacy-obsolete": "_legacy-obsolete/database/migrations (historical only)"

@@ -79,7 +79,7 @@ Do **not** run destructive fresh against protected DBs.
 | `omi_seo_ai` | `omi_seo_ai` | SEO/content peer-addon business tables |
 | `omi_seeding` | `omi_seeding` | Seeding service plane — infrastructure-ready; business SoT is localStorage this phase |
 
-SEO runtime connection name: `omi_seo_ai` — canonical via Core `ServiceDatabaseConnection`; legacy hash panel via Search Foundation + `seo_database_connections`.
+SEO runtime connection name: `omi_seo_ai` — canonical via Core `ServiceDatabaseConnection` / `ServiceDatabaseConnectionResolver`. Search Foundation `SeoDatabaseConnectionService` is an adapter (legacy `seo_database_connections` retired).
 Seeding runtime connection name: `omi_seeding` — Core `ServiceDatabaseConnection` (+ env `SEEDING_DB_*` local); never `omi_seo_ai`.
 Automation runtime: `AUTOMATION_DB_CONNECTION=mysql` (never `omi_seo_ai`).
 

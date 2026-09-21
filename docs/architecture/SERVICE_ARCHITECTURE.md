@@ -164,8 +164,8 @@ Client Core
 
 ## Legacy debt (retained)
 
-- `seo_database_connections` + pivots (hash routes / owner mapping) — read/adapters; drop later  
-- `seeding_database_connections` — obsolete after migrate; drop later  
+- ~~`seo_database_connections` + pivots~~ — **retired** (tombstone 2026-09-22); credentials SoT = `service_database_connections`  
+- ~~`seeding_database_connections`~~ — **retired** (tombstone 2026-09-22) 
 - SEO Export/Import/Run migrations remain SEO-specific (future contributor on Service page)
 
 ## Related

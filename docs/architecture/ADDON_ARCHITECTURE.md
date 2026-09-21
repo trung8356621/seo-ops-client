@@ -14,7 +14,7 @@ Core does **not** own SEO/content business models, article domain state, or peer
 
 **Addon installed ≠ Service active.** See [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md).
 
-Legacy `seo_database_connections` remains for hash-route / owner adapters; **canonical** DB credentials for a Service live on `service_database_connections` (1:1).
+**Canonical** DB credentials for a Service live on `service_database_connections` (1:1). Legacy `seo_database_connections` is permanently retired.
 
 ## Peer addons
 
