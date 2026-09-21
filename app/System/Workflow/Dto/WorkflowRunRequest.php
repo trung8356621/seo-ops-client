@@ -18,6 +18,9 @@ final class WorkflowRunRequest
         public readonly array $context = [],
         public readonly array $correlation = [],
         public readonly ?string $idempotencyKey = null,
+        public readonly string $executionMode = WorkflowExecutionMode::FullRun->value,
+        public readonly ?string $startNodeId = null,
+        public readonly ?string $targetNodeId = null,
     ) {}
 
     /**
@@ -27,6 +30,9 @@ final class WorkflowRunRequest
     {
         $definitionId = isset($payload['definition_id']) ? (int) $payload['definition_id'] : null;
         $definition = is_array($payload['definition'] ?? null) ? $payload['definition'] : null;
+        $modeRaw = isset($payload['execution_mode']) ? trim((string) $payload['execution_mode']) : '';
+        $startNodeId = isset($payload['start_node_id']) ? trim((string) $payload['start_node_id']) : '';
+        $targetNodeId = isset($payload['target_node_id']) ? trim((string) $payload['target_node_id']) : '';
 
         return new self(
             definitionId: $definitionId > 0 ? $definitionId : null,
@@ -35,6 +41,9 @@ final class WorkflowRunRequest
             context: is_array($payload['context'] ?? null) ? $payload['context'] : [],
             correlation: is_array($payload['correlation'] ?? null) ? $payload['correlation'] : [],
             idempotencyKey: isset($payload['idempotency_key']) ? trim((string) $payload['idempotency_key']) : null,
+            executionMode: $modeRaw !== '' ? $modeRaw : WorkflowExecutionMode::FullRun->value,
+            startNodeId: $startNodeId !== '' ? $startNodeId : null,
+            targetNodeId: $targetNodeId !== '' ? $targetNodeId : null,
         );
     }
 
@@ -50,6 +59,9 @@ final class WorkflowRunRequest
             'context' => $this->context,
             'correlation' => $this->correlation,
             'idempotency_key' => $this->idempotencyKey,
+            'execution_mode' => $this->executionMode,
+            'start_node_id' => $this->startNodeId,
+            'target_node_id' => $this->targetNodeId,
         ];
     }
 }

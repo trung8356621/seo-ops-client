@@ -30,7 +30,14 @@ final class WorkflowController
     {
         $runRequest = WorkflowRunRequest::fromArray($request->all());
         $result = $this->workflows->run($runRequest);
-        $status = $result->status === 'failed' ? 422 : 202;
+
+        // Align with System AI: sync completed → 200; sync failed → 422.
+        // Reserve 202 only for genuinely accepted/deferred/async statuses.
+        $status = match ($result->status) {
+            'failed' => 422,
+            'accepted', 'deferred', 'queued', 'running' => 202,
+            default => 200,
+        };
 
         return SystemApiEnvelope::ok($result->toArray(), status: $status);
     }
