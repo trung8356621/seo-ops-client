@@ -17,7 +17,10 @@ interface SystemWorkflowClient
 
     public function run(WorkflowRunRequest $request): WorkflowRunResult;
 
-    public function getRun(string $id): ?WorkflowRunResult;
+    /**
+     * @param  array<string, mixed>  $context  Optional owner_user_id / via_http_api for scoped GET.
+     */
+    public function getRun(string $id, array $context = []): ?WorkflowRunResult;
 
     public function cancel(string $id): WorkflowRunResult;
 

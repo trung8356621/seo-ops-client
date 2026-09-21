@@ -21,6 +21,7 @@ use App\System\Workflow\Contracts\SystemWorkflowClient;
 use App\System\Workflow\Contracts\WorkflowRuntimePort;
 use App\System\Workflow\Nodes\WorkflowNodeRegistry;
 use App\System\Workflow\Transport\LegacyLocalWorkflowTransport;
+use App\System\Workflow\Transport\RemoteHttpWorkflowTransport;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -57,6 +58,13 @@ final class SystemServiceProvider extends ServiceProvider
                     timeoutSeconds: (int) config('system.http.timeout_seconds', 120),
                 );
             });
+            $this->app->singleton(RemoteHttpWorkflowTransport::class, function () use ($remoteBase): RemoteHttpWorkflowTransport {
+                return new RemoteHttpWorkflowTransport(
+                    baseUrl: $remoteBase,
+                    serviceToken: (string) config('system.http.service_token', ''),
+                    timeoutSeconds: (int) config('system.http.timeout_seconds', 120),
+                );
+            });
         }
 
         $this->app->singleton(SystemAiClient::class, function ($app): SystemAiClient {
@@ -83,6 +91,9 @@ final class SystemServiceProvider extends ServiceProvider
             return new DefaultSystemWorkflowClient(
                 modes: $app->make(CapabilityModeResolver::class),
                 local: $app->make(LegacyLocalWorkflowTransport::class),
+                remote: $app->bound(RemoteHttpWorkflowTransport::class)
+                    ? $app->make(RemoteHttpWorkflowTransport::class)
+                    : null,
             );
         });
 

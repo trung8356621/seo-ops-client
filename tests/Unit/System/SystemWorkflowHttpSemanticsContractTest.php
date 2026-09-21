@@ -50,7 +50,7 @@ final class SystemWorkflowHttpSemanticsContractTest extends TestCase
                 );
             }
 
-            public function getRun(string $id): ?WorkflowRunResult
+            public function getRun(string $id, array $context = []): ?WorkflowRunResult
             {
                 return null;
             }
@@ -103,7 +103,7 @@ final class SystemWorkflowHttpSemanticsContractTest extends TestCase
                 );
             }
 
-            public function getRun(string $id): ?WorkflowRunResult
+            public function getRun(string $id, array $context = []): ?WorkflowRunResult
             {
                 return null;
             }
@@ -153,7 +153,7 @@ final class SystemWorkflowHttpSemanticsContractTest extends TestCase
                 );
             }
 
-            public function getRun(string $id): ?WorkflowRunResult
+            public function getRun(string $id, array $context = []): ?WorkflowRunResult
             {
                 return null;
             }

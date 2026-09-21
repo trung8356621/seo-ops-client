@@ -8,8 +8,10 @@ use App\System\Workflow\Contracts\WorkflowRuntimePort;
 use App\System\Workflow\Dto\WorkflowRunRequest;
 use App\System\Workflow\Dto\WorkflowRunResult;
 use App\System\Workflow\Nodes\WorkflowNodeRegistry;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Throwable;
 
 /**
  * Coarse-grained local runtime: validate graph + optionally delegate to WorkflowRuntimePort.
@@ -17,6 +19,11 @@ use RuntimeException;
  */
 final class LegacyLocalWorkflowTransport
 {
+    public const RUN_CACHE_PREFIX = 'system_workflow_run:';
+
+    /** TTL for GET /workflow-runs/{id}. Multi-instance deploys must use a shared cache driver. */
+    public const RUN_CACHE_TTL_SECONDS = 3600;
+
     /** @var array<string, WorkflowRunResult> */
     private array $runs = [];
 
@@ -42,7 +49,7 @@ final class LegacyLocalWorkflowTransport
     {
         if ($this->runtime instanceof WorkflowRuntimePort) {
             $result = $this->runtime->run($request);
-            $this->runs[$result->id] = $result;
+            $this->remember($result);
 
             return $result;
         }
@@ -64,6 +71,7 @@ final class LegacyLocalWorkflowTransport
         $steps = [];
         $artifacts = [];
         $nodes = is_array($definition['nodes'] ?? null) ? $definition['nodes'] : [];
+        $ownerUserId = (int) ($request->correlation['owner_user_id'] ?? $request->context['owner_user_id'] ?? 0);
 
         foreach ($nodes as $node) {
             if (! is_array($node)) {
@@ -96,16 +104,49 @@ final class LegacyLocalWorkflowTransport
             status: 'completed',
             steps: $steps,
             artifacts: $artifacts,
-            meta: ['transport' => 'legacy_local', 'node_types' => $this->nodes->types()],
+            meta: [
+                'transport' => 'legacy_local',
+                'node_types' => $this->nodes->types(),
+                'owner_user_id' => $ownerUserId > 0 ? $ownerUserId : null,
+                'definition_id' => $request->definitionId,
+                'execution_mode' => $request->executionMode,
+                'execution_scope' => $request->executionScope,
+            ],
         );
-        $this->runs[$id] = $result;
+        $this->remember($result);
 
         return $result;
     }
 
-    public function getRun(string $id): ?WorkflowRunResult
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function getRun(string $id, array $context = []): ?WorkflowRunResult
     {
-        return $this->runs[$id] ?? null;
+        $ownerRequired = (int) ($context['owner_user_id'] ?? 0);
+
+        if (isset($this->runs[$id])) {
+            $result = $this->runs[$id];
+            if (! $this->ownerMatches($result, $ownerRequired)) {
+                return null;
+            }
+
+            return $result;
+        }
+
+        $cached = Cache::get(self::RUN_CACHE_PREFIX.$id);
+        if (! is_array($cached)) {
+            return null;
+        }
+
+        $result = WorkflowRunResult::fromArray($cached);
+        if (! $this->ownerMatches($result, $ownerRequired)) {
+            return null;
+        }
+
+        $this->runs[$id] = $result;
+
+        return $result;
     }
 
     public function cancel(string $id): WorkflowRunResult
@@ -133,6 +174,38 @@ final class LegacyLocalWorkflowTransport
         }
 
         return $this->fail('not_supported', 'resume requires WorkflowRuntimePort', $id);
+    }
+
+    private function remember(WorkflowRunResult $result): void
+    {
+        $this->runs[$result->id] = $result;
+        $this->persistRunEnvelope($result);
+    }
+
+    private function persistRunEnvelope(WorkflowRunResult $result): void
+    {
+        try {
+            Cache::put(
+                self::RUN_CACHE_PREFIX.$result->id,
+                $result->toArray(),
+                self::RUN_CACHE_TTL_SECONDS,
+            );
+        } catch (Throwable) {
+            // Best-effort cross-request GET; in-memory store remains for same process.
+        }
+    }
+
+    private function ownerMatches(WorkflowRunResult $result, int $ownerRequired): bool
+    {
+        // In-process callers without owner filter (ownerRequired=0) may read memory/cache.
+        // HTTP API always passes owner_user_id > 0.
+        if ($ownerRequired <= 0) {
+            return true;
+        }
+
+        $stored = (int) ($result->meta['owner_user_id'] ?? 0);
+
+        return $stored > 0 && $stored === $ownerRequired;
     }
 
     /**
@@ -169,7 +242,7 @@ final class LegacyLocalWorkflowTransport
             errorMessage: $message,
             meta: ['transport' => 'legacy_local'],
         );
-        $this->runs[$result->id] = $result;
+        $this->remember($result);
 
         return $result;
     }

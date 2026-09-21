@@ -15,6 +15,11 @@ declare(strict_types=1);
  *   shadow  = local authority + optional remote compare
  *   remote  = RemoteHttpAiTransport (fail-closed; no silent local fallback)
  *
+ * Workflow (SYSTEM_WORKFLOW_MODE):
+ *   legacy  = LegacyLocalWorkflowTransport
+ *   remote  = RemoteHttpWorkflowTransport (fail-closed; Bearer API + via_http_api)
+ *   shadow  = local authority only — NO dual graph execution (side effects)
+ *
  * Unset SYSTEM_CAP_ARTICLE_CONTENT_GENERATE still resolves to module/default
  * "legacy" (local System transport) — not "bypass SystemAiClient".
  *
