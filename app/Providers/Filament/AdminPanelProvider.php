@@ -124,6 +124,12 @@ class AdminPanelProvider extends PanelProvider
             $resources[] = $apiConnections;
         }
 
+        // Dual-register existing Prompt management (same class as SEO panel). Do not clone UI.
+        $promptResource = \Omnichannel\Addons\AiPrompt\Filament\Resources\PromptResource::class;
+        if (class_exists($promptResource)) {
+            $resources[] = $promptResource;
+        }
+
         return $panel
             ->pages($pages)
             ->resources($resources);

@@ -35,6 +35,7 @@ final class CoreSettingsSurfacesContractTest extends TestCase
             'SeoSettingsConfigurationTransfer',
             'SeoSettingsAiCenter',
             'AiConnectionResource',
+            'PromptResource',
         ] as $needle) {
             self::assertStringContainsString($needle, $source);
         }
