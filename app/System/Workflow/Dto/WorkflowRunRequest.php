@@ -21,6 +21,7 @@ final class WorkflowRunRequest
         public readonly string $executionMode = WorkflowExecutionMode::FullRun->value,
         public readonly ?string $startNodeId = null,
         public readonly ?string $targetNodeId = null,
+        public readonly ?string $executionScope = null,
     ) {}
 
     /**
@@ -33,6 +34,7 @@ final class WorkflowRunRequest
         $modeRaw = isset($payload['execution_mode']) ? trim((string) $payload['execution_mode']) : '';
         $startNodeId = isset($payload['start_node_id']) ? trim((string) $payload['start_node_id']) : '';
         $targetNodeId = isset($payload['target_node_id']) ? trim((string) $payload['target_node_id']) : '';
+        $scopeRaw = isset($payload['execution_scope']) ? trim((string) $payload['execution_scope']) : '';
 
         return new self(
             definitionId: $definitionId > 0 ? $definitionId : null,
@@ -44,6 +46,7 @@ final class WorkflowRunRequest
             executionMode: $modeRaw !== '' ? $modeRaw : WorkflowExecutionMode::FullRun->value,
             startNodeId: $startNodeId !== '' ? $startNodeId : null,
             targetNodeId: $targetNodeId !== '' ? $targetNodeId : null,
+            executionScope: $scopeRaw !== '' ? $scopeRaw : null,
         );
     }
 
@@ -62,6 +65,7 @@ final class WorkflowRunRequest
             'execution_mode' => $this->executionMode,
             'start_node_id' => $this->startNodeId,
             'target_node_id' => $this->targetNodeId,
+            'execution_scope' => $this->executionScope,
         ];
     }
 }
