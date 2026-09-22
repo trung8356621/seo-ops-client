@@ -38,49 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\CheckAiProviderBalancesCommand::class,
     ])
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo(static function (): string {
-            $request = request();
-            $path = trim((string) $request->path(), '/');
-
-            $isSeoPath = $path === 'seo' || str_starts_with($path, 'seo/');
-            $isSeoLivewire = false;
-            if ($request->is('livewire/*')) {
-                $referer = (string) $request->headers->get('referer', '');
-                $isSeoLivewire = $referer !== ''
-                    && preg_match('#/seo(?:/|$)#', parse_url($referer, PHP_URL_PATH) ?? '') === 1;
-            }
-
-            // Chỉ guest SEO (path hoặc Livewire từ trang SEO) → login SEO.
-            // Không bắt mọi livewire/* — sẽ phá admin login.
-            if ($isSeoPath || $isSeoLivewire) {
-                if ($path === 'seo/login' || preg_match('#^seo/[a-zA-Z0-9]{32,64}/login$#', $path) === 1) {
-                    return url('/'.$path);
-                }
-
-                // Explicit hash path → hash login; short Main path → /seo/login.
-                if (preg_match('#^seo/([a-zA-Z0-9]{32,64})(?:/|$)#', $path, $matches) === 1
-                    && Route::has('filament.seo.auth.login')
-                ) {
-                    return route('filament.seo.auth.login', ['connection_hash' => $matches[1]]);
-                }
-
-                if (Route::has('filament.seo-main.auth.login')) {
-                    return route('filament.seo-main.auth.login');
-                }
-
-                if (Route::has('seo.auth.login')) {
-                    return route('seo.auth.login');
-                }
-
-                return url('/seo/login');
-            }
-
-            if (Route::has('filament.admin.auth.login')) {
-                return route('filament.admin.auth.login');
-            }
-
-            return '/admin/login';
-        });
+        $middleware->redirectGuestsTo(static fn (): string => route('login'));
 
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,

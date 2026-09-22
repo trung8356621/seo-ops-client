@@ -67,7 +67,8 @@ final class ClientLockUnlockTest extends TestCase
         $this->seedEnrolledState(ClientControlStatus::Locked);
 
         $this->get('/up')->assertOk();
-        $this->get('/admin/login')->assertOk();
+        $this->get('/login')->assertOk();
+        $this->get('/admin/login')->assertRedirect('/login');
         $this->get('/client-locked')->assertOk();
     }
 }

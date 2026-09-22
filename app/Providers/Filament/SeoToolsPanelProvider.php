@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Auth\CustomLogin;
 use App\Filament\SeoToolsPanel\Pages\SeoTools;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -26,7 +25,6 @@ class SeoToolsPanelProvider extends PanelProvider
         return $panel
             ->id('tools')
             ->path('tools')
-            ->login(CustomLogin::class)
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('2.5rem')
             ->favicon(asset('favicon.ico'))

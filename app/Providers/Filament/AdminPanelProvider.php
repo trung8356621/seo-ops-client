@@ -2,7 +2,6 @@
 
 namespace App\Providers\Filament;
 
-use App\Filament\Pages\Auth\CustomLogin;
 use App\Filament\Pages\HelpTopicCreate;
 use App\Filament\Pages\HelpTopicEdit;
 use App\Filament\Pages\HelpTopicsAdmin;
@@ -37,7 +36,6 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(CustomLogin::class)
             ->registration()
             ->passwordReset()
             ->emailVerification()

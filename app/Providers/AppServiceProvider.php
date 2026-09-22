@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Control\ClientLockGuard;
 use App\Control\Commands\ControlCommandDispatcher;
+use App\Http\Responses\Auth\CanonicalLogoutResponse;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as FilamentLogoutResponse;
 use App\Control\Commands\Handlers\ClientLockHandler;
 use App\Control\Commands\Handlers\ClientUnlockHandler;
 use App\Control\Commands\Handlers\ClientUpdateHandler;
@@ -35,6 +37,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerInterventionImageManager();
         $this->registerClientControlBindings();
+        $this->app->bind(FilamentLogoutResponse::class, CanonicalLogoutResponse::class);
 
         // Panel providers need early registration (Filament). Discover from filesystem
         // manifests marked register_early — Core never hard-codes business addon classes.

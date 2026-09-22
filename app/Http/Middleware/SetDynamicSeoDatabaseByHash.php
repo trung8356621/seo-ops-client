@@ -26,17 +26,17 @@ final class SetDynamicSeoDatabaseByHash
         $hashId = $this->resolveHashId($request);
 
         if ($hashId === null) {
-            return redirect()->to('/seo', $request->isMethodSafe() ? 301 : 302);
+            return $this->invalidContextRedirect($request);
         }
 
         if (! SeoConnectionContext::isValidHashFormat($hashId)) {
-            return redirect()->to('/seo', $request->isMethodSafe() ? 301 : 302);
+            return $this->invalidContextRedirect($request);
         }
 
         try {
             $connection = $this->databaseConnection->bootstrapByHash($hashId);
         } catch (RuntimeException) {
-            return redirect()->to('/seo', $request->isMethodSafe() ? 301 : 302);
+            return $this->invalidContextRedirect($request);
         }
 
         SeoConnectionContext::applyUrlDefaults($hashId);
@@ -44,7 +44,7 @@ final class SetDynamicSeoDatabaseByHash
 
         $user = auth()->user();
         if ($user !== null && ! $this->databaseConnection->userCanAccessConnection($user, $connection)) {
-            abort(403, 'Tài khoản của bạn không có quyền truy cập vào không gian lưu trữ SEO này.');
+            return redirect()->to('/workspace');
         }
 
         if ($this->shouldCanonicalizeHashUrlToShort($request)) {
@@ -52,6 +52,15 @@ final class SetDynamicSeoDatabaseByHash
         }
 
         return $next($request);
+    }
+
+    private function invalidContextRedirect(Request $request): Response
+    {
+        if (auth()->check()) {
+            return redirect()->to('/workspace');
+        }
+
+        return redirect()->route('login');
     }
 
     /**
@@ -78,10 +87,6 @@ final class SetDynamicSeoDatabaseByHash
             return false;
         }
 
-        if (preg_match('#^seo/[a-zA-Z0-9]{32,64}/login$#', $path) === 1) {
-            return false;
-        }
-
         // GSC OAuth connect is registered on the hash panel only.
         if (str_contains($path, '/settings/api/google-search-console/') && str_ends_with($path, '/connect')) {
             return false;
@@ -103,18 +108,9 @@ final class SetDynamicSeoDatabaseByHash
 
     private function shouldSkipHashBootstrap(Request $request): bool
     {
-        if ($request->routeIs([
-            'seo.auth.login',
-            'seo.auth.login.store',
-            'seo.auth.login.hash.store',
-            'filament.seo.auth.login',
-            'filament.seo-main.auth.login',
-        ])) {
-            return true;
-        }
-
         $path = trim($request->path(), '/');
 
+        // Legacy login paths redirect to /login; skip bootstrap if somehow hit.
         return $path === 'seo/login'
             || (bool) preg_match('#^seo/[a-zA-Z0-9]{32,64}/login$#', $path);
     }

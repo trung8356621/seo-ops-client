@@ -17,7 +17,7 @@
         @auth
             <p><a href="{{ url('/admin/control-server') }}">{{ __('client_control.open_control_server') }}</a></p>
         @else
-            <p><a href="{{ url('/admin/login') }}">{{ __('client_control.login') }}</a></p>
+            <p><a href="{{ url('/login') }}">{{ __('client_control.login') }}</a></p>
         @endauth
     </div>
 </body>

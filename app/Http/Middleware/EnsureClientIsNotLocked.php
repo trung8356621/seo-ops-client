@@ -83,6 +83,8 @@ final class EnsureClientIsNotLocked
             '/login',
             '/logout',
             '/seo/login',
+            '/seeding/login',
+            '/tools/login',
             '/forgot-password',
             '/reset-password',
             '/auth/google',
@@ -115,7 +117,6 @@ final class EnsureClientIsNotLocked
         foreach ($this->livewireComponentNames($request) as $name) {
             if (
                 str_contains($name, 'ControlServer')
-                || str_contains($name, 'CustomLogin')
                 || str_contains($name, 'Pages\\Auth\\Login')
                 || str_contains($name, 'Pages\\Auth\\PasswordReset')
                 || str_contains($name, 'Pages\\Auth\\EmailVerification')
