@@ -54,6 +54,7 @@ export default defineConfig({
                 'addons/content/resources/js/chat/unreadBadge.js',
                 'addons/search-intelligence/resources/js/performance-hub-gsc-chart.js',
                 'addons/search-intelligence/resources/js/topical-map-chart.js',
+                'addons/search-intelligence/resources/js/keyword-relationship-chart.js',
                 'resources/js/admin-dashboard-usage-charts.js',
                 'addons/content/resources/js/utils/systemDateTime.js',
             ],
