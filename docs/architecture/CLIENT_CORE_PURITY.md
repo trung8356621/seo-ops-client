@@ -15,8 +15,11 @@
 | Capability / command / event | `app/Core/Capability`, `app/Core/Command`, `app/Core/Event` | Buses + contracts |
 | API / automation registries | `app/Core/Api`, `app/Core/Automation` | Protocol registries |
 | Queue / operations / sites | `app/Core/Queue`, `app/Core/Operations`, `app/Core/Sites` | Runtime identity + ops logging |
+| Access Hub | `app/Core/Workspace/` | `WorkspaceDestinationRegistry` — addons register destinations; no hard-coded SEO/Seeding cards |
 | Dual-DB migrate | `app/Core/Database/*`, `app/Core/Console/Commands/Refactor*` | `refactor:migrate`, guards, path locators |
 | Frontend runtime | `resources/js/client-core/saveCoordinator.js` (+ related) | Cross-owner save coordination |
+
+Browser auth controllers/views live under `app/Http` + `resources/views/auth` (still Core-owned product shell, not addon business). See [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md).
 
 ## Keyword hits reviewed (not business ownership)
 

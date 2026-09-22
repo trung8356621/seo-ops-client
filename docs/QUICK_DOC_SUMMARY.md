@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-18
+> Updated: 2026-09-22
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -14,6 +14,24 @@
 - Sibling addons docs: `omnichannel-addons/docs/modules/` (e.g. `SITE_LINK_POLICY.md`, `TOPIC_CORE.md`, `WEBSITE_TYPE.md`).
 - `.cursor/rules/debug-fix-discipline.mdc` — project-wide DEBUG ≠ FIX (`alwaysApply: true`).
 - `resources/help-seed/` — human-facing Help topics; không override canonical dev docs.
+
+## 1z. Batch 2026-09-22 — Canonical browser auth + Access Hub
+
+Phạm vi: `omnichannel-client` + addons panel providers/middleware (auth only). **Không** schema staff↔service mới; **không** reinterpret hash thành multi-tenant service identity.
+
+| Invariant | Canonical |
+|-----------|-----------|
+| Login | `GET/POST /login` — one User, one `web` session |
+| Legacy logins | `/admin|/seo|/seeding|/tools/login`, `/seo/{hash}/login` → `/login` |
+| Post-login | Staff → `/workspace`; Owner/admin → `/admin` (`PostLoginRedirector`) |
+| Hub | `/workspace` + `WorkspaceDestinationRegistry` (addons register cards) |
+| Guest | always → `/login` |
+| Invalid SEO context | authenticated → `/workspace` |
+| Hash | route/session/bootstrap only → shared `omi_seo_ai` via `bootstrapByHash` |
+
+Docs: `contracts/API_AND_AUTHORIZATION.md`, `architecture/SYSTEM_OVERVIEW.md`, `DATA_AND_RUNTIME_BOUNDARIES.md`, `CLIENT_CORE_PURITY.md`, `modules/SEEDING.md`.
+
+---
 
 ## 1a. Batch 2026-09-18 — Site Link Policy (Phase 1)
 

@@ -2,9 +2,9 @@
 
 > Status: Canonical  
 > Owner: `seeding` (peer service / addon)  
-> Last verified: 2026-09-14  
+> Last verified: 2026-09-22  
 > Capabilities: `seeding.workspace`, `seeding.topic`, `link.intelligence`  
-> Related: [SERVICE_ARCHITECTURE.md](../architecture/SERVICE_ARCHITECTURE.md)
+> Related: [SERVICE_ARCHITECTURE.md](../architecture/SERVICE_ARCHITECTURE.md) · [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md)
 
 ## 1. Purpose
 
@@ -59,7 +59,7 @@ Vite: `addons/seeding/resources/js/seeding-workspace.jsx` (+ CSS). Client `confi
 | Concern | Class / path |
 |---------|----------------|
 | Provider | `SeedingServiceProvider` — views, lang, capabilities, routes (no `loadMigrationsFrom`) |
-| Panel | `Providers/SeedingPanelProvider` — path `/seeding` |
+| Panel | `Providers/SeedingPanelProvider` — path `/seeding` (no panel-owned login; guests → canonical `/login`) |
 | Access / resolve | `Support/SeedingAccess`, `SeedingServiceResolver`, `SeedingServiceConfig` |
 | Health | `Support/SeedingServiceHealth`, `SeedingDatabaseHealth` |
 | DB bootstrap | `Services/SeedingDatabaseConnectionService` → Core `ServiceDatabaseConnectionResolver` |

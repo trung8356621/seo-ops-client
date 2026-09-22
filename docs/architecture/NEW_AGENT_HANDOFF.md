@@ -1,11 +1,11 @@
 # New Agent Handoff (post-refactor)
 
 > Status: Canonical operational handoff  
-> Last verified: 2026-09-17  
-> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
+> Last verified: 2026-09-22  
+> Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [AI_EXECUTION_ROUTING.md](AI_EXECUTION_ROUTING.md) · Auth: [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md) · Shell: [SEO_CONTENT_AI_COMPAT_SHELL.md](SEO_CONTENT_AI_COMPAT_SHELL.md)  
 > Manual debt: [POST_REFACTOR_MANUAL_CHECKLIST.md](POST_REFACTOR_MANUAL_CHECKLIST.md)  
 > Editor locks: [ARTICLE_EDITOR_WIDGET_LOCKS.md](ARTICLE_EDITOR_WIDGET_LOCKS.md)
-> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§14 = 2026-09-15→17: CP ops + KW retirement + WP 1.0.88)
+> Latest digest: [QUICK_DOC_SUMMARY.md](../QUICK_DOC_SUMMARY.md) (§1z = 2026-09-22 canonical `/login` + `/workspace`)
 
 **Do not inherit SeoContentAi-monolith assumptions.** Architecture refactor is **CLOSED**.  
 **Task 12–13:** canonical workspace at `D:\work\` (client + addons + wp-seo-ai) — see [REPO_SPLIT.md](REPO_SPLIT.md). **2026-08-18:** `omnichannel-client-core` merged into `app/Core` (retired as standalone package).
@@ -56,6 +56,8 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | System User placeholder (not a writer) | Client `App\Services\Users\SeoOpsSystemUser` |
 | Save transport / SaveCoordinator | `omnichannel-client/resources/js/client-core` |
 | Filament Blade `seo-content-ai::` | `omnichannel-addons/seo-content-ai-compat` |
+| **Browser auth** (`/login`, Google, logout) | `omnichannel-client` — see [`API_AND_AUTHORIZATION.md`](../contracts/API_AND_AUTHORIZATION.md) |
+| **Access Hub** `/workspace` | `omnichannel-client` `App\Core\Workspace\*` — addons register destinations |
 
 Column ownership detail: [ARTICLE_COLUMN_OWNERSHIP.json](ARTICLE_COLUMN_OWNERSHIP.json).
 

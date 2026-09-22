@@ -2,9 +2,9 @@
 
 > Status: Canonical  
 > Owner: Core + peer addons  
-> Last verified: 2026-09-05  
+> Last verified: 2026-09-22  
 > Supersedes: scattered MAP notes on multi-DB, logging, and addon isolation (durable rules only)  
-> Related: [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [FINAL_DATABASE_ARCHITECTURE.md](FINAL_DATABASE_ARCHITECTURE.md)
+> Related: [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [FINAL_DATABASE_ARCHITECTURE.md](FINAL_DATABASE_ARCHITECTURE.md) · [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md)
 
 ## 1. Database connections
 
@@ -32,11 +32,11 @@ Constant runtime name: `omi_seo_ai` (overridable via config). Prefers `ServiceDa
 | Method (Search Foundation) | Use |
 |--------|-----|
 | `bootstrapCanonicalSharedConnection()` / `bootstrapLegacySharedConnection()` | Shared Service DB plane |
-| `bootstrapByHash(string $hashId)` | Hash URL → canonical Service DB (legacy table optional if present) |
+| `bootstrapByHash(string $hashId)` | Hash URL/session → **canonical** shared Service DB (stamps hash; does not open a separate tenant DB) |
 | `bootstrapFromConnection(SeoDatabaseConnection)` | Already-loaded credential row / in-memory adapter |
 | `bootstrapByConnectionId(int)` / `bootstrapBySiteId(int)` | By PK / site — fall through to canonical |
 
-Request path: SEO panel middleware must run before SEO models query.  
+Request path: authenticate → authorize (owner/staff + Spatie) → SEO panel middleware bootstrap → SEO models query. Invalid context → `/workspace` (see [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md)).  
 Seeding: `SeedingDatabaseConnectionService::bootstrap()` on provider boot — Service DB then ENV only (failures soft — health endpoints report).
 
 Legacy Admin list URLs for SEO/Seeding DB connections redirect to Service detail pages.
@@ -45,8 +45,9 @@ Legacy Admin list URLs for SEO/Seeding DB connections redirect to Service detail
 
 | Peer addons (`omnichannel-addons`) | Core (`omnichannel-client`) |
 |----------------------------------|----------------|
-| Business Filament pages, models, migrations, jobs, React islands | Auth users, sites, billing, Service catalog + DB credentials, addon registry, Settings/Members registries |
-| Capability / command / DTO cross-addon | `bootstrap/app.php` only for true app middleware / narrow CSRF |
+| Business Filament pages, models, migrations, jobs, React islands | Auth users, **canonical `/login` + Access Hub `/workspace`**, sites, billing, Service catalog + DB credentials, addon registry, Settings/Members registries |
+| Capability / command / DTO cross-addon; panel **authorization** + service bootstrap | `bootstrap/app.php` guest → `/login`; true app middleware / narrow CSRF |
+| Must **not** own browser login pages or separate session guards | `PostLoginRedirector`, `WorkspaceDestinationRegistry` |
 
 `seo-content-ai-compat` = views/lang/panel bootstrap only — no new business.
 
