@@ -625,6 +625,11 @@
       "_react-vendor-BJWL6Tay.js"
     ]
   },
+  "addons/seo/resources/css/operational-landing-dashboard.css": {
+    "file": "assets/operational-landing-dashboard-DCWLvKl_.css",
+    "src": "addons/seo/resources/css/operational-landing-dashboard.css",
+    "isEntry": true
+  },
   "addons/seo/resources/js/article-seo-preview.jsx": {
     "file": "assets/article-seo-preview-CFV2O_4S.js",
     "name": "article-seo-preview",
