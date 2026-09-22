@@ -626,8 +626,13 @@
     ]
   },
   "addons/seo/resources/css/operational-landing-dashboard.css": {
-    "file": "assets/operational-landing-dashboard-DCWLvKl_.css",
+    "file": "assets/operational-landing-dashboard-mXUSjbXy.css",
     "src": "addons/seo/resources/css/operational-landing-dashboard.css",
+    "isEntry": true
+  },
+  "addons/seo/resources/css/ops-statistics.css": {
+    "file": "assets/ops-statistics-B0vX_LTq.css",
+    "src": "addons/seo/resources/css/ops-statistics.css",
     "isEntry": true
   },
   "addons/seo/resources/js/article-seo-preview.jsx": {
