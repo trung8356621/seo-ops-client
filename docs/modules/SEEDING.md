@@ -118,35 +118,40 @@ Env: `SEEDING_DB_*` (see `.env.example`). Never fall back DB name to `omi_seo_ai
 Active migrations: `addons/seeding/database/migrations` (owned via `config/addon_migration_ownership.php` → `omi_seeding`).  
 Legacy experimental V2 (`link_resources` / `seeding_topic_links` on `omi_seo_ai`) permanently removed from source (2026-09-22); do not recreate.
 
-## 8. Gen Comment AI boundary (permanent)
+## 8. Gen Comment AI boundary
 
-**Decision (2026-09-14): Seeding AI is intentionally and permanently independent from the SEO AI Prompt / Task / History system.**  
-This is not a temporary split and must not be designed for a future merge into SEO AI.
+**Execution (2026-09-22+):** `seeding.comment.generate` uses the **shared** AI stack:
 
-Seeding owns:
+| Axis | Value |
+|------|--------|
+| Execution Profile | `text.fast` (Hook default; Prompt may override) |
+| Routing Policy | `quick_free` (Hook default; Prompt may override; global FreeOnly wins) |
+| Transport | `interactive` (`InteractivePromptExecutor` → Canonical routing) |
 
-- prompt setting (one editable Manager body; only `{{mcp_context}}`)
+Seeding still owns:
+
 - MCP context resolution / snapshot
-- comment generation orchestration
-- generation debug logs + retention (latest 20)
+- comment validation / parse (`SocialCommentGenerateTask` shell)
+- Seeding debug history ring (latest 20 on `omi_seeding`)
+- Flexible Seeding UI / seed_batches identity / report-based quota
 
-Allowed shared infrastructure only when already generic/shared: queueing, HTTP/provider clients, DB/cache, and existing generic AI routing (e.g. Canonical text execution via Social comment task shell).
+Seeding must **not**:
 
-Do **not**:
+- call OpenRouter / Gemini / DeepSeek HTTP directly
+- own a Seeding-specific routing planner or model list
+- hold a DB transaction open during the provider call
+- dispatch article/background AI jobs for Gen Comment
 
-- extract SEO Prompt/Task/History into shared abstractions for Seeding
-- modify SEO AI History to support Seeding
-- reuse SEO prompt/version/task entities for Seeding
-- refactor the tested SEO AI pipeline for Seeding needs
-- introduce Seeding → SEO AI business-logic dependencies
-- prefer “unify later” refactors — prefer small Seeding-local duplication
+Observability: interactive runs still persist Prompt Result / routing attempts (AI History compatible) with `execution_transport=interactive` and routing policy metadata.
 
-UI: Manager → **Quản lý / Tổng kết** → Prompt Gen Comment + Lịch sử Gen Comment.
+UI: Prompt Admin (shared Prompt binding) + Manager Gen Comment debug history.
+
+See also: [AI_EXECUTION_ROUTING.md](../architecture/AI_EXECUTION_ROUTING.md) §4 (profile vs routing policy vs transport).
 
 ## 9. Forbidden
 
-- Seeding → SEO DB / SEO models for workspace
-- Seeding Gen Comment → SEO Prompt / Task / History entities or tables
+- Seeding → SEO DB / SEO models for workspace topic CRUD
+- Provider HTTP / OpenRouter hardcoding inside Seeding Gen Comment
 - Topic CRUD via retired `/api/seeding/topics*` (410 only)
 - Auto CREATE/DROP production DBs on web boot
 - Business logic in `seo-content-ai-compat` beyond nav/lang wiring
@@ -163,7 +168,8 @@ UI: Manager → **Quản lý / Tổng kết** → Prompt Gen Comment + Lịch s�
 | `SeedingFlexibleSeedingContractTest` | Target calculator + share snapshot |
 | `SeedingFeedUxContractTest` / `SeedingLinkPreviewAndAuthContractTest` / `SeedingCommentLinkPreviewContractTest` | Feed / preview / auth |
 | `SeedingTargetCalculatorTest` | Per-user requirement math |
-| `SeedingCommentPromptAndHistoryTest` / `SeedingCommentPromptPersistenceTest` | Manager prompt + 20-log ring; no SEO prompt system |
+| `SeedingCommentPromptAndHistoryTest` / `SeedingCommentPromptPersistenceTest` | Manager prompt + 20-log ring |
+| `SeedingInteractiveRoutingContractTest` | Interactive + quick_free; no Seeding provider HTTP |
 | Client `SeedingSurfaceExtractionTest` / `Seeding/*` unit | Panel / DB plane isolation |
 
 ## 11. Related
@@ -171,5 +177,5 @@ UI: Manager → **Quản lý / Tổng kết** → Prompt Gen Comment + Lịch s�
 - [SERVICE_ARCHITECTURE.md](../architecture/SERVICE_ARCHITECTURE.md)
 - [ADDON_ARCHITECTURE.md](../architecture/ADDON_ARCHITECTURE.md)
 - [NEW_AGENT_HANDOFF.md](../architecture/NEW_AGENT_HANDOFF.md)
+- [AI_EXECUTION_ROUTING.md](../architecture/AI_EXECUTION_ROUTING.md)
 - [SITE_MCP_AND_DOMAINS.md](SITE_MCP_AND_DOMAINS.md) — domain / Global SEO bar context (shortcut only)
-- ADR (codebase-memory): Seeding AI independent from SEO AI Prompt/Task/History (permanent)

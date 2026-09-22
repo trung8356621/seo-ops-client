@@ -1,7 +1,7 @@
 # AI Execution & Routing — Single Source of Truth
 
 > Status: Canonical (stabilized AI execution layer)  
-> Last verified: 2026-09-17
+> Last verified: 2026-09-22
 > Owner addon: `omnichannel-addons/ai-prompt` (+ Content Project preference helpers in `content-projects`)  
 > Module map: [`PROMPTS_AND_AI.md`](../modules/PROMPTS_AND_AI.md)  
 > Related: [`AI_HISTORY_PROMPT_VERSION.md`](AI_HISTORY_PROMPT_VERSION.md) · [`CONTENT_PROJECT_AI_INTEGRATION.md`](CONTENT_PROJECT_AI_INTEGRATION.md) · [`operations/AI_DEBUG_PLAYBOOK.md`](../operations/AI_DEBUG_PLAYBOOK.md) · ADR-018 [`decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md`](decisions/AI_CENTER_MODEL_AUTHORITY_ARTICLE_GENERATION.md)
@@ -116,36 +116,73 @@ ADR-018 originally scoped article content hooks; **stabilized runtime** applies 
 
 ---
 
-## 4. Order policy vs cost policy
+## 4. Order policy vs cost policy vs routing policy vs transport
+
+### EXECUTION PROFILE
+
+**Controls:** what capability / workload class is required (`text.fast`, `text.longform`, `text.reasoning`, image/video, …).  
+Prompt Hook default + optional Prompt override (`routing_profile_key`).  
+**Does not** encode free/paid preference.
 
 ### ORDER POLICY
 
 **Source:** AI Center sortable + physical route priority.  
 **Controls:** which model/route is evaluated first.
 
+### ROUTING POLICY (`AiRoutingPolicy`)
+
+**Controls how free/paid candidates are attempted** — independent of Execution Profile:
+
+| Policy | Behavior |
+|--------|----------|
+| `normal` | Existing routing / attempt-budget behavior |
+| `quick_free` | At most **one actual free API attempt** (first eligible free). On failure → immediate paid fallback. Does **not** walk the whole free pool first. |
+| `free_only` | Only eligible free candidates. Never paid. |
+
+Hook default + Prompt override (`prompts.routing_policy`).  
+Example: `seeding.comment.generate` → `quick_free`.
+
+**Global FreeOnly** (`AiCostPolicy` / connection FreeOnly / task FreeOnly) is a **hard restriction**:  
+`global FreeOnly + any Prompt policy` → effective `free_only`. A Prompt policy must never weaken it.
+
 ### COST POLICY
 
 **Controls:**
 
 - allowed / forbidden cost class  
-- `MAX_FREE_ATTEMPTS`  
-- `MAX_AI_ATTEMPTS`  
+- `MAX_FREE_ATTEMPTS` / `MAX_AI_ATTEMPTS`  
 - paid lock  
 - FreeOnly  
 
 **Cost policy does NOT control ordering.**
+
+### EXECUTION TRANSPORT (`AiExecutionTransport`)
+
+| Transport | Meaning |
+|-----------|---------|
+| `interactive` | Synchronous shared stack (`InteractivePromptExecutor`). No background AI job dispatch. Bounded interactive attempt budget. |
+| `background` | Existing queued / job-driven execution (article generation default). |
+
+Transport is chosen by the **caller**, not by Encoding Seeding into the planner.
+
+Example — Seeding Gen Comment:
+
+- profile: `text.fast` (Hook default; Prompt may override)
+- routing policy: `quick_free`
+- transport: `interactive`
 
 Explicit statements:
 
 - **DEFAULT / Economy does NOT mean free-first.**
 - **`MAX_FREE_ATTEMPTS` does NOT mean** “call free models before paid.”  
   It means: maximum number of **actual free API calls** if/when free candidates are reached **in sortable order**.
+- **`quick_free` free cap = 1 actual free attempt**, then paid — not “try every free model.”
 
 ---
 
 ## 5. FREE_ONLY
 
-`FREE_ONLY` (`AiExecutionRoutingMode::FreeOnly`) is the **only** explicit cost policy allowed to **remove paid routes**.
+`FREE_ONLY` (`AiExecutionRoutingMode::FreeOnly` / `AiRoutingPolicy::FreeOnly`) is the **only** explicit cost / routing policy allowed to **remove paid routes**.
 
 Example sortable: `1 DeepSeek paid` → `2 Free Pool`
 
