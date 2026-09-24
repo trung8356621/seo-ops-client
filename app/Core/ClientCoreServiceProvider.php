@@ -25,8 +25,12 @@ use App\Core\Queue\ScheduleRegistry;
 use App\Core\Settings\CoreSettingsBootstrap;
 use App\Core\Settings\SettingsSectionRegistry;
 use App\Core\Sites\SiteAccess;
+use App\Core\Workspace\ServiceTopbarRouter;
 use App\Core\Workspace\WorkspaceDestination;
 use App\Core\Workspace\WorkspaceDestinationRegistry;
+use Filament\Support\Facades\FilamentView;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -59,6 +63,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(SiteAccess::class);
         $this->app->singleton(MembersSectionRegistry::class);
         $this->app->singleton(WorkspaceDestinationRegistry::class);
+        $this->app->singleton(ServiceTopbarRouter::class);
         $this->app->singleton(AddonPermissionRegistry::class);
         $this->app->singleton(AddonAuthorization::class);
         $this->app->singleton(SeoRoleAssignment::class);
@@ -76,6 +81,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
     {
         $this->loadOwnedMigrations();
         $this->registerCoreWorkspaceDestinations();
+        $this->registerServiceTopbarRouterHook();
 
         if ($this->app->bound(SettingsSectionRegistry::class)) {
             $this->app->make(CoreSettingsBootstrap::class)
@@ -94,7 +100,22 @@ final class ClientCoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Core-owned destinations only (Tools). SEO/Seeding register from their providers.
+     * Shared Admin / SEO / Seeding switcher in the Filament topbar (all service panels).
+     */
+    private function registerServiceTopbarRouterHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::TOPBAR_START,
+            static function (): HtmlString {
+                return new HtmlString(
+                    view('filament.hooks.service-topbar-router')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * Core-owned destinations (Admin + Tools). SEO/Seeding register from their providers.
      */
     private function registerCoreWorkspaceDestinations(): void
     {
@@ -104,6 +125,19 @@ final class ClientCoreServiceProvider extends ServiceProvider
 
         /** @var WorkspaceDestinationRegistry $registry */
         $registry = $this->app->make(WorkspaceDestinationRegistry::class);
+
+        if (! $registry->has('admin')) {
+            $registry->register(new WorkspaceDestination(
+                key: 'admin',
+                label: 'Admin',
+                url: url('/admin'),
+                sort: 0,
+                description: 'SaaS control & account admin',
+                icon: 'heroicon-o-cog-6-tooth',
+                panelId: 'admin',
+            ));
+        }
+
         if ($registry->has('tools')) {
             return;
         }
