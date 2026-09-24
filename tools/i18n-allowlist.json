@@ -1,0 +1,26 @@
+{
+  "comment": "Exact UI string allowlist for tools/i18n-audit-scan.py — intentional non-translated literals (product names, codes).",
+  "strings": [
+    "SEO",
+    "WordPress",
+    "OpenRouter",
+    "Gemini",
+    "DeepSeek",
+    "MCP",
+    "HTML",
+    "Markdown",
+    "FAQ",
+    "API",
+    "JSON",
+    "CSV",
+    "URL",
+    "HTTP",
+    "HTTPS",
+    "PG Canary",
+    "Automation",
+    "Dashboard",
+    "GSC",
+    "DataForSEO",
+    "Imagen"
+  ]
+}

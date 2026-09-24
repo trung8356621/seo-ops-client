@@ -1,7 +1,7 @@
 # Quick Documentation Summary
 
 > Status: working summary, not canonical source of truth  
-> Updated: 2026-09-22
+> Updated: 2026-09-24
 > Purpose: digest gần nhất để session sau re-orient nhanh. Canonical behavior vẫn ở `docs/README.md` và module/architecture docs.
 
 ## 1. Documentation Map
@@ -14,6 +14,17 @@
 - Sibling addons docs: `omnichannel-addons/docs/modules/` (e.g. `SITE_LINK_POLICY.md`, `TOPIC_CORE.md`, `WEBSITE_TYPE.md`).
 - `.cursor/rules/debug-fix-discipline.mdc` — project-wide DEBUG ≠ FIX (`alwaysApply: true`).
 - `resources/help-seed/` — human-facing Help topics; không override canonical dev docs.
+
+## 1y. Batch 2026-09-24 — Site Sync V3 multilingual + queue restart
+
+Phạm vi docs: điều tra Domain Overview VI sync hiển thị `0 / 8077` dù inventory VI ~3820.
+
+| Finding | Canonical |
+|---------|-----------|
+| Run có thể đã persist `language_scope=vi` nhưng discover vẫn all-language | So sánh `meta.discover.language` + `resources.content.total` vs `by_language.vi` |
+| `8077` = unscoped content (= vi+en), không phải label UI sai | `SITE_SYNC.md` §17.1 |
+| Worker `queue:work` giữ class cũ → quên `queue:restart` sau sửa Site Sync PHP | `SITE_SYNC.md` §17.2, `SCHEDULER_AND_WORKERS.md`, `TROUBLESHOOTING.md` §7, `DEPLOYMENT.md` |
+| Job V3 | `ProcessSiteSyncV3Job` trên queue `seo` |
 
 ## 1z. Batch 2026-09-22 — Canonical browser auth + Access Hub
 
@@ -121,10 +132,12 @@ Canonical đã sync: `CONTENT_PROJECTS.md`, `SEO_AUDIT_AND_KEYWORDS.md`, `ARTICL
 ### Site Sync V3 — `omnichannel-addons` 0.2.7
 
 - `SiteSyncV3Schema` (`site_sync.v3`), `SiteSyncProtocolRouter`, `RunSiteSyncV3Orchestrator`.
-- Phases: discover → import → reconcile_stale → catch_up → verify → complete.
+- Phases: discover → import → reconcile_stale → catch_up → verify → score → complete.
 - **Không** ghi `articles.body` / `wp_post_content*` meta.
 - Keyset cursors; migrations run state + WAL index.
-- Tests: `SiteSyncV3ContractTest`, `SiteSyncV3HardeningIntegrationTest`.
+- Multilingual Primary-first: run meta `language_scope` / `language_role` / `language_scoped`; discover+records phải mang cùng language; progress = scoped content.
+- **Ops:** sau sửa Site Sync PHP → `queue:restart` (queue `seo`). Quên restart → label VI nhưng total all-language (vd. 8077 = vi+en).
+- Tests: `SiteSyncV3ContractTest`, `SiteSyncV3HardeningIntegrationTest`, `SiteSyncV3LanguageScopePropagationTest`, `SiteSyncV3MultilingualPrimaryFirstTest`, `SiteSyncV3ScopedStatusPresenterTest`.
 - Ghi trong `SITE_SYNC.md` §17.
 
 ### Article meta + WP content cache — `addons` 0.2.7

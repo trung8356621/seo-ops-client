@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core ops)  
-> Last verified: 2026-08-01  
+> Last verified: 2026-09-24  
 > Supersedes: `docs/archive/legacy-readmes/DATABASE_CLEANUP_MISPLACED_TABLES.md`, logging notes from `docs/archive/maps/MAP_SEO_EDITOR.md` (§ logging), common failure notes from Site Sync / Agent archive ops
 
 ## 1. Logging — Permission denied on `laravel.log`
@@ -96,7 +96,26 @@ See `DEPLOYMENT.md` + `QUEUE_SCHEDULER_AND_IDEMPOTENCY.md`.
 - Automatic WP side effects need enabled published Automation Rule; manual sync is explicit (`ManualWordPressSyncJob` on `seo`).  
 - Queues: `automation-critical` (rules), `automation-external` (WP nodes).
 
-## 7. Related documents
+## 7. Site Sync V3 — wrong progress total / “scoped” label but all-language count
+
+**Symptom:** Domain Overview shows primary language inventory (~3820 VI) but an active/new run reads `Đang đồng bộ Tiếng Việt · Chính` with `0 / 8077` (or similar all-language content total).
+
+**First check (ops, not code):** was `queue:work` restarted after the latest Site Sync PHP edit?
+
+| Check | Expect if healthy scoped VI run |
+|-------|----------------------------------|
+| `seo_site_sync_runs.meta.language_scope` | `vi` |
+| `meta.discover.language` | `vi` (not `null`) |
+| `meta.discover.resources.content.total` | ≈ `by_language.vi` (not vi+en) |
+| `meta.initial_expected_content_total` | same scoped content count |
+
+If `language_scope=vi` but `discover.language=null` and `content.total = by_language.vi + by_language.en`, the executing worker almost certainly ran **stale** orchestrator/discover path — or WP ignored `language` (verify live `GET .../sync/v3/discover?language=vi`).
+
+**Fix:** `php artisan queue:restart` (worker must listen to queue `seo`). Re-run sync; do not “fix” the denominator in the presenter until a fresh run’s discover snapshot is scoped.
+
+Canonical detail: [SITE_SYNC.md §17](../modules/SITE_SYNC.md), [SCHEDULER_AND_WORKERS.md](SCHEDULER_AND_WORKERS.md).
+
+## 8. Related documents
 
 - `docs/operations/DEPLOYMENT.md`
 - `docs/operations/SCHEDULER_AND_WORKERS.md`

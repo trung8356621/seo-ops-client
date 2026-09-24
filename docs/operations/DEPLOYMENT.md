@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core ops)  
-> Last verified: 2026-08-03  
+> Last verified: 2026-09-24  
 > Supersedes: `docs/archive/operations/CONTENT_PROJECT_ENGINE_PRODUCTION.md` (durable deploy checklist only — not phase rollout narrative)
 
 Short production checklist. Deep semantics: [SCHEDULER_AND_WORKERS.md](SCHEDULER_AND_WORKERS.md).  
@@ -22,6 +22,7 @@ Use the **same PHP binary** as queue/cron (do not guess `/usr/bin/php`).
 - Frontend: `npm run build` when Vite entries changed (CP run UI, Agent, editor).  
 - OPcache: reload PHP-FPM when `validate_timestamps=0`.  
 - SEO DB: bootstrap `omi_seo_ai` from Admin → SEO Database Connections before addon migrate.
+- **Site Sync V3:** `queue:restart` is mandatory after orchestrator/client/presenter/language-scope PHP changes — long-lived `queue:work` on `seo` otherwise keeps stale discover/progress behavior (e.g. UI “VI · Chính” with all-language total). See [modules/SITE_SYNC.md](../modules/SITE_SYNC.md) §17.2.
 
 `composer dump-autoload -o` is **not** required on every deploy. Use it only when troubleshooting a new class that runtime does not see (stale Composer classmap).
 

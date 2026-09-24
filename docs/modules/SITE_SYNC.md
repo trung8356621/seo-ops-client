@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: site-sync (peer addon)  
-> Last verified: 2026-09-17  
+> Last verified: 2026-09-24  
 > Supersedes: `docs/SITE_SYNC_V2.md`, `docs/SITE_SYNC_V2_*.md`, `docs/WP_PLUGIN_SITE_SYNC_V2.md` (Site Sync sections), `docs/archive/site-sync/*`
 
 ## 1. Purpose
@@ -51,9 +51,10 @@ Auth for bridge callbacks: Bearer `sites.seo_read_token` (+ site/domain binding)
 | Flags | `SiteSyncFeatureFlags` | `config('seo-content-ai.seo_architecture.site_sync_v2.*')` + `protocol_v3_enabled` |
 | Protocol router | `SiteSyncProtocolRouter` | V3 when capability/probe hit; else V2 |
 | V3 schema | `SiteSyncV3Schema` | `site_sync.v3`, keyset cursors, no body/meta writes |
-| V3 orchestrator | `RunSiteSyncV3Orchestrator` | Phases: discover → import → reconcile_stale → catch_up → verify → complete |
-| V3 job | `ProcessSiteSyncV3Job` | Queue `seo`; unique per run |
-| V3 client | `WordPressSiteSyncV3Client` | Pull records/discover from WP when plugin ships V3 |
+| V3 orchestrator | `RunSiteSyncV3Orchestrator` | Phases: discover → import → reconcile_stale → catch_up → verify → score → complete |
+| V3 language scope | `SiteSyncV3LanguageScope` + run meta | Persists `language_scope` / `language_role` / `language_scoped` for Primary-first multilingual runs |
+| V3 job | `ProcessSiteSyncV3Job` | Queue `seo`; unique per run — **restart worker after PHP changes** (see §17) |
+| V3 client | `WordPressSiteSyncV3Client` | Pull discover (`?language=`) / records (body `language`) from WP |
 | V3 importer | `SiteSyncV3BulkImporter` | Bulk content import without touching `articles.body`; link type prefers `wp_post_type`, default `post` (not `article`) |
 | Handler | `SiteSyncCommandHandler` / `SiteSyncCutoverCommandHandler` | CommandBus |
 | Presenters | `SiteSyncStatusPresenter`, `SiteSyncSourceLabelPresenter` | Ops / Domain UI |
@@ -258,7 +259,8 @@ Pointers also in `docs/operations/TESTING.md`.
 
 ## 17. Site Sync V3 (protocol 3)
 
-> Added 2026-08-31. V2 remains default until site has V3 capability and `protocol_v3_enabled` flag.
+> Added 2026-08-31. V2 remains default until site has V3 capability and `protocol_v3_enabled` flag.  
+> Multilingual Primary-first + queue-restart ops note: **2026-09-24**.
 
 | Item | Detail |
 |------|--------|
@@ -267,19 +269,61 @@ Pointers also in `docs/operations/TESTING.md`.
 | Router | `SiteSyncProtocolRouter::shouldUseV3()` — flag + capability or discover probe → V3 orchestrator; else V2 |
 | Resources | `content`, `terms` |
 | Modes | `force_full`, `delta` |
-| Phases | `discover`, `import`, `reconcile_stale`, `catch_up`, `verify`, `complete`, `needs_attention` |
+| Phases | `discover`, `import`, `reconcile_stale`, `catch_up`, `verify`, `score`, `complete`, `needs_attention` |
 | Pagination | Keyset cursors only — **never** offset; plugin ≥ **1.0.86** content cursor includes `after_modified_gmt` |
 | Body rule | V3 **must not** write `articles.body` or `wp_post_content*` article_meta keys |
 | Trash | Plugin ≥ **1.0.86** accepts write `status=trash` for tombstone lifecycle (not SEO publish schedule) |
-| Baseline meta | `seo_site_sync_v3_baseline_completed_at`, `seo_site_sync_v3_baseline_generation` |
+| Baseline meta | `seo_site_sync_v3_baseline_completed_at`, `seo_site_sync_v3_baseline_generation` (+ per-language map `seo_site_sync_v3_language_checkpoints`) |
 | Run state | Migration `2026_08_31_160000_site_sync_v3_run_state`; receipt model `SeoSiteSyncV3Receipt` |
 | WAL index | Migration `2026_08_31_161000_add_wal_site_wp_post_composite_index` |
+
+### 17.1 Multilingual Primary-first (`language_scope`)
+
+On Polylang sites, Domain Overview syncs **one language at a time** (primary first).
+
+| Run meta | Meaning |
+|----------|---------|
+| `language_scope` | Canonical Polylang slug for this run (`vi`, `en`, …). Empty = unscoped / single-language site |
+| `language_role` | `primary` \| `secondary` |
+| `language_scoped` | Sticky `true` when start resolved a non-empty scope — empty scope mid-run must **fail-fast**, never silently fall back to all-language |
+
+**Invariants (scoped run):**
+
+1. UI → command freezes `language` + `language_role` into the command; orchestrator persists them on the run — do not re-resolve “current UI tab” after start.
+2. Every content traversal request carries the same language: discover `?language=`, FULL/DELTA/CATCH_UP/VERIFY records body `language`.
+3. WP discover with `language=vi` must return scoped `resources.content.total` (and echo `discover.language`). If `content.total` looks like all-language while `by_language[vi]` is much smaller → `language_scope_not_applied_on_discover` / `needs_attention` (no silent full-site sync).
+4. Progress denominator = **scoped content** (`initial_expected_content_total` / `by_language[scope]`), **not** unscoped `resources.content.total` and **not** `discover.total` (content+terms).
+5. UI headline “Đang đồng bộ Tiếng Việt · Chính” comes from run meta — it is **not** proof that discover/records were scoped. Always check persisted `meta.discover.language` and `meta.discover.resources.content.total`.
+
+**Known false symptom (investigated 2026-09-24):** primary VI run shows `0 / 8077` while Domain Overview inventory is ~3820 VI. Arithmetic: `8077 = by_language.vi + by_language.en` = unscoped `resources.content.total`. Often the run **did** persist `language_scope=vi`, but the worker that executed discover still had **stale PHP** (see §17.2) and/or discover was effectively unscoped.
+
+### 17.2 Ops — restart queue after Site Sync PHP changes
+
+`ProcessSiteSyncV3Job` runs on queue **`seo`** via long-lived `queue:work`. PHP keeps loaded classes in memory until the worker exits.
+
+| After changing… | Must |
+|-----------------|------|
+| `RunSiteSyncV3Orchestrator`, `WordPressSiteSyncV3Client`, `SiteSyncStatusPresenter`, V3 language/checkpoint services | `php artisan queue:restart` (or stop/start the `queue:work` that listens to `seo`) |
+| WP plugin language filter (`class-site-sync-v3-provider.php`, `class-polylang-sync.php`) | Deploy/activate on the **remote** WP host; Laravel restart alone is not enough |
+
+Local example worker (must include `seo`):
+
+```text
+php artisan queue:work --queue=seo-content-run,automation-critical,automation,automation-external,seo,media_generation,default --timeout=900 --tries=1
+```
+
+After code pull / addon edit on a machine that already has `queue:work` running: **restart before starting a new Site Sync run**. Forgetting this makes new source look “fixed” in the IDE while the run still executes yesterday’s discover/progress math.
+
+See also: [../operations/SCHEDULER_AND_WORKERS.md](../operations/SCHEDULER_AND_WORKERS.md), [../operations/DEPLOYMENT.md](../operations/DEPLOYMENT.md) (`queue:restart`), [../operations/TROUBLESHOOTING.md](../operations/TROUBLESHOOTING.md).
 
 Tests:
 
 ```text
 $PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3ContractTest.php
 $PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3HardeningIntegrationTest.php
+$PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3LanguageScopePropagationTest.php
+$PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3MultilingualPrimaryFirstTest.php
+$PHP_BIN vendor/bin/phpunit addons/site-sync/tests/Unit/SiteSyncV3ScopedStatusPresenterTest.php
 ```
 
 WP body cache for editor/import paths: [`WORDPRESS_BRIDGE.md`](WORDPRESS_BRIDGE.md) — `article_wp_content_cache`.
@@ -289,7 +333,8 @@ WP body cache for editor/import paths: [`WORDPRESS_BRIDGE.md`](WORDPRESS_BRIDGE.
 - [WORDPRESS_BRIDGE.md](WORDPRESS_BRIDGE.md) — plugin REST, publish push, media, tokens
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — publish/approve (not Site Sync)
 - [AGENT_WORKSPACE.md](AGENT_WORKSPACE.md) — `/site-sync` CLI + Gateway
-- [../operations/SCHEDULER_AND_WORKERS.md](../operations/SCHEDULER_AND_WORKERS.md) — queues/cron
+- [../operations/SCHEDULER_AND_WORKERS.md](../operations/SCHEDULER_AND_WORKERS.md) — queues/cron + Site Sync worker restart
+- [../operations/TROUBLESHOOTING.md](../operations/TROUBLESHOOTING.md) — stale worker / wrong progress total
 - [../operations/TESTING.md](../operations/TESTING.md) — Site Sync filters
 - [../architecture/ARCHITECTURE_FREEZE_V1.md](../architecture/ARCHITECTURE_FREEZE_V1.md) — platform freeze
 - GSC (separate): [SEO_AUDIT_AND_KEYWORDS.md](SEO_AUDIT_AND_KEYWORDS.md) — not Site Sync

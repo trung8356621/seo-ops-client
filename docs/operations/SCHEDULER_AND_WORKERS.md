@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi (+ core schedule)  
-> Last verified: 2026-08-05  
+> Last verified: 2026-09-24  
 > Supersedes: scattered schedule notes in archived Site Sync / WordPress MAP docs; automation cron/queue notes from `docs/archive/automation/AUTOMATION_SERVICE_INVENTORY.md` (durable ownership only)
 
 Runtime expectation: host cron runs `php artisan schedule:run` every minute; queue workers process named queues below.
@@ -17,6 +17,7 @@ Runtime expectation: host cron runs `php artisan schedule:run` every minute; que
 |-------|------|-------|
 | `seo` (`ArticleWpSyncQueueService::QUEUE_NAME`) | `ProcessSiteSyncStepJob` | Unique `site-sync-step:{runId}`; `$tries = 3`; `$uniqueFor = 900` |
 | `seo` | `ProcessSiteSyncInboundEventJob` | Unique `site-sync-inbound-event:{eventId}`; `$tries = 5`; `$uniqueFor = 900` |
+| `seo` | `ProcessSiteSyncV3Job` | V3 phase continuation; listens on same `seo` queue |
 
 Workers must include queue `seo` for Site Sync progress and inbound delta processing.
 
@@ -34,6 +35,8 @@ Registered in `SeoContentAiServiceProvider` when not already present.
 - Skip when site sync lock held; skip non-V2 writers via `SiteSyncCutoverStateService::isV2Writer`.
 - Heartbeat: `SiteSyncHeartbeatService` (`scheduler` / `queue` touches).
 - Manual/CLI: `seo:site-sync`, `seo:site-sync-reconcile`, `seo:site-sync-v2-backfill` — see [../modules/SITE_SYNC.md](../modules/SITE_SYNC.md).
+- **After any Site Sync PHP change** (`RunSiteSyncV3Orchestrator`, V3 client/presenter/language scope, V2 step jobs): run `php artisan queue:restart` (or restart the `queue:work` process that consumes `seo`). Long-lived workers keep old class definitions in memory — source on disk can look fixed while a new VI sync still uses unscoped discover/progress math. See [SITE_SYNC.md §17.2](../modules/SITE_SYNC.md).
+- Multilingual Primary-first: do not judge scope from the UI label alone; confirm `seo_site_sync_runs.meta.language_scope` and `meta.discover.language` / `resources.content.total` on the active run.
 
 ### WordPress outbox (plugin side)
 
