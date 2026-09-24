@@ -2,9 +2,11 @@
 
 > Status: Canonical  
 > Owner: `search-intelligence` (+ `seo` audit/scoring surfaces)  
-> Last verified: 2026-09-17  
+> Last verified: 2026-09-24  
 > Supersedes: `docs/archive/maps/MAP_SEO_AUDIT.md`, `MAP_SEO_PERFORMANCE_HUB.md`, `MAP_SEO_GSC_API_CONNECTIONS.md`, `docs/archive/audit-keywords/*` (architecture only — not phase playbooks)  
-> **Breaking (2026-09-17):** Keyword Intelligence workspace + Topics/`cluster_key` + DNA tables retired (`omnichannel-addons` `3dd18c8`). No live Topic rebuild yet.
+> **Breaking (2026-09-17):** Keyword Intelligence workspace + Topics/`cluster_key` + DNA tables retired (`omnichannel-addons` `3dd18c8`).  
+> **Topic Core (site-scoped)** later replaced KI Topics — see sibling addons [`TOPIC_CORE.md`](../../../omnichannel-addons/docs/modules/TOPIC_CORE.md).  
+> **Keyword MCP:** [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md) — Type 1 Landscape + Type 2 Relationship (**CLOSED — v1**).
 
 ## 1. Purpose
 
@@ -15,7 +17,7 @@ SEO technical audit + keyword research stack for one SEO DB connection (`omi_seo
 | Surface | Role |
 |---------|------|
 | **ArticlesOptimal** | Scan/filter articles failing SEO rules; assign into Content Projects; Reviewed dashboard |
-| **Keywords module** | Flat Dictionary + Focus + Anchor Audit (+ hidden AI Discovery). **Not** KI workspace / Topics / DNA |
+| **Keywords module** | Flat Dictionary + Focus + Anchor Audit (+ hidden AI Discovery) + **Topical Map** + **Relationship** (Type 2 UI). Not KI workspace / `cluster_key` |
 | **SERP Intelligence** | Snapshot / intent evidence / content gaps — site-scoped; cluster-validation path retired |
 | **GSC Intelligence** | Search Analytics facts, mappings, opportunities — CommandBus ingest; live Google Analytics adapter out of scope for handlers; query×page competition signals (`possible_cannibalization`) are GSC evidence only |
 | **Performance Hub** | Legacy GSC snapshot KPI + SERP rank tracker UI; additive GSC Intelligence overlay |
@@ -33,13 +35,15 @@ Panel prefix: `/seo/{connection_hash}/`
 | `keywords` | Keyword Dictionary (`ListKeywords`) |
 | `keywords/focus` | Focus keywords (`ListFocusKeywords`) |
 | `keywords/anchor-audit` | Broken / weak link triage (`AnchorTextAuditWorkspace`) |
+| `keywords/topical-map` | Site Topical Map (`KeywordTopicalMap`) — Keyword MCP Type 1 consumer |
+| `keywords/relationships/{keyword}` | One-keyword Relationship graph (`KeywordRelationshipView`) — Keyword MCP Type 2 UI (**CLOSED — v1**) |
 | `keywords/ai-discovery` | `AiKeywordDiscovery` — **hidden** from Keywords sidebar (`shouldRegisterNavigation = false`) |
 | `settings/api/google-search-console/{id}/edit` | GSC master connection edit |
 | `seo/oauth/google-search-console/callback` | GSC OAuth callback (global) |
 
-**Keywords nav (SoT):** Dictionary \| Focus \| Anchor Audit — `KeywordResource::getNavigationItems()` + `HasKeywordWorkspaceNavigation::getKeywordWorkspaceNavItems()`.
+**Keywords nav (SoT):** Dictionary \| Focus \| Anchor Audit (+ Topical Map / Relationship entry points on Keyword Resource) — `KeywordResource::getNavigationItems()` + `HasKeywordWorkspaceNavigation::getKeywordWorkspaceNavItems()`.
 
-Legacy redirects: `keywords/workspace-3` → AI Discovery. **Removed (2026-09-03):** `keywords/cannibalization`. **Removed (2026-09-17):** `keywords/clusters` / Topic detail, `keyword-intelligence` / `keyword-intelligence/{workspace_ref}`, KI workspace pages (`ListKeywordWorkspaces`, `ViewKeywordWorkspace`, `KeywordTopicClusters*`, `KeywordWorkspaceTwo/Three`).
+Legacy redirects: `keywords/workspace-3` → AI Discovery. **Removed (2026-09-03):** `keywords/cannibalization`. **Removed (2026-09-17):** `keywords/clusters` / KI Topic detail, `keyword-intelligence` / `keyword-intelligence/{workspace_ref}`, KI workspace pages (`ListKeywordWorkspaces`, `ViewKeywordWorkspace`, `KeywordTopicClusters*`, `KeywordWorkspaceTwo/Three`).
 
 Gates: Audit via `ArticleResource::canViewAny()`; Hub / planner+ via `SeoAccessControl::canAccessPlannerFeatures()` (+ `SeoPlannerPermissionMiddleware`).
 
@@ -59,6 +63,7 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / planner+ via `SeoAccessC
 | Provider registry | `SeoProviderRegistry` + `SeoProviderCapabilityResolver` |
 | Rank groups | `SeoRankKeywordGroupService` + `KeywordRankCheckService` |
 | Keyword Dictionary / Focus / Anchor | `KeywordResource` + pages above; flat inventory `search-foundation` `Keyword` |
+| Topical Map / Relationship | `KeywordTopicalMap`, `KeywordRelationshipView` — Landscape Type 1 / Relationship Type 2 via gateways (see [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md)) |
 | Keywords language filter | Dictionary/Focus language scoping (site primary default) |
 | Link triage (anchor-audit) | `AnchorTextAuditWorkspace` — `wp_post_id` via `wordpressLink`, not `articles.wp_post_id` |
 | Vocabulary Suggest staging | `VocabularySuggestStagingQuery` — `TYPE_SUGGEST` + `ai_generated` (not Dictionary inventory) |
@@ -88,8 +93,9 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / planner+ via `SeoAccessC
 | Rule violations | `article_meta.seo_rule_violations` (+ denormalized `articles.seo_score`) | Client-only score without persist job |
 | Skip audit | `article_meta.skip_seo_audit=1` | WP demote / trash |
 | **Keyword Dictionary** | Flat `keywords` inventory (phrase + type + site meta) | Legacy `keywords.parent_id` hierarchy (dropped 2026-08-27); **not** a grouping tree |
-| **Topics / `cluster_key` / DNA** | **Retired** — tables dropped 2026-09-17 (see § Retirement) | Live cluster SSOT / Focus→Topic invariant |
-| Planning DNA (CP only) | Audit Notes note snapshots (`AuditNoteDnaNormalizer` + `DnaPlacement` before\|after) | Live KW DNA tables |
+| **KI Topics / `cluster_key` / KI DNA** | **Retired** — KI tables dropped 2026-09-17 (see § Retirement) | Live KI cluster SSOT |
+| **Topic Core** (site-scoped) | `seo_topics` / `seo_topic_keywords` / `seo_topic_keyword_dna` — see addons `TOPIC_CORE.md`; backs Keyword MCP Type 1+2 | KI `cluster_key` / workspace Topics |
+| Planning DNA (CP only) | Audit Notes note snapshots (`AuditNoteDnaNormalizer` + `DnaPlacement` before\|after) | Live KW DNA tables (KI era) |
 | GSC credentials | `seo_gsc_master_connections` (mysql) | Duplicating OAuth into `omi_seo_ai` |
 | GSC facts | `seo_gsc_daily_metrics` etc. (`omi_seo_ai`) | Legacy SiteMeta snapshot |
 | Hub legacy KPI | SiteMeta `gsc_query_snapshot` | GSC Intelligence tables (separate stack) |
@@ -101,7 +107,7 @@ Migration: `search-intelligence/.../2026_09_17_100000_drop_legacy_keyword_worksp
 
 Includes: `seo_keyword_workspaces`, KI `seo_keywords` / clusters / topics / topical map versions / analysis ops / relationships / article mappings / project conversion links, `seo_serp_cluster_evidence`, MCP topic groups/members, `seo_keyword_dna`, `seo_topic_cluster_*`, `seo_keyword_classifications`. Soft FKs dropped from SERP/GSC mapping rows (`workspace_id` / `cluster_id` / `topic_id` where applicable). Ownership map: `DB_OWNERSHIP_MAP.json` — `search-intelligence` no longer owns KI workspaces.
 
-Commit intent: wipe derived state so a **future** per-site Topic can rebuild from source facts — **not implemented yet**. Site MCP topical profile currently returns empty (`source: none`).
+Commit intent: wipe **KI** derived state. **Topic Core** (separate tables) later became the live site-scoped Topic SSOT for Keyword Landscape / Relationship — see addons `TOPIC_CORE.md` and [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md). Site MCP draft `resolveTopicalProfile` remains a separate Knowledge Profile concern (not Keyword Landscape).
 
 ## 5. Read path
 
@@ -116,7 +122,9 @@ Commit intent: wipe derived state so a **future** per-site Topic can rebuild fro
 ### Keyword / SERP / GSC
 
 - Filament / Agent / MCP reads → site-scoped services + public refs where still advertised.
-- Keywords module tabs: **Dictionary \| Focus \| Anchor Audit**. AI Discovery remains a route but is not in the sidebar.
+- Keywords module tabs: **Dictionary \| Focus \| Anchor Audit**. Topical Map + Relationship are Keyword Resource pages (not KI workspace). AI Discovery remains a route but is not in the sidebar.
+- **Keyword MCP Type 2 (CLOSED — v1):** Relationship UI uses `KeywordRelationshipGateway` only; schema `keyword.relationship.v1`; on-demand; **does not** persist `seo_mcp_source_snapshots`. Vite entry `addons/search-intelligence/resources/js/keyword-relationship-chart.js`. Deferred debt: `bugs/keyword-mcp-type-2-deferred.md`.
+- **Keyword MCP Type 1:** Landscape via `KeywordLandscapeGateway` — approved consumers only (SEO Audit, Prompt Generator, Keywords / Topical Map). Do not broaden.
 - **Vocabulary Suggest staging:** `VocabularySuggestStagingQuery` — Planner Idea Candidates consume this staging only (see [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) § Idea Candidates). **GSC MCP / Social Top 10 do not feed Idea Suggest.**
 - Nav WP-style: `SeoUserNavigation` + `SeoPanelRoutes` (module top-level groups; active helpers avoid path wildcards). Stale helper `isKeywordsClustersNav()` may still check retired paths — live helpers: `isKeywordsModule`, `isKeywordsDictionaryNav`, `isKeywordsFocusNav`, `isKeywordsBrokenLinksNav`.
 - Domain context: Global SEO bar / Keywords must follow GET `site_id` via `domainContextStore`.
@@ -154,6 +162,8 @@ Dictionary / Focus mutations stay on Keyword Resource + shared assign drawer. **
 | Family | Status |
 |--------|--------|
 | `keyword_intelligence.*` | **Retired** from Agent skill catalog + MCP `ContentProjectMcpToolCatalog` + CapabilityRegistry write/read caps |
+| `keyword.relationship` | **CLOSED — v1** — Keyword MCP Type 2; schema `keyword.relationship.v1`; on-demand; no snapshot writes. SoT: [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md) |
+| Keyword Landscape Type 1 | `KeywordLandscapeGateway` / `keywords.mcp.v2` — **not** a generic MCP API; consumers: SEO Audit, Prompt Generator, Keywords / Topical Map only |
 | `serp_intelligence.*` | Collect/import/list gaps (site-scoped); validate_cluster orphaned |
 | `gsc_intelligence.*` | List/get properties, sync runs, mappings, aggregates, opportunities; write import/sync/detect/cancel (MCP catalog: **reads**; app CommandBus writes) |
 
@@ -240,10 +250,13 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI. Retired: `Recluster
 
 ## 16. Related documents
 
+- [KEYWORD_MCP.md](../contracts/KEYWORD_MCP.md) — Keyword MCP Type 1 + Type 2 (**CLOSED — v1**)
+- [bugs/keyword-mcp-type-2-deferred.md](../../bugs/keyword-mcp-type-2-deferred.md) — Type 2 deferred debt (not v1 blockers)
+- Sibling addons [TOPIC_CORE.md](../../../omnichannel-addons/docs/modules/TOPIC_CORE.md) — site-scoped Topic membership / DNA
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — scoring client + save triggers score job
 - [CONTENT_PROJECTS.md](CONTENT_PROJECTS.md) — assign / Audit Notes DNA / Site Planning
 - [CONTENT_PROJECT_ASSIGN_UI_2026_08.md](../architecture/CONTENT_PROJECT_ASSIGN_UI_2026_08.md) — 2026-08 assign consolidation
-- [SITE_MCP_AND_DOMAINS.md](SITE_MCP_AND_DOMAINS.md) — domain sync feeding articles; topical profile currently empty
+- [SITE_MCP_AND_DOMAINS.md](SITE_MCP_AND_DOMAINS.md) — domain sync feeding articles; Site MCP draft topical profile ≠ Keyword Landscape
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
 - [SEEDING.md](SEEDING.md) — Seeding Topic / Link Intelligence (separate from Keywords)
 - Archive detail: `docs/archive/audit-keywords/*`, `docs/archive/maps/MAP_SEO_AUDIT.md`
@@ -252,9 +265,14 @@ Worker must listen `seo` for rank jobs. No Queue Manager UI. Retired: `Recluster
 
 seo-ops Keywords Cannibalization UI + KI `c1`/`c2` issue pipeline **removed**. Multi-article same/near keyword is accepted; quality via SEO score / Focus Keyword / Focus Article / internal links / GSC diagnostics. GSC `possible_cannibalization` (query×page competition) remains as planning evidence only — not a Keywords nav module.
 
-### Quick ref — retired KI workspace / Topics (2026-09-17)
+### Quick ref — retired KI workspace (2026-09-17) vs Topic Core
 
-Keywords = Dictionary + Focus + Anchor Audit. KI workspace, Topics/`cluster_key`, DNA tables, Agent/MCP `keyword_intelligence.*`, topical convert → CP: **gone**. Future Topic rebuild is a separate product task.
+KI workspace, Topics/`cluster_key`, KI DNA tables, Agent/MCP `keyword_intelligence.*`, topical convert → CP: **gone**.  
+**Topic Core** (site-scoped `seo_topics` / membership / DNA) is the live replacement for landscape + relationship consumers — see addons `TOPIC_CORE.md` and [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md).
+
+### Quick ref — Keyword MCP Type 2 (CLOSED — v1)
+
+Capability `keyword.relationship` / schema `keyword.relationship.v1`. On-demand; no snapshot writes; Focus-Article internal-link neighborhood; locks = `source_locked` + `membership_locked` (not conflated `locked`). MySQL disposable proof tests exist but were **SKIPPED** (env not configured) — do not claim DB proof. Deferred items: `bugs/keyword-mcp-type-2-deferred.md`.
 
 ### Quick ref — audit low score
 

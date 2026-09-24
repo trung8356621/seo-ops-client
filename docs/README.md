@@ -90,6 +90,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Contract | Doc |
 |----------|-----|
 | Agent / MCP | [AGENT_AND_MCP_CONTRACTS.md](contracts/AGENT_AND_MCP_CONTRACTS.md) |
+| Keyword MCP (Landscape + Relationship) | [KEYWORD_MCP.md](contracts/KEYWORD_MCP.md) — Type 2 **CLOSED — v1** |
 | API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization |
 | Queue / Scheduler / Idempotency | [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md) |
 | Extension / Registry | [EXTENSION_AND_REGISTRY_CONTRACTS.md](contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md) |
