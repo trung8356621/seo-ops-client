@@ -6,6 +6,8 @@
         "build": "vite build",
         "dev:seeding": "npm --prefix addons/seeding run dev",
         "build:seeding": "npm --prefix addons/seeding run build",
+        "dev:topical-map": "npm --prefix addons/search-intelligence run dev",
+        "build:topical-map": "npm --prefix addons/search-intelligence run build",
         "check:editor-cycles": "node addons/content/scripts/check-editor-cycles.cjs",
         "check:editor-widget-locks": "node addons/content/scripts/check-editor-widget-locks.cjs",
         "widget-lock": "node addons/content/scripts/widget-lock.cjs"

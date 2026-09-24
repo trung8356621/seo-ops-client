@@ -1,5 +1,5 @@
 ---
-description: Chat Workspace is the only communication UI (Agent + Group + Ticket)
+description: Chat Workspace (Agent + Group) + global Support Ticket header
 globs:
   - "**/chat/**"
   - "**/TeamMessage*"
@@ -9,6 +9,8 @@ globs:
   - "**/CHAT_WORKSPACE.md"
   - "**/chat-workspace*"
   - "**/chat-mode-launcher*"
+  - "**/support-ticket*"
+  - "**/headerTicketComposer*"
 alwaysApply: false
 ---
 
@@ -16,13 +18,11 @@ alwaysApply: false
 
 Canonical: `docs/modules/CHAT_WORKSPACE.md`
 
-1. ONE entry: `/seo/{connection_hash}/chat`
-2. Exactly 3 modes: Agent | Group Chat | Support Ticket
-3. Mode switch = round launcher (`.seo-global-chat__launcher`) — no horizontal tabs
-4. Legacy `/agent` = redirect only (`tab=agent` + preserve deep links)
-5. Group chat = JS client + JSON API; no Livewire poll/render
-6. Outside Chat: light round launcher + unread-count only (~30s, single-inflight)
-7. Group poll ≥ 15s default; single-inflight scheduler
-8. Support tickets offline-safe (local MySQL first); attach via `TeamChatAttachmentService`
-9. No Telegram/Zalo/WebSocket/generic messaging framework
-10. Reuse Chat Workspace — never add a parallel chat popup/page (`ChatModeV2`, etc.)
+1. Chat entry: `/seo/{connection_hash}/chat` for Agent + Group Chat
+2. Support Ticket is **global client** topbar feature (`ClientCoreServiceProvider`) — not SEO-owned
+3. Canonical API: `POST /api/support-tickets` → core DB `support_tickets`
+4. Floating global launcher hidden on normal pages
+5. Admin `/admin/support-tickets` is temporary **read-only** inspection
+6. No ops-server delivery / two-way reply in this phase
+7. Group chat = JS client + JSON API; no Livewire poll/render
+8. No Telegram/Zalo/WebSocket/generic messaging framework

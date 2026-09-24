@@ -24,6 +24,13 @@ Route::get('/seo/{connection_hash}/login', static function (): \Illuminate\Http\
 Route::middleware(['web', 'auth'])->group(function (): void {
     Route::get('/workspace', \App\Http\Controllers\WorkspaceHubController::class)
         ->name('workspace.hub');
+
+    Route::prefix('api/support-tickets')->group(function (): void {
+        Route::get('/', [\App\Http\Controllers\SupportTicketController::class, 'index'])
+            ->name('support-tickets.index');
+        Route::post('/', [\App\Http\Controllers\SupportTicketController::class, 'store'])
+            ->name('support-tickets.store');
+    });
 });
 
 Route::get('/client-locked', function (ClientLockGuard $lockGuard) {

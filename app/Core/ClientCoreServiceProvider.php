@@ -82,6 +82,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->loadOwnedMigrations();
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
+        $this->registerSupportTicketHeaderHook();
 
         if ($this->app->bound(SettingsSectionRegistry::class)) {
             $this->app->make(CoreSettingsBootstrap::class)
@@ -109,6 +110,35 @@ final class ClientCoreServiceProvider extends ServiceProvider
             static function (): HtmlString {
                 return new HtmlString(
                     view('filament.hooks.service-topbar-router')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * Global Support Ticket composer — one registration for Admin / SEO / Seeding.
+     */
+    private function registerSupportTicketHeaderHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_BEFORE,
+            static function (): HtmlString {
+                if (! auth()->check()) {
+                    return new HtmlString('');
+                }
+
+                try {
+                    $panelId = \Filament\Facades\Filament::getCurrentPanel()?->getId();
+                } catch (\Throwable) {
+                    return new HtmlString('');
+                }
+
+                if (! is_string($panelId) || ! in_array($panelId, ServiceTopbarRouter::PANEL_IDS, true)) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.support-ticket-header')->render()
                 );
             },
         );
