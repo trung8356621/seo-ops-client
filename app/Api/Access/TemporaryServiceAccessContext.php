@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Api\Mcp;
+namespace App\Api\Access;
 
 use App\Models\Service;
 use App\Services\ServiceIdentity;
@@ -10,10 +10,10 @@ use DateTimeImmutable;
 use DateTimeInterface;
 
 /**
- * Request-scoped temporary MCP capability (site-bound).
- * Set by ResolveTemporaryMcpAccess — not ServiceApiContext.
+ * Request-scoped temporary Service capability (site-bound).
+ * Set by ResolveTemporaryServiceAccess — not ServiceApiContext.
  */
-final class TemporaryMcpAccessContext
+final class TemporaryServiceAccessContext
 {
     /**
      * @param  list<string>  $scopes

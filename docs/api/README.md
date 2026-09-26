@@ -4,8 +4,10 @@ HTTP-facing contracts for SEO Ops client Service APIs.
 
 | Doc | Status |
 |-----|--------|
-| [SEO_SERVICE_API.md](SEO_SERVICE_API.md) | **Implemented** — SEO MCP discovery + selective read (`mcp:read`) + temporary MCP access |
-| [CONTENT_PROJECT_SERVICE_API.md](CONTENT_PROJECT_SERVICE_API.md) | **Implemented** — Shared Planning Draft intake write (`content-projects:draft:write`) |
+| [SEO_ACCESS_API.md](SEO_ACCESS_API.md) | **Canonical** — unified SEO Access read (`seo:read`) + temporary site-bound access |
+| [CONTENT_PROJECT_SERVICE_API.md](CONTENT_PROJECT_SERVICE_API.md) | **Canonical** — Shared Planning Draft intake write (`content-projects:draft:write`) |
+| [SEO_SERVICE_API.md](SEO_SERVICE_API.md) | **Retired** — former MCP HTTP surface; see SEO Access |
 
-Application/MCP semantics live under `docs/modules/SEO_MCP_ROUTER.md` and `docs/contracts/CONTEXT_GATEWAYS.md` — not here.  
-Content Project domain semantics: `docs/modules/CONTENT_PROJECTS.md`. Draft intake HTTP details stay in `CONTENT_PROJECT_SERVICE_API.md` only.
+External Agent read contract: `SEO_ACCESS_API.md`.  
+Internal MCP/Context composition: `docs/modules/SEO_MCP_ROUTER.md` + `docs/contracts/CONTEXT_GATEWAYS.md`.  
+Content Project domain: `docs/modules/CONTENT_PROJECTS.md`.

@@ -11,8 +11,9 @@ Canonical SoT for SEO **domain context** architecture: MCP-independent slices, a
 
 **Not implemented here:** unified AI Context Planner inside Registry, AI tool calling, new Agent, new MCP sources, Planning Context.
 
-AI discovery/selective read over this registry: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
-HTTP wire format: [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md) (**implemented**).
+AI discovery/selective read over this registry (internal): [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
+Canonical external HTTP read: [`SEO_ACCESS_API.md`](../api/SEO_ACCESS_API.md).  
+Retired MCP HTTP pointer: [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md).
 
 ## Architecture
 
@@ -30,9 +31,9 @@ Canonical Formatter
 ────────────────────────────
 internal consumers
 Monthly MCP compatibility
-MCP Router (discovery + selective parts) — see SEO_MCP_ROUTER.md
-future HTTP API (docs/api/**)
-future AI (consumes MCP Router / Context — not a planner inside Registry)
+MCP Router (discovery + selective parts) — see SEO_MCP_ROUTER.md (internal)
+SEO Access API (docs/api/SEO_ACCESS_API.md) — curated external Agent reads
+future AI (consumes SEO Access — not a planner inside Registry)
 ```
 
 ### Dependency rules
@@ -77,7 +78,6 @@ AI → will consume Context
 | Key | Views | Required params | Optional params | Period aware |
 |-----|-------|-----------------|-----------------|--------------|
 | `site.health` | summary, standard, detail | — | — | no |
-| `site.indexability` | summary, standard, detail | — | — | no |
 | `site.sync` | summary, standard, detail | — | — | no |
 | `content.inventory` | summary, standard, detail | — | — | no |
 | `content.distribution` | summary, standard, detail | — | — | no |
@@ -89,6 +89,8 @@ AI → will consume Context
 | `gsc.performance` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
 | `gsc.opportunities` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
 | `gsc.cannibalization` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
+
+`site.indexability` is **excluded** from the Context Registry / MCP catalog: it reflected local configured/workflow indexability (`is_indexable`), not Google index coverage, and must not be treated as AI truth. Human Site Intelligence UI may still use that internal signal via `SiteSeoHealthReader`.
 
 `keyword_id` satisfies `keyword_ref` requirement as a declared optional alias on `keywords.relationship` only.  
 `sections` on `keywords.relationship` is an allowlisted projection filter (`keyword`, `topics`, `focus_articles`, `related_keywords`, `internal_links`, `gsc`, `meta`) — not a new Context slice family.  
@@ -116,28 +118,27 @@ Adapters own `MonthlyMcpSourcePayload`. Do not add per-slice MCP families.
 
 ## HTTP Service API adapter
 
-Preferred stack (live under [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md)):
+Preferred stack (live under [`SEO_ACCESS_API.md`](../api/SEO_ACCESS_API.md)):
 
 ```text
-HTTP (docs/api/SEO_SERVICE_API.md)
- → authentication (service_api_credentials, scope mcp:read)
- → tenant/site authorization (site_id existence)
- → McpRouterReader / ContextRegistry
- → ContextFormatter
- → JSON
+HTTP (docs/api/SEO_ACCESS_API.md)
+ → authentication (service_api_credentials, scope seo:read) OR temporary Access token
+ → site selection / site-bound temporary token
+ → curated SEO Access composers (gateways / Context under the hood)
+ → JSON resources: site, content, keywords, gsc
 ```
 
-The API must not bypass Registry/provider validation, must not query domain models directly (except site existence), must not duplicate projection/formatter, and must not expose Monthly MCP payloads as the generic API.
+The public API must not expose every Context slice, must not require router/part/view vocabulary, and must not expose Monthly MCP payloads as the generic API.
 
 Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md).  
-MCP router SoT: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
+MCP router SoT (internal): [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
 Context capability SoT: this document.
 
 ## HTTP API handoff
 
 ### READY now
 
-- Strict slice registry (13 keys)  
+- Strict slice registry (12 keys)  
 - Validated views (fail-fast on explicit invalid)  
 - Validated parameters (slice-specific allowlist + aliases)  
 - Neutral DTO / `ContextSlice` results  

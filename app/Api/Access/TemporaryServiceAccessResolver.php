@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Api\Mcp;
+namespace App\Api\Access;
 
 use App\Models\Service;
 use App\Services\ServiceIdentity;
@@ -10,16 +10,16 @@ use DateTimeImmutable;
 use DateTimeInterface;
 
 /**
- * Resolve opaque temporary MCP tokens into TemporaryMcpAccessContext.
+ * Resolve opaque temporary Service access tokens into TemporaryServiceAccessContext.
  * Does not use AuthenticateServiceApi / permanent Bearer keys.
  */
-final class TemporaryMcpAccessResolver
+final class TemporaryServiceAccessResolver
 {
     public function __construct(
-        private readonly TemporaryMcpAccessManager $manager,
+        private readonly TemporaryServiceAccessManager $manager,
     ) {}
 
-    public function resolve(string $rawToken): ?TemporaryMcpAccessContext
+    public function resolve(string $rawToken): ?TemporaryServiceAccessContext
     {
         $rawToken = trim($rawToken);
         if ($rawToken === '') {
@@ -63,9 +63,9 @@ final class TemporaryMcpAccessResolver
             return null;
         }
 
-        $scopes = $payload['scopes'] ?? ['mcp:read'];
+        $scopes = $payload['scopes'] ?? [TemporaryServiceAccessManager::READ_SCOPE];
         if (! is_array($scopes)) {
-            $scopes = ['mcp:read'];
+            $scopes = [TemporaryServiceAccessManager::READ_SCOPE];
         }
         $normalizedScopes = [];
         foreach ($scopes as $scope) {
@@ -74,10 +74,10 @@ final class TemporaryMcpAccessResolver
             }
         }
         if ($normalizedScopes === []) {
-            $normalizedScopes = ['mcp:read'];
+            $normalizedScopes = [TemporaryServiceAccessManager::READ_SCOPE];
         }
 
-        return new TemporaryMcpAccessContext(
+        return new TemporaryServiceAccessContext(
             service: $service,
             siteId: $siteId,
             credentialId: $credentialId,

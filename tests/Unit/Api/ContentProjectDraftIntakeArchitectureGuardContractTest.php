@@ -39,6 +39,7 @@ final class ContentProjectDraftIntakeArchitectureGuardContractTest extends TestC
             self::assertStringNotContainsString('->service_key', $code);
             self::assertStringNotContainsString('SiteService', $code);
             self::assertStringNotContainsString('settings.api_key', $code);
+            self::assertStringNotContainsString('TemporaryServiceAccess', $code);
             self::assertStringNotContainsString('TemporaryMcpAccess', $code);
         }
 
@@ -52,9 +53,9 @@ final class ContentProjectDraftIntakeArchitectureGuardContractTest extends TestC
         self::assertStringNotContainsString('auth:sanctum', $routes);
     }
 
-    public function test_temporary_mcp_routes_do_not_include_draft_intake(): void
+    public function test_temporary_access_routes_do_not_include_draft_intake(): void
     {
-        $temp = base_path('addons/seo/routes/api-mcp-temporary.php');
+        $temp = base_path('addons/seo/routes/api-access-temporary.php');
         self::assertFileExists($temp);
         $src = (string) file_get_contents($temp);
         self::assertStringNotContainsString('draft/intake', $src);

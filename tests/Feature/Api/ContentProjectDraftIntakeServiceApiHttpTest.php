@@ -67,9 +67,9 @@ final class ContentProjectDraftIntakeServiceApiHttpTest extends TestCase
             'Authorization' => 'Bearer not-valid',
         ])->assertStatus(401);
 
-        $mcpOnly = app(ServiceApiCredentialManager::class)->create($this->seo, 'MCP', ['mcp:read']);
+        $seoOnly = app(ServiceApiCredentialManager::class)->create($this->seo, 'SEO', ['seo:read']);
         $this->postJson('/api/v1/services/seo/content-projects/draft/intake', $body, [
-            'Authorization' => 'Bearer '.$mcpOnly->rawKey,
+            'Authorization' => 'Bearer '.$seoOnly->rawKey,
         ])
             ->assertStatus(403)
             ->assertJsonPath('error.code', 'service_api_scope_denied');

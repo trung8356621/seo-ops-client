@@ -4,25 +4,25 @@
 > Owner: `seo` addon (`Services\Mcp`)  
 > Last verified: 2026-09-26  
 > Related: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md), [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md), [`AGENT_AND_MCP_CONTRACTS.md`](../contracts/AGENT_AND_MCP_CONTRACTS.md)  
-> HTTP/API: [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md) — live HTTP contract (`GET/POST …/mcp`)
+> HTTP/API: [`SEO_ACCESS_API.md`](../api/SEO_ACCESS_API.md) — **canonical external read**  
+> This document: **internal** MCP Router / Context parts composition only.
 
 ## Purpose
 
-AI-facing **discovery + selective read** layer on top of the canonical Context Registry.
+Internal **discovery + selective read** layer on top of the canonical Context Registry.
+
+**MCP Router / Context parts are internal composition details.**  
+The canonical external Agent read contract is the **SEO Access API** (`site` / `content` / `keywords` / `gsc`).
 
 ```text
-Chat + AI
-   ↓
-read MCP router manifest / README
-   ↓
-AI selects only the parts needed
+Internal consumers / Monthly MCP
    ↓
 McpRouterReader → ContextRegistry::format(...)
    ↓
 structured context returned
 ```
 
-**Not an AI planner.** The AI chooses routers/parts; the router validates and reads.
+**Not an AI planner.** Not the public HTTP Agent contract.
 
 ## Dependency rules
 
@@ -33,10 +33,10 @@ ContextSliceProvider
         ↓
 ContextRegistry          ← canonical slice registry (unchanged role)
         ↓
-MCP Router layer         ← this document
+MCP Router layer         ← this document (internal)
    ↙           ↘
-Monthly MCP    HTTP Service API (docs/api/SEO_SERVICE_API.md)
-adapter
+Monthly MCP    SEO Access API composers (docs/api/SEO_ACCESS_API.md)
+adapter        (curated public resources — not 1:1 router/parts)
 ```
 
 - MCP Router **must** call ContextRegistry (no Eloquent / Http:: / Agent / MonthlyMcp reverse dependency).
@@ -59,7 +59,7 @@ Part = **what** to load. View = **how much** detail.
 
 | Router | Parts | Context keys |
 |--------|-------|--------------|
-| `site` | `health`, `indexability`, `sync` | `site.health`, `site.indexability`, `site.sync` |
+| `site` | `health`, `sync` | `site.health`, `site.sync` |
 | `content` | `inventory`, `distribution` | `content.inventory`, `content.distribution` |
 | `seo` | `findings`, `internal_links` | `seo.findings`, `seo.internal_links` |
 | `publishing` | `status` | `publishing.status` |
@@ -67,6 +67,8 @@ Part = **what** to load. View = **how much** detail.
 | `gsc` | `performance`, `opportunities`, `cannibalization` | `gsc.performance`, `gsc.opportunities`, `gsc.cannibalization` |
 
 Only working registered Context capabilities are exposed.
+
+**Exclusion:** `site.indexability` is intentionally **not** an AI/MCP part. Local `seo_article_profiles.is_indexable` is human/workflow state and must not be read as Google index coverage. Future trustworthy coverage (e.g. Search Console) would use a different capability name such as `gsc.index_coverage`.
 
 ## Manifest schema
 

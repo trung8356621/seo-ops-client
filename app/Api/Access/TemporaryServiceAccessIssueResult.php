@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace App\Api\Mcp;
+namespace App\Api\Access;
 
 /**
- * Result of minting a temporary MCP access token (raw returned once).
+ * Result of minting a temporary Service access token (raw returned once).
  */
-final class TemporaryMcpAccessIssueResult
+final class TemporaryServiceAccessIssueResult
 {
     public function __construct(
         public readonly string $rawToken,

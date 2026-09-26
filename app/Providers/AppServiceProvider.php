@@ -26,8 +26,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Api\Middleware\AuthenticateServiceApi;
-use App\Api\Middleware\ResolveTemporaryMcpAccess;
-use App\Api\Mcp\TemporaryMcpAccessContext;
+use App\Api\Middleware\ResolveTemporaryServiceAccess;
+use App\Api\Access\TemporaryServiceAccessContext;
 use App\Api\Services\ServiceApiContext;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Laravel\Facades\Image as InterventionImage;
@@ -108,7 +108,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerClientLockQueueGuard();
         $this->registerClientLockHttpMiddleware();
         $this->registerServiceApiRateLimiter();
-        $this->registerTemporaryMcpRateLimiter();
+        $this->registerTemporaryAccessRateLimiter();
     }
 
     private function registerServiceApiRateLimiter(): void
@@ -125,20 +125,20 @@ class AppServiceProvider extends ServiceProvider
         });
     }
 
-    private function registerTemporaryMcpRateLimiter(): void
+    private function registerTemporaryAccessRateLimiter(): void
     {
-        RateLimiter::for('temporary-mcp', function (Request $request) {
-            $context = $request->attributes->get(ResolveTemporaryMcpAccess::REQUEST_CONTEXT_KEY);
-            if ($context instanceof TemporaryMcpAccessContext) {
-                return Limit::perMinute(60)->by('tmp-mcp:'.$context->lookupId);
+        RateLimiter::for('temporary-access', function (Request $request) {
+            $context = $request->attributes->get(ResolveTemporaryServiceAccess::REQUEST_CONTEXT_KEY);
+            if ($context instanceof TemporaryServiceAccessContext) {
+                return Limit::perMinute(60)->by('tmp-access:'.$context->lookupId);
             }
 
             $token = (string) $request->route('token', '');
-            $lookup = preg_match('/^mcp_tmp_([a-f0-9]{8})_/i', $token, $m) === 1
+            $lookup = preg_match('/^access_tmp_([a-f0-9]{8})_/i', $token, $m) === 1
                 ? strtolower($m[1])
                 : 'unknown';
 
-            return Limit::perMinute(30)->by('tmp-mcp-ip:'.$request->ip().':'.$lookup);
+            return Limit::perMinute(30)->by('tmp-access-ip:'.$request->ip().':'.$lookup);
         });
     }
 

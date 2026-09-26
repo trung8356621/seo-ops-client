@@ -195,10 +195,12 @@ final class ServiceConfigure extends Page implements HasForms
                     TagsInput::make('scopes')
                         ->label(__('site-service.api_access_scopes'))
                         ->placeholder('service:read')
-                        ->helperText(__('site-service.api_access_scopes_helper'))
-                        ->default(['service:read']),
+                        ->helperText(fn (): string => $this->apiCredentialScopesHelper())
+                        ->suggestions(fn (): array => $this->suggestedApiCredentialScopes())
+                        ->default(fn (): array => $this->defaultApiCredentialScopes()),
                     DateTimePicker::make('expires_at')
                         ->label(__('site-service.api_access_expires'))
+                        ->helperText(__('site-service.api_access_expires_helper'))
                         ->native(false)
                         ->seconds(false),
                 ])
@@ -206,6 +208,50 @@ final class ServiceConfigure extends Page implements HasForms
                     $this->createApiCredential($data);
                 }),
         ];
+    }
+
+    /**
+     * New-credential form defaults only — does not mutate existing rows.
+     *
+     * @return list<string>
+     */
+    public function defaultApiCredentialScopes(): array
+    {
+        if ($this->service === ServiceIdentity::PUBLIC_SEO) {
+            return [
+                'service:read',
+                'seo:read',
+                'content-projects:draft:write',
+            ];
+        }
+
+        return ['service:read'];
+    }
+
+    /**
+     * Suggested TagsInput options (not auto-granted).
+     *
+     * @return list<string>
+     */
+    public function suggestedApiCredentialScopes(): array
+    {
+        if ($this->service === ServiceIdentity::PUBLIC_SEO) {
+            return [
+                'service:read',
+                'seo:read',
+                'content-projects:draft:write',
+                '*',
+            ];
+        }
+
+        return ['service:read', '*'];
+    }
+
+    public function apiCredentialScopesHelper(): string
+    {
+        return $this->service === ServiceIdentity::PUBLIC_SEO
+            ? __('site-service.api_access_scopes_helper_seo')
+            : __('site-service.api_access_scopes_helper');
     }
 
     /**

@@ -84,6 +84,8 @@ Canonical auth plane for future Agent / integrations / public service APIs.
 | Context | `App\Api\Services\ServiceApiContext` |
 | Routes | `routes/api-services.php` → `/api/v1/services/{service}/…` |
 | Probe | `GET /api/v1/services/{service}/status` (scope `service:read`) |
+| Expiry | `expires_at` nullable — Admin empty = no expiration |
+| SEO recommended scopes | `service:read`, `seo:read`, `content-projects:draft:write` (not default `*`) |
 
 **Invariant:** `service_key` (ops-server provisioning) ≠ Service API key. Do not authenticate Service API with `service_key` or legacy `SiteService.settings.api_key`.
 

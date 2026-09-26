@@ -5,7 +5,7 @@
 > Last verified: 2026-09-26  
 > Domain SoT: [`CONTENT_PROJECTS.md`](../modules/CONTENT_PROJECTS.md), addons `CONTENT_PROJECT_ARCHITECTURE.md`  
 > Auth SoT: [`API_AND_AUTHORIZATION.md`](../contracts/API_AND_AUTHORIZATION.md)  
-> Related (separate contract): [`SEO_SERVICE_API.md`](SEO_SERVICE_API.md) — MCP **read** only
+> Related (separate contract): [`SEO_ACCESS_API.md`](SEO_ACCESS_API.md) — SEO **read** only
 
 ## Purpose
 
@@ -19,14 +19,14 @@ Meaning: submit planning proposals into the canonical **Shared Planning Draft**,
 
 The Agent does **not** control execution project creation, assignment workflows beyond Draft intake, generation, review, approval, scheduling, publish, retry, or archive.
 
-## Separation from SEO MCP Service API
+## Separation from SEO Access API
 
 | Concern | Doc |
 |---------|-----|
-| MCP read / temporary capability URLs | `SEO_SERVICE_API.md` |
+| SEO Access read / temporary capability URLs | `SEO_ACCESS_API.md` |
 | Content Project Draft planning **write** | **This file** |
 
-Temporary MCP tokens (`mcp:read`) remain **read-only**. They must never call this write endpoint.
+Temporary Access tokens (`seo:read` binding) remain **read-only**. They must never call this write endpoint.
 
 ## Authentication
 
@@ -38,9 +38,9 @@ Temporary MCP tokens (`mcp:read`) remain **read-only**. They must never call thi
 | Wildcard | Scope `*` allows Draft intake |
 | Rate limit | `throttle:service-api` |
 | Service gate | `EnsureSeoServiceApi` (SEO Service only) |
-| Not used | Sanctum, session, `services.service_key`, `SiteService.settings.api_key`, temporary MCP hash |
+| Not used | Sanctum, session, `services.service_key`, `SiteService.settings.api_key`, temporary Access token |
 
-Insufficient scopes (`mcp:read`, `service:read` alone) → `403` `service_api_scope_denied`.
+Insufficient scopes (`seo:read`, `service:read` alone) → `403` `service_api_scope_denied`.
 
 ## Single endpoint
 
@@ -194,14 +194,14 @@ Do **not** expose via Service API:
 - schedule / auto-schedule / publish-now
 - retry / skip / cancel publish
 - archive / restore
-- Agent execute / temporary MCP write
+- Agent execute / temporary Access write
 
 Legacy `/api/v1/content-projects/*` and `/api/v1/agent/*` remain unchanged and separate.
 
 ## Agent flow
 
 ```text
-Temporary MCP (mcp:read) — discover / selective read
+SEO Access (seo:read) — list sites / mint / read site·content·keywords·gsc
         ↓
 AI reasoning — propose content
         ↓

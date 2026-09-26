@@ -87,9 +87,13 @@ Core-owned table for **external/service API** callers (Agent, integrations, tool
 | Format | `svc_live_{lookupId}_{secret}` |
 | Persist | `key_prefix` + HMAC-SHA256 `key_hash` only |
 | Raw key | Returned once at create/rotate; never stored/logged |
+| Expiry | `expires_at` nullable — empty Admin form → `NULL` (no expiration) |
 | Auth | `Authorization: Bearer …` → `AuthenticateServiceApi` → `ServiceApiContext` |
 | Isolation | Credential `service_id` must match route `{service}` |
-| Scopes | Flat string list (`service:read`, `*`, …) via `RequireServiceApiScope` |
+| Scopes | Flat string list (`service:read`, `seo:read`, `content-projects:draft:write`, `*`, …) via `RequireServiceApiScope` |
+| SEO create defaults | `service:read` + `seo:read` + `content-projects:draft:write` (not `*`) |
+| Other Services | Preserve service-local defaults (typically `service:read`) |
+| Wildcard `*` | Allowed for testing/admin; not the recommended production default |
 | Lifecycle | create / revoke / rotate — independent of `services.apply` |
 
 Foundation probe only (business APIs later):
@@ -99,6 +103,8 @@ GET /api/v1/services/{service}/status
 ```
 
 Requires scope `service:read`. Admin management: `/admin/services/{service}` → **API Access** section.
+
+Permanent key stays on the server/runtime. Temporary SEO Access is a short-lived (15m), site-bound, read-only URL minted with `seo:read` — see [`SEO_ACCESS_API.md`](../api/SEO_ACCESS_API.md).
 
 ## E. Service config
 

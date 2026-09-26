@@ -92,6 +92,9 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
         self::assertStringNotContainsString('$cred->service_key', $view);
 
         self::assertStringContainsString('revealedApiKey', $page);
+        self::assertStringContainsString('defaultApiCredentialScopes', $page);
+        self::assertStringContainsString('api_access_expires_helper', $page);
+        self::assertStringContainsString('content-projects:draft:write', $page);
         self::assertStringNotContainsString('$cred->key_hash', $page);
         self::assertStringNotContainsString('->service_key', $page);
         self::assertDoesNotMatchRegularExpression('/\becho\b.*key_hash/', $page);

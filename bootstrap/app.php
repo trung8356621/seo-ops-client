@@ -29,10 +29,10 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/v1/services')
                 ->group(base_path('routes/api-services.php'));
 
-            $temporaryMcpRoutes = base_path('addons/seo/routes/api-mcp-temporary.php');
-            if (is_file($temporaryMcpRoutes)) {
-                Route::prefix('api/v1/mcp/access')
-                    ->group($temporaryMcpRoutes);
+            $temporaryAccessRoutes = base_path('addons/seo/routes/api-access-temporary.php');
+            if (is_file($temporaryAccessRoutes)) {
+                Route::prefix('api/v1/access')
+                    ->group($temporaryAccessRoutes);
             }
         },
     )
@@ -59,7 +59,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'seo.planner' => \App\Addons\SeoContentAi\Http\Middleware\SeoPlannerPermissionMiddleware::class,
             'service.api' => \App\Api\Middleware\AuthenticateServiceApi::class,
             'service.api.scope' => \App\Api\Middleware\RequireServiceApiScope::class,
-            'mcp.temporary' => \App\Api\Middleware\ResolveTemporaryMcpAccess::class,
+            'service.access.temporary' => \App\Api\Middleware\ResolveTemporaryServiceAccess::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [
