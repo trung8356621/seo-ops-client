@@ -37,7 +37,8 @@ Prefix: `/seo/{connection_hash}/`
 | `domains/settings` | `DomainGlobalCtaSettings` |
 | `domains/{record}/info` | Redirect → edit |
 | `seo/team` | `SeoTeam` (manager) |
-| `social` | `SocialProfilesPage` — per-site Social Profile CRUD (nav often via Performance Hub link; `shouldRegisterNavigation` may be false) |
+
+**Retired:** `social` (`SocialProfilesPage`) — SEO Social Profile CRUD removed. Social accounts/reports live in **Seeding**.
 
 **Removed:** `domains/{record}/mcp` (`ViewDomainMcp`) — legacy raw Agent/MCP capability inspector; not replaced by a Context Inspector in this phase.
 
@@ -67,9 +68,9 @@ Widgets: All-domains list / projects / team productivity.
 | Org hierarchy | `User` + `UserHierarchyService` (core) |
 | Team UI | `Filament/Pages/SeoTeam` |
 | Team messages | `TeamMessageController` + SSE transport |
-| Social Profile (per site) | `social/` — `SocialProfile` + `SocialProfilesPage` (slug `social`) + `SocialProfileReadService` |
-| Article social evidence | `social/` — `SeoArticleSocialLink` + `ArticleSocialLinkService` + `ArticleSocialLinkController` (API) |
 | Panel nav (WP-style modules) | `Seo\Support\SeoUserNavigation` + `SeoPanelRoutes` |
+| Social share chrome (stateless) | `social/` — `SocialShareUrlResolver` + `SocialShareActionsPresenter` (GSC drawer share intents; no profile CRUD) |
+| Social accounts / share reports | `seeding/` — `seeding_social_accounts`, Website Share, Seeding Reports |
 
 ## 4. Data ownership
 
@@ -81,21 +82,12 @@ Widgets: All-domains list / projects / team productivity.
 | Main domain | user/site meta `seo_is_main` | per-user primary site |
 | Sync progress | Incremental/Metadata/Keyword resync caches | state machines + stale TTLs |
 | Taxonomy parents | Article/term meta `wp_parent_id` including `"0"` | Site MCP fail-closed if wiped |
-| Social Profile | `social_profiles` (site-scoped) | platform / display_name / profile_url / `is_active` — identity for manual share; **not** Electron auto-post |
-| Article social links | `seo_article_social_links` (article-scoped) | url / domain / source (`manual`\|`api`) / `recorded_at` — share evidence per article; unique `(article_id, url_hash)` |
 
 **Save Domain Settings** persists tone/CTA/links only — no keyword full-site HTML scrape, no Site Sync run (see SITE_SYNC).
 
-**Social Profile:** CRUD on `SocialProfilesPage`; read DTO via `SocialProfileReadService`. Used with Performance Hub **GSC Social Top 10** (`GscSocialTop10Builder` — deterministic from GSC MCP, no AI). Does **not** feed SEO Audit Idea Candidates / Vocabulary Suggest. Invariant: GSC MCP ≠ SEO Audit Idea Suggest ≠ Vocabulary Suggest.
+**Social ownership (2026-09-26):** SEO no longer owns Social Profiles or article social-link evidence. Tables `seo_social_profiles` / `seo_article_social_links` are retired. Seeding owns social accounts (`seeding_social_accounts`) and share reports. Index → Seeding handoff is **only** Core event `ArticleIndexStatusChanged` (Content must not import Seeding). Performance Hub **GSC Social Top 10** (`GscSocialTop10Builder`) remains deterministic from GSC MCP and uses share-action chrome — not profile CRUD. Invariant: GSC MCP ≠ SEO Audit Idea Suggest ≠ Vocabulary Suggest.
 
-**Article social links (2026-09-01):** Canonical storage moved from archive-item rows to `seo_article_social_links` (`social` addon). Migration `2026_09_01_140100_migrate_archive_social_links_to_article_level` is forward-only. API (panel web middleware):
-
-| Method | Path | Role |
-|--------|------|------|
-| GET | `/api/seo/articles/{article}/social-links` | List links (`seo.articles.social-links.index`) |
-| POST | `/api/seo/articles/{article}/social-links` | Batch save (`seo.articles.social-links.store`) |
-
-Normalize via `SocialUrlNormalizer`; supported domains via `SocialSupportedDomainService`. Archive preview / Excel exports read counts via `ArticleSocialLinkService` — reporting only, not share-action chrome (GSC MCP drawer still uses `social-share-actions`).
+Normalize share domains via `SocialSupportedDomainService` (SEO settings allowlist). Stateless share intents via `social-share-actions` blade.
 
 Draft Main Topics: live WP `product_cat` roots (`term_id>0`, `parent_term_id===0`) preferred over heuristics.
 
@@ -238,7 +230,7 @@ No Filament Queue Manager UI.
 | Domain link → Keyword | `SiteLinkPolicyResolver::forKeyword` → `DomainLinkListKeywordSyncService` materialize; product_cat never written into prompt `links` |
 | Domain link list (Article Editor) | Client soft match/locate; catalog via policy `forArticleEditor` — [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md) |
 | WP field sync UI | `DomainPromptContextWordPressSyncUiContractTest` — Edit Domain actions + loading states |
-| Article social links API | `ArticleSocialLinkApiContractTest` / `ArticleSocialLinkServiceTest` |
+| SEO social retirement | `SocialSeoNavContractTest` / `ContentProjectArchiveSocialRetirementContractTest` / `ArticleIndexSeedingBoundaryContractTest` |
 | User hierarchy | Owner/Manager/Staff column rules |
 
 ## 16. Related documents

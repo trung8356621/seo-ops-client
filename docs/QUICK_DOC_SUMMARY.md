@@ -169,11 +169,12 @@ Phạm vi code: **2026-08-31 → 2026-09-01** (`omnichannel-addons` peer addons)
 - UI: `SyncsDomainPromptContextFromWordPress` trên Edit Domain + loading states.
 - Docs: `SITE_MCP_AND_DOMAINS.md`, `PROMPTS_AND_AI.md`, `SITE_SYNC.md`.
 
-### Article social links + archive reporting
+### Social ownership (SEO index → Seeding)
 
-- Bảng `seo_article_social_links` (`social` addon); migration archive → article-level.
-- API: `GET|POST /api/seo/articles/{article}/social-links`.
-- Archive preview + Excel (per-project + monthly) dùng `ArticleSocialLinkService`.
+- SEO owns index state; Seeding optionally reacts to `ArticleIndexStatusChanged`.
+- `seo_social_profiles` / `seo_article_social_links` retired (drop migration 2026-09-26).
+- Content Project archive/export = content/project report only (no social evidence).
+- Social accounts + share reports = Seeding SSOT.
 - Docs: `SITE_MCP_AND_DOMAINS.md`, `CONTENT_PROJECTS.md`.
 
 ### SEO Workspace dashboard refresh

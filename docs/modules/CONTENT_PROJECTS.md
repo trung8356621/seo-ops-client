@@ -87,12 +87,12 @@ REST: `/api/v1/content-projects*` → same commands via Application controllers.
 | Bind article site authority | `ContentProjectBindArticleAuthority` — `article.site_id === task.site_id` |
 | Create generation site guard | `ContentProjectCreateGenerationGuard` |
 | Manual Index marker (checklist) | `ArticleManualIndexMarkerService` — `articles.indexed_at` / `previous_indexed_at` (+ patch archive `article_snapshot`); not GSC/Indexing API |
-| Archive Excel export | `ContentProjectArchiveExportService` (includes Index gần nhất / Index lần trước + social evidence child rows) |
-| Archived month workbook | `ContentProjectArchivedMonthExportService` — Summary + per-writer sheets; social rows via `ContentProjectArchiveSocialExportRowExpander` |
+| Archive Excel export | `ContentProjectArchiveExportService` (content/project + index status only — **no** social evidence) |
+| Archived month workbook | `ContentProjectArchivedMonthExportService` — Summary + per-writer sheets (content/project only) |
 | Archived month **template** export | `ContentProjectArchivedMonthTemplateExportService` + `ExcelTemplate/*` (variable dictionary, managed sheets, detail columns) |
 | Excel template settings | `ContentProjectExcelTemplateSettingsService` (`WpOption` + uploaded `.xlsx`) + `ContentProjectExcelRawTemplateDownloadService` |
 | Archive historical fields | `ArchiveArticleHistoricalFieldResolver` — export/preview historical column resolution |
-| Archive social reporting | `ArticleSocialLinkService` (canonical counts/links; migrated from archive-item social rows) |
+| Social work / reports | **Seeding** (`seeding_social_accounts`, Website Share, Seeding Reports) — not Content Project archive |
 | MCP planning +N signal | `McpPlanning/McpPlanningSignalService` + `McpPlanningMetaStore` / `McpPlanningMeta` / `McpPlanningSignalResolver` — UI pending count; **not** MCP score % |
 | Site Planning overview | `SitePlanning/SitePlanningReadModel` + `SiteMonthlyContentTargetService` — window anchored on Planner `activeMonth` (−2…+1); matrix counts `site_id`×`planning_month` including completed/published/archived |
 | Planner active month | `ContentProjectSeoAuditPlanner::$activeMonth` (`?month=YYYY-MM`) — SSOT for Site Planning highlight, draft filter, attribution, draft split target |
@@ -488,7 +488,7 @@ No item-level restore (`ContentProjectItemAction::Restore` removed). Project res
 
 **Active CP article ↔ Sync WP:** while membership is active, Article Editor **hides all manual Sync WP chrome** (toolbar / overflow / page actions) — UI-only; first WordPress create stays on Publishing Queue. After archive, standalone Sync WP is allowed again. See [`ARTICLE_EDITOR.md`](ARTICLE_EDITOR.md) + [`PUBLISHING.md`](PUBLISHING.md).
 
-**Archive social reporting (2026-09-01):** Preview (`ContentProjectArchivePreview` / `ArchivePreviewArticlePresenter`) and Excel exports show **social link counts** from `ArticleSocialLinkService` (`seo_article_social_links`). Monthly workbook `ContentProjectArchivedMonthExportService` emits parent article rows plus **social evidence child rows** (`ContentProjectArchiveSocialExportRowExpander`). Reporting only — not share-action buttons (those remain on GSC MCP drawer).
+**Archive social reporting retired (2026-09-26):** Content Project archive preview/Excel no longer store, display, or export social evidence. Tables `seo_article_social_links` / `seo_social_profiles` dropped. Social accounts and share reports are Seeding-owned. Index → Website Share uses Core event `ArticleIndexStatusChanged` only.
 
 **Archived-month Excel template (2026-09-04/05):** Optional uploaded workbook via `ContentProjectExcelTemplateSettingsService` (`DATA_LAYOUT_MODE` + block extents). `ContentProjectArchivedMonthTemplateExportService` applies `ExcelTemplateVariableDictionary` / `ExcelTemplateVariableApplicator` (scalar + table variables, detail column registry). Raw starter: `ContentProjectExcelRawTemplateDownloadService`. Historical column values: `ArchiveArticleHistoricalFieldResolver`. Tests: `ContentProjectExcelTemplateExportContractTest`, `ArchiveArticleHistoricalExportFieldsTest`.
 
@@ -652,8 +652,8 @@ Primary contracts (remote `$PHP_BIN vendor/bin/phpunit --filter=...`):
 | `ContentProjectWriterCapacitySettingsTest` | Global/per-user writer monthly capacity settings |
 | `WriterMonthlyCapacityGate` (handlers/tests) | Hard gate `WRITER_CAPACITY_EXCEEDED` before EP workload |
 | `DraftItemTableDomainAndCloneContractTest` | Shared draft table Domain column + clone idea + safe JS root |
-| `ContentProjectArchiveSocialColumnTest` / `ContentProjectArchivedMonthSocialExportTest` | Archive preview/export social reporting via `ArticleSocialLinkService` |
-| `ContentProjectArchivedMonthExportContractTest` | Month workbook shape + social child rows |
+| `ContentProjectArchiveSocialRetirementContractTest` | Archive/export must not reference article social links |
+| `ContentProjectArchivedMonthExportContractTest` | Month workbook shape (content/project only) |
 | `ContentProjectExcelTemplateExportContractTest` | Template variable apply + raw download schema |
 | `ContentProjectArchiveAccessScopeContractTest` / `…IntegrationTest` | Tenant-safe archive list/filter |
 | `ContentProjectArchiveWorkspaceCleanupContractTest` / `…IntegrationTest` | Workspace destroy ownership |
