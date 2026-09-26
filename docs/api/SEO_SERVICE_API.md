@@ -17,7 +17,7 @@ The public Agent/integration contract no longer exposes MCP routers/parts.
 | Scope `mcp:read` | Scope **`seo:read`** |
 | Token prefix `mcp_tmp_` | `access_tmp_` |
 
-Internal ContextRegistry / McpRouterRegistry may still exist for composition and Monthly MCP — they are implementation details.
+Internal ContextRegistry / McpRouterRegistry may still exist for composition — they are implementation details. Monthly MCP snapshot/report layer is **retired**.
 
 Do not document old MCP HTTP paths as the future Agent contract.
 

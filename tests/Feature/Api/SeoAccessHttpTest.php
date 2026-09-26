@@ -160,14 +160,38 @@ final class SeoAccessHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.schema', SeoAccessCatalog::SCHEMA)
             ->assertJsonPath('data.site_ref', 'site:7')
-            ->assertJsonPath('data.site.domain', 'example.com');
+            ->assertJsonPath('data.site.domain', 'example.com')
+            ->assertJsonPath('data.usage.purpose', 'Read-only SEO context for this site.');
 
         $keys = array_column($response->json('data.resources'), 'key');
         self::assertSame(['site', 'keywords', 'gsc'], $keys);
 
+        $byKey = [];
+        foreach ($response->json('data.resources') as $resource) {
+            $byKey[$resource['key']] = $resource;
+        }
+
+        self::assertSame('Read first before making content or SEO decisions.', $byKey['site']['when_to_use']);
+        self::assertSame('GET', $byKey['site']['method']);
+
+        self::assertSame('Topic coverage score from 0 to 100.', $byKey['keywords']['usage']['mcp']);
+        self::assertSame('?sort=mcp&direction=asc', $byKey['keywords']['usage']['weakest_topics']);
+        self::assertSame('?sort=mcp&direction=desc', $byKey['keywords']['usage']['strongest_topics']);
+        self::assertStringContainsString('detail_href', $byKey['keywords']['usage']['detail']);
+
+        self::assertStringContainsString(
+            'must not be interpreted as zero traffic',
+            $byKey['gsc']['usage']['missing_data']
+        );
+        self::assertStringContainsString('latest_available', $byKey['gsc']['usage']['fallback']);
+
+        $flow = $response->json('data.usage.recommended_flow');
+        self::assertIsArray($flow);
+        self::assertNotEmpty($flow);
+
         $body = (string) $response->getContent();
         foreach ([
-            'mcp', 'router', 'parts', 'indexability', 'inventory',
+            'router', 'parts', 'indexability', 'inventory',
             'publishing', 'findings', 'ContextRegistry', 'McpRouter', '"content"',
         ] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $body);
@@ -317,6 +341,11 @@ final class SeoAccessHttpTest extends TestCase
             {
                 return null;
             }
+
+            public function latestSyncedPeriodOnOrBefore(int $siteId, string $onOrBeforePeriod): ?string
+            {
+                return null;
+            }
         };
 
         $source = new GscContextSource($loader);
@@ -333,6 +362,7 @@ final class SeoAccessHttpTest extends TestCase
         self::assertArrayHasKey('performance', $response->json('data'));
         self::assertArrayHasKey('opportunities', $response->json('data'));
         self::assertArrayHasKey('cannibalization', $response->json('data'));
+        self::assertArrayNotHasKey('latest_available', $response->json('data'));
         self::assertSame(1, $counter->calls);
 
         $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-08&include=performance')
@@ -369,6 +399,11 @@ final class SeoAccessHttpTest extends TestCase
             {
                 return null;
             }
+
+            public function latestSyncedPeriodOnOrBefore(int $siteId, string $onOrBeforePeriod): ?string
+            {
+                return null;
+            }
         };
 
         $this->app->instance(GscContextSource::class, new GscContextSource($loader));
@@ -381,7 +416,199 @@ final class SeoAccessHttpTest extends TestCase
             ->assertJsonPath('data.reason', 'no_synced_data');
 
         self::assertArrayNotHasKey('performance', $response->json('data'));
+        self::assertArrayNotHasKey('latest_available', $response->json('data'));
         self::assertStringNotContainsString('"clicks"', (string) $response->getContent());
+    }
+
+    public function test_gsc_latest_available_for_missing_period(): void
+    {
+        $loader = new class implements GscContextLoader
+        {
+            public function forSite(int $siteId, string $periodKey): GscContext
+            {
+                $hasRows = $periodKey === '2026-07';
+
+                return new GscContext(
+                    siteId: $siteId,
+                    periodKey: $periodKey,
+                    metrics: $hasRows
+                        ? [
+                            'absent' => false,
+                            'clicks' => 5,
+                            'impressions' => 50,
+                            'rising_count' => 0,
+                            'falling_count' => 0,
+                            'ctr_opportunity_count' => 0,
+                            'near_page_one_count' => 0,
+                            'content_decay_count' => 0,
+                            'new_content_opportunity_count' => 0,
+                            'possible_cannibalization_count' => 0,
+                        ]
+                        : [
+                            'absent' => true,
+                            'absent_reason' => 'no_synced_data',
+                            'clicks' => 0,
+                            'impressions' => 0,
+                        ],
+                    summary: $hasRows
+                        ? [
+                            'period' => ['current' => $periodKey],
+                            'totals' => ['clicks' => 5, 'impressions' => 50],
+                            'comparison' => [],
+                            'top_queries' => [],
+                            'top_pages' => [],
+                            'rising_queries' => [],
+                            'falling_queries' => [],
+                            'high_impression_low_ctr' => [],
+                            'near_page_one' => [],
+                            'content_decay' => [],
+                            'new_content_opportunities' => [],
+                            'possible_cannibalization' => [],
+                        ]
+                        : [],
+                    context: [],
+                    sourceUpdatedAt: null,
+                    generatedAt: '2026-09-26T00:00:00+00:00',
+                    available: $hasRows,
+                    stale: false,
+                );
+            }
+
+            public function sourceUpdatedAt(int $siteId): ?string
+            {
+                return null;
+            }
+
+            public function latestSyncedPeriodOnOrBefore(int $siteId, string $onOrBeforePeriod): ?string
+            {
+                // Case A: only 2026-07 has rows; Case B would return 2026-08 when present.
+                if ($onOrBeforePeriod >= '2026-07') {
+                    return '2026-07';
+                }
+
+                return null;
+            }
+        };
+
+        $this->app->instance(GscContextSource::class, new GscContextSource($loader));
+        $this->app->forgetInstance(SeoAccessGscComposer::class);
+
+        $token = $this->mintToken(7);
+
+        // Case A: requested 2026-09, rows only in 2026-07
+        $missing = $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.period', '2026-09')
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.reason', 'no_synced_data')
+            ->assertJsonPath('data.latest_available.period', '2026-07');
+
+        self::assertStringContainsString('period=2026-07', (string) $missing->json('data.latest_available.href'));
+        self::assertStringContainsString($token, (string) $missing->json('data.latest_available.href'));
+        self::assertArrayNotHasKey('performance', $missing->json('data'));
+
+        // Case E: requested period has real rows — no fallback substitution
+        $ok = $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-07')
+            ->assertOk()
+            ->assertJsonPath('data.period', '2026-07')
+            ->assertJsonPath('data.available', true);
+
+        self::assertArrayNotHasKey('latest_available', $ok->json('data'));
+        self::assertArrayHasKey('performance', $ok->json('data'));
+    }
+
+    public function test_gsc_latest_available_prefers_nearest_earlier_period(): void
+    {
+        $loader = new class implements GscContextLoader
+        {
+            public function forSite(int $siteId, string $periodKey): GscContext
+            {
+                return new GscContext(
+                    siteId: $siteId,
+                    periodKey: $periodKey,
+                    metrics: [
+                        'absent' => true,
+                        'absent_reason' => 'no_synced_data',
+                        'clicks' => 0,
+                        'impressions' => 0,
+                    ],
+                    summary: [],
+                    context: [],
+                    sourceUpdatedAt: null,
+                    generatedAt: '2026-09-26T00:00:00+00:00',
+                    available: false,
+                    stale: false,
+                );
+            }
+
+            public function sourceUpdatedAt(int $siteId): ?string
+            {
+                return null;
+            }
+
+            public function latestSyncedPeriodOnOrBefore(int $siteId, string $onOrBeforePeriod): ?string
+            {
+                // Case B: rows in 2026-08 and 2026-07 → nearest is 2026-08
+                return '2026-08';
+            }
+        };
+
+        $this->app->instance(GscContextSource::class, new GscContextSource($loader));
+        $this->app->forgetInstance(SeoAccessGscComposer::class);
+
+        $token = $this->mintToken(7);
+        $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.reason', 'no_synced_data')
+            ->assertJsonPath('data.latest_available.period', '2026-08');
+    }
+
+    public function test_gsc_no_property_has_no_latest_available(): void
+    {
+        $loader = new class implements GscContextLoader
+        {
+            public function forSite(int $siteId, string $periodKey): GscContext
+            {
+                return new GscContext(
+                    siteId: $siteId,
+                    periodKey: $periodKey,
+                    metrics: [
+                        'absent' => true,
+                        'absent_reason' => 'no_gsc_property',
+                        'clicks' => 0,
+                        'impressions' => 0,
+                    ],
+                    summary: [],
+                    context: [],
+                    sourceUpdatedAt: null,
+                    generatedAt: '2026-09-26T00:00:00+00:00',
+                    available: false,
+                    stale: false,
+                );
+            }
+
+            public function sourceUpdatedAt(int $siteId): ?string
+            {
+                return null;
+            }
+
+            public function latestSyncedPeriodOnOrBefore(int $siteId, string $onOrBeforePeriod): ?string
+            {
+                return '2026-07';
+            }
+        };
+
+        $this->app->instance(GscContextSource::class, new GscContextSource($loader));
+        $this->app->forgetInstance(SeoAccessGscComposer::class);
+
+        $token = $this->mintToken(7);
+        $response = $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-09')
+            ->assertOk()
+            ->assertJsonPath('data.reason', 'no_gsc_property')
+            ->assertJsonPath('data.available', false);
+
+        self::assertArrayNotHasKey('latest_available', $response->json('data'));
     }
 
     public function test_temporary_token_cannot_authorize_draft_intake(): void

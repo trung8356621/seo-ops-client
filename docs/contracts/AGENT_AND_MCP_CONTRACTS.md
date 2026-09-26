@@ -109,7 +109,7 @@ Agent/MCP I/O uses public refs only (`project_ref`, `item_ref`, `site_ref`, …)
 
 - CP: `list_projects`, `get_project`, `list_items`, `get_item`, `get_status`, `get_publishing_queue`, `get_timeline`, `get_daily_report`, `get_site_health`, `get_operation`  
 - Keyword Intelligence: **retired 2026-09-17** — Agent group `keywords` has `skill_keys: []`; MCP `keyword_intelligence.*` removed from catalog  
-- **Keyword MCP Type 2 (CLOSED — v1):** `keyword.relationship` — schema `keyword.relationship.v1`; on-demand one-keyword graph; **does not** write `seo_mcp_source_snapshots`. SoT: [`KEYWORD_MCP.md`](KEYWORD_MCP.md)  
+- **Keyword MCP Type 2 (CLOSED — v1):** `keyword.relationship` — schema `keyword.relationship.v1`; on-demand one-keyword graph; Monthly MCP snapshot store retired. SoT: [`KEYWORD_MCP.md`](KEYWORD_MCP.md)  
 - Keyword MCP Type 1 (Landscape): site landscape via `KeywordLandscapeGateway` / monthly schema `keywords.mcp.v2` — **not** a generic MCP dump; approved consumers only (SEO Audit, Prompt Generator, Keywords / Topical Map). SoT: [`KEYWORD_MCP.md`](KEYWORD_MCP.md)  
 - SERP Intelligence: list/get queries, snapshots, results, features, content gaps, competitors, operation (cluster evidence / `validate_cluster` handlers deleted — skill may be orphaned)  
 - GSC Intelligence: list/get properties, sync runs, mappings, aggregates, opportunities, operation (planning may include GSC `possible_cannibalization` evidence — not a KI/Keywords module)  

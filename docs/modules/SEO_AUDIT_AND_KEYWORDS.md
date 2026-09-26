@@ -70,7 +70,7 @@ Gates: Audit via `ArticleResource::canViewAny()`; Hub / planner+ via `SeoAccessC
 | KI leftovers (support only) | Tags/normalize/hide/skip-MCP; `KeywordIntelligencePublicRef` prefixes retained but workspace/cluster/topic map APIs unused; no-op scheduler stubs |
 | SERP stack | `Services/SerpIntelligence/*` (site-scoped; `workspace_ref` ignored where present) |
 | GSC stack | `Services/GscIntelligence/*` |
-| GSC monthly Hub | `GscMonthlyPeriod` + `GscMonthlyDashboardService` — Hub month picker; `syncGscData()` = **selected month**; MCP drawer via `MonthlyMcpSnapshotService` (`McpSourceKey::Gsc`) |
+| GSC monthly Hub | `GscMonthlyPeriod` + `GscMonthlyDashboardService` — Hub month picker; `syncGscData()` = **selected month**; GSC preview via `GscContextGateway` (no Monthly MCP snapshot) |
 | GSC URL Inspection | `GscIntelligence/UrlInspection/*` — feeds **Article Index Health**, not the monthly GSC dashboard |
 | GSC sync stages | `GscSyncOperationService` + `GscSyncLockService` |
 | GSC OAuth (core) | `GoogleSearchConsoleOAuthService` |
@@ -123,7 +123,7 @@ Commit intent: wipe **KI** derived state. **Topic Core** (separate tables) later
 
 - Filament / Agent / MCP reads → site-scoped services + public refs where still advertised.
 - Keywords module tabs: **Dictionary \| Focus \| Anchor Audit**. Topical Map + Relationship are Keyword Resource pages (not KI workspace). AI Discovery remains a route but is not in the sidebar.
-- **Keyword MCP Type 2 (CLOSED — v1):** Relationship UI uses `KeywordRelationshipGateway` only; schema `keyword.relationship.v1`; on-demand; **does not** persist `seo_mcp_source_snapshots`. Vite entry `addons/search-intelligence/resources/js/keyword-relationship-chart.js`. Deferred debt: `bugs/keyword-mcp-type-2-deferred.md`.
+- **Keyword MCP Type 2 (CLOSED — v1):** Relationship UI uses `KeywordRelationshipGateway` only; schema `keyword.relationship.v1`; on-demand; Monthly MCP snapshot tables retired. Vite entry `addons/search-intelligence/resources/js/keyword-relationship-chart.js`. Deferred debt: `bugs/keyword-mcp-type-2-deferred.md`.
 - **Keyword MCP Type 1:** Landscape via `KeywordLandscapeGateway` — approved consumers only (SEO Audit, Prompt Generator, Keywords / Topical Map). Do not broaden.
 - **Vocabulary Suggest staging:** `VocabularySuggestStagingQuery` — Planner Idea Candidates consume this staging only (see [`CONTENT_PROJECTS.md`](CONTENT_PROJECTS.md) § Idea Candidates). **GSC MCP / Social Top 10 do not feed Idea Suggest.**
 - Nav WP-style: `SeoUserNavigation` + `SeoPanelRoutes` (module top-level groups; active helpers avoid path wildcards). Stale helper `isKeywordsClustersNav()` may still check retired paths — live helpers: `isKeywordsModule`, `isKeywordsDictionaryNav`, `isKeywordsFocusNav`, `isKeywordsBrokenLinksNav`.

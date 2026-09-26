@@ -29,8 +29,7 @@ Projection
 Canonical Formatter
         ↓
 ────────────────────────────
-internal consumers
-Monthly MCP compatibility
+internal consumers (Topical Map Audit, Content Planning, Performance Hub)
 MCP Router (discovery + selective parts) — see SEO_MCP_ROUTER.md (internal)
 SEO Access API (docs/api/SEO_ACCESS_API.md) — curated external Agent reads
 future AI (consumes SEO Access — not a planner inside Registry)
@@ -56,7 +55,7 @@ AI → will consume Context
 | **Context Registry** | Strict allowlisted read capabilities + providers (not an AI planner) |
 | **Context Projection** | View level: `summary` / `standard` / `detail` (+ list limits) |
 | **Context Formatter** | Final structured representation (facts only) |
-| **MCP** | Compatibility / monthly snapshot consumer only |
+| **MCP** | Transport / router naming only — not a monthly snapshot store |
 | **AI Planner** | Future consumer — not implemented |
 | **Site Knowledge Profile** | Prompt tone/CTA/links (`search-foundation` `SiteMcp*`) — **≠** Site Intelligence |
 | **Site Intelligence Context** | Runtime health/content/links/findings (`SiteContext*` + slices) |
@@ -71,7 +70,7 @@ AI → will consume Context
 - Registry is a strict allowlist / future security boundary  
 - Formatter recursively removes presentation-only keys: `ai_lines`, `text`, `note`, `raw`  
 - GSC memoization (`GscContextSource`) is **request/job scoped** (`scoped()`), not process-global  
-- Context layer does not depend on `Services\MonthlyMcp`
+- Context layer does not depend on retired Monthly MCP (`Services\MonthlyMcp`, `seo_mcp_*` tables)
 
 ## Registered slices
 
@@ -98,23 +97,27 @@ AI → will consume Context
 
 ## Canonical gateways (presets)
 
-| Preset | Gateway | Schema id (compat) | Snapshot |
-|--------|---------|-------------------|----------|
-| Site Intelligence | `SiteContextGateway` | `site.mcp.v1` | monthly `site` |
-| Keyword Landscape | `KeywordLandscapeGateway` | `keywords.mcp.v2` | monthly `keywords` |
+| Preset | Gateway | Schema id (compat) | Persistence |
+|--------|---------|-------------------|-------------|
+| Site Intelligence | `SiteContextGateway` | `site.mcp.v1` | live / assembled |
+| Keyword Landscape | `KeywordLandscapeGateway` | `keywords.mcp.v2` | live Topic Core |
 | Keyword Relationship | `KeywordRelationshipGateway` | `keyword.relationship.v1` | on-demand only |
-| GSC | `GscContextGateway` | `gsc.mcp.v1` | monthly `gsc` |
+| GSC | `GscContextGateway` | `gsc.mcp.v1` | live from `seo_gsc_*` |
 
 `SiteContext` is a **preset composition** of site/content/seo/publishing slices.
 
-## Monthly MCP compatibility
+## Monthly MCP — RETIRED
 
-```text
-Neutral Context → Monthly MCP Source adapter → seo_mcp_source_snapshots
-```
+Monthly MCP periods / source snapshots / reports (`seo_mcp_periods`, `seo_mcp_source_snapshots`, `seo_mcp_reports`) and the MCP Intelligence Filament page are **retired**.
 
-Keys remain `site` / `keywords` / `gsc`. Schemas remain `site.mcp.v1` / `keywords.mcp.v2` / `gsc.mcp.v1`.  
-Adapters own `MonthlyMcpSourcePayload`. Do not add per-slice MCP families.
+Consumers read canonical gateways directly:
+
+- Performance Hub GSC preview → `GscContextGateway`
+- Topical Map Audit → live Site / Keyword / GSC context
+- Content Planning → `KeywordLandscapeGateway` + `GscContextGateway`
+- SEO Access → live composers (no monthly snapshot layer)
+
+Real GSC sync/storage (`seo_gsc_*`) remains active.
 
 ## HTTP Service API adapter
 
@@ -129,7 +132,7 @@ HTTP (docs/api/SEO_ACCESS_API.md)
 ```
 
 Public SEO Access (`docs/api/SEO_ACCESS_API.md`) exposes only **site** (includes content distribution + important pages), **keywords** (landscape + topic detail + relationship POST), and **gsc**. Standalone `/content` is retired from the public catalog.
-The public API must not expose every Context slice, must not require router/part/view vocabulary, and must not expose Monthly MCP payloads as the generic API.
+The public API must not expose every Context slice, must not require router/part/view vocabulary, and must not reintroduce Monthly MCP payloads.
 
 Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md).  
 MCP router SoT (internal): [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
@@ -165,10 +168,11 @@ Context capability SoT: this document.
 - Bypass `ContextRegistry`  
 - Duplicate projection logic  
 - Duplicate formatter logic  
-- Expose Monthly MCP payload as the generic API  
+- Expose Monthly MCP / snapshot payloads as the generic API  
 
 ## Implementation notes
 
 - `GscMcpContextBuilder` = detail behind `GscContextGateway` (persisted facts only).  
 - `DomainSeoMcpService` = legacy facade — not the context API.  
-- Legacy Domain raw MCP page (`ViewDomainMcp` / `domains/{id}/mcp`) **removed** from Domain UX; Monthly MCP infrastructure remains.
+- Legacy Domain raw MCP page (`ViewDomainMcp` / `domains/{id}/mcp`) **removed**.  
+- Monthly MCP Intelligence page / snapshot tables **retired**.

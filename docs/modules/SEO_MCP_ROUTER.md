@@ -15,7 +15,7 @@ Internal **discovery + selective read** layer on top of the canonical Context Re
 The canonical external Agent read contract is the **SEO Access API** (`site` / `content` / `keywords` / `gsc`).
 
 ```text
-Internal consumers / Monthly MCP
+Internal consumers (SEO Access composers, Audit, Planning)
    ↓
 McpRouterReader → ContextRegistry::format(...)
    ↓
@@ -34,13 +34,13 @@ ContextSliceProvider
 ContextRegistry          ← canonical slice registry (unchanged role)
         ↓
 MCP Router layer         ← this document (internal)
-   ↙           ↘
-Monthly MCP    SEO Access API composers (docs/api/SEO_ACCESS_API.md)
-adapter        (curated public resources — not 1:1 router/parts)
+        ↓
+SEO Access API composers (docs/api/SEO_ACCESS_API.md)
+(curated public resources — not 1:1 router/parts)
 ```
 
-- MCP Router **must** call ContextRegistry (no Eloquent / Http:: / Agent / MonthlyMcp reverse dependency).
-- Monthly MCP remains a **consumer** of Context — never the source for routers.
+- MCP Router **must** call ContextRegistry (no Eloquent / Http:: / Agent reverse dependency).
+- Monthly MCP snapshot layer is **retired** — routers/composers read Context directly.
 - HTTP auth/routes belong in `docs/api/**`, not here.
 
 ## Vocabulary

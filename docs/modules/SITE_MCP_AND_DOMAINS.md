@@ -15,11 +15,11 @@ Clarify names:
 |------|---------|
 | **Site Knowledge Profile** (historical class/storage names may still say `SiteMcp*`) | Official domain prompt context (+ draft generator) — description, CTA, links. **Site/domain tone no longer participates in `{{tone}}` resolution** (runtime/item tone is authoritative). New Site MCP drafts do not write `content_context.tone`. Historical stored tone may remain unread by SEO Access `/site`. |
 | **Site Intelligence Context** | Runtime site context (`SiteContextGateway` / Context Registry slices) — health, content/link stats, publishing, SEO findings, sync freshness |
-| **Monthly MCP snapshot** | Persisted monthly intelligence (`site` / `keywords` / `gsc` → `seo_mcp_source_snapshots`) — **≠** Knowledge Profile |
+| **Monthly MCP snapshot** | **RETIRED** — `seo_mcp_*` period/snapshot/report tables dropped; consumers use live gateways |
 | **Legacy Raw MCP Domain page** | `ViewDomainMcp` / `domains/{id}/mcp` — **removed** from Domain UX (2026-09-26) |
 | **Site Sync** | Catalog sync with WordPress — separate module |
 
-Do **not** merge Site Knowledge Profile with Site Intelligence Context or Monthly MCP. Architecture SoT: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md).
+Do **not** merge Site Knowledge Profile with Site Intelligence Context. Architecture SoT: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md).
 
 Model: Filament `DomainResource` → core `Site` (`mysql`).
 
@@ -219,7 +219,7 @@ No Filament Queue Manager UI.
 
 ## 14. Forbidden paths
 
-1. Treat Knowledge Profile editor (Edit Domain) as Site Intelligence Context / Monthly MCP / Context Registry.  
+1. Treat Knowledge Profile editor (Edit Domain) as Site Intelligence Context / Context Registry.  
 2. Treat removed `ViewDomainMcp` as Knowledge Profile editor.  
 3. Auto-apply `site_mcp_draft` onto official profile.  
 4. Save Domain Settings triggering Site Sync or full HTML site parse.  

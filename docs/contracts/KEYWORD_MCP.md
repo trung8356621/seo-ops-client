@@ -1,7 +1,7 @@
 # Keyword MCP
 
 > Status: Canonical  
-> Owner: `search-intelligence` (+ `seo` gateways / monthly MCP)  
+> Owner: `search-intelligence` (+ `seo` gateways)  
 > Last verified: 2026-09-26  
 > Related: [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md), [`AGENT_AND_MCP_CONTRACTS.md`](AGENT_AND_MCP_CONTRACTS.md), [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md), sibling addons [`TOPIC_CORE.md`](../../../omnichannel-addons/docs/modules/TOPIC_CORE.md)  
 > Debt tracker: [`bugs/keyword-mcp-type-2-deferred.md`](../../bugs/keyword-mcp-type-2-deferred.md)
@@ -10,14 +10,14 @@ Keyword MCP is **two separate contracts**. Do not conflate them. Do not treat ei
 
 **Architecture SoT for application boundaries:** [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md) — Domain Context ≠ MCP transport; HTTP/MCP are adapters; in-process callers use gateways (no HTTP loopback).
 
-Future generic context/API consumers should use Context Registry keys `keywords.landscape` and `keywords.relationship` where appropriate. Existing Type 1 approved-consumer restrictions for direct `KeywordLandscapeGateway` usage remain in force. Do not merge Landscape and Relationship. Relationship still **MUST NOT** persist monthly snapshot rows.
+Future generic context/API consumers should use Context Registry keys `keywords.landscape` and `keywords.relationship` where appropriate. Existing Type 1 approved-consumer restrictions for direct `KeywordLandscapeGateway` usage remain in force. Do not merge Landscape and Relationship. Relationship still **MUST NOT** invent a monthly snapshot store.
 
-| Type | Schema / capability | Shape | Snapshot |
-|------|---------------------|-------|----------|
-| **Type 1 — Landscape** | Snapshot schema `keywords.mcp.v2` (`McpSourceKey::Keywords`); also backs `domain.keyword_landscape` | Site-level Topic landscape | **May** persist via monthly MCP (`seo_mcp_source_snapshots`) |
-| **Type 2 — Relationship** | Capability `keyword.relationship`, schema `keyword.relationship.v1` | One keyword, on-demand | **MUST NOT** write `seo_mcp_source_snapshots` |
+| Type | Schema / capability | Shape | Persistence |
+|------|---------------------|-------|-------------|
+| **Type 1 — Landscape** | Schema `keywords.mcp.v2` (`KeywordLandscapeGateway::SCHEMA`); also backs `domain.keyword_landscape` | Site-level Topic landscape | Live Topic Core (no monthly snapshot) |
+| **Type 2 — Relationship** | Capability `keyword.relationship`, schema `keyword.relationship.v1` | One keyword, on-demand | On-demand only; never a monthly snapshot row |
 
-Retired (do not restore): Agent/MCP `keyword_intelligence.*` (KI workspace / `cluster_key` era).
+Retired (do not restore): Agent/MCP `keyword_intelligence.*` (KI workspace / `cluster_key` era); Monthly MCP `seo_mcp_source_snapshots`.
 
 ---
 

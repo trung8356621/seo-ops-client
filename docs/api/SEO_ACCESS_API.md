@@ -69,11 +69,13 @@ Allowed body field: **`site_id` only**. TTL **900 seconds (15 minutes)**.
 }
 ```
 
-## C. Temporary Access root
+## C. Temporary Access root (runtime README)
 
 ```http
 GET /api/v1/access/{token}
 ```
+
+This is the **single entry URL** for Agents. The response is a compact runtime README: purpose, recommended flow, and navigable resource catalog. It is not a documentation dump.
 
 ```json
 {
@@ -81,16 +83,58 @@ GET /api/v1/access/{token}
     "schema": "seo.access.v1",
     "site_ref": "site:7",
     "site": { "domain": "example.com", "title": "Example" },
+    "usage": {
+      "purpose": "Read-only SEO context for this site.",
+      "recommended_flow": [
+        "Read site first to understand the business and website context.",
+        "Read keywords to inspect topical coverage and choose Topics to investigate.",
+        "Read gsc when search-performance evidence is needed.",
+        "Follow returned href/detail_href links for deeper context."
+      ]
+    },
     "resources": [
-      { "key": "site", "description": "…", "href": "/api/v1/access/{token}/site" },
-      { "key": "keywords", "description": "…", "href": "/api/v1/access/{token}/keywords" },
-      { "key": "gsc", "description": "…", "href": "/api/v1/access/{token}/gsc" }
+      {
+        "key": "site",
+        "description": "Website identity, business context, important pages, and content distribution.",
+        "when_to_use": "Read first before making content or SEO decisions.",
+        "method": "GET",
+        "href": "/api/v1/access/{token}/site"
+      },
+      {
+        "key": "keywords",
+        "description": "Topic landscape with MCP coverage scores.",
+        "when_to_use": "Use to find weak or strong Topics and inspect Topic DNA and Focus Articles.",
+        "method": "GET",
+        "usage": {
+          "mcp": "Topic coverage score from 0 to 100.",
+          "default_order": "Lowest MCP first.",
+          "weakest_topics": "?sort=mcp&direction=asc",
+          "strongest_topics": "?sort=mcp&direction=desc",
+          "pagination": "Use page/per_page. Maximum per_page is 100.",
+          "detail": "Each Topic contains detail_href. Follow it for full DNA and Focus Articles."
+        },
+        "href": "/api/v1/access/{token}/keywords"
+      },
+      {
+        "key": "gsc",
+        "description": "Google Search Console performance and SEO opportunity data.",
+        "when_to_use": "Use when decisions should be supported by actual search-performance data.",
+        "method": "GET",
+        "usage": {
+          "period": "YYYY-MM. Defaults to current month.",
+          "missing_data": "Missing synchronized data must not be interpreted as zero traffic.",
+          "fallback": "When available, follow latest_available.href to inspect the most recent synchronized period."
+        },
+        "href": "/api/v1/access/{token}/gsc"
+      }
     ]
   }
 }
 ```
 
-Not exposed: `content` (merged into site), MCP, routers, parts, indexability, inventory, publishing, seo findings, sync, health.
+Not exposed: `content` (merged into site), MCP routers/parts, indexability, inventory, publishing, seo findings, sync, health.
+
+Do not repeat full resource schemas on the root — use `when_to_use` / compact `usage` only.
 
 ## D. Site resource
 
@@ -231,6 +275,7 @@ Query parameters (allowlisted):
 - Canonical MCP score is `mcp` (Topic Core topical share, 0–100). `mcp_percent` is a rounded convenience integer.
 - Landscape list does **not** include full DNA rows (use Topic Detail).
 - There is **no** hard first-20 cut. Use pagination + sort (lowest MCP: `sort=mcp&direction=asc`).
+- Compact MCP navigation semantics (`weakest_topics` / `strongest_topics` / `detail_href`) live on the Access root catalog entry — not repeated on every Topic row.
 
 ### Topic detail
 
@@ -297,18 +342,32 @@ When no usable GSC coverage exists for the period:
     "period": "2026-09",
     "available": false,
     "reason": "no_synced_data",
-    "message": "No GSC Search Performance data is synchronized for this site and period."
+    "message": "No GSC Search Performance data is synchronized for this site and period.",
+    "latest_available": {
+      "period": "2026-07",
+      "message": "Latest synchronized GSC data is available for 2026-07.",
+      "href": "/api/v1/access/{token}/gsc?period=2026-07"
+    }
   }
 }
 ```
 
 Reasons:
 
-| reason | message (concise) |
-|--------|-------------------|
-| `no_gsc_property` | No active GSC property is configured for this site. |
-| `no_synced_data` | No GSC Search Performance data is synchronized for this site and period. |
-| `invalid_period` | Invalid GSC period. Expected YYYY-MM. |
+| reason | message (concise) | `latest_available` |
+|--------|-------------------|--------------------|
+| `no_gsc_property` | No active GSC property is configured for this site. | **never** |
+| `no_synced_data` | No GSC Search Performance data is synchronized for this site and period. | when an earlier/equal synced period exists |
+| `invalid_period` | Invalid GSC period. Expected YYYY-MM. | never |
+
+`latest_available` semantics:
+
+- Present only for `reason=no_synced_data` when a synchronized period with persisted Search Performance rows exists on or before the requested period.
+- Named `latest_available` (not `previous_month`) because gaps are allowed.
+- Does **not** silently substitute that data into the requested period — `period` stays the requested key and `available` stays `false`.
+- When no synchronized period exists at all: omit `latest_available`.
+- Never inferred from GSC property existence alone.
+- `href` reuses the same temporary access token.
 
 Unavailable responses omit `performance` / `opportunities` / `cannibalization` and do **not** emit clicks/impressions/opportunity counts as `0`.
 
