@@ -21,6 +21,8 @@ final class ServiceApiError
 
     public const NOT_FOUND = 'service_api_not_found';
 
+    public const VALIDATION_FAILED = 'service_api_validation_failed';
+
     public static function json(string $code, string $message, int $status): JsonResponse
     {
         return response()->json([
@@ -54,5 +56,10 @@ final class ServiceApiError
     public static function notFound(string $message = 'Not found.'): JsonResponse
     {
         return self::json(self::NOT_FOUND, $message, 404);
+    }
+
+    public static function validationFailed(string $message = 'Validation failed.'): JsonResponse
+    {
+        return self::json(self::VALIDATION_FAILED, $message, 422);
     }
 }

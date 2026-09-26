@@ -9,10 +9,10 @@
 
 Canonical SoT for SEO **domain context** architecture: MCP-independent slices, a **strict Context Registry**, projection, and formatter.
 
-**Not implemented here:** unified HTTP API, AI Context Planner inside Registry, AI tool calling, new Agent, new MCP sources, Planning Context.
+**Not implemented here:** unified AI Context Planner inside Registry, AI tool calling, new Agent, new MCP sources, Planning Context.
 
 AI discovery/selective read over this registry: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
-HTTP wire format (when built): [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md).
+HTTP wire format: [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md) (**implemented**).
 
 ## Architecture
 
@@ -114,20 +114,20 @@ Neutral Context → Monthly MCP Source adapter → seo_mcp_source_snapshots
 Keys remain `site` / `keywords` / `gsc`. Schemas remain `site.mcp.v1` / `keywords.mcp.v2` / `gsc.mcp.v1`.  
 Adapters own `MonthlyMcpSourcePayload`. Do not add per-slice MCP families.
 
-## Future HTTP adapter (deferred — not implemented)
+## HTTP Service API adapter
 
-Preferred stack:
+Preferred stack (live under [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md)):
 
 ```text
 HTTP (docs/api/SEO_SERVICE_API.md)
- → authentication (service_api_credentials)
- → tenant/site authorization
+ → authentication (service_api_credentials, scope mcp:read)
+ → tenant/site authorization (site_id existence)
  → McpRouterReader / ContextRegistry
  → ContextFormatter
  → JSON
 ```
 
-The future API must not bypass Registry/provider validation, must not query domain models directly, must not duplicate projection/formatter, and must not expose Monthly MCP payloads as the generic API.
+The API must not bypass Registry/provider validation, must not query domain models directly (except site existence), must not duplicate projection/formatter, and must not expose Monthly MCP payloads as the generic API.
 
 Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md).  
 MCP router SoT: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  

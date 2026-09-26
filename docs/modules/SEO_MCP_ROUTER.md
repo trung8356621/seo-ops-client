@@ -4,7 +4,7 @@
 > Owner: `seo` addon (`Services\Mcp`)  
 > Last verified: 2026-09-26  
 > Related: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md), [`KEYWORD_MCP.md`](../contracts/KEYWORD_MCP.md), [`AGENT_AND_MCP_CONTRACTS.md`](../contracts/AGENT_AND_MCP_CONTRACTS.md)  
-> HTTP/API: **not documented here** — see [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md) (separate layer; may be unimplemented)
+> HTTP/API: [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md) — live HTTP contract (`GET/POST …/mcp`)
 
 ## Purpose
 
@@ -35,8 +35,8 @@ ContextRegistry          ← canonical slice registry (unchanged role)
         ↓
 MCP Router layer         ← this document
    ↙           ↘
-Monthly MCP    future HTTP Service API
-adapter        (docs/api/** only)
+Monthly MCP    HTTP Service API (docs/api/SEO_SERVICE_API.md)
+adapter
 ```
 
 - MCP Router **must** call ContextRegistry (no Eloquent / Http:: / Agent / MonthlyMcp reverse dependency).
