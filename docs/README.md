@@ -93,7 +93,8 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Keyword MCP (Landscape + Relationship) | [KEYWORD_MCP.md](contracts/KEYWORD_MCP.md) — Type 2 **CLOSED — v1** |
 | Domain Context Gateways / Registry | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — **SoT for read/context architecture** (slices, registry, formatter) |
 | SEO MCP Router | [SEO_MCP_ROUTER.md](modules/SEO_MCP_ROUTER.md) — AI discovery + selective parts over ContextRegistry |
-| SEO Service API (HTTP) | [SEO_SERVICE_API.md](api/SEO_SERVICE_API.md) — **live** MCP HTTP (`mcp:read`) |
+| SEO Service API (HTTP) | [SEO_SERVICE_API.md](api/SEO_SERVICE_API.md) — **live** MCP HTTP (`mcp:read`) + temporary MCP access |
+| Content Project Service API (HTTP) | [CONTENT_PROJECT_SERVICE_API.md](api/CONTENT_PROJECT_SERVICE_API.md) — **live** Draft intake write (`content-projects:draft:write`) |
 | API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization + **Service API** (`service_api_credentials`) |
 | Queue / Scheduler / Idempotency | [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md) |
 | Extension / Registry | [EXTENSION_AND_REGISTRY_CONTRACTS.md](contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md) |

@@ -19,6 +19,8 @@ Projects are **domain-neutral**: `SeoProject` is an execution/planning container
 - Mutations go through `ContentProjectCommandBus::dispatch()` only.
 - Item lifecycle reads go through `ContentProjectItemStateResolver` (+ `ContentProjectItemActionGuard`).
 
+**Service API (Agent write):** exactly one permanent write endpoint — Shared Planning Draft intake. HTTP contract: [`CONTENT_PROJECT_SERVICE_API.md`](../api/CONTENT_PROJECT_SERVICE_API.md). Temporary MCP remains read-only.
+
 ## 2. Canonical routes
 
 Panel prefix: `/seo/{connection_hash}/`
