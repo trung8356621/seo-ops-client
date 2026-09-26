@@ -7,13 +7,13 @@
 
 ## 1. Purpose
 
-Domain (Site) management in SEO panel + **Site MCP Knowledge Profile** (tone/CTA/links/topics for prompts) + SEO team RBAC.
+Domain (Site) management in SEO panel + **Site MCP Knowledge Profile** (CTA/links/topics for prompts; site-level tone retired from writing resolution) + SEO team RBAC.
 
 Clarify names:
 
 | Term | Meaning |
 |------|---------|
-| **Site Knowledge Profile** (historical class/storage names may still say `SiteMcp*`) | Official domain prompt context (+ draft generator) — tone, description, CTA, links |
+| **Site Knowledge Profile** (historical class/storage names may still say `SiteMcp*`) | Official domain prompt context (+ draft generator) — description, CTA, links. **Site/domain tone no longer participates in `{{tone}}` resolution** (runtime/item tone is authoritative). New Site MCP drafts do not write `content_context.tone`. Historical stored tone may remain unread by SEO Access `/site`. |
 | **Site Intelligence Context** | Runtime site context (`SiteContextGateway` / Context Registry slices) — health, content/link stats, publishing, SEO findings, sync freshness |
 | **Monthly MCP snapshot** | Persisted monthly intelligence (`site` / `keywords` / `gsc` → `seo_mcp_source_snapshots`) — **≠** Knowledge Profile |
 | **Legacy Raw MCP Domain page** | `ViewDomainMcp` / `domains/{id}/mcp` — **removed** from Domain UX (2026-09-26) |

@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Omnichannel\Addons\Seo\Services\Access\SeoAccessCatalog;
-use Omnichannel\Addons\Seo\Services\Access\SeoAccessContentComposer;
 use Omnichannel\Addons\Seo\Services\Access\SeoAccessGscComposer;
 use Omnichannel\Addons\Seo\Services\Access\SeoAccessKeywordsComposer;
 use Omnichannel\Addons\Seo\Services\Access\SeoAccessSiteKnowledgeComposer;
@@ -164,12 +163,12 @@ final class SeoAccessHttpTest extends TestCase
             ->assertJsonPath('data.site.domain', 'example.com');
 
         $keys = array_column($response->json('data.resources'), 'key');
-        self::assertSame(['site', 'content', 'keywords', 'gsc'], $keys);
+        self::assertSame(['site', 'keywords', 'gsc'], $keys);
 
         $body = (string) $response->getContent();
         foreach ([
             'mcp', 'router', 'parts', 'indexability', 'inventory',
-            'publishing', 'findings', 'ContextRegistry', 'McpRouter',
+            'publishing', 'findings', 'ContextRegistry', 'McpRouter', '"content"',
         ] as $forbidden) {
             self::assertStringNotContainsString($forbidden, $body);
         }
@@ -180,9 +179,12 @@ final class SeoAccessHttpTest extends TestCase
         $this->getJson('/api/v1/access/access_tmp_deadbeef_notreal')
             ->assertStatus(401)
             ->assertJsonPath('error.code', 'service_api_temporary_access_invalid');
+
+        $this->getJson('/api/v1/access/'.$token.'/content')
+            ->assertStatus(404);
     }
 
-    public function test_site_resource_returns_knowledge_without_indexability(): void
+    public function test_site_resource_returns_knowledge_without_tone_or_indexability(): void
     {
         $token = $this->mintToken(7);
         $response = $this->getJson('/api/v1/access/'.$token.'/site')
@@ -193,39 +195,49 @@ final class SeoAccessHttpTest extends TestCase
             ->assertJsonPath('data.identity.site_title', 'Example')
             ->assertJsonPath('data.identity.website_type', 'e-commerce')
             ->assertJsonPath('data.identity.brand', 'Example Brand')
-            ->assertJsonPath('data.writing_context.tone', 'professional');
+            ->assertJsonPath('data.important_pages.total', 83)
+            ->assertJsonPath('data.important_pages.returned', 60)
+            ->assertJsonPath('data.important_pages.truncated', true)
+            ->assertJsonPath('data.content_distribution.posts', 600)
+            ->assertJsonPath('data.sitemaps.available', false);
 
+        self::assertArrayNotHasKey('tone', $response->json('data.writing_context'));
         self::assertArrayNotHasKey('indexability', $response->json('data'));
         self::assertStringNotContainsString('indexability', (string) $response->getContent());
-        self::assertNotEmpty($response->json('data.important_pages'));
+        self::assertCount(60, $response->json('data.important_pages.items'));
     }
 
-    public function test_content_resource_is_distribution_only(): void
-    {
-        $token = $this->mintToken(7);
-        $response = $this->getJson('/api/v1/access/'.$token.'/content')
-            ->assertOk()
-            ->assertJsonPath('data.schema', SeoAccessContentComposer::SCHEMA)
-            ->assertJsonPath('data.distribution.posts', 600)
-            ->assertJsonPath('data.distribution.products', 514);
-
-        $body = (string) $response->getContent();
-        self::assertStringNotContainsString('"inventory"', $body);
-        self::assertStringNotContainsString('"published"', $body);
-        self::assertStringNotContainsString('"draft"', $body);
-        self::assertStringNotContainsString('"scheduled"', $body);
-        self::assertStringNotContainsString('"private"', $body);
-        self::assertStringNotContainsString('"total"', $body);
-    }
-
-    public function test_keywords_get_landscape_and_post_relationship(): void
+    public function test_keywords_get_landscape_topic_detail_and_post_relationship(): void
     {
         $token = $this->mintToken(7);
 
-        $this->getJson('/api/v1/access/'.$token.'/keywords')
+        $list = $this->getJson('/api/v1/access/'.$token.'/keywords?page=1&per_page=50&sort=mcp&direction=asc')
             ->assertOk()
             ->assertJsonPath('data.schema', SeoAccessKeywordsComposer::SCHEMA_LANDSCAPE)
-            ->assertJsonPath('data.landscape.topic_count', 1);
+            ->assertJsonPath('data.summary.topic_count', 2)
+            ->assertJsonPath('data.pagination.total', 2)
+            ->assertJsonPath('data.pagination.page', 1);
+
+        $topics = $list->json('data.topics');
+        self::assertIsArray($topics);
+        self::assertArrayHasKey('mcp', $topics[0]);
+        self::assertArrayHasKey('mcp_percent', $topics[0]);
+        self::assertArrayHasKey('detail_href', $topics[0]);
+        self::assertArrayNotHasKey('dna', $topics[0]);
+
+        $detailHref = (string) $topics[0]['detail_href'];
+        $this->getJson($detailHref)
+            ->assertOk()
+            ->assertJsonPath('data.schema', SeoAccessKeywordsComposer::SCHEMA_TOPIC)
+            ->assertJsonPath('data.topic.id', $topics[0]['id'])
+            ->assertJsonPath('data.topic.dna.0.phrase', 'balo');
+
+        $this->getJson('/api/v1/access/'.$token.'/keywords/topics/topic:99999')
+            ->assertStatus(404);
+
+        $other = $this->mintToken(456);
+        $this->getJson('/api/v1/access/'.$other.'/keywords/topics/topic:'.$topics[0]['id'])
+            ->assertStatus(404);
 
         $ok = $this->postJson('/api/v1/access/'.$token.'/keywords', [
             'keyword_ref' => 'keyword:123',
@@ -315,7 +327,8 @@ final class SeoAccessHttpTest extends TestCase
         $response = $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-08')
             ->assertOk()
             ->assertJsonPath('data.schema', SeoAccessGscComposer::SCHEMA)
-            ->assertJsonPath('data.period', '2026-08');
+            ->assertJsonPath('data.period', '2026-08')
+            ->assertJsonPath('data.available', true);
 
         self::assertArrayHasKey('performance', $response->json('data'));
         self::assertArrayHasKey('opportunities', $response->json('data'));
@@ -326,6 +339,49 @@ final class SeoAccessHttpTest extends TestCase
             ->assertOk()
             ->assertJsonMissingPath('data.opportunities');
         self::assertSame(1, $counter->calls);
+    }
+
+    public function test_gsc_unavailable_has_no_fake_zeros(): void
+    {
+        $loader = new class implements GscContextLoader
+        {
+            public function forSite(int $siteId, string $periodKey): GscContext
+            {
+                return new GscContext(
+                    siteId: $siteId,
+                    periodKey: $periodKey,
+                    metrics: [
+                        'absent' => true,
+                        'absent_reason' => 'no_synced_data',
+                        'clicks' => 0,
+                        'impressions' => 0,
+                    ],
+                    summary: [],
+                    context: [],
+                    sourceUpdatedAt: null,
+                    generatedAt: '2026-09-26T00:00:00+00:00',
+                    available: false,
+                    stale: false,
+                );
+            }
+
+            public function sourceUpdatedAt(int $siteId): ?string
+            {
+                return null;
+            }
+        };
+
+        $this->app->instance(GscContextSource::class, new GscContextSource($loader));
+        $this->app->forgetInstance(SeoAccessGscComposer::class);
+
+        $token = $this->mintToken(7);
+        $response = $this->getJson('/api/v1/access/'.$token.'/gsc?period=2026-01')
+            ->assertOk()
+            ->assertJsonPath('data.available', false)
+            ->assertJsonPath('data.reason', 'no_synced_data');
+
+        self::assertArrayNotHasKey('performance', $response->json('data'));
+        self::assertStringNotContainsString('"clicks"', (string) $response->getContent());
     }
 
     public function test_temporary_token_cannot_authorize_draft_intake(): void
@@ -410,22 +466,39 @@ final class SeoAccessHttpTest extends TestCase
                 'schema' => SeoAccessSiteKnowledgeComposer::SCHEMA,
                 'site_ref' => 'site:'.$siteId,
                 'identity' => [
-                    'domain' => 'example.com',
+                    'domain' => $siteId === 7 ? 'example.com' : 'other.test',
                     'site_title' => 'Example',
                     'website_type' => 'e-commerce',
-                    'discovery_strategy' => null,
+                    'discovery_strategy' => 'ecommerce_catalog',
                     'brand' => 'Example Brand',
                     'company_short_identity' => 'Example Co',
                     'short_description' => 'Sells bags',
                     'cms' => 'wordpress',
                 ],
                 'writing_context' => [
-                    'tone' => 'professional',
                     'business_summary' => 'Bag retailer',
                     'cta_instructions' => 'Call us',
                 ],
                 'contact' => ['phones' => [], 'emails' => [], 'socials' => [], 'address' => null],
-                'important_pages' => [['keyword' => 'balo laptop', 'url' => '/product-category/balo/']],
+                'important_pages' => [
+                    'total' => 83,
+                    'returned' => 60,
+                    'truncated' => true,
+                    'items' => array_fill(0, 60, ['keyword' => 'balo laptop', 'url' => '/product-category/balo/']),
+                ],
+                'content_distribution' => [
+                    'posts' => 600,
+                    'pages' => 10,
+                    'categories' => 6,
+                    'products' => 514,
+                    'product_categories' => 45,
+                    'other' => 0,
+                    'available' => true,
+                ],
+                'sitemaps' => [
+                    'available' => false,
+                    'urls' => [],
+                ],
                 'available' => true,
                 'generated_at' => now()->toIso8601String(),
             ];
@@ -439,40 +512,90 @@ final class SeoAccessHttpTest extends TestCase
         });
         $this->app->instance(SeoAccessSiteKnowledgeComposer::class, $site);
 
-        $content = \Mockery::mock(SeoAccessContentComposer::class);
-        $content->shouldReceive('compose')->andReturnUsing(function (int $siteId): array {
-            return [
-                'schema' => SeoAccessContentComposer::SCHEMA,
-                'site_ref' => 'site:'.$siteId,
-                'generated_at' => now()->toIso8601String(),
-                'distribution' => [
-                    'posts' => 600,
-                    'pages' => 10,
-                    'categories' => 6,
-                    'products' => 514,
-                    'product_categories' => 45,
-                    'other' => 0,
-                    'available' => true,
-                ],
-            ];
-        });
-        $this->app->instance(SeoAccessContentComposer::class, $content);
-
         $keywords = \Mockery::mock(SeoAccessKeywordsComposer::class);
-        $keywords->shouldReceive('landscape')->andReturnUsing(function (int $siteId): array {
+        $keywords->shouldReceive('landscape')->andReturnUsing(function (int $siteId, array $query = [], ?string $token = null): array {
+            $detailBase = $token !== null
+                ? '/api/v1/access/'.$token.'/keywords/topics/'
+                : '/api/v1/access/{token}/keywords/topics/';
+
             return [
                 'schema' => SeoAccessKeywordsComposer::SCHEMA_LANDSCAPE,
                 'site_ref' => 'site:'.$siteId,
                 'generated_at' => now()->toIso8601String(),
                 'source_updated_at' => null,
-                'landscape' => [
-                    'topic_count' => 1,
-                    'topics' => [
-                        'items' => [['id' => 1, 'name' => 'Bags', 'coverage' => 'partial', 'article_count' => 2]],
-                        'truncated' => false,
-                        'returned' => 1,
-                        'total' => 1,
+                'summary' => ['topic_count' => 2],
+                'topics' => [
+                    [
+                        'topic_ref' => 'topic:1',
+                        'id' => 1,
+                        'name' => 'Bags',
+                        'mcp' => 0.0,
+                        'mcp_percent' => 0,
+                        'dna_count' => 2,
+                        'article_count' => 0,
+                        'has_focus_article' => false,
+                        'coverage' => 'weak',
+                        'status' => 'active',
+                        'detail_href' => $detailBase.'topic:1',
                     ],
+                    [
+                        'topic_ref' => 'topic:2',
+                        'id' => 2,
+                        'name' => 'Backpacks',
+                        'mcp' => 72.0,
+                        'mcp_percent' => 72,
+                        'dna_count' => 4,
+                        'article_count' => 2,
+                        'has_focus_article' => true,
+                        'coverage' => 'strong',
+                        'status' => 'active',
+                        'detail_href' => $detailBase.'topic:2',
+                    ],
+                ],
+                'pagination' => [
+                    'page' => 1,
+                    'per_page' => 50,
+                    'total' => 2,
+                    'total_pages' => 1,
+                ],
+            ];
+        });
+        $keywords->shouldReceive('topicDetail')->andReturnUsing(function (int $siteId, string $topicRef, ?string $token = null): ?array {
+            if ($siteId !== 7) {
+                return null;
+            }
+            $id = 0;
+            if (preg_match('/^topic:(\d+)$/i', $topicRef, $m) === 1) {
+                $id = (int) $m[1];
+            } elseif (ctype_digit($topicRef)) {
+                $id = (int) $topicRef;
+            }
+            if (! in_array($id, [1, 2], true)) {
+                return null;
+            }
+
+            return [
+                'schema' => SeoAccessKeywordsComposer::SCHEMA_TOPIC,
+                'site_ref' => 'site:'.$siteId,
+                'generated_at' => now()->toIso8601String(),
+                'topic' => [
+                    'topic_ref' => 'topic:'.$id,
+                    'id' => $id,
+                    'name' => $id === 1 ? 'Bags' : 'Backpacks',
+                    'mcp' => $id === 1 ? 0.0 : 72.0,
+                    'mcp_percent' => $id === 1 ? 0 : 72,
+                    'dna_count' => 2,
+                    'article_count' => $id === 1 ? 0 : 2,
+                    'has_focus_article' => $id === 2,
+                    'coverage' => $id === 1 ? 'weak' : 'strong',
+                    'status' => 'active',
+                    'detail_href' => '/api/v1/access/'.($token ?? 'x').'/keywords/topics/topic:'.$id,
+                    'dna' => [
+                        ['phrase' => 'balo', 'weight' => 3],
+                    ],
+                    'focus_articles' => $id === 2
+                        ? [['article_ref' => 'article:9', 'title' => 'Best backpack', 'slug' => 'best', 'status' => 'published', 'focus_keyword' => 'balo']]
+                        : [],
                 ],
             ];
         });

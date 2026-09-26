@@ -125,9 +125,10 @@ HTTP (docs/api/SEO_ACCESS_API.md)
  → authentication (service_api_credentials, scope seo:read) OR temporary Access token
  → site selection / site-bound temporary token
  → curated SEO Access composers (gateways / Context under the hood)
- → JSON resources: site, content, keywords, gsc
+ → JSON resources: site, keywords, gsc
 ```
 
+Public SEO Access (`docs/api/SEO_ACCESS_API.md`) exposes only **site** (includes content distribution + important pages), **keywords** (landscape + topic detail + relationship POST), and **gsc**. Standalone `/content` is retired from the public catalog.
 The public API must not expose every Context slice, must not require router/part/view vocabulary, and must not expose Monthly MCP payloads as the generic API.
 
 Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md).  

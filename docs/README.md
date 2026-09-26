@@ -93,7 +93,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Keyword MCP (Landscape + Relationship) | [KEYWORD_MCP.md](contracts/KEYWORD_MCP.md) — Type 2 **CLOSED — v1** |
 | Domain Context Gateways / Registry | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — **SoT for read/context architecture** (slices, registry, formatter) |
 | SEO MCP Router (internal) | [SEO_MCP_ROUTER.md](modules/SEO_MCP_ROUTER.md) — internal discovery/parts over ContextRegistry |
-| SEO Access API (HTTP) | [SEO_ACCESS_API.md](api/SEO_ACCESS_API.md) — **canonical** Agent read (`seo:read`) + temporary access |
+| SEO Access API (HTTP) | [SEO_ACCESS_API.md](api/SEO_ACCESS_API.md) — **canonical** Agent read (`seo:read`) + temporary access (`site` / `keywords` / `gsc`) |
 | SEO Service API (HTTP, retired MCP) | [SEO_SERVICE_API.md](api/SEO_SERVICE_API.md) — retired MCP HTTP; points to SEO Access |
 | Content Project Service API (HTTP) | [CONTENT_PROJECT_SERVICE_API.md](api/CONTENT_PROJECT_SERVICE_API.md) — **canonical** Draft intake write (`content-projects:draft:write`) |
 | API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization + **Service API** (`service_api_credentials`) |

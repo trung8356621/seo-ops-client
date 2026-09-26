@@ -20,6 +20,8 @@ External callers MUST NOT need to understand MCP, ContextRegistry, routers, part
 5. POST /api/v1/services/seo/content-projects/draft/intake  → only Agent write
 ```
 
+Canonical public resources: **site**, **keywords**, **gsc** only.
+
 ## Authentication planes
 
 | Mode | Auth | Scope | Site |
@@ -36,15 +38,6 @@ Rate limits:
 - Permanent: `throttle:service-api`
 - Temporary: `throttle:temporary-access`
 
-Middleware (permanent):
-
-```text
-service.api
-throttle:service-api
-EnsureSeoServiceApi
-service.api.scope:seo:read
-```
-
 ## A. Service Access Index
 
 ```http
@@ -52,27 +45,7 @@ GET /api/v1/services/seo/access
 Authorization: Bearer svc_live_…
 ```
 
-```json
-{
-  "data": {
-    "service": "seo",
-    "sites": [
-      {
-        "site_ref": "site:7",
-        "domain": "example.com",
-        "title": "Example"
-      }
-    ],
-    "access": {
-      "method": "POST",
-      "href": "/api/v1/services/seo/access"
-    }
-  }
-}
-```
-
-- Compact Site rows only — no credentials, no Site configuration dump.
-- `title` may be `null` when unset.
+Compact Site rows only — no credentials, no Site configuration dump.
 
 ## B. Mint temporary site-bound access
 
@@ -84,7 +57,7 @@ Content-Type: application/json
 { "site_id": 7 }
 ```
 
-Allowed body field: **`site_id` only**.
+Allowed body field: **`site_id` only**. TTL **900 seconds (15 minutes)**.
 
 ```json
 {
@@ -96,21 +69,11 @@ Allowed body field: **`site_id` only**.
 }
 ```
 
-| Rule | Detail |
-|------|--------|
-| TTL | **900 seconds (15 minutes)** |
-| Storage | Laravel Cache — hashed token only; raw token never persisted |
-| Binding | `service_id` + `site_id` + source `credential_id` + `seo:read` |
-| Response | Raw temporary token appears **only** inside `access_url` |
-| Headers | `Cache-Control: no-store` |
-
 ## C. Temporary Access root
 
 ```http
 GET /api/v1/access/{token}
 ```
-
-No `Authorization` header.
 
 ```json
 {
@@ -120,7 +83,6 @@ No `Authorization` header.
     "site": { "domain": "example.com", "title": "Example" },
     "resources": [
       { "key": "site", "description": "…", "href": "/api/v1/access/{token}/site" },
-      { "key": "content", "description": "…", "href": "/api/v1/access/{token}/content" },
       { "key": "keywords", "description": "…", "href": "/api/v1/access/{token}/keywords" },
       { "key": "gsc", "description": "…", "href": "/api/v1/access/{token}/gsc" }
     ]
@@ -128,9 +90,7 @@ No `Authorization` header.
 }
 ```
 
-Canonical public resources: **site**, **content**, **keywords**, **gsc** only.
-
-Not exposed: MCP, routers, parts, indexability, inventory, publishing, seo findings, full-site internal links, sync, health.
+Not exposed: `content` (merged into site), MCP, routers, parts, indexability, inventory, publishing, seo findings, sync, health.
 
 ## D. Site resource
 
@@ -138,40 +98,159 @@ Not exposed: MCP, routers, parts, indexability, inventory, publishing, seo findi
 GET /api/v1/access/{token}/site
 ```
 
-Schema: `seo.access.site.v1`
+Schema: `seo.access.site.v2`
 
-Curated website knowledge (official Knowledge Profile preferred; draft Site MCP fills gaps only):
-
-- `identity` — domain, site_title, website_type, brand, company_short_identity, short_description, cms
-- `writing_context` — tone, business_summary, cta_instructions
-- `contact`
-- `important_pages`
-
-`cms` resolves from Site Sync capability metadata when available; otherwise `null` (never invented).
-
-**Not exposed:** local article `is_indexable` / indexability counters (not Google index coverage).
-
-## E. Content resource
-
-```http
-GET /api/v1/access/{token}/content
+```json
+{
+  "data": {
+    "schema": "seo.access.site.v2",
+    "site_ref": "site:7",
+    "identity": { "domain": "…", "site_title": "…", "website_type": "…", "brand": "…", "cms": "wordpress" },
+    "writing_context": {
+      "business_summary": "…",
+      "cta_instructions": "…"
+    },
+    "contact": { "phones": [], "emails": [], "socials": [], "address": null },
+    "important_pages": {
+      "total": 83,
+      "returned": 60,
+      "truncated": true,
+      "items": [
+        {
+          "url": "…",
+          "title": "…",
+          "seo_title": "…",
+          "page_type": "product_category",
+          "type": "product_category",
+          "keyword": "…",
+          "taxonomy": "product_cat",
+          "term_id": 12,
+          "parent_term_id": 0
+        }
+      ]
+    },
+    "content_distribution": {
+      "posts": 600,
+      "pages": 10,
+      "categories": 6,
+      "products": 514,
+      "product_categories": 45,
+      "other": 0,
+      "available": true
+    },
+    "sitemaps": {
+      "available": false,
+      "urls": []
+    }
+  }
+}
 ```
 
-Schema: `seo.access.content.v1`
+### Writing context
 
-High-signal **distribution only** (posts / pages / categories / products / product_categories / other).
+- Includes `business_summary` and `cta_instructions` only.
+- **No `tone`.** Site/domain tone is retired from AI writing resolution (`SiteDomainPromptContextService::resolveToneForSite`). Runtime/item tone is authoritative elsewhere.
+- Historical official/draft tone values may still exist in storage; Access ignores them.
 
-**Not exposed:** content inventory totals or published/draft/scheduled/private workflow counts.
+### Important pages
 
-## F. Keywords resource
+- Items are capped (Site MCP generator: max 60 verified root `product_cat`).
+- `total` prefers draft `counts.root_product_cat` for production/e-commerce catalog strategies (same verified population; **not** individual `product` counts).
+- For news/manual strategies with no reliable verified total: `total` may be `null`, `truncated = false`.
+- `truncated = total !== null && returned < total`.
+
+### Sitemaps
+
+- Only a **canonical verified** sitemap URL source would be exposed.
+- There is currently **no** verified WP Bridge / Site Sync sitemap URL contract. Do not guess `/wp-sitemap.xml` or `/sitemap_index.xml`.
+- Default: `{ "available": false, "urls": [] }`.
+- Access does **not** crawl sitemap contents.
+
+### Content distribution
+
+- Former standalone `/content` resource is **retired** from the public contract.
+- Distribution is merged into `/site` via `SiteContentDistributionAggregator` (no duplicated queries).
+
+**Not exposed:** local article indexability counters, workflow published/draft/scheduled counts, site tone.
+
+## E. Keywords resource
 
 ### Site landscape
 
 ```http
 GET /api/v1/access/{token}/keywords
+GET /api/v1/access/{token}/keywords?page=1&per_page=50&sort=mcp&direction=asc&coverage=weak&status=active&has_focus_article=false
 ```
 
-Schema: `seo.access.keywords.v1` — compact site Keyword Landscape.
+Schema: `seo.access.keywords.v2`
+
+Query parameters (allowlisted):
+
+| Param | Default | Notes |
+|-------|---------|-------|
+| `page` | `1` | ≥ 1 |
+| `per_page` | `50` | max `100` |
+| `sort` | `mcp` | `mcp`, `name`, `article_count`, `dna_count` |
+| `direction` | `asc` | `asc` \| `desc` |
+| `coverage` | — | exact coverage string when present |
+| `status` | — | exact status string when present |
+| `has_focus_article` | — | `true` \| `false` |
+
+```json
+{
+  "data": {
+    "schema": "seo.access.keywords.v2",
+    "site_ref": "site:7",
+    "source_updated_at": "…",
+    "summary": { "topic_count": 137 },
+    "topics": [
+      {
+        "topic_ref": "topic:123",
+        "id": 123,
+        "name": "…",
+        "mcp": 72.0,
+        "mcp_percent": 72,
+        "dna_count": 8,
+        "article_count": 4,
+        "has_focus_article": true,
+        "coverage": "strong",
+        "status": "active",
+        "detail_href": "/api/v1/access/{token}/keywords/topics/topic:123"
+      }
+    ],
+    "pagination": {
+      "page": 1,
+      "per_page": 50,
+      "total": 137,
+      "total_pages": 3
+    }
+  }
+}
+```
+
+- Canonical MCP score is `mcp` (Topic Core topical share, 0–100). `mcp_percent` is a rounded convenience integer.
+- Landscape list does **not** include full DNA rows (use Topic Detail).
+- There is **no** hard first-20 cut. Use pagination + sort (lowest MCP: `sort=mcp&direction=asc`).
+
+### Topic detail
+
+```http
+GET /api/v1/access/{token}/keywords/topics/{topicRef}
+```
+
+Example: `…/keywords/topics/topic:123`
+
+Schema: `seo.access.keywords.topic.v1`
+
+- Topic must belong to the token-bound Site (cross-site → 404).
+- Returns full Topic DNA (`phrase`, `weight`) and compact Focus Articles (`article_ref`, `title`, `slug`, `status`, `focus_keyword`).
+- No article body. No publishing pipeline counters.
+
+Agent flow:
+
+```text
+GET /keywords → scan landscape → follow detail_href → Topic Detail
+```
 
 ### One-keyword relationship (read-only POST)
 
@@ -189,34 +268,57 @@ Aliases: `keyword_id` accepted.
 
 Section allowlist: `keyword`, `topics`, `focus_articles`, `related_keywords`, `internal_links`, `gsc`, `meta`.
 
-No `router` / `part` / `view` fields.
+Remains separate from Topic Detail.
 
-## G. GSC resource
+## F. GSC resource
 
 ```http
 GET /api/v1/access/{token}/gsc
 GET /api/v1/access/{token}/gsc?period=2026-08&include=performance,opportunities
-```
-
-Optional read-only POST for complex filters:
-
-```http
 POST /api/v1/access/{token}/gsc
 { "period": "2026-08", "include": ["performance", "opportunities", "cannibalization"] }
 ```
 
 Schema: `seo.access.gsc.v1`
 
-One composed response: `performance`, `opportunities`, `cannibalization` (default all).  
-One GSC load per site/period via request-scoped memoization.
+Period: `YYYY-MM` (default current month). Include allowlist: `performance`, `opportunities`, `cannibalization`.
 
-Period: `YYYY-MM` (default current month).
+### Unavailable vs measured zero
+
+**Critical:** missing synced data must never look like zero performance.
+
+When no usable GSC coverage exists for the period:
+
+```json
+{
+  "data": {
+    "schema": "seo.access.gsc.v1",
+    "site_ref": "site:7",
+    "period": "2026-09",
+    "available": false,
+    "reason": "no_synced_data",
+    "message": "No GSC Search Performance data is synchronized for this site and period."
+  }
+}
+```
+
+Reasons:
+
+| reason | message (concise) |
+|--------|-------------------|
+| `no_gsc_property` | No active GSC property is configured for this site. |
+| `no_synced_data` | No GSC Search Performance data is synchronized for this site and period. |
+| `invalid_period` | Invalid GSC period. Expected YYYY-MM. |
+
+Unavailable responses omit `performance` / `opportunities` / `cannibalization` and do **not** emit clicks/impressions/opportunity counts as `0`.
+
+When persisted daily rows exist for the period and aggregation is genuinely zero: `available: true` and zeros are valid.
+
+Evidence = persisted fact existence for the period (not merely property existence).
 
 ## Read-only guarantee
 
 All `/api/v1/access/{token}/*` endpoints are **read-only**, including POST variants used for query input.
-
-They must never mutate Content Projects, publishing, generate, WordPress write, or Agent execution.
 
 ## Agent write (separate)
 
@@ -229,6 +331,7 @@ See [`CONTENT_PROJECT_SERVICE_API.md`](CONTENT_PROJECT_SERVICE_API.md).
 
 - Temporary Access tokens cannot call it.
 - `seo:read` alone cannot authorize draft write.
+- **Unchanged** by this Access refinement.
 
 ## Credential scopes (SEO)
 
@@ -239,31 +342,15 @@ See [`CONTENT_PROJECT_SERVICE_API.md`](CONTENT_PROJECT_SERVICE_API.md).
 | `content-projects:draft:write` | Shared Draft intake |
 | `*` | All scopes (testing/admin) |
 
-Create-form defaults for SEO: `service:read`, `seo:read`, `content-projects:draft:write`.
-
 ## Errors
-
-```json
-{ "error": { "code": "service_api_…", "message": "…" } }
-```
 
 | Status | Codes | When |
 |--------|-------|------|
 | 401 | `service_api_unauthorized` | Missing/invalid permanent bearer |
-| 401 | `service_api_temporary_access_invalid` | Invalid/expired temporary token (or inactive SEO after mint) |
+| 401 | `service_api_temporary_access_invalid` | Invalid/expired temporary token |
 | 403 | `service_api_forbidden`, `service_api_scope_denied`, `service_api_service_inactive` | Revoked/expired/scope/service mismatch/inactive |
-| 422 | `service_api_validation_failed` | Invalid site_id / sections / period / body |
-
-## Security checklist
-
-- TTL 15 minutes
-- Opaque high-entropy token (`access_tmp_…`)
-- Hash only in cache
-- Site-bound + service-bound + credential-bound
-- Active SEO service re-checked on each temporary request
-- `Cache-Control: no-store`
-- Token cannot change site
-- Permanent API key never in model-visible payloads
+| 404 | `service_api_not_found` | Unknown topic / cross-site topic |
+| 422 | `service_api_validation_failed` | Invalid site_id / sections / period / sort / body |
 
 ## Ownership
 
