@@ -23,6 +23,8 @@ final class ServiceApiError
 
     public const VALIDATION_FAILED = 'service_api_validation_failed';
 
+    public const TEMPORARY_ACCESS_INVALID = 'service_api_temporary_access_invalid';
+
     public static function json(string $code, string $message, int $status): JsonResponse
     {
         return response()->json([

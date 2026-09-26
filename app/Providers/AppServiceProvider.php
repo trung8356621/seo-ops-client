@@ -26,6 +26,8 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use App\Api\Middleware\AuthenticateServiceApi;
+use App\Api\Middleware\ResolveTemporaryMcpAccess;
+use App\Api\Mcp\TemporaryMcpAccessContext;
 use App\Api\Services\ServiceApiContext;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Laravel\Facades\Image as InterventionImage;
@@ -106,6 +108,7 @@ class AppServiceProvider extends ServiceProvider
         $this->registerClientLockQueueGuard();
         $this->registerClientLockHttpMiddleware();
         $this->registerServiceApiRateLimiter();
+        $this->registerTemporaryMcpRateLimiter();
     }
 
     private function registerServiceApiRateLimiter(): void
@@ -119,6 +122,23 @@ class AppServiceProvider extends ServiceProvider
             $prefix = substr((string) $request->bearerToken(), 0, 17);
 
             return Limit::perMinute(60)->by('svc-api-ip:'.$request->ip().':'.$prefix);
+        });
+    }
+
+    private function registerTemporaryMcpRateLimiter(): void
+    {
+        RateLimiter::for('temporary-mcp', function (Request $request) {
+            $context = $request->attributes->get(ResolveTemporaryMcpAccess::REQUEST_CONTEXT_KEY);
+            if ($context instanceof TemporaryMcpAccessContext) {
+                return Limit::perMinute(60)->by('tmp-mcp:'.$context->lookupId);
+            }
+
+            $token = (string) $request->route('token', '');
+            $lookup = preg_match('/^mcp_tmp_([a-f0-9]{8})_/i', $token, $m) === 1
+                ? strtolower($m[1])
+                : 'unknown';
+
+            return Limit::perMinute(30)->by('tmp-mcp-ip:'.$request->ip().':'.$lookup);
         });
     }
 
