@@ -20,11 +20,11 @@ final class SeedingDatabaseConnectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $navigationLabel = 'Seeding Database';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $modelLabel = 'Seeding DB connection';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Seeding DB connections';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?string $slug = 'seeding-database-connections';
 
@@ -32,7 +32,22 @@ final class SeedingDatabaseConnectionResource extends Resource
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Hệ thống';
+        return __('site-service.system_nav_group');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('site-service.seeding_connection_navigation_label');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('site-service.seeding_connection_model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('site-service.seeding_connection_plural_model_label');
     }
 
     /** Deprecated top-level nav — use Admin → Dịch vụ → Seeding Cấu hình. */
@@ -64,60 +79,60 @@ final class SeedingDatabaseConnectionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Kết nối Seeding')
-                    ->description('Infrastructure only — không tạo business schema. Database mặc định: omi_seeding.')
+                Forms\Components\Section::make(__('site-service.seeding_connection_section_title'))
+                    ->description(__('site-service.seeding_connection_section_description'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Tên gợi nhớ')
+                            ->label(__('site-service.seeding_connection_name_label'))
                             ->required()
                             ->maxLength(255)
-                            ->default('Seeding local'),
+                            ->default(__('site-service.seeding_connection_name_default')),
 
                         Forms\Components\Select::make('type')
-                            ->label('Loại cấu hình')
+                            ->label(__('site-service.seeding_connection_type_label'))
                             ->options([
-                                'manual' => 'Thủ công',
+                                'manual' => __('site-service.seeding_connection_type_manual'),
                             ])
                             ->default('manual')
                             ->required()
                             ->native(false),
 
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Kích hoạt')
+                            ->label(__('site-service.seeding_connection_active_label'))
                             ->default(true),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Cấu hình Database')
+                Forms\Components\Section::make(__('site-service.seeding_connection_database_section_title'))
                     ->schema([
                         Forms\Components\TextInput::make('database')
-                            ->label('Database name')
+                            ->label(__('site-service.database_name_label'))
                             ->default('omi_seeding')
                             ->required()
-                            ->helperText('Không dùng omi_seo_ai.'),
+                            ->helperText(__('site-service.seeding_connection_database_helper')),
 
                         Forms\Components\TextInput::make('host')
-                            ->label('Host')
+                            ->label(__('site-service.host_label'))
                             ->default('127.0.0.1')
                             ->required(),
 
                         Forms\Components\TextInput::make('port')
-                            ->label('Port')
+                            ->label(__('site-service.port_label'))
                             ->default('3306')
                             ->required(),
 
                         Forms\Components\TextInput::make('username')
-                            ->label('Username')
+                            ->label(__('site-service.username_label'))
                             ->required(),
 
                         Forms\Components\TextInput::make('password')
-                            ->label('Password')
+                            ->label(__('site-service.password_label'))
                             ->password()
                             ->revealable()
                             ->dehydrated(fn (?string $state): bool => filled($state))
                             ->helperText(fn (?SeedingDatabaseConnection $record): string => $record
-                                ? 'Để trống nếu không đổi mật khẩu.'
-                                : 'Mật khẩu MySQL (không lưu vào services.config).'),
+                                ? __('site-service.seeding_connection_password_edit_helper')
+                                : __('site-service.seeding_connection_password_create_helper')),
                     ])
                     ->columns(2),
             ]);
@@ -128,7 +143,7 @@ final class SeedingDatabaseConnectionResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable()->sortable(),
-                Tables\Columns\TextColumn::make('database')->label('Database'),
+                Tables\Columns\TextColumn::make('database')->label(__('site-service.database_label')),
                 Tables\Columns\TextColumn::make('host'),
                 Tables\Columns\IconColumn::make('is_active')->boolean(),
                 Tables\Columns\TextColumn::make('updated_at')->dateTime(),

@@ -15,12 +15,12 @@ trait RunsSeoConnectionMigrations
     protected function seoMigrationHeaderAction(): Actions\Action
     {
         return Actions\Action::make('runMigrations')
-            ->label('Chạy migration addon')
+            ->label(__('site-service.seo_connection_run_migrations_label'))
             ->icon('heroicon-o-arrow-down-tray')
             ->color('gray')
             ->requiresConfirmation()
-            ->modalHeading('Chạy migration SEO Content AI')
-            ->modalDescription('Chỉ áp dụng các migration còn thiếu trên database của connection này. Không tạo lại bảng đã có trong bảng migrations.')
+            ->modalHeading(__('site-service.seo_connection_run_migrations_modal_heading'))
+            ->modalDescription(__('site-service.seo_connection_run_migrations_modal_description'))
             ->action(fn (): mixed => $this->runSeoConnectionMigrations(manual: true));
     }
 
@@ -38,7 +38,7 @@ trait RunsSeoConnectionMigrations
             $result = $service->runMigrationsForConnection($record->fresh());
         } catch (Throwable $exception) {
             Notification::make()
-                ->title('Migration thất bại')
+                ->title(__('site-service.migration_failed'))
                 ->body($this->formatMigrationError($exception->getMessage()))
                 ->danger()
                 ->send();
@@ -49,8 +49,8 @@ trait RunsSeoConnectionMigrations
         if (! ($result['executed'] ?? false)) {
             if ($manual) {
                 Notification::make()
-                    ->title('Không có migration mới')
-                    ->body('Database đã có đầy đủ migration addon (hoặc chưa có file migration nào pending).')
+                    ->title(__('site-service.no_new_migrations'))
+                    ->body(__('site-service.seo_connection_no_new_migrations_body'))
                     ->success()
                     ->send();
             }
@@ -59,8 +59,8 @@ trait RunsSeoConnectionMigrations
         }
 
         Notification::make()
-            ->title('Migration đã chạy')
-            ->body(sprintf('Đã áp dụng %d migration còn thiếu.', (int) ($result['pending'] ?? 0)))
+            ->title(__('site-service.migration_executed'))
+            ->body(__('site-service.migration_applied_pending_count', ['count' => (int) ($result['pending'] ?? 0)]))
             ->success()
             ->send();
     }
@@ -68,8 +68,7 @@ trait RunsSeoConnectionMigrations
     private function formatMigrationError(string $message): string
     {
         if (str_contains($message, 'already exists')) {
-            return $message.' — Có thể bảng đã tồn tại nhưng chưa ghi vào bảng migrations của DB này. '
-                .'Hãy đồng bộ bảng migrations thủ công hoặc liên hệ dev, không lưu lại form để tránh chạy lặp.';
+            return __('site-service.seo_connection_migration_error_already_exists', ['message' => $message]);
         }
 
         return $message;

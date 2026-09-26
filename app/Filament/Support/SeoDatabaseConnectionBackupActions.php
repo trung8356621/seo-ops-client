@@ -19,22 +19,22 @@ final class SeoDatabaseConnectionBackupActions
     public static function exportTableAction(): Tables\Actions\Action
     {
         return Tables\Actions\Action::make('exportSql')
-            ->label('Export SQL')
+            ->label(__('site-service.export_sql_label'))
             ->icon('heroicon-o-arrow-down-tray')
             ->color('success')
             ->visible(fn (SeoDatabaseConnection $record): bool => (bool) $record->is_active)
             ->action(fn (SeoDatabaseConnection $record): BinaryFileResponse => app(SeoDatabaseBackupService::class)->downloadResponse($record))
-            ->successNotificationTitle('Đang tải file backup SQL...');
+            ->successNotificationTitle(__('site-service.seo_connection_backup_downloading'));
     }
 
     public static function importTableAction(): Tables\Actions\Action
     {
         return Tables\Actions\Action::make('importSql')
-            ->label('Import SQL')
+            ->label(__('site-service.import_sql_label'))
             ->icon('heroicon-o-arrow-up-tray')
             ->color('danger')
-            ->modalHeading('Khôi phục database từ SQL')
-            ->modalSubmitActionLabel('Bắt đầu khôi phục')
+            ->modalHeading(__('site-service.seo_connection_restore_from_sql_modal_heading'))
+            ->modalSubmitActionLabel(__('site-service.seo_connection_restore_from_sql_submit_label'))
             ->requiresConfirmation()
             ->form(self::importFormSchema())
             ->action(fn (array $data, SeoDatabaseConnection $record): mixed => self::runImport($data, $record));
@@ -50,13 +50,13 @@ final class SeoDatabaseConnectionBackupActions
                 ->label('')
                 ->content(new HtmlString(
                     '<div class="rounded-lg border border-danger-300 bg-danger-50 px-4 py-3 text-sm text-danger-800 dark:border-danger-700 dark:bg-danger-950 dark:text-danger-200">'
-                    .'<strong>Cảnh báo:</strong> Hành động này sẽ ghi đè và thay đổi cấu trúc dữ liệu hiện tại trong database đích. '
-                    .'Vui lòng chắc chắn bạn đã sao lưu dữ liệu trước khi thực hiện!'
+                    .'<strong>'.e(__('site-service.warning')).':</strong> '
+                    .e(__('site-service.seo_connection_import_warning_body'))
                     .'</div>',
                 )),
 
             Forms\Components\FileUpload::make('backup_file')
-                ->label('File backup (.sql hoặc .sql.gz)')
+                ->label(__('site-service.seo_connection_backup_file_label'))
                 ->disk('local')
                 ->directory('seo-db-imports')
                 ->required()
@@ -68,10 +68,10 @@ final class SeoDatabaseConnectionBackupActions
                     'application/x-gzip',
                     'application/octet-stream',
                 ])
-                ->helperText('File lớn sẽ được xử lý qua queue (nếu queue worker đang chạy).'),
+                ->helperText(__('site-service.seo_connection_backup_file_helper')),
 
             Forms\Components\Toggle::make('force_queue')
-                ->label('Luôn chạy import qua queue (khuyến nghị cho file lớn)')
+                ->label(__('site-service.seo_connection_force_queue_label'))
                 ->default(false),
         ];
     }
@@ -84,8 +84,8 @@ final class SeoDatabaseConnectionBackupActions
         $relativePath = Arr::first((array) ($data['backup_file'] ?? []));
         if (! is_string($relativePath) || $relativePath === '') {
             Notification::make()
-                ->title('Import thất bại')
-                ->body('Vui lòng chọn file SQL backup.')
+                ->title(__('site-service.import_failed'))
+                ->body(__('site-service.seo_connection_select_backup_file'))
                 ->danger()
                 ->send();
 
@@ -103,7 +103,7 @@ final class SeoDatabaseConnectionBackupActions
             );
         } catch (Throwable $exception) {
             Notification::make()
-                ->title('Import thất bại')
+                ->title(__('site-service.import_failed'))
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
@@ -113,8 +113,8 @@ final class SeoDatabaseConnectionBackupActions
 
         if ($result['queued']) {
             Notification::make()
-                ->title('Import đã được đưa vào hàng đợi')
-                ->body('Theo dõi tiến trình qua task_jobs #'.($result['task_job_id'] ?? '—').'.')
+                ->title(__('site-service.import_queued'))
+                ->body(__('site-service.seo_connection_import_queued_body', ['id' => (string) ($result['task_job_id'] ?? '—')]))
                 ->success()
                 ->send();
 
@@ -122,8 +122,8 @@ final class SeoDatabaseConnectionBackupActions
         }
 
         Notification::make()
-            ->title('Import hoàn tất')
-            ->body('Đã thực thi '.$result['statements'].' câu lệnh SQL.')
+            ->title(__('site-service.import_completed'))
+            ->body(__('site-service.seo_connection_import_completed_body', ['count' => (int) $result['statements']]))
             ->success()
             ->send();
     }

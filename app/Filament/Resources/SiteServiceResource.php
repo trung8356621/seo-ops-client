@@ -26,21 +26,23 @@ class SiteServiceResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-puzzle-piece';
 
-    // Đặt vào nhóm Site Management để quản lý tập trung
-    protected static ?string $navigationGroup = 'Quản lý';
-
     protected static ?int $navigationSort = 2;
 
     protected static bool $shouldRegisterNavigation = false;
 
     public static function getNavigationLabel(): string
     {
-        return __('Activated Services');
+        return __('site-service.site_service_navigation_label');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.management');
     }
 
     public static function getModelLabel(): string
     {
-        return __('Site Service');
+        return __('site-service.site_service_model_label');
     }
 
     public static function shouldRegisterNavigation(): bool
@@ -82,14 +84,14 @@ class SiteServiceResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make(__('Service Activation'))
-                    ->description(__('Connect an addon service to a site or directly to an owner account.'))
+                Forms\Components\Section::make(__('site-service.site_service_activation_section_title'))
+                    ->description(__('site-service.site_service_activation_section_description'))
                     ->schema([
                         Forms\Components\Select::make('bound_type')
-                            ->label(__('Bound to'))
+                            ->label(__('site-service.site_service_bound_to_label'))
                             ->options([
-                                SiteServiceBindingService::BOUND_SITE => __('Site (domain)'),
-                                SiteServiceBindingService::BOUND_USER => __('User (owner)'),
+                                SiteServiceBindingService::BOUND_SITE => __('site-service.site_service_bound_site_option'),
+                                SiteServiceBindingService::BOUND_USER => __('site-service.site_service_bound_user_option'),
                             ])
                             ->default(SiteServiceBindingService::BOUND_SITE)
                             ->required()
@@ -106,7 +108,7 @@ class SiteServiceResource extends Resource
                             }),
 
                         Forms\Components\Select::make('site_id')
-                            ->label(__('Select Site'))
+                            ->label(__('site-service.site_service_select_site_label'))
                             ->options(fn (): array => static::siteSelectOptions())
                             ->required(fn (Get $get): bool => ($get('bound_type') ?? SiteServiceBindingService::BOUND_SITE) === SiteServiceBindingService::BOUND_SITE)
                             ->visible(fn (Get $get): bool => ($get('bound_type') ?? SiteServiceBindingService::BOUND_SITE) === SiteServiceBindingService::BOUND_SITE)
@@ -114,7 +116,7 @@ class SiteServiceResource extends Resource
                             ->preload(),
 
                         Forms\Components\Select::make('user_id')
-                            ->label(__('Select Owner'))
+                            ->label(__('site-service.site_service_select_owner_label'))
                             ->options(fn (): array => static::ownerSelectOptions())
                             ->required(fn (Get $get): bool => ($get('bound_type') ?? '') === SiteServiceBindingService::BOUND_USER)
                             ->visible(fn (Get $get): bool => ($get('bound_type') ?? '') === SiteServiceBindingService::BOUND_USER)
@@ -122,7 +124,7 @@ class SiteServiceResource extends Resource
                             ->preload(),
 
                         Forms\Components\Select::make('service_id')
-                            ->label(__('Select Service'))
+                            ->label(__('site-service.site_service_select_service_label'))
                             ->options(fn () => Service::where('is_active', true)->pluck('name', 'id'))
                             ->required()
                             ->live() // Kích hoạt tương tác thời gian thực
@@ -160,11 +162,11 @@ class SiteServiceResource extends Resource
                             }),
 
                         Forms\Components\Select::make('status')
-                            ->label(__('Status'))
+                            ->label(__('site-service.status_label'))
                             ->options([
-                                'active' => __('Active'),
-                                'inactive' => __('Inactive'),
-                                'maintenance' => __('Maintenance'),
+                                'active' => __('site-service.status_active'),
+                                'inactive' => __('site-service.status_inactive'),
+                                'maintenance' => __('site-service.status_maintenance'),
                             ])
                             ->default('active')
                             ->required(),
@@ -172,15 +174,15 @@ class SiteServiceResource extends Resource
 
                 ...SeoSiteServiceDatabaseConfigurator::formSchema(),
 
-                Forms\Components\Section::make(__('Service Settings'))
-                    ->description(__('Configure specific parameters for this service instance.'))
+                Forms\Components\Section::make(__('site-service.site_service_settings_section_title'))
+                    ->description(__('site-service.site_service_settings_section_description'))
                     ->schema([
                         Forms\Components\KeyValue::make('settings')
-                            ->label(__('Custom Configuration'))
-                            ->keyLabel(__('Parameter Name'))
-                            ->valueLabel(__('Value'))
-                            ->addActionLabel(__('Add Parameter'))
-                            ->helperText(__('Example: api_key, webhook_url, target_language, etc.'))
+                            ->label(__('site-service.site_service_custom_configuration_label'))
+                            ->keyLabel(__('site-service.site_service_parameter_name_label'))
+                            ->valueLabel(__('site-service.site_service_parameter_value_label'))
+                            ->addActionLabel(__('site-service.site_service_add_parameter_label'))
+                            ->helperText(__('site-service.site_service_settings_helper'))
                             ->formatStateUsing(function (?array $state): array {
                                 if (! is_array($state)) {
                                     return [];
@@ -212,14 +214,14 @@ class SiteServiceResource extends Resource
             ->modifyQueryUsing(fn (Builder $query): Builder => $query->with('service'))
             ->columns([
                 Tables\Columns\TextColumn::make('bound_type')
-                    ->label(__('Bound'))
+                    ->label(__('site-service.site_service_bound_label'))
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => $state === SiteServiceBindingService::BOUND_USER
-                        ? __('User')
-                        : __('Site')),
+                        ? __('site-service.site_service_bound_user_short')
+                        : __('site-service.site_service_bound_site_short')),
 
                 Tables\Columns\TextColumn::make('bound_target')
-                    ->label(__('Bound to'))
+                    ->label(__('site-service.site_service_bound_to_label'))
                     ->state(fn (?SiteService $record): string => $record instanceof SiteService ? $record->boundLabel() : '')
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->where(function (Builder $inner) use ($search): void {
@@ -229,19 +231,19 @@ class SiteServiceResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('site.domain')
-                    ->label(__('Website'))
+                    ->label(__('site-service.website_label'))
                     ->searchable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('service.name')
-                    ->label(__('Service Name'))
+                    ->label(__('site-service.site_service_name_label'))
                     ->badge()
                     ->color('info')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
-                    ->label(__('Status'))
+                    ->label(__('site-service.status_label'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
@@ -252,17 +254,17 @@ class SiteServiceResource extends Resource
                     ->formatStateUsing(fn (string $state): string => __($state)),
 
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label(__('Last Updated'))
+                    ->label(__('site-service.site_service_last_updated_label'))
                     ->dateTime()
                     ->sortable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('site_id')
-                    ->label(__('Filter by Site'))
+                    ->label(__('site-service.site_service_filter_by_site_label'))
                     ->options(fn (): array => static::siteSelectOptions()),
 
                 Tables\Filters\SelectFilter::make('service_id')
-                    ->label(__('Filter by Service'))
+                    ->label(__('site-service.site_service_filter_by_service_label'))
                     ->relationship('service', 'name'),
             ])
             ->actions($actions)

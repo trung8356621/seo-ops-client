@@ -12,9 +12,13 @@ import json
 import os
 import re
 import sys
+import subprocess
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 VI_CHAR = re.compile(
     r"[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ"
@@ -45,9 +49,12 @@ FLUENT_UI = re.compile(
     r"(?:label:\s*)?(?P<arg>[^;\n]{0,400})",
     re.IGNORECASE,
 )
-TRANSLATED_CALL = re.compile(r"(?:__|trans|@lang)\(\s*(['\"])(?P<key>.*?)\1")
+TRANSLATED_CALL = re.compile(
+    r"(?:__|trans|@lang)\(\s*(?P<quote>['\"])(?P<key>(?:\\.|(?!\1).)*?)\1"
+)
 MIXED_CONCAT = re.compile(
-    r"(?:__|trans)\([^)]+\)\s*\.\s*['\"][^'\"]+['\"]|['\"][^'\"]+['\"]\s*\.\s*(?:__|trans)\("
+    r"(?:__|trans)\([^\n;]*?\)\s*\.\s*(?P<q1>['\"])(?P<after>(?:\\.|(?!\1).)+?)\1"
+    r"|(?P<q2>['\"])(?P<before>(?:\\.|(?!\3).)+?)\3\s*\.\s*(?:__|trans)\("
 )
 STRING_LITERAL = re.compile(r"(['\"])(?P<val>(?:\\.|(?!\1).)*?)\1", re.DOTALL)
 
@@ -80,6 +87,8 @@ def looks_english_ui(s: str) -> bool:
     if not s or has_vi(s) or s in ALLOWLIST_DEFAULT:
         return False
     if CODEISH.match(s) or re.fullmatch(r"[\d\W_]+", s):
+        return False
+    if re.fullmatch(r"[a-z-]+\([^)]*\)", s, re.I):
         return False
     if " " in s and re.search(r"[A-Za-z]{2,}", s):
         return True
@@ -243,6 +252,11 @@ def scan_file(path: Path, root: Path) -> list[dict[str, Any]]:
             )
 
     for m in MIXED_CONCAT.finditer(text):
+        fragment = m.group("after") or m.group("before") or ""
+        if "<" in fragment or re.fullmatch(r"(?:\\[nrt]|[\s\W])+", fragment):
+            continue
+        if not re.search(r"[A-Za-z]", fragment) and not has_vi(fragment):
+            continue
         findings.append(
             finding("MIXED_COMPOSITION", rel, line_at(m.start()), "concat", m.group(0)[:120], mod)
         )
@@ -358,6 +372,39 @@ def load_json_keys(path: Path) -> dict[str, str]:
     return out
 
 
+def load_php_keys(path: Path) -> dict[str, str]:
+    """Load executable Laravel language arrays accurately, with parser fallback."""
+    try:
+        proc = subprocess.run(
+            [
+                "php",
+                "-r",
+                "echo json_encode(require $argv[1], JSON_UNESCAPED_UNICODE);",
+                str(path),
+            ],
+            check=True,
+            capture_output=True,
+            timeout=30,
+        )
+        data = json.loads(proc.stdout.decode("utf-8"))
+        out: dict[str, str] = {}
+
+        def walk(obj: Any, prefix: str = "") -> None:
+            if isinstance(obj, dict):
+                for key, value in obj.items():
+                    walk(value, f"{prefix}.{key}" if prefix else str(key))
+            elif isinstance(obj, list):
+                for index, value in enumerate(obj):
+                    walk(value, f"{prefix}.{index}" if prefix else str(index))
+            else:
+                out[prefix] = "" if obj is None else str(obj)
+
+        walk(data)
+        return out
+    except (OSError, subprocess.SubprocessError, UnicodeDecodeError, json.JSONDecodeError):
+        return flatten_php_array(path.read_text(encoding="utf-8", errors="replace"))
+
+
 def parity_report(client_root: Path, addons_root: Path) -> dict[str, Any]:
     pairs: list[tuple[str, Path, Path]] = []
     en_json, vi_json = client_root / "lang" / "en.json", client_root / "lang" / "vi.json"
@@ -398,16 +445,8 @@ def parity_report(client_root: Path, addons_root: Path) -> dict[str, Any]:
             en_keys = load_json_keys(en_p) if en_p.exists() else {}
             vi_keys = load_json_keys(vi_p) if vi_p.exists() else {}
         else:
-            en_keys = (
-                flatten_php_array(en_p.read_text(encoding="utf-8", errors="replace"))
-                if en_p.exists()
-                else {}
-            )
-            vi_keys = (
-                flatten_php_array(vi_p.read_text(encoding="utf-8", errors="replace"))
-                if vi_p.exists()
-                else {}
-            )
+            en_keys = load_php_keys(en_p) if en_p.exists() else {}
+            vi_keys = load_php_keys(vi_p) if vi_p.exists() else {}
         en_only = sorted(set(en_keys) - set(vi_keys))
         vi_only = sorted(set(vi_keys) - set(en_keys))
         identical = [
@@ -470,8 +509,18 @@ def main() -> int:
     args = ap.parse_args()
 
     allow: set[str] = set(ALLOWLIST_DEFAULT)
-    if args.allowlist and Path(args.allowlist).exists():
-        allow |= set(json.loads(Path(args.allowlist).read_text(encoding="utf-8")))
+    scoped_allow: set[tuple[str, str]] = set()
+    allowlist_path = Path(args.allowlist) if args.allowlist else Path(args.client) / "tools/i18n-allowlist.json"
+    if allowlist_path.exists():
+        payload = json.loads(allowlist_path.read_text(encoding="utf-8"))
+        if isinstance(payload, list):
+            allow |= set(payload)
+        elif isinstance(payload, dict):
+            allow |= set(payload.get("strings", []))
+            scoped_allow |= {
+                (str(row.get("file", "")), str(row.get("current", "")))
+                for row in payload.get("scoped", [])
+            }
 
     all_findings: list[dict[str, Any]] = []
     for root_s, name in ((args.client, "omnichannel-client"), (args.addons, "omnichannel-addons")):
@@ -480,7 +529,7 @@ def main() -> int:
             continue
         for fpath in walk_ui_files(root):
             for row in scan_file(fpath, root):
-                if row["current"] in allow:
+                if row["current"] in allow or (row["file"], row["current"]) in scoped_allow:
                     continue
                 row["repo"] = name
                 row["severity"] = severity_for(row)
@@ -509,14 +558,22 @@ def main() -> int:
     en_json = load_json_keys(Path(args.client) / "lang" / "en.json")
     vi_json = load_json_keys(Path(args.client) / "lang" / "vi.json")
     missing_vi_for_json_style = []
+    filtered: list[dict[str, Any]] = []
     for f in deduped:
         if f.get("symbol") == "__()/json-key-style":
             k = f["current"]
-            if k not in vi_json and k not in en_json:
+            lookup_key = k.replace("\\'", "'").replace('\\"', '"')
+            if lookup_key not in vi_json and lookup_key not in en_json:
                 missing_vi_for_json_style.append(f)
                 f["category"] = "MISSING_TRANSLATION_KEY"
                 f["severity"] = "High"
                 f["note"] = "English-as-key used but absent from lang/en.json and lang/vi.json"
+                filtered.append(f)
+                continue
+            if lookup_key in en_json and lookup_key in vi_json:
+                continue
+        filtered.append(f)
+    deduped = filtered
 
     # recount after reclass
     by_cat = defaultdict(int)

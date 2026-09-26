@@ -22,15 +22,27 @@ class UserResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'Quản lý';
-
     protected static ?int $navigationSort = 0;
 
-    protected static ?string $navigationLabel = 'Thành viên';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.management');
+    }
 
-    protected static ?string $modelLabel = 'Thành viên';
+    public static function getNavigationLabel(): string
+    {
+        return __('Members');
+    }
 
-    protected static ?string $pluralModelLabel = 'Thành viên';
+    public static function getModelLabel(): string
+    {
+        return __('Member');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Members');
+    }
 
     public static function canAccess(): bool
     {
@@ -42,7 +54,7 @@ class UserResource extends Resource
         $hierarchy = app(UserHierarchyService::class);
         $addonTabs = app(\App\Core\Members\MembersSectionRegistry::class)->formTabs();
 
-        $coreTab = Forms\Components\Tabs\Tab::make('Tài khoản')
+        $coreTab = Forms\Components\Tabs\Tab::make(__('Account'))
             ->icon('heroicon-o-user-circle')
             ->schema([
                 Forms\Components\Section::make(__('Account'))
@@ -50,11 +62,11 @@ class UserResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label(__('Display name'))
-                            ->helperText('Biệt danh / tên hiển thị (users.name).')
+                            ->helperText(__('Display name stored in users.name.'))
                             ->required()
                             ->maxLength(255),
                         Forms\Components\TextInput::make('email')
-                            ->label('Email')
+                            ->label(__('Email'))
                             ->email()
                             ->required()
                             ->unique(ignoreRecord: true)
@@ -91,9 +103,9 @@ class UserResource extends Resource
                         Forms\Components\Select::make('status')
                             ->label(__('Status'))
                             ->options([
-                                'normal' => 'Hoạt động',
-                                'block' => 'Đã khóa',
-                                'pending' => 'Chờ duyệt',
+                                'normal' => __('Active'),
+                                'block' => __('Blocked'),
+                                'pending' => __('Pending approval'),
                             ])
                             ->required()
                             ->native(false),
@@ -104,7 +116,7 @@ class UserResource extends Resource
                     ->extraAttributes(['class' => 'max-w-4xl'])
                     ->schema([
                         Forms\Components\Select::make('parent_id')
-                            ->label('Chủ tài khoản (Owner)')
+                            ->label(__('Account owner (Owner)'))
                             ->options(fn (): array => $hierarchy->ownersForSelect()
                                 ->mapWithKeys(fn (User $u): array => [$u->id => $u->display_name.' ('.$u->email.')'])
                                 ->all())
@@ -120,7 +132,7 @@ class UserResource extends Resource
                                 && (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER)
                             ->disabled(fn (): bool => (string) (auth()->user()?->role ?? '') === User::ROLE_OWNER)
                             ->dehydrated()
-                            ->helperText('Staff thuộc Owner này (parent_id). Không còn cấp Manager trung gian.'),
+                            ->helperText(__('Staff belongs to this Owner (parent_id). There is no intermediate Manager level.')),
                     ])
                     ->columns(2)
                     ->visible(fn (Get $get): bool => (string) $get('role') === User::ROLE_STAFF),
@@ -157,11 +169,11 @@ class UserResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('email')
-                    ->label('Email')
+                    ->label(__('Email'))
                     ->searchable()
                     ->sortable()
                     ->copyable()
-                    ->copyMessage(__('Đã copy email'))
+                    ->copyMessage(__('Email copied'))
                     ->copyMessageDuration(2000),
 
                 Tables\Columns\TextColumn::make('role')
@@ -182,7 +194,7 @@ class UserResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('owner.name')
-                    ->label('Chủ tài khoản')
+                    ->label(__('Account owner'))
                     ->placeholder('—')
                     ->toggleable(),
 
@@ -211,7 +223,7 @@ class UserResource extends Resource
                         'staff' => 'Staff',
                     ]),
                 Tables\Filters\SelectFilter::make('parent_id')
-                    ->label('Chủ tài khoản')
+                    ->label(__('Account owner'))
                     ->relationship('owner', 'name', fn (Builder $query) => $query->where('role', User::ROLE_OWNER))
                     ->searchable()
                     ->preload(),
@@ -219,11 +231,11 @@ class UserResource extends Resource
             ])
             ->actions([
                 Tables\Actions\Action::make('customizeMember')
-                    ->label('Tùy chỉnh')
+                    ->label(__('Customize'))
                     ->icon('heroicon-o-cog-6-tooth')
-                    ->modalHeading('Tùy chỉnh thành viên')
-                    ->modalSubmitActionLabel(__('Lưu'))
-                    ->modalCancelActionLabel(__('Huỷ'))
+                    ->modalHeading(__('Customize member'))
+                    ->modalSubmitActionLabel(__('Save'))
+                    ->modalCancelActionLabel(__('Cancel'))
                     ->modalWidth('md')
                     ->fillForm(function (User $record): array {
                         $addon = app(\App\Core\Members\MembersSectionRegistry::class)
@@ -238,11 +250,11 @@ class UserResource extends Resource
                             ->customizeModalSchema();
 
                         return [
-                            Forms\Components\Section::make('Tài khoản')
+                            Forms\Components\Section::make(__('Account'))
                                 ->schema([
                                     Forms\Components\TextInput::make('name')
                                         ->label(__('Display name'))
-                                        ->helperText('Biệt danh / tên hiển thị — lưu vào users.name')
+                                        ->helperText(__('Display name stored in users.name.'))
                                         ->required()
                                         ->maxLength(255),
                                 ]),
@@ -258,7 +270,7 @@ class UserResource extends Resource
                             ->afterUserSaved($record->fresh() ?? $record, $data);
 
                         \Filament\Notifications\Notification::make()
-                            ->title('Đã lưu tùy chỉnh thành viên')
+                            ->title(__('Member customization saved'))
                             ->success()
                             ->send();
                     }),
@@ -321,13 +333,13 @@ class UserResource extends Resource
     {
         if ((string) (auth()->user()?->role ?? '') === User::ROLE_OWNER) {
             return [
-                User::ROLE_STAFF => 'Nhân viên (Staff)',
+                User::ROLE_STAFF => __('Staff (Staff)'),
             ];
         }
 
         return [
-            User::ROLE_OWNER => 'Chủ tài khoản (Owner)',
-            User::ROLE_STAFF => 'Nhân viên (Staff)',
+            User::ROLE_OWNER => __('Account owner (Owner)'),
+            User::ROLE_STAFF => __('Staff (Staff)'),
         ];
     }
 }

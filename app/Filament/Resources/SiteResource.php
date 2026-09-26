@@ -23,24 +23,26 @@ class SiteResource extends Resource
         return auth()->user()?->role === \App\Models\User::ROLE_OWNER;
     }
 
-    /** Menu cấp cao trong nhóm Quản lý */
-    protected static ?string $navigationGroup = 'Quản lý';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.management');
+    }
 
     public static function getNavigationLabel(): string
     {
-        return __('Site Management');
+        return __('site-service.site_resource_navigation_label');
     }
 
     public static function getModelLabel(): string
     {
-        return __('Site');
+        return __('site-service.site_resource_model_label');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Sites');
+        return __('site-service.site_resource_plural_model_label');
     }
 
     public static function form(Form $form): Form
@@ -79,41 +81,41 @@ class SiteResource extends Resource
 
                 // Bổ sung trường SSL
                 Forms\Components\Toggle::make('ssl')
-                    ->label('SSL (HTTPS)')
+                    ->label(__('site-service.site_resource_ssl_label'))
                     ->default(true)
-                    ->helperText(__('Enable if the site uses HTTPS protocol.'))
+                    ->helperText(__('site-service.site_resource_ssl_helper'))
                     ->required(),
 
                 Forms\Components\Select::make('status')
-                    ->label(__('Status'))
+                    ->label(__('site-service.status_label'))
                     ->options([
-                        'active' => __('Active'),
-                        'inactive' => __('Inactive'),
-                        'maintenance' => __('Maintenance'),
+                        'active' => __('site-service.status_active'),
+                        'inactive' => __('site-service.status_inactive'),
+                        'maintenance' => __('site-service.status_maintenance'),
                     ])
                     ->default('active')
                     ->required()
                     ->native(false),
 
-                Forms\Components\Section::make(__('WP Headless'))
-                    ->description(__('Cấu hình Headless cho site (chỉ hiện khi Site đã kích hoạt service WP Headless).'))
+                Forms\Components\Section::make(__('site-service.site_resource_wp_headless_section_title'))
+                    ->description(__('site-service.site_resource_wp_headless_section_description'))
                     ->schema([
                         Forms\Components\TextInput::make('wp_headless.type')
-                            ->label(__('Type'))
-                            ->placeholder('wordpress, elementor_based, ...')
+                            ->label(__('site-service.type_label'))
+                            ->placeholder(__('site-service.site_resource_wp_type_placeholder'))
                             ->maxLength(64),
                         Forms\Components\TextInput::make('wp_headless.public_url')
-                            ->label(__('Public URL'))
+                            ->label(__('site-service.public_url_label'))
                             ->placeholder('https://example.com')
                             ->url()
                             ->maxLength(512),
                         Forms\Components\TextInput::make('wp_headless.headless_next_dev')
-                            ->label(__('Headless Next.js (dev)'))
+                            ->label(__('site-service.site_resource_headless_next_dev_label'))
                             ->placeholder('http://localhost:3000')
                             ->maxLength(255)
-                            ->helperText(__('URL Next.js khi chạy dev.')),
+                            ->helperText(__('site-service.site_resource_headless_next_dev_helper')),
                         Forms\Components\Toggle::make('wp_headless.is_dev')
-                            ->label(__('Đang dùng môi trường dev'))
+                            ->label(__('site-service.site_resource_wp_is_dev_label'))
                             ->default(false),
                     ])
                     ->columns(2)

@@ -28,7 +28,7 @@ final class EditSeedingDatabaseConnection extends EditRecord
     {
         return [
             Action::make('testConnection')
-                ->label('Kiểm tra kết nối')
+                ->label(__('site-service.connection_test'))
                 ->color('gray')
                 ->action(fn () => $this->runConnectionTest()),
             Actions\DeleteAction::make(),
@@ -89,7 +89,7 @@ final class EditSeedingDatabaseConnection extends EditRecord
             );
         } catch (RuntimeException $exception) {
             Notification::make()
-                ->title('Kết nối thất bại')
+                ->title(__('site-service.connection_failed'))
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();
@@ -98,7 +98,7 @@ final class EditSeedingDatabaseConnection extends EditRecord
         }
 
         Notification::make()
-            ->title('Kết nối thành công')
+            ->title(__('site-service.connection_success'))
             ->success()
             ->send();
     }

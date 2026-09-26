@@ -14,11 +14,11 @@
                         </div>
                     </div>
                     <x-filament::badge :color="$service['is_active'] ? 'success' : 'gray'">
-                        {{ $service['is_active'] ? 'Đang bật' : 'Đang tắt' }}
+                        {{ $service['is_active'] ? __('site-service.manage_services_status_on') : __('site-service.manage_services_status_off') }}
                     </x-filament::badge>
                 </div>
                 <p class="text-sm text-gray-500 mb-6 h-12 line-clamp-2">
-                    {{ $service['config']['description'] ?? 'Không có mô tả.' }}
+                    {{ $service['config']['description'] ?? __('site-service.manage_services_no_description') }}
                 </p>
                 <div class="flex gap-2">
                     <x-filament::button 
@@ -26,7 +26,7 @@
                         :color="$service['is_active'] ? 'danger' : 'success'" 
                         class="flex-1"
                     >
-                        {{ $service['is_active'] ? 'Hủy kích hoạt' : 'Kích hoạt' }}
+                        {{ $service['is_active'] ? __('site-service.manage_services_deactivate') : __('site-service.manage_services_activate') }}
                     </x-filament::button>
                 </div>
             </x-filament::section>

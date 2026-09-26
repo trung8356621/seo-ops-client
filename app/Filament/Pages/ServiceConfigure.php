@@ -71,29 +71,29 @@ final class ServiceConfigure extends Page implements HasForms
 
     public function getTitle(): string
     {
-        return 'Cấu hình '.ServiceIdentity::displayName($this->service);
+        return __('site-service.service_configure_title', ['service' => ServiceIdentity::displayName($this->service)]);
     }
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Section::make('Database')
-                    ->description('Một Service tối đa một kết nối DB. Mật khẩu được phép để trống (MySQL local root không password).')
+                Section::make(__('site-service.service_configure_db_section_title'))
+                    ->description(__('site-service.service_configure_db_section_description'))
                     ->schema([
-                        TextInput::make('database')->label('Database name')->required(),
-                        TextInput::make('host')->label('Host')->required(),
-                        TextInput::make('port')->label('Port')->required(),
-                        TextInput::make('username')->label('Username')->required(),
+                        TextInput::make('database')->label(__('site-service.database_name_label'))->required(),
+                        TextInput::make('host')->label(__('site-service.host_label'))->required(),
+                        TextInput::make('port')->label(__('site-service.port_label'))->required(),
+                        TextInput::make('username')->label(__('site-service.username_label'))->required(),
                         TextInput::make('password')
-                            ->label('Password')
+                            ->label(__('site-service.password_label'))
                             ->password()
                             ->revealable()
                             ->helperText(fn (): string => $this->existingConnection() instanceof ServiceDatabaseConnection
-                                ? 'Để trống = giữ mật khẩu đã lưu. Tick “Không dùng mật khẩu” để xóa.'
-                                : 'Để trống = không dùng mật khẩu (hợp lệ nếu MySQL chấp nhận).'),
+                                ? __('site-service.service_configure_password_keep_helper')
+                                : __('site-service.service_configure_password_blank_helper')),
                         Toggle::make('clear_password')
-                            ->label('Không dùng mật khẩu / xóa mật khẩu đã lưu')
+                            ->label(__('site-service.service_configure_clear_password_label'))
                             ->visible(fn (): bool => $this->existingConnection() instanceof ServiceDatabaseConnection)
                             ->live()
                             ->afterStateUpdated(function (?bool $state, callable $set): void {
@@ -101,7 +101,7 @@ final class ServiceConfigure extends Page implements HasForms
                                     $set('password', '');
                                 }
                             }),
-                        Toggle::make('is_active')->label('Kích hoạt')->default(true),
+                        Toggle::make('is_active')->label(__('site-service.service_configure_active_label'))->default(true),
                     ])
                     ->columns(2),
             ])
@@ -134,15 +134,15 @@ final class ServiceConfigure extends Page implements HasForms
     {
         return [
             Action::make('open')
-                ->label('Mở '.ServiceIdentity::displayName($this->service))
+                ->label(__('site-service.service_configure_open', ['service' => ServiceIdentity::displayName($this->service)]))
                 ->url(ServiceIdentity::openUrl($this->service))
                 ->openUrlInNewTab(),
             Action::make('test')
-                ->label('Kiểm tra kết nối')
+                ->label(__('site-service.connection_test'))
                 ->color('gray')
                 ->action(fn () => $this->testConnection()),
             Action::make('save')
-                ->label('Lưu')
+                ->label(__('site-service.save'))
                 ->action(fn () => $this->save()),
         ];
     }
@@ -153,7 +153,7 @@ final class ServiceConfigure extends Page implements HasForms
             $this->runDraftTest($this->form->getState());
         } catch (RuntimeException $e) {
             Notification::make()
-                ->title('Kết nối thất bại')
+                ->title(__('site-service.connection_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -161,14 +161,14 @@ final class ServiceConfigure extends Page implements HasForms
             return;
         }
 
-        Notification::make()->title('Kết nối thành công')->success()->send();
+        Notification::make()->title(__('site-service.connection_success'))->success()->send();
     }
 
     public function save(): void
     {
         $service = $this->catalogService();
         if (! $service instanceof Service) {
-            Notification::make()->title('Service chưa được provision')->danger()->send();
+            Notification::make()->title(__('site-service.service_not_provisioned'))->danger()->send();
 
             return;
         }
@@ -184,7 +184,7 @@ final class ServiceConfigure extends Page implements HasForms
             $this->runDraftTest($state);
         } catch (RuntimeException $e) {
             Notification::make()
-                ->title('Không lưu — kết nối thất bại')
+                ->title(__('site-service.save_failed_connection_failed'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -208,12 +208,12 @@ final class ServiceConfigure extends Page implements HasForms
 
             app(ServiceDatabaseConnectionResolver::class)->bootstrap($this->service, forceReconnect: true);
         } catch (Throwable $e) {
-            Notification::make()->title('Lưu thất bại')->body($e->getMessage())->danger()->send();
+            Notification::make()->title(__('site-service.save_failed'))->body($e->getMessage())->danger()->send();
 
             return;
         }
 
-        Notification::make()->title('Đã lưu cấu hình DB')->success()->send();
+        Notification::make()->title(__('site-service.saved_db_configuration'))->success()->send();
         $this->fillFormFromSaved();
     }
 

@@ -25,8 +25,6 @@ final class HelpTopicsAdmin extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-question-mark-circle';
 
-    protected static ?string $navigationGroup = 'Hệ thống';
-
     protected static ?string $slug = 'help-topics';
 
     protected static ?int $navigationSort = 40;
@@ -41,12 +39,17 @@ final class HelpTopicsAdmin extends Page
 
     public static function getNavigationLabel(): string
     {
-        return 'Help Topics';
+        return __('Help Topics');
     }
 
     public function getTitle(): string
     {
-        return 'Help Topics';
+        return __('Help Topics');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.system');
     }
 
     public static function canAccess(): bool
@@ -205,7 +208,7 @@ final class HelpTopicsAdmin extends Page
 
         if (($result['ok'] ?? false) !== true) {
             Notification::make()
-                ->title('Không cập nhật được group order')
+                ->title(__('Could not update group order'))
                 ->body((string) ($result['error'] ?? 'unknown'))
                 ->danger()
                 ->send();
@@ -215,8 +218,8 @@ final class HelpTopicsAdmin extends Page
 
         if (($result['published'] ?? false) === true) {
             Notification::make()
-                ->title('Đã lưu group order')
-                ->body('Đã publish lên Help repo (Global Help dùng chung).')
+                ->title(__('Group order saved'))
+                ->body(__('Published to the Help repository (shared Global Help).'))
                 ->success()
                 ->send();
 
@@ -224,10 +227,10 @@ final class HelpTopicsAdmin extends Page
         }
 
         Notification::make()
-            ->title('Đã lưu group order (local)')
+            ->title(__('Group order saved locally'))
             ->body(($result['error'] ?? null)
-                ? 'Local OK · remote: '.$result['error']
-                : 'Local cache updated. GitHub write chưa cấu hình — Sync/publish token để chia sẻ remote.')
+                ? __('Local save succeeded. Remote: :error', ['error' => $result['error']])
+                : __('Local cache updated. GitHub write is not configured. Add a sync/publish token to share remotely.'))
             ->warning()
             ->send();
     }
@@ -237,13 +240,13 @@ final class HelpTopicsAdmin extends Page
         $result = app(HelpRemoteSyncService::class)->sync(force: true);
         if (($result['ok'] ?? false) === true) {
             Notification::make()
-                ->title('Help cache synced')
+                ->title(__('Help cache synced'))
                 ->body('Version: '.($result['version'] ?? '—').' · Topics: '.($result['topic_count'] ?? 0))
                 ->success()
                 ->send();
         } else {
             Notification::make()
-                ->title('Help sync failed — using last-known-good')
+                ->title(__('Help sync failed — using last-known-good'))
                 ->body((string) ($result['error'] ?? 'unknown'))
                 ->warning()
                 ->send();

@@ -47,9 +47,9 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->maxContentWidth(MaxWidth::Full)
             ->navigationGroups([
-                NavigationGroup::make('Quản lý'),
-                NavigationGroup::make('Hệ thống'),
-                NavigationGroup::make('Automation'),
+                NavigationGroup::make(__('navigation.management')),
+                NavigationGroup::make(__('navigation.system')),
+                NavigationGroup::make(__('navigation.automation')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')

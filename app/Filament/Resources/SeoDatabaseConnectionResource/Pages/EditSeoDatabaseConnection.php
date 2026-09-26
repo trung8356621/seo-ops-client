@@ -32,7 +32,7 @@ class EditSeoDatabaseConnection extends EditRecord
     {
         return [
             Actions\Action::make('exportSql')
-                ->label('Export SQL')
+                ->label(__('site-service.export_sql_label'))
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success')
                 ->visible(fn (): bool => $this->record instanceof SeoDatabaseConnection
@@ -41,27 +41,27 @@ class EditSeoDatabaseConnection extends EditRecord
                 ->action(fn (): BinaryFileResponse => app(SeoDatabaseBackupService::class)->downloadResponse($this->record)),
 
             Actions\Action::make('importSql')
-                ->label('Import SQL')
+                ->label(__('site-service.import_sql_label'))
                 ->icon('heroicon-o-arrow-up-tray')
                 ->color('danger')
                 ->visible(fn (): bool => $this->record instanceof SeoDatabaseConnection
                     && SeoDatabaseConnectionAccess::canEditConnection($this->record))
-                ->modalHeading('Khôi phục database từ SQL')
-                ->modalSubmitActionLabel('Bắt đầu khôi phục')
+                ->modalHeading(__('site-service.seo_connection_restore_from_sql_modal_heading'))
+                ->modalSubmitActionLabel(__('site-service.seo_connection_restore_from_sql_submit_label'))
                 ->requiresConfirmation()
                 ->form(SeoDatabaseConnectionBackupActions::importFormSchema())
                 ->action(fn (array $data): mixed => SeoDatabaseConnectionBackupActions::runImport($data, $this->record)),
 
             Actions\Action::make('runMigrations')
-                ->label('Chạy migration addon')
+                ->label(__('site-service.seo_connection_run_migrations_label'))
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
                 ->requiresConfirmation()
-                ->modalDescription('Chỉ chạy các migration addon SEO còn thiếu trên database đích.')
+                ->modalDescription(__('site-service.seo_connection_run_migrations_modal_description_short'))
                 ->action(fn (): mixed => $this->runPendingMigrations()),
 
             Actions\Action::make('testConnection')
-                ->label('Kiểm tra kết nối')
+                ->label(__('site-service.connection_test'))
                 ->icon('heroicon-o-signal')
                 ->color('gray')
                 ->action(fn (): mixed => $this->runConnectionTest()),
@@ -155,8 +155,8 @@ class EditSeoDatabaseConnection extends EditRecord
             $this->assertConnectionTest($this->form->getState());
         } catch (ValidationException $exception) {
             Notification::make()
-                ->title('Kết nối thất bại')
-                ->body(collect($exception->errors())->flatten()->first() ?? 'Lỗi không xác định.')
+                ->title(__('site-service.connection_failed'))
+                ->body(collect($exception->errors())->flatten()->first() ?? __('site-service.unknown_error'))
                 ->danger()
                 ->send();
 
@@ -164,7 +164,7 @@ class EditSeoDatabaseConnection extends EditRecord
         }
 
         Notification::make()
-            ->title('Kết nối thành công')
+            ->title(__('site-service.connection_success'))
             ->success()
             ->send();
     }
@@ -178,7 +178,7 @@ class EditSeoDatabaseConnection extends EditRecord
 
             if (! $result['executed']) {
                 Notification::make()
-                    ->title('Không có migration pending')
+                    ->title(__('site-service.no_pending_migrations'))
                     ->success()
                     ->send();
 
@@ -186,13 +186,13 @@ class EditSeoDatabaseConnection extends EditRecord
             }
 
             Notification::make()
-                ->title('Migration addon đã chạy')
-                ->body('Đã áp dụng '.$result['pending'].' migration còn thiếu.')
+                ->title(__('site-service.migration_addon_executed'))
+                ->body(__('site-service.migration_applied_pending_count', ['count' => (int) $result['pending']]))
                 ->success()
                 ->send();
         } catch (Throwable $exception) {
             Notification::make()
-                ->title('Migration thất bại')
+                ->title(__('site-service.migration_failed'))
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();

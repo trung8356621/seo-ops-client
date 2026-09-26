@@ -17,17 +17,26 @@ final class CoreSettingsHub extends Page
 {
     protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static ?string $navigationGroup = 'Hệ thống';
-
-    protected static ?string $navigationLabel = 'Cài đặt';
-
-    protected static ?string $title = 'Cài đặt';
-
     protected static ?string $slug = 'settings';
 
     protected static ?int $navigationSort = 5;
 
     protected static string $view = 'filament.pages.core-settings-hub';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.system');
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('Settings');
+    }
+
+    public function getTitle(): string
+    {
+        return __('Settings');
+    }
 
     public static function canAccess(): bool
     {

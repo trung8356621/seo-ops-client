@@ -30,7 +30,7 @@ class CreateSeoDatabaseConnection extends CreateRecord
     {
         return [
             Actions\Action::make('testConnection')
-                ->label('Kiểm tra kết nối')
+                ->label(__('site-service.connection_test'))
                 ->icon('heroicon-o-signal')
                 ->color('gray')
                 ->action(fn (): mixed => $this->runConnectionTest()),
@@ -45,7 +45,7 @@ class CreateSeoDatabaseConnection extends CreateRecord
     {
         if (SeoDatabaseConnectionAccess::ownerHasConnection()) {
             throw ValidationException::withMessages([
-                'name' => 'Mỗi owner chỉ được tạo một SEO Database Connection. Hãy chỉnh sửa connection hiện có.',
+                'name' => __('site-service.seo_connection_single_per_owner_validation'),
             ]);
         }
 
@@ -100,7 +100,7 @@ class CreateSeoDatabaseConnection extends CreateRecord
 
         if (($data['type'] ?? '') === 'manual' && $plainPassword === '') {
             throw ValidationException::withMessages([
-                'password' => 'Mật khẩu database là bắt buộc khi tạo kết nối thủ công.',
+                'password' => __('site-service.seo_connection_password_required_on_create'),
             ]);
         }
 
@@ -119,8 +119,8 @@ class CreateSeoDatabaseConnection extends CreateRecord
             $this->assertConnectionTest($this->form->getState());
         } catch (ValidationException $exception) {
             Notification::make()
-                ->title('Kết nối thất bại')
-                ->body(collect($exception->errors())->flatten()->first() ?? 'Lỗi không xác định.')
+                ->title(__('site-service.connection_failed'))
+                ->body(collect($exception->errors())->flatten()->first() ?? __('site-service.unknown_error'))
                 ->danger()
                 ->send();
 
@@ -128,7 +128,7 @@ class CreateSeoDatabaseConnection extends CreateRecord
         }
 
         Notification::make()
-            ->title('Kết nối thành công')
+            ->title(__('site-service.connection_success'))
             ->success()
             ->send();
     }
@@ -139,14 +139,14 @@ class CreateSeoDatabaseConnection extends CreateRecord
             $result = app(SeoDatabaseConnectionService::class)->runMigrationsForConnection($record->fresh(['users']));
             if ($result['executed']) {
                 Notification::make()
-                    ->title('Migration addon đã chạy')
-                    ->body('Đã áp dụng '.$result['pending'].' migration còn thiếu.')
+                    ->title(__('site-service.migration_addon_executed'))
+                    ->body(__('site-service.migration_applied_pending_count', ['count' => (int) $result['pending']]))
                     ->success()
                     ->send();
             }
         } catch (Throwable $exception) {
             Notification::make()
-                ->title('Migration thất bại')
+                ->title(__('site-service.migration_failed'))
                 ->body($exception->getMessage())
                 ->danger()
                 ->send();

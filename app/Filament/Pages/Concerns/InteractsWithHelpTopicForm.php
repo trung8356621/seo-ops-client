@@ -106,7 +106,7 @@ trait InteractsWithHelpTopicForm
 
         if (($result['ok'] ?? false) !== true) {
             Notification::make()
-                ->title('Publish failed')
+                ->title(__('Publish failed'))
                 ->body((string) ($result['error'] ?? 'unknown'))
                 ->danger()
                 ->send();
@@ -119,7 +119,7 @@ trait InteractsWithHelpTopicForm
 
         Notification::make()
             ->title(($result['source'] ?? '') === 'local-repo' ? 'Saved to local Help repo' : 'Published to Git')
-            ->body('Version '.($result['version'] ?? '—'))
+            ->body(__('Version ').($result['version'] ?? '—'))
             ->success()
             ->send();
     }

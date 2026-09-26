@@ -25,7 +25,7 @@ final class MembersTabsAndWorkspaceHubTest extends TestCase
     {
         $source = (string) file_get_contents((new ReflectionClass(UserResource::class))->getFileName());
         self::assertStringContainsString("Tabs::make('member_tabs')", $source);
-        self::assertStringContainsString("Tab::make('Tài khoản')", $source);
+        self::assertStringContainsString("Tab::make(__('Account'))", $source);
         self::assertStringContainsString('formTabs()', $source);
         self::assertStringContainsString("__('Account')", $source);
         self::assertStringContainsString("__('Organization')", $source);

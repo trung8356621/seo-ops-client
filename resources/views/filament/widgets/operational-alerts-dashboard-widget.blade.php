@@ -40,7 +40,7 @@
                                     'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' => $alert['severity'] === 'critical',
                                     'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300' => $alert['severity'] === 'warning',
                                 ])>
-                                    {{ $alert['severity'] === 'critical' ? 'Khẩn cấp' : 'Cảnh báo' }}
+                                    {{ $alert['severity'] === 'critical' ? __('Urgent') : __('Warning') }}
                                 </span>
                             </div>
 
@@ -50,7 +50,7 @@
 
                             <div class="mt-2.5 flex items-center justify-between gap-2 border-t border-gray-200/60 pt-2 dark:border-gray-800/60">
                                 <span class="text-[11px] text-gray-400 dark:text-gray-500">
-                                    {{ $alert['detected_at_humans'] ?: 'Vừa phát hiện' }}
+                                    {{ $alert['detected_at_humans'] ?: __('Just discovered') }}
                                 </span>
 
                                 @if (! empty($alert['action_url']) && ! empty($alert['action_label']))

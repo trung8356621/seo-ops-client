@@ -27,7 +27,7 @@ final class CreateSeedingDatabaseConnection extends CreateRecord
     {
         return [
             Action::make('testConnection')
-                ->label('Kiểm tra kết nối')
+                ->label(__('site-service.connection_test'))
                 ->color('gray')
                 ->action(fn () => $this->runConnectionTest()),
         ];
@@ -60,7 +60,7 @@ final class CreateSeedingDatabaseConnection extends CreateRecord
         $plainPassword = trim((string) ($data['password'] ?? ''));
         if ($plainPassword === '') {
             throw ValidationException::withMessages([
-                'password' => 'Mật khẩu database là bắt buộc khi tạo kết nối.',
+                'password' => __('site-service.seeding_connection_password_required_on_create'),
             ]);
         }
 
@@ -80,8 +80,8 @@ final class CreateSeedingDatabaseConnection extends CreateRecord
             $this->assertConnectionTest($this->form->getState());
         } catch (ValidationException $exception) {
             Notification::make()
-                ->title('Kết nối thất bại')
-                ->body(collect($exception->errors())->flatten()->first() ?? 'Lỗi không xác định.')
+                ->title(__('site-service.connection_failed'))
+                ->body(collect($exception->errors())->flatten()->first() ?? __('site-service.unknown_error'))
                 ->danger()
                 ->send();
 
@@ -89,7 +89,7 @@ final class CreateSeedingDatabaseConnection extends CreateRecord
         }
 
         Notification::make()
-            ->title('Kết nối thành công')
+            ->title(__('site-service.connection_success'))
             ->success()
             ->send();
     }

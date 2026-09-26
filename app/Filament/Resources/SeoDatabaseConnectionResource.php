@@ -25,20 +25,23 @@ class SeoDatabaseConnectionResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-circle-stack';
 
-    protected static ?string $navigationGroup = 'Hệ thống';
-
     protected static ?int $navigationSort = 2;
 
     protected static ?string $slug = 'seo-database-connections';
 
     public static function getNavigationLabel(): string
     {
-        return 'SEO Database Connections';
+        return __('SEO Database Connections');
     }
 
     public static function getModelLabel(): string
     {
-        return 'SEO Database Connection';
+        return __('SEO Database Connection');
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.system');
     }
 
     /**
@@ -85,27 +88,27 @@ class SeoDatabaseConnectionResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Thông tin kết nối')
+                Forms\Components\Section::make(__('site-service.seo_connection_info_section_title'))
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Tên gợi nhớ')
+                            ->label(__('site-service.seo_connection_name_label'))
                             ->required()
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('hash_id')
-                            ->label('Hash ID (URL)')
+                            ->label(__('site-service.seo_connection_hash_id_label'))
                             ->disabled()
                             ->dehydrated(false)
                             ->visible(fn (?SeoDatabaseConnection $record): bool => $record !== null)
                             ->helperText(fn (?SeoDatabaseConnection $record): ?string => $record
-                                ? 'Panel URL: '.url($record->panelUrl())
+                                ? __('site-service.seo_connection_panel_url', ['url' => url($record->panelUrl())])
                                 : null),
 
                         Forms\Components\Select::make('type')
-                            ->label('Loại cấu hình')
+                            ->label(__('site-service.seo_connection_type_label'))
                             ->options([
-                                'auto' => 'Tự động (Docker Production)',
-                                'manual' => 'Thủ công (Hosting lẻ)',
+                                'auto' => __('site-service.seo_connection_type_auto'),
+                                'manual' => __('site-service.seo_connection_type_manual'),
                             ])
                             ->default(fn (): string => (string) config('seo-content-ai.default_connection_type', 'manual'))
                             ->required()
@@ -113,54 +116,54 @@ class SeoDatabaseConnectionResource extends Resource
                             ->native(false),
 
                         Forms\Components\Toggle::make('is_active')
-                            ->label('Kích hoạt')
+                            ->label(__('site-service.seo_connection_active_label'))
                             ->default(true),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Cấu hình Database')
-                    ->description('Thông tin kết nối MySQL cho workspace SEO.')
+                Forms\Components\Section::make(__('site-service.seo_connection_database_section_title'))
+                    ->description(__('site-service.seo_connection_database_section_description'))
                     ->schema([
                         Forms\Components\TextInput::make('database')
-                            ->label('Database name')
+                            ->label(__('site-service.database_name_label'))
                             ->helperText(fn (Get $get): string => ($get('type') ?? 'auto') === 'auto'
-                                ? 'Để trống sẽ tự sinh omi_seo_ai_auto_{id} sau khi lưu (chế độ auto).'
-                                : 'Tên database MySQL (bắt buộc khi cấu hình thủ công).')
+                                ? __('site-service.seo_connection_database_auto_helper')
+                                : __('site-service.seo_connection_database_manual_helper'))
                             ->required(fn (Get $get): bool => ($get('type') ?? '') === 'manual'),
 
                         Forms\Components\TextInput::make('host')
-                            ->label('Host')
+                            ->label(__('site-service.host_label'))
                             ->default('127.0.0.1')
                             ->visible(fn (Get $get): bool => ($get('type') ?? '') === 'manual')
                             ->required(fn (Get $get): bool => ($get('type') ?? '') === 'manual'),
 
                         Forms\Components\TextInput::make('port')
-                            ->label('Port')
+                            ->label(__('site-service.port_label'))
                             ->default('3306')
                             ->visible(fn (Get $get): bool => ($get('type') ?? '') === 'manual')
                             ->required(fn (Get $get): bool => ($get('type') ?? '') === 'manual'),
 
                         Forms\Components\TextInput::make('username')
-                            ->label('Username')
+                            ->label(__('site-service.username_label'))
                             ->visible(fn (Get $get): bool => ($get('type') ?? '') === 'manual')
                             ->required(fn (Get $get): bool => ($get('type') ?? '') === 'manual'),
 
                         Forms\Components\TextInput::make('password')
-                            ->label('Password')
+                            ->label(__('site-service.password_label'))
                             ->password()
                             ->revealable()
                             ->dehydrated(fn (?string $state): bool => filled($state))
-                            ->helperText('Để trống nếu không đổi (chỉ khi sửa).')
+                            ->helperText(__('site-service.seo_connection_password_edit_helper'))
                             ->visible(fn (Get $get): bool => ($get('type') ?? '') === 'manual'),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Owner')
-                    ->description('Mỗi connection gắn với một owner đã kích hoạt Site Service SEO Content AI.')
+                Forms\Components\Section::make(__('site-service.seo_connection_owner_section_title'))
+                    ->description(__('site-service.seo_connection_owner_section_description'))
                     ->visible(false)
                     ->schema([
                         Forms\Components\Select::make('owner_id')
-                            ->label('Owner')
+                            ->label(__('site-service.owner_label'))
                             ->options(fn (?SeoDatabaseConnection $record): array => app(SiteServiceBindingService::class)
                                 ->eligibleOwnerSelectOptions(
                                     $record !== null
@@ -182,18 +185,18 @@ class SeoDatabaseConnectionResource extends Resource
                     ->searchable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('hash_id')
-                    ->label('Hash')
+                    ->label(__('site-service.hash_label'))
                     ->copyable()
                     ->limit(16)
                     ->tooltip(fn (SeoDatabaseConnection $record): string => $record->hash_id),
                 Tables\Columns\TextColumn::make('type')
                     ->badge(),
                 Tables\Columns\TextColumn::make('database')
-                    ->label('Database'),
+                    ->label(__('site-service.database_label')),
                 Tables\Columns\IconColumn::make('is_active')
                     ->boolean(),
                 Tables\Columns\TextColumn::make('owner_email')
-                    ->label('Owner')
+                    ->label(__('site-service.owner_label'))
                     ->getStateUsing(fn (SeoDatabaseConnection $record): string => (string) ($record->users()->value('email') ?? '—')),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->dateTime()
@@ -205,7 +208,7 @@ class SeoDatabaseConnectionResource extends Resource
                 SeoDatabaseConnectionBackupActions::importTableAction()
                     ->visible(fn (SeoDatabaseConnection $record): bool => SeoDatabaseConnectionAccess::canEditConnection($record)),
                 Tables\Actions\Action::make('open_panel')
-                    ->label('Mở panel SEO')
+                    ->label(__('site-service.seo_connection_open_panel_label'))
                     ->icon('heroicon-o-arrow-top-right-on-square')
                     ->url(fn (SeoDatabaseConnection $record): string => url($record->panelUrl()))
                     ->openUrlInNewTab()

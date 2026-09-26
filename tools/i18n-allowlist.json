@@ -22,5 +22,262 @@
     "GSC",
     "DataForSEO",
     "Imagen"
+  ],
+  "scoped": [
+    {
+      "file": "content/resources/js/article-editor.jsx",
+      "current": "Chưa có ảnh trong album",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "content/resources/js/components/OutlineLockedHeadingBlock.jsx",
+      "current": "Click: focus Outline · Double-click: sửa trong Outline",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang cập nhật bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang lưu nội dung — vui lòng chờ…",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang đưa vào hàng đợi WordPress",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang lưu và xếp hàng đồng bộ — tab sẽ tự đóng khi xong…",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang đồng bộ từ WordPress",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang ghi đè bài viết bằng bản WordPress — vui lòng chờ…",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang xóa bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đang xóa bài viết — vui lòng chờ…",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Vui lòng chờ — không chỉnh sửa cho đến khi hoàn tất.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Không thể lưu khi đang mất kết nối.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Giữ thay đổi trên editor — sẽ lưu lại khi kết nối trở lại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Editor chưa sẵn sàng — tải lại trang rồi thử lại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Không lưu được bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Lưu thất bại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Editor chưa sẵn sàng — tải lại trang rồi thử lại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Không đồng bộ được WordPress",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Đồng bộ thất bại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Có nháp chưa lưu — bấm để chọn lại",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Có nháp chưa lưu — bấm để chọn lại",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Thêm tiêu đề bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "URL dự kiến theo cấu hình permalink WordPress của site bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Chưa có cấu hình permalink từ WordPress",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "URL dự kiến, chưa có slug hoặc cấu hình permalink",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/edit-article.blade.php",
+      "current": "Permalink thực tế đang tồn tại trên WordPress",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Không tải được taxonomy catalog.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Không tải được taxonomy catalog.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Danh mục cha (product_cat)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Danh mục cha (category)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Danh mục sản phẩm (product_cat)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Chuyên mục (category)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Không lấy được taxonomy catalog từ WordPress. Không dùng danh mục local làm nguồn.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "WordPress chưa có term nào cho taxonomy này.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Không đọc được articleCategoryIds từ Livewire",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Chưa chọn danh mục",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Chọn ít nhất 1 danh mục product_cat trước khi đăng lên WordPress.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Chọn ít nhất 1 danh mục category trước khi đăng lên WordPress.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Tìm danh mục cha...",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "Tìm danh mục...",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-categories.blade.php",
+      "current": "`Đã chọn ${selectedIds.length} danh mục`",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Cập nhật lịch",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Cập nhật",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Editor chưa sẵn sàng — tải lại trang rồi thử lại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Không lưu được bài viết",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Lưu thất bại.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Xóa toàn bộ {{ $articleRevisionCount }} phiên bản lịch sử? Thao tác không thể hoàn tác.",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sidebar.blade.php",
+      "current": "Xóa sạch lịch sử chỉnh sửa",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sync-panel.blade.php",
+      "current": "Đồng bộ WordPress (Ctrl+Shift+S)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sync-panel.blade.php",
+      "current": "Đăng bài viết mới lên WordPress (Ctrl+Shift+S)",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    },
+    {
+      "file": "seo-content-ai-compat/resources/views/filament/resources/article-resource/pages/partials/publish-sync-panel.blade.php",
+      "current": "Đồng bộ WordPress thất bại ở client",
+      "reason": "Frozen by content/editor-widget-locks.json"
+    }
   ]
 }

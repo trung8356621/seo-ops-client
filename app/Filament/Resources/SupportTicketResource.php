@@ -20,11 +20,14 @@ final class SupportTicketResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
-    protected static ?string $navigationGroup = 'Hệ thống';
-
     protected static ?int $navigationSort = 40;
 
     protected static ?string $slug = 'support-tickets';
+
+    public static function getNavigationGroup(): ?string
+    {
+        return __('navigation.system');
+    }
 
     public static function getNavigationLabel(): string
     {
