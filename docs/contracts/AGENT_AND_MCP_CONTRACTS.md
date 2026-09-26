@@ -9,14 +9,16 @@ Module UX: `docs/modules/AGENT_WORKSPACE.md` (legacy isolated). Automation owner
 Keyword MCP (Landscape Type 1 + Relationship Type 2): [`KEYWORD_MCP.md`](KEYWORD_MCP.md).  
 Domain context gateways (Site / Keywords / Relationship / GSC): [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md).
 
-### Isolation note (2026-09-26)
+### Isolation / retirement note (2026-09-26)
 
-- Old **Agent Workspace** addon runtime is skipped/disabled (`ADDON_SKIP_SLUGS=…,agent`). Source kept for reference under `addons/agent/`.
+- Old **Agent Workspace** product is **RETIRED** (`ADDON_SKIP_SLUGS=…,agent`; `seo_agent_*` tables dropped). Source under `addons/agent/` is reference-only.
 - Filament Agent UI / `AgentGateway` (Workspace facade) is **not** active.
-- HTTP routes below remain on **Content Project** controllers as **legacy compatibility** until the future Agent rewrite defines canonical Domain/MCP APIs. They are **not** redesigned in the isolation cutover.
+- HTTP routes below remain on **Content Project** controllers as **legacy compatibility** until a separate MCP/API refactor. They are **not** redesigned here.
+- `seo_content_project_agent_*` tables remain **ACTIVE** (Content Project MCP/planner) — distinct from retired `seo_agent_*`.
+- `Omnichannel\Addons\Agent\Extension\*` is transitional shared infrastructure (not Agent Workspace). Namespace extraction is a separate future task.
 - Do **not** claim future Agent Service APIs already exist.
 - WordPress Bridge (`/api/seo-wp-bridge/*`) and System Remote are out of scope.
-- New context architecture must **not** depend on retired Agent Gateway / `ContentProjectMcpServer` ownership. Prefer [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md). Domain Context ≠ MCP transport; no HTTP loopback.
+- New context architecture must **not** depend on retired Agent Gateway. Prefer [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md). Domain Context ≠ MCP transport; no HTTP loopback.
 
 ---
 

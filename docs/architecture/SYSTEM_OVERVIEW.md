@@ -56,7 +56,7 @@ Panels do **not** register Filament login pages. Guests → `/login`.
 
 ## Product modules
 
-Canonical maps under `docs/modules/` (Content Projects, Publishing, Site Sync, WordPress Bridge, Article Editor, Media, SEO Audit/Keywords, Site MCP/Domains, Seeding, Prompts/AI, Agent, Automation, Contextual Help, …).
+Canonical maps under `docs/modules/` (Content Projects, Publishing, Site Sync, WordPress Bridge, Article Editor, Media, SEO Audit/Keywords, Site MCP/Domains, Seeding, Prompts/AI, **Agent Workspace = RETIRED / reference-only**, Automation, Contextual Help, …). Content Project MCP (`/api/v1/agent/mcp/*`) remains active under content-projects until a separate refactor.
 
 Cross-cutting: `docs/contracts/`. Ops: `docs/operations/`. Freeze: `ARCHITECTURE_FREEZE_V1.md` + ADR in `ARCHITECTURE_DECISIONS.md`.
 

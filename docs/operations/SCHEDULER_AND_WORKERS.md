@@ -102,15 +102,16 @@ aaPanel tasks + Final smoke test: [AAPANEL_QUEUE_RUNTIME.md](AAPANEL_QUEUE_RUNTI
 
 **Invariant:** `AuditLinkStatusJob` (`seo-audit`) and CP policy dispatch (`automation-policy`) must **not** share the worker that consumes `automation-external`.
 
-## Automation (three owners)
+## Automation (active owners)
 
 Registered in `SeoContentAiServiceProvider` (distinct names, `withoutOverlapping`):
 
 | Schedule | Cadence | Target |
 |----------|---------|--------|
 | `automation:dispatch-scheduled` | everyMinute | Business Hook rules |
-| `agent:automations:dispatch-due` | everyMinute | Agent Automations → `RunAgentAutomationJob` (unique `agent-automation-run:{id}`) |
 | CP automation policies | hourly job on `automation-policy` | `DispatchContentProjectAutomationPoliciesJob` |
+
+**Retired:** `agent:automations:dispatch-due` / `RunAgentAutomationJob` (Agent Workspace product; `seo_agent_automations*` dropped).
 
 ### Queues
 

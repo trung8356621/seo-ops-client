@@ -62,19 +62,13 @@ Audit JSON: `storage/app/database-cleanup/cleanup-YYYY-mm-dd-His.json` (no passw
 CLI: `seo:site-sync`, `seo:site-sync-reconcile`, Ops Center Site Sync tab.  
 Module: `docs/modules/SITE_SYNC.md`.
 
-## 4. Agent — common failures
+## 4. Agent Workspace — RETIRED
 
-| Symptom | Check |
-|---------|--------|
-| Write rejected | Confirmation token / Gateway policy / capability exposure |
-| Cross-site data leak attempt | Timeline/metrics fail-closed by design |
-| Automation not due | `agent:automations:dispatch-due` on schedule; worker runs `RunAgentAutomationJob` |
-| Job → domain mutate | Forbidden — Job → Runner → Agent paths only |
-| Skills Eloquent write | Forbidden — Gateway / CommandBus only |
-| Empty metrics | Allowlist reject / fail-open write — check Aggregator job |
+Legacy Agent Workspace UI/DB/schedules are **gone**. Do not troubleshoot `agent:automations:dispatch-due`, `seo_agent_*`, or Filament Agent tabs as live product.
 
-Slash: `/agent-health`, `/agent-metrics`, `/agent-trace`.  
-Module: `docs/modules/AGENT_WORKSPACE.md`.
+For **Content Project MCP** (`/api/v1/agent/mcp/*`) failures, check gateway scopes, capability registry, and `seo_content_project_agent_*` planner state — see `docs/contracts/AGENT_AND_MCP_CONTRACTS.md`.
+
+Historical reference: `docs/modules/AGENT_WORKSPACE.md` (retirement banner).
 
 ## 5. Content Project / queue stuck
 

@@ -2,12 +2,18 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-09-26  
 > Supersedes: `docs/archive/extension-sdk/EXTENSION_SDK.md`, `CAPABILITY_SDK.md`, `PIPELINE_SDK.md`, `PUBLISHER_SDK.md`, `AI_PROVIDER_SDK.md`, `BUILTIN_WORDPRESS_EXTENSION.md`, `EXTENSION_SECURITY_BOUNDARY.md` (one module — no per-registry satellite)
+
+## Technical debt (namespace location)
+
+> `Omnichannel\Addons\Agent\Extension\*` is transitional shared infrastructure and is not part of the retired Agent Workspace product. Namespace extraction is a separate future task.
+
+The Agent Workspace retirement is **CLOSED** without relocating this SDK. Production consumers (WordPress extension provider, Search Foundation health UI, AI provider/pipeline registration, Content pipelines, Content Project capability path, `seo-content-ai-compat` bootstrap) must keep working under the current namespace.
 
 ## 1. Purpose
 
-Core knows **stable contracts + registries** only. Application / Agent / CommandBus resolve publishers, AI providers, pipelines, and extension capabilities through registries/resolvers — **never** hard-code Builtin vendor classes.
+Core knows **stable contracts + registries** only. Application / CommandBus / Content Project MCP resolve publishers, AI providers, pipelines, and extension capabilities through registries/resolvers — **never** hard-code Builtin vendor classes.
 
 ```text
 Core / CommandBus / Agent

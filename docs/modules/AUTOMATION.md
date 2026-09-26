@@ -2,28 +2,33 @@
 
 > Status: Canonical  
 > Owner: SeoContentAi  
-> Last verified: 2026-08-01  
+> Last verified: 2026-09-26  
 > Supersedes: `docs/archive/agent/AGENT_AUTOMATIONS.md`, `docs/archive/agent/AGENT_AUTOMATION_*.md`, `docs/archive/content-projects/CONTENT_PROJECT_AUTOMATION_POLICY.md`, `docs/automation/AUTOMATION_BOUNDARIES.md`, `docs/automation/AUTOMATION_ACTION_CATALOG.md`, `docs/automation/AUTOMATION_EVENT_CATALOG.md`, `docs/automation/AUTOMATION_SERVICE_INVENTORY.md`, `docs/automation/AUTOMATION_MIGRATION_STATUS.md`, `docs/automation/AUTOMATION_CUTOVER_AUDIT.md`, `docs/automation/AUTOMATION_PHASE*.md`, `docs/automation/MODULE_SDK.md`, `docs/automation/SKILL_ADD_AUTOMATION_ACTION.md`
 
 ## 1. Purpose
 
-Canonical map for **three distinct automation owners** in SeoContentAi:
+Canonical map for automation owners in SeoContentAi:
 
-1. **Business Hook Automation** — scheduled/event rules → Action catalog → domain services.  
-2. **Agent Workspace Automations** — user-defined scheduled Agent workflows (Automations tab).  
-3. **Content Project Automation Policy** — tenant/site policy driving assisted/full CP agent plans.
+1. **Business Hook Automation** — **ACTIVE** — scheduled/event rules → Action catalog → domain services (`Omnichannel\Addons\Agent\Automation\*` transitional namespace).  
+2. **Content Project Automation Policy** — **ACTIVE** — tenant/site policy → `DispatchContentProjectAutomationPoliciesJob`.  
+3. **Agent Workspace Automations** — **RETIRED** — former `seo_agent_automations*` + `agent:automations:dispatch-due` / `RunAgentAutomationJob`. Source may remain under `addons/agent` as reference; **not scheduled**, tables **dropped**.
 
 They share safety culture (no arbitrary code, confirmation, tenant gates) but **must not share dispatch tables or claim the same occurrence**.
+
+```text
+Legacy Agent Workspace automation = OFF
+Current Content Project automation = ON
+Current Publishing / Business Hook automation = ON
+```
 
 ## 2. Canonical routes
 
 | Surface | Path / entry | Owner |
 |---------|--------------|-------|
-| Agent Automations UI | `/seo/{connection_hash}/agent` → tab **Automations** | Agent Workspace |
-| Agent slash | `/automations`, `/create-automation`, `/automation-status`, `/run-automation`, `/pause-automation`, `/resume-automation`, `/delete-automation`, `/automation-history` | Agent Workspace |
-| Business Hook admin | Filament automation rule UI (addon Automation module) | Business Hook |
-| CP policy preview (MCP/Agent) | capability `content_project.get_agent_policy` | CP Policy |
-| Dispatch CLI | `automation:dispatch-scheduled`, `agent:automations:dispatch-due`, `seo-content-ai:dispatch-automation-policies` | Scheduler |
+| Agent Automations UI / slash | historical only | **RETIRED** Agent Workspace |
+| Business Hook admin | Filament automation rule UI | Business Hook (**ACTIVE**) |
+| CP policy preview (MCP) | capability `content_project.get_agent_policy` | CP Policy (**ACTIVE**) |
+| Dispatch CLI | `automation:dispatch-scheduled`, `seo-content-ai:dispatch-automation-policies` | Scheduler (**ACTIVE**; no `agent:automations:dispatch-due`) |
 
 ## 3. Main components
 
@@ -37,14 +42,11 @@ They share safety culture (no arbitrary code, confirmation, tenant gates) but **
 | Event catalog | Domain events with locked envelope / naming |
 | Action handlers | Call domain services only — **no** Filament Page/Resource |
 
-### Agent Automations
+### Agent Automations (RETIRED — reference only)
 
 | Component | Role |
 |-----------|------|
-| `AgentAutomationOrchestrator` | Definition lifecycle |
-| `AgentAutomationRunner` | Executes via Agent execution/planning paths only |
-| `AgentAutomationDispatcher` | Due scan → `RunAgentAutomationJob` |
-| `RunAgentAutomationJob` | Job → Runner only |
+| `AgentAutomationOrchestrator` / Runner / Dispatcher / `RunAgentAutomationJob` | Historical Agent Workspace product — **not registered / not scheduled** |
 
 ### Content Project policy
 
@@ -60,7 +62,7 @@ They share safety culture (no arbitrary code, confirmation, tenant gates) but **
 | Store | Connection | Owner |
 |-------|------------|-------|
 | `automation_rules` / executions / heartbeat | Core `mysql` (`AUTOMATION_DB_CONNECTION`) | Business Hook |
-| `seo_agent_automations*` | `omi_seo_ai` | Agent Automations |
+| `seo_agent_automations*` | `omi_seo_ai` | **RETIRED** (dropped with Agent Workspace) |
 | `seo_content_project_automation_policies` | `omi_seo_ai` | CP Policy |
 | Article/keyword/project domain rows | `omi_seo_ai` | Domain handlers (via Action or CommandBus) |
 
@@ -154,12 +156,11 @@ Registered in `SeoContentAiServiceProvider` (distinct names, `withoutOverlapping
 | # | Schedule | Target |
 |---|----------|--------|
 | 1 | `automation:dispatch-scheduled` everyMinute | Business Hook rules |
-| 2 | `agent:automations:dispatch-due` everyMinute | Agent automations |
-| 3 | CP automation policies (hourly job) | CP policy plans |
+| 2 | CP automation policies (hourly job) | CP policy plans (`DispatchContentProjectAutomationPoliciesJob`) |
 
-Also: `seo:publish-scheduled-articles` for scheduled publish (publishing module — not Agent Automation).
+**Removed:** `agent:automations:dispatch-due` (retired Agent Workspace product).
 
-**Freeze:** Scheduler/Job for Agent Automations never call CommandBus or business services directly — only Runner → Agent paths.
+Also: `seo:publish-scheduled-articles` / publishing scheduled automation for scheduled publish (publishing module — not Agent Workspace).
 
 ## 11. Transactions and side effects
 

@@ -48,7 +48,7 @@ Old `App\Addons\SeoContentAi` monolith was split into **peer addons**, then phys
 | Site Sync V3 (protocol 3) | `site-sync` — `SiteSyncV3Schema`, `RunSiteSyncV3Orchestrator`, `SiteSyncProtocolRouter` — see [`SITE_SYNC.md`](../modules/SITE_SYNC.md) §17 |
 | Contextual Help (in-app) | Client `app/Help/*` + `resources/help-seed/` — see [`CONTEXTUAL_HELP.md`](../modules/CONTEXTUAL_HELP.md) |
 | Article meta inventory / WP body cache | `content` `ArticleMetaKeyCatalog`; `wordpress` `ArticleWpContentCacheService` — see [`ARTICLE_EDITOR.md`](../modules/ARTICLE_EDITOR.md), [`WORDPRESS_BRIDGE.md`](../modules/WORDPRESS_BRIDGE.md) |
-| Agent / MCP | **Legacy Agent Workspace** = `omnichannel-addons/agent` (**reference-only**, skipped from discovery). Live Chat Workspace = `content` `ChatWorkspacePage`. Content Project MCP/gateway = `content-projects` (legacy HTTP compatibility). Future Agent rewrite is **not** this tree. |
+| Agent / MCP | **Legacy Agent Workspace** = `omnichannel-addons/agent` (**RETIRED / reference-only**; `seo_agent_*` dropped; skipped from discovery). Live Chat Workspace = `content` `ChatWorkspacePage`. Content Project MCP/gateway = `content-projects` (`/api/v1/agent/mcp/*` + `seo_content_project_agent_*` **ACTIVE**). `Agent\Extension\*` = transitional shared infra. Future Agent rewrite is **not** implemented. |
 | Social Profile / manual share | `omnichannel-addons/social` |
 | Seeding service (localStorage workspace + `omi_seeding`) | `omnichannel-addons/seeding` — see [`SEEDING.md`](../modules/SEEDING.md) |
 | Service catalog / `service_key` / Service DB | Client Core — [`SERVICE_ARCHITECTURE.md`](SERVICE_ARCHITECTURE.md) |

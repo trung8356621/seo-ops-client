@@ -25,7 +25,7 @@ Does not define Site Sync step semantics in depth (see SITE_SYNC) — only share
 | Filament/API/Agent schedule/publish_* | CommandBus + transition guard | Due items via publish cron → Process command |
 | Cron publish | `seo:publish-scheduled-articles` | `ContentProjectPublishingQueueRunner` → CommandBus |
 | Cron stale gen | `seo:content-project:recover-stale-generation --apply` | Recovery service (apply mode) |
-| Site Sync / Automation | Own jobs | `ProcessSiteSync*Job`, `RunAgentAutomationJob` (`ShouldBeUnique`) |
+| Site Sync / Automation | Own jobs | `ProcessSiteSync*Job`; Business Hook automation jobs. (`RunAgentAutomationJob` = **retired** Agent Workspace product — not scheduled.) |
 
 ## 3. Main components
 

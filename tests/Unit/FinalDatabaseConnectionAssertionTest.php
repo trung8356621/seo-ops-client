@@ -10,7 +10,6 @@ use App\Support\Automation\AutomationModel;
 use Omnichannel\Addons\Agent\Automation\BusinessHook\Models\AutomationExecution;
 use Omnichannel\Addons\Agent\Automation\BusinessHook\Models\AutomationRule;
 use Omnichannel\Addons\Agent\Automation\BusinessHook\Models\BusinessEvent;
-use Omnichannel\Addons\Agent\Models\AgentWorkspace\SeoAgentAutomation;
 use Omnichannel\Addons\Content\Models\SeoArticle;
 use Omnichannel\Addons\Media\Models\ArticleMediaState;
 use Omnichannel\Addons\Publishing\Models\PublishingArticleState;
@@ -67,7 +66,6 @@ final class FinalDatabaseConnectionAssertionTest extends TestCase
             new SeoArticleProfile,
             new WordpressArticleLink,
             new PublishingArticleState,
-            new SeoAgentAutomation,
         ] as $model) {
             $this->assertSame(
                 'omi_seo_ai',

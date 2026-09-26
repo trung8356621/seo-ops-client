@@ -5,9 +5,20 @@
 > Last verified: 2026-09-26  
 > Supersedes: `docs/AGENT_WORKSPACE.md`, `docs/archive/agent/AGENT_WORKSPACE_*.md`, … (see archive tree)
 
-## 0. Isolation status (2026-09-26)
+## 0. Retirement CLOSED (2026-09-26)
 
-The old Agent Workspace implementation under `addons/agent/` is **not** the canonical runtime.
+```text
+Old Agent Workspace:     RETIRED / REFERENCE-ONLY
+Agent Workspace DB:      seo_agent_* DROPPED
+Agent Workspace UI:      GONE (not discovered)
+Agent Workspace automation product: OFF
+
+Content Project MCP:     RETAINED (unchanged) — /api/v1/agent/mcp/*
+seo_content_project_agent_*: ACTIVE (Content Project-owned)
+
+Extension SDK:           transitional shared infra under Agent\Extension\*
+Future Agent:            NOT IMPLEMENTED YET
+```
 
 | Control | Default |
 |---------|---------|
@@ -16,14 +27,13 @@ The old Agent Workspace implementation under `addons/agent/` is **not** the cano
 | SEO Filament peer discovery | `agent` **omitted** from `SeoPanelProvider::peerFilamentDiscoveries()` |
 | Compat DI | Agent Workspace singletons **not** registered |
 | Agent Workspace schedules | **not** scheduled |
+| DB | `2026_09_26_100000_retire_legacy_agent_workspace_seo_agent_tables` drops `seo_agent_*` |
 
-**Chat Workspace** (Group Chat + Support Ticket) moved to `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage` (`/seo/{hash}/chat`). Agent tab is disabled in the launcher.
+**Chat Workspace** (Group Chat + Support Ticket) lives at `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage` (`/seo/{hash}/chat`). Agent tab is disabled.
 
-**Still transitional under `addons/agent/` namespace (not Agent Workspace product):** Business Hook `Automation/*` and `Extension/*` may still be bootstrapped by `seo-content-ai-compat` until extracted. Do not treat them as the future Agent.
+**Still transitional under `addons/agent/` namespace (not Agent Workspace product):** Business Hook `Automation/*` and `Extension/*` bootstrapped by `seo-content-ai-compat` until extracted.
 
-**Future Agent rewrite** will consume stable Domain / MCP / Content Project boundaries. This doc describes historical Agent Workspace behavior for reference — it does **not** claim those future APIs already exist.
-
-WordPress Bridge and System Remote remain separate / out of scope.
+WordPress Bridge and System Remote remain out of scope.
 
 ## 1. Purpose (historical)
 
@@ -37,7 +47,6 @@ Historical tabs: **Chat | Knowledge | Automations | Operations | Packs | Diagnos
 |-------|------|-------|
 | Chat Workspace (live) | `/seo/{connection_hash}/chat?tab=group\|ticket` | `Content\Filament\Pages\ChatWorkspacePage` — Agent tab not active |
 | Historical Agent UI | `/seo/{connection_hash}/chat?tab=agent` | Retired from discovery; source retained under `addons/agent` |
-| Admin alias | `/admin/agent` | `AgentWorkspaceRedirect` — no deep-link into Agent Workspace |
 | MCP tools | `GET\|POST /api/v1/agent/mcp/tools` | Content Project MCP (legacy compatibility; see contracts doc) |
 | MCP call | `POST /api/v1/agent/mcp/call` | Via Content Project gateway |
 | Agent execute | `POST /api/v1/agent/execute` | Via Content Project gateway |
@@ -64,7 +73,7 @@ Communication shell rules: [CHAT_WORKSPACE.md](CHAT_WORKSPACE.md).
 | Gateway | `ContentProjectAgentGateway` | Scopes, schema, confirmation, dry_run, dispatch |
 | Registry | `CanonicalCapabilityRegistry` | Core + enabled extension caps |
 
-**Quick Assistant vs Workspace:** Floating `global-ai-chat` is **retired**. Team chat + Agent + Support Ticket live only in Chat Workspace (`/seo/{hash}/chat`). Agent runtime remains this page’s Agent tab — do not mount a second Agent UI.
+**Quick Assistant vs Workspace (historical):** Floating `global-ai-chat` is **retired**. Live surfaces are Chat Workspace Group/Ticket tabs only (`/seo/{hash}/chat`). The Agent tab / `AgentWorkspacePage` is **not** active runtime — source retained under `addons/agent` as reference only.
 
 ### AGENT UI LAYOUT RULE
 
