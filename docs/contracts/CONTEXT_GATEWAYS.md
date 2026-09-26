@@ -3,70 +3,91 @@
 > Status: Canonical  
 > Owner: `seo` (+ `search-intelligence` read models)  
 > Last verified: 2026-09-26  
-> Related: [`KEYWORD_MCP.md`](KEYWORD_MCP.md), [`SITE_MCP_AND_DOMAINS.md`](../modules/SITE_MCP_AND_DOMAINS.md), [`AGENT_AND_MCP_CONTRACTS.md`](AGENT_AND_MCP_CONTRACTS.md)
+> Related: [`KEYWORD_MCP.md`](KEYWORD_MCP.md), [`SITE_MCP_AND_DOMAINS.md`](../modules/SITE_MCP_AND_DOMAINS.md), [`AGENT_AND_MCP_CONTRACTS.md`](AGENT_AND_MCP_CONTRACTS.md), [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md)
 
 ## Purpose
 
-Standardize SEO **domain context** as MCP-independent application infrastructure, with reusable **context slices**, a **Context Registry**, and a shared **projection/formatter** layer.
+Canonical SoT for SEO **domain context** architecture: MCP-independent slices, a **strict Context Registry**, projection, and formatter.
 
 **Not implemented here:** unified HTTP API, AI Context Planner, AI tool calling, new Agent, new MCP sources, Planning Context.
 
 ## Architecture
 
 ```text
-Domain readers / read models
-          ↓
-Canonical Context Slice Providers
-          ↓
-Context Registry
-          ↓
-Context Projection / Formatter
-          ↓
-Canonical Context Format
-       /             \
-large presets      individual slices
-       ↓
-MCP adapters (compatibility)
+Domain Readers / ReadModels
+        ↓
+Context Slice Providers
+        ↓
+STRICT Context Registry
+        ↓
+Projection
+        ↓
+Canonical Formatter
+        ↓
+────────────────────────────
+internal consumers
+Monthly MCP compatibility
+future HTTP API
+future AI Context Planner
 ```
 
-Future (deferred):
+### Dependency rules
 
 ```text
-Context Registry → AI Context Planner → selected slices → formatter → AI
+Context → never MCP
+Context → never HTTP
+Context → never Agent
+
+MCP → may consume Context
+HTTP → will consume Context
+AI → will consume Context
 ```
-
-### Dependency direction (enforced)
-
-```text
-Domain → Readers/ReadModels → Slice Providers → Registry/Projection → DTOs → Consumers
-```
-
-Consumers include: UI/internal, Monthly MCP compatibility, future HTTP API, future AI Context Planner.
-
-**Never:** `Context → MonthlyMcp`, `Context → Agent`, `Context → HTTP`.
-
-**Never:** request one slice by assembling a giant composite then extracting one field, when a direct reader exists.
 
 ### Vocabulary
 
 | Term | Meaning |
 |------|---------|
-| **Context Gateway / preset** | Large composition (`SiteContext`, landscape, GSC full) for current consumers |
-| **Context Slice** | Reusable read-only data capability (`site.indexability`, `gsc.opportunities`, …) |
-| **Context Registry** | Allowlisted read capabilities + providers (not an AI planner) |
-| **Projection** | View level: `summary` / `standard` / `detail` (+ list limits) |
-| **Formatter** | Structured representation (facts, no AI prose) |
-| **MCP** | Compatibility / snapshot consumer of neutral context |
+| **Context Slice** | Reusable read-only data capability |
+| **Context Registry** | Strict allowlisted read capabilities + providers (not an AI planner) |
+| **Context Projection** | View level: `summary` / `standard` / `detail` (+ list limits) |
+| **Context Formatter** | Final structured representation (facts only) |
+| **MCP** | Compatibility / monthly snapshot consumer only |
 | **AI Planner** | Future consumer — not implemented |
+| **Site Knowledge Profile** | Prompt tone/CTA/links (`search-foundation` `SiteMcp*`) — **≠** Site Intelligence |
+| **Site Intelligence Context** | Runtime health/content/links/findings (`SiteContext*` + slices) |
 
-## Site Knowledge Profile vs Site Intelligence
+## Registry invariants
 
-| Concept | Meaning | Code |
-|---------|---------|------|
-| **Site Knowledge Profile** | Prompt tone / CTA / links / draft | `search-foundation` `SiteMcp*` |
-| **Site Intelligence Context** | Runtime health / content / links / findings / sync | `seo` `SiteContext*` + slices |
+- Unknown slice key → reject  
+- Unknown parameter → reject  
+- Parameter aliases are **slice-specific** (listed on that definition only)  
+- Explicit invalid view → reject  
+- Missing/null view → definition `default_view`  
+- Registry is a strict allowlist / future security boundary  
+- Formatter recursively removes presentation-only keys: `ai_lines`, `text`, `note`, `raw`  
+- GSC memoization (`GscContextSource`) is **request/job scoped** (`scoped()`), not process-global  
+- Context layer does not depend on `Services\MonthlyMcp`
 
-Do **not** merge these.
+## Registered slices
+
+| Key | Views | Required params | Optional params | Period aware |
+|-----|-------|-----------------|-----------------|--------------|
+| `site.health` | summary, standard, detail | — | — | no |
+| `site.indexability` | summary, standard, detail | — | — | no |
+| `site.sync` | summary, standard, detail | — | — | no |
+| `content.inventory` | summary, standard, detail | — | — | no |
+| `content.distribution` | summary, standard, detail | — | — | no |
+| `seo.findings` | summary, standard, detail | — | `limit` | no |
+| `seo.internal_links` | summary, standard, detail | — | `limit` | no |
+| `publishing.status` | summary, standard, detail | — | — | no |
+| `keywords.landscape` | summary, standard, detail | — | `limit` | no |
+| `keywords.relationship` | summary, standard, detail | `keyword_ref` | `keyword_id` (compat alias) | no |
+| `gsc.performance` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
+| `gsc.opportunities` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
+| `gsc.cannibalization` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
+
+`keyword_id` satisfies `keyword_ref` requirement as a declared optional alias on `keywords.relationship` only.  
+`period_key` is a declared optional alias of `period` on GSC slices only.
 
 ## Canonical gateways (presets)
 
@@ -74,82 +95,71 @@ Do **not** merge these.
 |--------|---------|-------------------|----------|
 | Site Intelligence | `SiteContextGateway` | `site.mcp.v1` | monthly `site` |
 | Keyword Landscape | `KeywordLandscapeGateway` | `keywords.mcp.v2` | monthly `keywords` |
-| Keyword Relationship | `KeywordRelationshipGateway` | `keyword.relationship.v1` | **on-demand only** |
+| Keyword Relationship | `KeywordRelationshipGateway` | `keyword.relationship.v1` | on-demand only |
 | GSC | `GscContextGateway` | `gsc.mcp.v1` | monthly `gsc` |
 
-`SiteContext` is a **preset composition** of site/content/seo/publishing slices — not the only way to read site intelligence.
-
-## Registered context slices
-
-| Key | Meaning | Period |
-|-----|---------|--------|
-| `site.health` | Heartbeat health | current |
-| `site.indexability` | Indexable / noindex counts | current |
-| `site.sync` | Sync freshness | current |
-| `content.inventory` | Article counts | current |
-| `content.distribution` | Content-type distribution | current |
-| `seo.findings` | Open findings | current |
-| `seo.internal_links` | Internal linking / link analysis | current |
-| `publishing.status` | Publishing status counts | current |
-| `keywords.landscape` | Topic landscape | current |
-| `keywords.relationship` | One-keyword graph (`keyword_ref` required) | on-demand |
-| `gsc.performance` | Totals / comparison / tops | period-aware |
-| `gsc.opportunities` | Rising / CTR / near-page-one / decay / new-content | period-aware |
-| `gsc.cannibalization` | Cannibalization signals | period-aware |
-
-Unknown keys are rejected. Parameters are allowlisted (e.g. `period`, `limit`, `keyword_ref`).
-
-Views: `summary` (default for most), `standard`, `detail`.
-
-## Neutral Context helpers
-
-| Class | Role |
-|-------|------|
-| `ContextFreshness` | Staleness / max timestamps (Monthly MCP delegates) |
-| `ContextDataQuality` | Site quality warnings (Monthly MCP may wrap) |
-| `ContextEnvelopeBuilder` | Outer envelope metadata |
-| `ContextSlice` | Slice result contract |
-| `ContextRegistry` | Allowlisted providers |
-| `ContextProjection` / `ContextFormatter` | Views + structured output |
-
-Canonical Context **must not** import `Services\MonthlyMcp`.
-
-## Formatting rules
-
-- Structured facts, not prose (“Your site currently has…”).
-- Omit null / empty optional padding; keep meaningful zeros.
-- Readable keys (not cryptic `a`/`b`/`c`).
-- Large lists use `{ items, returned, total, truncated }`.
-- GSC `ai_lines` stay MCP/UI compatibility only — not in canonical GSC slices.
+`SiteContext` is a **preset composition** of site/content/seo/publishing slices.
 
 ## Monthly MCP compatibility
 
 ```text
-neutral domain context → Monthly MCP Source adapter → seo_mcp_source_snapshots
+Neutral Context → Monthly MCP Source adapter → seo_mcp_source_snapshots
 ```
 
-- Source keys remain: `site`, `keywords`, `gsc`
-- Schema ids remain: `site.mcp.v1`, `keywords.mcp.v2`, `gsc.mcp.v1`
-- Adapters own `MonthlyMcpSourcePayload` conversion
-- Do **not** add per-slice MCP snapshot families
+Keys remain `site` / `keywords` / `gsc`. Schemas remain `site.mcp.v1` / `keywords.mcp.v2` / `gsc.mcp.v1`.  
+Adapters own `MonthlyMcpSourcePayload`. Do not add per-slice MCP families.
 
-## Future HTTP (deferred)
+## Future HTTP adapter (deferred — not implemented)
+
+Requirements only (no fake routes):
 
 ```text
-GET /api/v1/contexts/sites/{site_ref}
-GET /api/v1/contexts/sites/{site_ref}/keywords
-GET /api/v1/contexts/sites/{site_ref}/keywords/{keyword_ref}
-GET /api/v1/contexts/sites/{site_ref}/gsc
-(+ slice endpoints later)
+HTTP
+ → authentication
+ → tenant/site authorization
+ → ContextRegistry
+ → ContextFormatter
+ → JSON
 ```
 
-```text
-HTTP → auth/site-scope → ContextRegistry / Gateway → DTO → JSON
-```
+The future API must not bypass Registry/provider validation, must not query domain models directly, must not duplicate projection/formatter, and must not expose Monthly MCP payloads as the generic API.
+
+Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md). Context capability SoT: this document.
+
+## HTTP API handoff
+
+### READY now
+
+- Strict slice registry (13 keys)  
+- Validated views (fail-fast on explicit invalid)  
+- Validated parameters (slice-specific allowlist + aliases)  
+- Neutral DTO / `ContextSlice` results  
+- Canonical recursive formatter  
+- Site-scoped providers  
+- Request/job-scoped GSC memoization  
+- MCP-independent context layer  
+
+### Next API phase owns
+
+- Route design  
+- Controller / resource layer  
+- Authentication  
+- Tenant/site authorization  
+- Public `site_ref` resolution  
+- HTTP errors / status codes  
+- External pagination semantics (if any)  
+- API contract tests  
+
+### API MUST NOT
+
+- Query domain models directly  
+- Bypass `ContextRegistry`  
+- Duplicate projection logic  
+- Duplicate formatter logic  
+- Expose Monthly MCP payload as the generic API  
 
 ## Implementation notes
 
-- `GscMcpContextBuilder` = implementation detail behind `GscContextGateway` (persisted facts only).
-- `GscContextSource` = request-scoped memoization for multiple GSC slices.
-- `SiteMcpContextBuilder` = deprecated thin MCP adapter.
-- `DomainSeoMcpService` = legacy facade — not the context API.
+- `GscMcpContextBuilder` = detail behind `GscContextGateway` (persisted facts only).  
+- `DomainSeoMcpService` = legacy facade — not the context API.  
+- Legacy Domain raw MCP page (`ViewDomainMcp` / `domains/{id}/mcp`) **removed** from Domain UX; Monthly MCP infrastructure remains.

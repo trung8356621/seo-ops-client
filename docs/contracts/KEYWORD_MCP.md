@@ -10,6 +10,8 @@ Keyword MCP is **two separate contracts**. Do not conflate them. Do not treat ei
 
 **Architecture SoT for application boundaries:** [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md) — Domain Context ≠ MCP transport; HTTP/MCP are adapters; in-process callers use gateways (no HTTP loopback).
 
+Future generic context/API consumers should use Context Registry keys `keywords.landscape` and `keywords.relationship` where appropriate. Existing Type 1 approved-consumer restrictions for direct `KeywordLandscapeGateway` usage remain in force. Do not merge Landscape and Relationship. Relationship still **MUST NOT** persist monthly snapshot rows.
+
 | Type | Schema / capability | Shape | Snapshot |
 |------|---------------------|-------|----------|
 | **Type 1 — Landscape** | Snapshot schema `keywords.mcp.v2` (`McpSourceKey::Keywords`); also backs `domain.keyword_landscape` | Site-level Topic landscape | **May** persist via monthly MCP (`seo_mcp_source_snapshots`) |

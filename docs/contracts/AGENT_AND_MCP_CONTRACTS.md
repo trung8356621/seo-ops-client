@@ -19,6 +19,9 @@ Domain context gateways (Site / Keywords / Relationship / GSC): [`CONTEXT_GATEWA
 - Do **not** claim future Agent Service APIs already exist.
 - WordPress Bridge (`/api/seo-wp-bridge/*`) and System Remote are out of scope.
 - New context architecture must **not** depend on retired Agent Gateway. Prefer [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md). Domain Context ≠ MCP transport; no HTTP loopback.
+- **Context Registry** = read-only data capabilities (slices/views/params) — **not** an Agent registry.
+- Old Content Project MCP HTTP = compatibility / existing transport.
+- Future Agent architecture = deferred (not implemented).
 
 ---
 

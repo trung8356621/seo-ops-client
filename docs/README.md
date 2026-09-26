@@ -76,7 +76,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 | Article Execution History | [ARTICLE_EXECUTION_HISTORY.md](modules/ARTICLE_EXECUTION_HISTORY.md) |
 | Site Sync | [SITE_SYNC.md](modules/SITE_SYNC.md) |
 | WordPress Bridge | [WORDPRESS_BRIDGE.md](modules/WORDPRESS_BRIDGE.md) |
-| Site MCP / Domains | [SITE_MCP_AND_DOMAINS.md](modules/SITE_MCP_AND_DOMAINS.md) — Domain Link List vs catalog → sibling `omnichannel-addons/docs/modules/SITE_LINK_POLICY.md` |
+| Site Knowledge Profile / Domains | [SITE_MCP_AND_DOMAINS.md](modules/SITE_MCP_AND_DOMAINS.md) — Domain Link List vs catalog → sibling `omnichannel-addons/docs/modules/SITE_LINK_POLICY.md` |
 | SEO Audit / Keywords | [SEO_AUDIT_AND_KEYWORDS.md](modules/SEO_AUDIT_AND_KEYWORDS.md) |
 | Prompts / AI | [PROMPTS_AND_AI.md](modules/PROMPTS_AND_AI.md) |
 | Media / Gallery | [MEDIA_AND_GALLERY.md](modules/MEDIA_AND_GALLERY.md) |
@@ -91,7 +91,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 |----------|-----|
 | Agent / MCP | [AGENT_AND_MCP_CONTRACTS.md](contracts/AGENT_AND_MCP_CONTRACTS.md) |
 | Keyword MCP (Landscape + Relationship) | [KEYWORD_MCP.md](contracts/KEYWORD_MCP.md) — Type 2 **CLOSED — v1** |
-| Domain Context Gateways | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — Site / Keywords / Relationship / GSC boundaries |
+| Domain Context Gateways / Registry | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — **SoT for read/context architecture** (slices, registry, formatter; future HTTP/AI consume this) |
 | API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization |
 | Queue / Scheduler / Idempotency | [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md) |
 | Extension / Registry | [EXTENSION_AND_REGISTRY_CONTRACTS.md](contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md) |

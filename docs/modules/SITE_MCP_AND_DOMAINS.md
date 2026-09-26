@@ -13,12 +13,13 @@ Clarify names:
 
 | Term | Meaning |
 |------|---------|
-| **Site Knowledge Profile** (historically “Site MCP” on Edit Domain) | Official domain prompt context (+ draft generator) — tone, description, CTA, links |
-| **Site Intelligence Context** | Runtime site context (`SiteContextGateway`, schema `site.mcp.v1`) — health, content/link stats, publishing, SEO findings, sync freshness |
-| **Developer / Agent MCP docs** | `ViewDomainMcp` — `CanonicalCapabilityRegistry` reference — **not** Knowledge Profile |
+| **Site Knowledge Profile** (historical class/storage names may still say `SiteMcp*`) | Official domain prompt context (+ draft generator) — tone, description, CTA, links |
+| **Site Intelligence Context** | Runtime site context (`SiteContextGateway` / Context Registry slices) — health, content/link stats, publishing, SEO findings, sync freshness |
+| **Monthly MCP snapshot** | Persisted monthly intelligence (`site` / `keywords` / `gsc` → `seo_mcp_source_snapshots`) — **≠** Knowledge Profile |
+| **Legacy Raw MCP Domain page** | `ViewDomainMcp` / `domains/{id}/mcp` — **removed** from Domain UX (2026-09-26) |
 | **Site Sync** | Catalog sync with WordPress — separate module |
 
-Do **not** merge Site Knowledge Profile with Site Intelligence Context. Architecture SoT: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md).
+Do **not** merge Site Knowledge Profile with Site Intelligence Context or Monthly MCP. Architecture SoT: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md).
 
 Model: Filament `DomainResource` → core `Site` (`mysql`).
 
@@ -30,14 +31,15 @@ Prefix: `/seo/{connection_hash}/`
 |------|------|
 | `domains` | `ListDomains` |
 | `domains/create` | `CreateDomain` |
-| `domains/{record}/edit` | `EditDomain` — official Site MCP form + draft drawer |
+| `domains/{record}/edit` | `EditDomain` — Knowledge Profile form + draft drawer |
 | `domains/{record}/general` | `GeneralDomain` — overview / tokens / sync stats / scoring queue |
-| `domains/{record}/mcp` | `ViewDomainMcp` — Agent MCP HTML docs (manager) |
 | `domains/{record}/internal-links` | `ListDomainInternalLinks` |
 | `domains/settings` | `DomainGlobalCtaSettings` |
 | `domains/{record}/info` | Redirect → edit |
 | `seo/team` | `SeoTeam` (manager) |
 | `social` | `SocialProfilesPage` — per-site Social Profile CRUD (nav often via Performance Hub link; `shouldRegisterNavigation` may be false) |
+
+**Removed:** `domains/{record}/mcp` (`ViewDomainMcp`) — legacy raw Agent/MCP capability inspector; not replaced by a Context Inspector in this phase.
 
 Widgets: All-domains list / projects / team productivity.
 
@@ -99,9 +101,8 @@ Draft Main Topics: live WP `product_cat` roots (`term_id>0`, `parent_term_id===0
 
 ## 5. Read path
 
-- GeneralDomain: overview service → tokens (protected), score distribution, sync stats, top keywords/links, official MCP summary.
+- GeneralDomain: overview service → tokens (protected), score distribution, sync stats, top keywords/links, Knowledge Profile summary.
 - EditDomain: load official form; draft drawer reads `site_mcp_draft` only.
-- ViewDomainMcp: capability registry docs for managers.
 - Editor: CTA/link list services format insertable items for article UI.
 - Global site header: `SeoAccessControl::globalSiteId()` for list/dashboard scope — not detail auth.
 
@@ -218,13 +219,14 @@ No Filament Queue Manager UI.
 
 ## 14. Forbidden paths
 
-1. Treat ViewDomainMcp as Site MCP Knowledge Profile editor.
-2. Auto-apply `site_mcp_draft` onto official profile.
-3. Save Domain Settings triggering Site Sync or full HTML site parse.
-4. Use global site header as sole authorization for edit/detail.
-5. Wipe `wp_parent_id` when parent is 0.
-6. Content Manager mutating manager-only settings/team.
-7. Admin read-only panel mutations (`guardSeoPanelMutation`).
+1. Treat Knowledge Profile editor (Edit Domain) as Site Intelligence Context / Monthly MCP / Context Registry.  
+2. Treat removed `ViewDomainMcp` as Knowledge Profile editor.  
+3. Auto-apply `site_mcp_draft` onto official profile.  
+4. Save Domain Settings triggering Site Sync or full HTML site parse.  
+5. Use global site header as sole authorization for edit/detail.  
+6. Wipe `wp_parent_id` when parent is 0.  
+7. Content Manager mutating manager-only settings/team.  
+8. Admin read-only panel mutations (`guardSeoPanelMutation`).
 
 ## 15. Tests and invariants
 

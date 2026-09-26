@@ -9,6 +9,8 @@
 
 Public HTTP / Sanctum / Filament access boundaries for SEO + Seeding product surfaces. Complements Agent confirmation rules in [AGENT_AND_MCP_CONTRACTS.md](AGENT_AND_MCP_CONTRACTS.md).
 
+**Context / read capabilities** (slices, views, parameters, format) live in [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md). A future Context HTTP API must reuse existing authentication and site-authorization rules from this document and must not invent a parallel auth plane. Do not duplicate the Context Registry table here.
+
 ## 2. Authentication SSOT (browser)
 
 **Invariant:** one canonical `User` · one `web` session guard · one login flow.
