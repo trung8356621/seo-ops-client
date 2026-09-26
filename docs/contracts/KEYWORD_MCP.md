@@ -2,11 +2,13 @@
 
 > Status: Canonical  
 > Owner: `search-intelligence` (+ `seo` gateways / monthly MCP)  
-> Last verified: 2026-09-24  
-> Related: [`AGENT_AND_MCP_CONTRACTS.md`](AGENT_AND_MCP_CONTRACTS.md), [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md), sibling addons [`TOPIC_CORE.md`](../../../omnichannel-addons/docs/modules/TOPIC_CORE.md)  
+> Last verified: 2026-09-26  
+> Related: [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md), [`AGENT_AND_MCP_CONTRACTS.md`](AGENT_AND_MCP_CONTRACTS.md), [`SEO_AUDIT_AND_KEYWORDS.md`](../modules/SEO_AUDIT_AND_KEYWORDS.md), sibling addons [`TOPIC_CORE.md`](../../../omnichannel-addons/docs/modules/TOPIC_CORE.md)  
 > Debt tracker: [`bugs/keyword-mcp-type-2-deferred.md`](../../bugs/keyword-mcp-type-2-deferred.md)
 
 Keyword MCP is **two separate contracts**. Do not conflate them. Do not treat either as a generic public API.
+
+**Architecture SoT for application boundaries:** [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md) — Domain Context ≠ MCP transport; HTTP/MCP are adapters; in-process callers use gateways (no HTTP loopback).
 
 | Type | Schema / capability | Shape | Snapshot |
 |------|---------------------|-------|----------|
@@ -29,7 +31,7 @@ Retired (do not restore): Agent/MCP `keyword_intelligence.*` (KI workspace / `cl
 
 Do **not** broaden Type 1 into a generic Agent/ACL surface or wire unrelated modules through this gateway.
 
-Also backs monthly snapshot source key `keywords` and capability `domain.keyword_landscape`. HTTP MCP and in-process consumers share the same gateway (no HTTP loopback).
+Also backs monthly snapshot source key `keywords` and capability `domain.keyword_landscape`. In-process consumers and future HTTP/MCP adapters share the same gateway (no HTTP loopback).
 
 Type 1 architecture remains in force; this document does not redesign it.
 
@@ -44,8 +46,10 @@ Type 1 architecture remains in force; this document does not redesign it.
 
 ### Approved consumers
 
-1. Agent MCP capability `keyword.relationship`  
-2. Keywords Relationship UI  
+1. Keywords Relationship UI  
+2. In-process capability adapters that still expose `keyword.relationship` (legacy Content Project MCP compatibility)  
+
+Future Agent (if any) must consume the same gateway/API contracts — do not design Type 2 around old Agent Workspace infrastructure. 
 
 ### Closure references (record only)
 

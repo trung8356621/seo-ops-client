@@ -6,7 +6,8 @@
 > Supersedes: `docs/archive/content-projects/CONTENT_PROJECT_AGENT_GATEWAY.md`, `docs/archive/content-projects/CONTENT_PROJECT_MCP_TOOLS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_CAPABILITIES.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_SECURITY.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_APPROVALS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLANNER.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLAN_LIFECYCLE.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_WORKFLOWS.md`, `docs/archive/agent/AGENT_CONFIRMATION.md`, `docs/archive/agent/AGENT_SLASH_COMMANDS.md` (contract slices)
 
 Module UX: `docs/modules/AGENT_WORKSPACE.md` (legacy isolated). Automation owners: `docs/modules/AUTOMATION.md`.  
-Keyword MCP (Landscape Type 1 + Relationship Type 2): [`KEYWORD_MCP.md`](KEYWORD_MCP.md).
+Keyword MCP (Landscape Type 1 + Relationship Type 2): [`KEYWORD_MCP.md`](KEYWORD_MCP.md).  
+Domain context gateways (Site / Keywords / Relationship / GSC): [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md).
 
 ### Isolation note (2026-09-26)
 
@@ -15,6 +16,7 @@ Keyword MCP (Landscape Type 1 + Relationship Type 2): [`KEYWORD_MCP.md`](KEYWORD
 - HTTP routes below remain on **Content Project** controllers as **legacy compatibility** until the future Agent rewrite defines canonical Domain/MCP APIs. They are **not** redesigned in the isolation cutover.
 - Do **not** claim future Agent Service APIs already exist.
 - WordPress Bridge (`/api/seo-wp-bridge/*`) and System Remote are out of scope.
+- New context architecture must **not** depend on retired Agent Gateway / `ContentProjectMcpServer` ownership. Prefer [`CONTEXT_GATEWAYS.md`](CONTEXT_GATEWAYS.md). Domain Context ≠ MCP transport; no HTTP loopback.
 
 ---
 

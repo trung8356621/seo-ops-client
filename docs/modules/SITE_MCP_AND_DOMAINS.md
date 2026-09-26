@@ -13,9 +13,12 @@ Clarify names:
 
 | Term | Meaning |
 |------|---------|
-| **Site MCP Knowledge Profile** | Official domain prompt context (+ draft generator) — Edit Domain |
+| **Site Knowledge Profile** (historically “Site MCP” on Edit Domain) | Official domain prompt context (+ draft generator) — tone, description, CTA, links |
+| **Site Intelligence Context** | Runtime site context (`SiteContextGateway`, schema `site.mcp.v1`) — health, content/link stats, publishing, SEO findings, sync freshness |
 | **Developer / Agent MCP docs** | `ViewDomainMcp` — `CanonicalCapabilityRegistry` reference — **not** Knowledge Profile |
 | **Site Sync** | Catalog sync with WordPress — separate module |
+
+Do **not** merge Site Knowledge Profile with Site Intelligence Context. Architecture SoT: [`CONTEXT_GATEWAYS.md`](../contracts/CONTEXT_GATEWAYS.md).
 
 Model: Filament `DomainResource` → core `Site` (`mysql`).
 
@@ -244,6 +247,7 @@ No Filament Queue Manager UI.
 - [ARTICLE_EDITOR.md](ARTICLE_EDITOR.md) — CTA/link insert; Domain link list → [`ARTICLE_EDITOR_DOMAIN_LINK_LIST.md`](../architecture/ARTICLE_EDITOR_DOMAIN_LINK_LIST.md)
 - Addons Site Link Policy — `../omnichannel-addons/docs/modules/SITE_LINK_POLICY.md` (Domain Link List ≠ Site Sync catalog)
 - [AGENT_AND_MCP_CONTRACTS.md](../contracts/AGENT_AND_MCP_CONTRACTS.md)
+- [CONTEXT_GATEWAYS.md](../contracts/CONTEXT_GATEWAYS.md) — Site Intelligence vs Knowledge Profile; gateway boundaries
 - [SYSTEM_OVERVIEW.md](../architecture/SYSTEM_OVERVIEW.md)
 - Archive: `docs/archive/maps/MAP_SEO_DOMAIN.md`, `MAP_SEO_TEAM.md`
 
