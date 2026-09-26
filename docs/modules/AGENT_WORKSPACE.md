@@ -1,27 +1,46 @@
 # Agent Workspace
 
-> Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-08-01  
-> Supersedes: `docs/AGENT_WORKSPACE.md`, `docs/archive/agent/AGENT_WORKSPACE_*.md`, `docs/archive/agent/AGENT_SKILLS.md`, `docs/archive/agent/AGENT_SLASH_COMMANDS.md`, `docs/archive/agent/AGENT_CHAT_TEMPLATES.md`, `docs/archive/agent/AGENT_CONFIRMATION.md`, `docs/archive/agent/AGENT_EXECUTION.md`, `docs/archive/agent/AGENT_EXECUTION_PLANS.md`, `docs/archive/agent/AGENT_PLANNING.md`, `docs/archive/agent/AGENT_CONTEXT_BUDGET.md`, `docs/archive/agent/AGENT_CONVERSATION_SUMMARY.md`, `docs/archive/agent/AGENT_WORKSPACE_SECURITY.md`, `docs/archive/agent/AGENT_CAPABILITY_*.md`, `docs/archive/agent/AGENT_PACKS.md`, `docs/archive/agent/AGENT_PACK_*.md`, `docs/archive/agent/AGENT_SKILL_STUDIO.md`, `docs/archive/agent/AGENT_KNOWLEDGE_*.md`, `docs/archive/agent/AGENT_MEMORY.md`, `docs/archive/agent/AGENT_OBSERVABILITY.md`, `docs/archive/agent/AGENT_EVALUATION.md`, `docs/archive/agent/AGENT_METRICS.md`, `docs/archive/agent/AGENT_TRACING.md`, `docs/archive/agent/AGENT_COST_USAGE.md`, `docs/archive/agent/AGENT_GOVERNANCE.md`, `docs/archive/agent/AGENT_HUMAN_REVIEW.md`, `docs/archive/agent/AGENT_QUALITY_GATES.md`, `docs/archive/agent/AGENT_RESULT_RENDERING.md`, `docs/archive/agent/AGENT_RETENTION_PRIVACY.md`, `docs/archive/agent/AGENT_PROMPT_SECURITY.md`, `docs/archive/agent/AGENT_MODEL_ROUTING.md`, `docs/archive/agent/AGENT_V1_DOCTOR.md`
+> Status: **LEGACY / REFERENCE-ONLY (isolated from active runtime)**  
+> Owner: historical `omnichannel-addons/agent` (not canonical product runtime)  
+> Last verified: 2026-09-26  
+> Supersedes: `docs/AGENT_WORKSPACE.md`, `docs/archive/agent/AGENT_WORKSPACE_*.md`, … (see archive tree)
 
-## 1. Purpose
+## 0. Isolation status (2026-09-26)
 
-Filament **Agent Workspace** is the skill-based orchestration UI on the SEO panel. It proposes, previews, confirms, and executes capabilities through `AgentGateway` → `ContentProjectAgentGateway` → `ContentProjectCommandBus`. It does **not** own Content Project business logic.
+The old Agent Workspace implementation under `addons/agent/` is **not** the canonical runtime.
 
-Tabs: **Chat | Knowledge | Automations | Operations | Packs | Diagnostics**.
+| Control | Default |
+|---------|---------|
+| Peer discovery | `agent` in `ADDON_SKIP_SLUGS` (`config/addons.php`) |
+| `addon.json` | `"legacy": true` |
+| SEO Filament peer discovery | `agent` **omitted** from `SeoPanelProvider::peerFilamentDiscoveries()` |
+| Compat DI | Agent Workspace singletons **not** registered |
+| Agent Workspace schedules | **not** scheduled |
 
-## 2. Canonical routes
+**Chat Workspace** (Group Chat + Support Ticket) moved to `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage` (`/seo/{hash}/chat`). Agent tab is disabled in the launcher.
+
+**Still transitional under `addons/agent/` namespace (not Agent Workspace product):** Business Hook `Automation/*` and `Extension/*` may still be bootstrapped by `seo-content-ai-compat` until extracted. Do not treat them as the future Agent.
+
+**Future Agent rewrite** will consume stable Domain / MCP / Content Project boundaries. This doc describes historical Agent Workspace behavior for reference — it does **not** claim those future APIs already exist.
+
+WordPress Bridge and System Remote remain separate / out of scope.
+
+## 1. Purpose (historical)
+
+Filament **Agent Workspace** was the skill-based orchestration UI on the SEO panel. It proposed, previewed, confirmed, and executed capabilities through `AgentGateway` → `ContentProjectAgentGateway` → `ContentProjectCommandBus`. It did **not** own Content Project business logic.
+
+Historical tabs: **Chat | Knowledge | Automations | Operations | Packs | Diagnostics**.
+
+## 2. Routes (current vs historical)
 
 | Entry | Path | Notes |
 |-------|------|-------|
-| Primary UI | `/seo/{connection_hash}/chat?tab=agent` | Chat Workspace hosts Agent tab (`AgentWorkspacePage` slug `chat`) |
-| Legacy | `/seo/{connection_hash}/agent` | Redirect-only → `chat?tab=agent` (`AgentWorkspaceLegacyRedirect`) |
-| Admin alias | `/admin/agent` | `AgentWorkspaceRedirect` → SEO Chat Agent tab |
-| Deep link | `AgentWorkspaceDeepLink::tryUrl([...])` | Query: `tab=agent`, `project_ref`, `workspace_ref`, `article_ref`, `operation_ref`, `conversation`, `skill`, `template`. Fail closed without `connection_hash`. Prefill only — **no auto write**. |
-| MCP tools | `GET|POST /api/v1/agent/mcp/tools` | Sanctum |
-| MCP call | `POST /api/v1/agent/mcp/call` | Via Gateway |
-| Agent execute | `POST /api/v1/agent/execute` | Via Gateway |
+| Chat Workspace (live) | `/seo/{connection_hash}/chat?tab=group\|ticket` | `Content\Filament\Pages\ChatWorkspacePage` — Agent tab not active |
+| Historical Agent UI | `/seo/{connection_hash}/chat?tab=agent` | Retired from discovery; source retained under `addons/agent` |
+| Admin alias | `/admin/agent` | `AgentWorkspaceRedirect` — no deep-link into Agent Workspace |
+| MCP tools | `GET\|POST /api/v1/agent/mcp/tools` | Content Project MCP (legacy compatibility; see contracts doc) |
+| MCP call | `POST /api/v1/agent/mcp/call` | Via Content Project gateway |
+| Agent execute | `POST /api/v1/agent/execute` | Via Content Project gateway |
 
 Nav: sidebar **Chat** (not a separate Agent entry). Access: manager / content-project mutate / content features (`SeoAccessControl`).
 

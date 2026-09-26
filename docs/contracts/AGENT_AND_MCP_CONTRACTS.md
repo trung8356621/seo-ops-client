@@ -1,22 +1,44 @@
 # Agent and MCP Contracts
 
-> Status: Canonical  
-> Owner: SeoContentAi  
-> Last verified: 2026-09-24  
+> Status: Canonical (Content Project MCP) + **legacy Agent Workspace isolated**  
+> Owner: Content Projects (MCP/gateway); historical Agent Workspace is reference-only  
+> Last verified: 2026-09-26  
 > Supersedes: `docs/archive/content-projects/CONTENT_PROJECT_AGENT_GATEWAY.md`, `docs/archive/content-projects/CONTENT_PROJECT_MCP_TOOLS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_CAPABILITIES.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_SECURITY.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_APPROVALS.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLANNER.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_PLAN_LIFECYCLE.md`, `docs/archive/content-projects/CONTENT_PROJECT_AGENT_WORKFLOWS.md`, `docs/archive/agent/AGENT_CONFIRMATION.md`, `docs/archive/agent/AGENT_SLASH_COMMANDS.md` (contract slices)
 
-Module UX/runtime: `docs/modules/AGENT_WORKSPACE.md`. Automation owners: `docs/modules/AUTOMATION.md`.  
+Module UX: `docs/modules/AGENT_WORKSPACE.md` (legacy isolated). Automation owners: `docs/modules/AUTOMATION.md`.  
 Keyword MCP (Landscape Type 1 + Relationship Type 2): [`KEYWORD_MCP.md`](KEYWORD_MCP.md).
+
+### Isolation note (2026-09-26)
+
+- Old **Agent Workspace** addon runtime is skipped/disabled (`ADDON_SKIP_SLUGS=…,agent`). Source kept for reference under `addons/agent/`.
+- Filament Agent UI / `AgentGateway` (Workspace facade) is **not** active.
+- HTTP routes below remain on **Content Project** controllers as **legacy compatibility** until the future Agent rewrite defines canonical Domain/MCP APIs. They are **not** redesigned in the isolation cutover.
+- Do **not** claim future Agent Service APIs already exist.
+- WordPress Bridge (`/api/seo-wp-bridge/*`) and System Remote are out of scope.
 
 ---
 
 ## 1. Gateway stack
 
+**Historical (Agent Workspace active):**
+
 ```
 Transport (Filament Agent UI | MCP HTTP | Agent execute API)
-  → AgentGateway                          (facade; no duplicate logic)
+  → AgentGateway                          (facade; retired from registration)
   → ContentProjectAgentGateway            (orchestration only)
       → CanonicalCapabilityRegistry
+      → ContentProjectAgentPolicy / SchemaValidator / RateLimiter / Session
+      → ContentProjectPreviewToken (confirmation)
+      → ContentProjectAgentCommandFactory
+      → ContentProjectCommandBus → Handler
+```
+
+**Current (Agent Workspace isolated):**
+
+```
+Transport (MCP HTTP | Agent execute API — legacy compatibility)
+  → ContentProjectAgentGateway            (orchestration only; CP-owned)
+      → CanonicalCapabilityRegistry (core content_project.* only)
       → ContentProjectAgentPolicy / SchemaValidator / RateLimiter / Session
       → ContentProjectPreviewToken (confirmation)
       → ContentProjectAgentCommandFactory
@@ -28,7 +50,7 @@ Transport (Filament Agent UI | MCP HTTP | Agent execute API)
 - Gateway contains **no** business logic.  
 - Writes always go CommandBus after registry/policy/confirmation.  
 - Reads use `ContentProjectAgentGateway::READ_CAPABILITIES` + dedicated ReadServices.  
-- `AgentWorkspaceApplicationService` must not import/inject `ContentProjectCommandBus`.
+- Production peers must not import `Omnichannel\Addons\Agent\Services\AgentWorkspace\*`.
 
 ### HTTP entry
 
@@ -56,11 +78,9 @@ Auth: Sanctum. Read token cannot write. Token values never logged.
 
 Authority for Agent/MCP exposure:
 
-- Merges core `ContentProjectCapabilityRegistry` + enabled extension contributions.  
-- Core names (`content_project.*` or core-owned) **cannot** be overridden by extensions.  
-- Name collisions (extension↔extension or extension↔core) are **excluded** and recorded in `conflicts()`.  
-- Disabled extensions contribute nothing.  
-- `isAgentWriteExposed` / `isMcpWriteExposed` gate surfaces (MCP ⊆ Agent).
+- **Current isolation default:** core `ContentProjectCapabilityRegistry` only (`content_project.*`).  
+- Extension merge via `Agent\Extension\*` is deferred while Agent Workspace is isolated; `conflicts()` returns `[]`.  
+- `isAgentWriteExposed` / `isMcpWriteExposed` still gate surfaces on core caps.
 
 ### Capability metadata (each cap)
 

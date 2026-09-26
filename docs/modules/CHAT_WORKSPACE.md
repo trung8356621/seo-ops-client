@@ -1,16 +1,16 @@
 # Chat Workspace
 
 > Status: Canonical  
-> Owner: Agent (shell) + Content/Seo (group chat API)  
-> Last verified: 2026-09-24
+> Owner: Content (`ChatWorkspacePage`) + Seo (group chat API)  
+> Last verified: 2026-09-26
 
 ## COMMUNICATION WORKSPACE RULE
 
-1. Chat Workspace entry vẫn là `/seo/{connection_hash}/chat` cho **Agent** và **Group Chat** (runtime giữ nguyên; refactor sau).
+1. Chat Workspace entry is `/seo/{connection_hash}/chat` for **Group Chat** (+ legacy ticket panel). **Agent tab is isolated** (legacy Agent Workspace is reference-only — see `AGENT_WORKSPACE.md`).
 2. **Support Ticket là GLOBAL client feature** — entry = shared Filament topbar (`ClientCoreServiceProvider`), không thuộc SEO panel ownership.
 3. Floating global Chat/Agent launcher (`.seo-global-chat__launcher` / `chat-mode-launcher`) **đã hidden/retired khỏi normal/global pages.**
-4. `/seo/{connection_hash}/chat` vẫn có thể mount launcher nội bộ để switch Agent | Group (compatibility). Ticket tab trên chat chỉ là legacy composer; canonical = header.
-5. Agent không có sidebar/page implementation thứ hai. Legacy `/seo/{hash}/agent` và `/admin/agent` chỉ là redirect compatibility → `chat?tab=agent`.
+4. `/seo/{connection_hash}/chat` vẫn có thể mount launcher nội bộ để switch Group | Ticket. Agent menu item alerts unavailable.
+5. Live page: `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage`. Legacy Agent Filament page remains on disk under `addons/agent` but is **not discovered**.
 6. Group Chat runtime là **JS-owned**. Laravel chỉ JSON API + auth + persistence.
 7. Ngoài Chat page: unread badge config có thể còn (sidebar Chat nav). Không mount floating launcher.
 8. Group messages không poll nhanh hơn **15 giây** mặc định.

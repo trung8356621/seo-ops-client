@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
-use Omnichannel\Addons\Agent\Services\AgentWorkspace\AgentWorkspaceDeepLink;
 use Omnichannel\Addons\Seo\Support\SeoAccessControl;
 use Filament\Pages\Page;
 
 /**
- * Admin alias for Chat Workspace (Agent tab).
- * Real UI lives on SEO panel (/seo/{connection_hash}/chat?tab=agent).
+ * Legacy admin alias for the retired Agent Workspace chat entry.
+ * Agent Workspace is reference-only and is no longer a live runtime surface.
  */
 final class AgentWorkspaceRedirect extends Page
 {
@@ -42,20 +41,16 @@ final class AgentWorkspaceRedirect extends Page
     public function mount(): void
     {
         abort_unless(SeoAccessControl::canAccessSeoPanel(), 403);
-
-        $url = AgentWorkspaceDeepLink::tryUrl();
-        if ($url !== null) {
-            $this->redirect($url);
-        }
+        // Intentionally no redirect into Agent Workspace — runtime is isolated/reference-only.
     }
 
     public function getSeoAgentUrl(): ?string
     {
-        return AgentWorkspaceDeepLink::tryUrl();
+        return null;
     }
 
     public function getMissingSiteMessage(): string
     {
-        return AgentWorkspaceDeepLink::MISSING_SITE_MESSAGE;
+        return 'Agent Workspace is retired from the active runtime and is available only as reference source.';
     }
 }

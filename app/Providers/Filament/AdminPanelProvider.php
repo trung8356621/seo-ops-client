@@ -21,12 +21,6 @@ use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Omnichannel\Addons\Agent\Filament\Pages\AutomationFlowsPage;
-use Omnichannel\Addons\Agent\Filament\Pages\AutomationSettings;
-use Omnichannel\Addons\Agent\Filament\Pages\AutomationWorkflowBuilder;
-use Omnichannel\Addons\Agent\Filament\Resources\AutomationExecutionResource;
-use Omnichannel\Addons\Agent\Filament\Resources\AutomationRuleResource;
-use Omnichannel\Addons\SearchFoundation\Filament\Pages\AutomationOperationsDashboard;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -49,7 +43,6 @@ class AdminPanelProvider extends PanelProvider
             ->navigationGroups([
                 NavigationGroup::make(__('navigation.management')),
                 NavigationGroup::make(__('navigation.system')),
-                NavigationGroup::make(__('navigation.automation')),
             ])
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
@@ -83,8 +76,9 @@ class AdminPanelProvider extends PanelProvider
     }
 
     /**
-     * Host the full Settings shell + Automation on /admin.
-     * Same page classes as SEO settings — canonical Admin URLs; SEO menu shortcuts here.
+     * Host Settings shell pages on /admin (SEO settings dual-register).
+     * Legacy Agent/Automation Filament pages are intentionally not registered —
+     * Agent Workspace is reference-only; Automation admin UI follows that isolation.
      */
     private function discover_addons(Panel $panel): Panel
     {
@@ -93,15 +87,8 @@ class AdminPanelProvider extends PanelProvider
             HelpTopicsAdmin::class,
             HelpTopicEdit::class,
             HelpTopicCreate::class,
-            AutomationFlowsPage::class,
-            AutomationOperationsDashboard::class,
-            AutomationSettings::class,
-            AutomationWorkflowBuilder::class,
         ];
-        $resources = [
-            AutomationRuleResource::class,
-            AutomationExecutionResource::class,
-        ];
+        $resources = [];
 
         foreach ([
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsGeneral::class,

@@ -5,9 +5,10 @@ declare(strict_types=1);
 // Thin shell override — discovery roots only. Package defaults merge first via ClientCoreServiceProvider.
 return [
 
+    // agent = legacy Agent Workspace (reference-only); not part of active runtime.
     'skip_slugs' => array_values(array_filter(array_map(
         static fn (string $slug): string => trim($slug),
-        explode(',', (string) env('ADDON_SKIP_SLUGS', 'wp-headless')),
+        explode(',', (string) env('ADDON_SKIP_SLUGS', 'wp-headless,agent')),
     ))),
 
     /*
