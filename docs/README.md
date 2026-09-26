@@ -31,7 +31,7 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 |-----|------|
 | [SYSTEM_OVERVIEW.md](architecture/SYSTEM_OVERVIEW.md) | System map |
 | [ADDON_ARCHITECTURE.md](architecture/ADDON_ARCHITECTURE.md) | Peer-addon rules (Core protocol-only; SeoContentAi compat) |
-| [SERVICE_ARCHITECTURE.md](architecture/SERVICE_ARCHITECTURE.md) | Service vs Addon, service_key, ServiceDatabaseConnection, Admin UX |
+| [SERVICE_ARCHITECTURE.md](architecture/SERVICE_ARCHITECTURE.md) | Service vs Addon, service_key vs service_api_credentials, ServiceDatabaseConnection, Admin UX |
 | [AI_EXECUTION_ROUTING.md](architecture/AI_EXECUTION_ROUTING.md) | **AI execution & routing SoT** (sortable order, free/paid, health vs eligibility, budget, validation, failure taxonomy) |
 | [AI_HISTORY_PROMPT_VERSION.md](architecture/AI_HISTORY_PROMPT_VERSION.md) | Prompt Version + lightweight AI History + routing attempts |
 | [CONTENT_PROJECT_AI_INTEGRATION.md](architecture/CONTENT_PROJECT_AI_INTEGRATION.md) | Content Project ↔ AI stage sequence, correlation, domain-per-item |
@@ -91,8 +91,10 @@ Compat shell lives in `omnichannel-addons/seo-content-ai-compat` (not `app/Addon
 |----------|-----|
 | Agent / MCP | [AGENT_AND_MCP_CONTRACTS.md](contracts/AGENT_AND_MCP_CONTRACTS.md) |
 | Keyword MCP (Landscape + Relationship) | [KEYWORD_MCP.md](contracts/KEYWORD_MCP.md) — Type 2 **CLOSED — v1** |
-| Domain Context Gateways / Registry | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — **SoT for read/context architecture** (slices, registry, formatter; future HTTP/AI consume this) |
-| API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization |
+| Domain Context Gateways / Registry | [CONTEXT_GATEWAYS.md](contracts/CONTEXT_GATEWAYS.md) — **SoT for read/context architecture** (slices, registry, formatter) |
+| SEO MCP Router | [SEO_MCP_ROUTER.md](modules/SEO_MCP_ROUTER.md) — AI discovery + selective parts over ContextRegistry |
+| SEO Service API (HTTP) | [SEO_SERVICE_API.md](api/SEO_SERVICE_API.md) — skeleton; **NOT IMPLEMENTED** |
+| API / Authorization | [API_AND_AUTHORIZATION.md](contracts/API_AND_AUTHORIZATION.md) — **canonical browser auth** (`/login`, `/workspace`) + panel authorization + **Service API** (`service_api_credentials`) |
 | Queue / Scheduler / Idempotency | [QUEUE_SCHEDULER_AND_IDEMPOTENCY.md](contracts/QUEUE_SCHEDULER_AND_IDEMPOTENCY.md) |
 | Extension / Registry | [EXTENSION_AND_REGISTRY_CONTRACTS.md](contracts/EXTENSION_AND_REGISTRY_CONTRACTS.md) |
 

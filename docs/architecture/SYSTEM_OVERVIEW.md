@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: Core + peer addons (`omnichannel-addons`)  
-> Last verified: 2026-09-22  
+> Last verified: 2026-09-26  
 > Supersedes: `docs/archive/maps/MAP_CORE.md`, `FEATURE_MAP_FULL.md` (high-level only — not route/controller dumps)  
 > Authority: [ADDON_ARCHITECTURE.md](ADDON_ARCHITECTURE.md) · [SERVICE_ARCHITECTURE.md](SERVICE_ARCHITECTURE.md) · [API_AND_AUTHORIZATION.md](../contracts/API_AND_AUTHORIZATION.md)
 
@@ -12,7 +12,7 @@ Omnichannel SaaS client: **Laravel 12 / PHP 8.2+ / Filament v3 / MySQL multi-con
 
 | Plane | Path | Role |
 |-------|------|------|
-| **Core** | `app/Core`, `app/Filament` admin | Identity, tenancy, Service catalog (`service_key` + `ServiceDatabaseConnection`), addon discovery, Settings/Members registries, **canonical browser auth** + Access Hub |
+| **Core** | `app/Core`, `app/Filament` admin, `app/Api` | Identity, tenancy, Service catalog (`service_key` + `ServiceDatabaseConnection` + `service_api_credentials`), addon discovery, Settings/Members registries, **canonical browser auth** + Access Hub, **Service API auth foundation** |
 | **Peer addons** | `addons/{slug}` → `omnichannel-addons` | SEO, content, media, WP, publishing, site-sync, AI, seeding, … |
 | **Compat shell** | `seo-content-ai-compat` | Filament views/lang/panel bootstrap only — no new business |
 | **WP plugin** | external `wp-seo-ai` / `omi-seo-ai-bridge` | Live WP public content + Site Sync provider |
@@ -48,7 +48,7 @@ Panels do **not** register Filament login pages. Guests → `/login`.
 - **Identity:** User roles `admin|owner|staff` (+ deprecated `manager`) ; SEO ranks via Spatie `seo.*` (`SeoRoleAssignment`). Hierarchy: Staff `parent_id` → Owner (`accountOwnerId()`).
 - **Browser auth:** Canonical `/login`, Google OAuth, logout → `/login`; Access Hub `/workspace`.
 - **Tenancy surface:** `Site` + `SiteMeta` + `SiteService` bindings (binding ≠ entitlement).
-- **Service catalog:** `services` + encrypted `service_key`; child `service_database_connections` (≤1 per Service) — installation-level, not per-staff instances.
+- **Service catalog:** `services` + encrypted `service_key`; child `service_database_connections` (≤1 per Service); **`service_api_credentials`** for external/service API callers (independent of `service_key`) — installation-level, not per-staff instances.
 - **Addon discovery:** `AddonManager` / `AddonEnablement`.
 - **Settings / Members hubs:** `App\Core\Settings\*`, `App\Core\Members\*` (contributors from addons).
 - **SEO credentials:** canonical Service DB via `ServiceDatabaseConnectionResolver` (`service_database_connections`). Legacy `seo_database_connections` retired.

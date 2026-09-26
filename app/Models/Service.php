@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
@@ -12,6 +13,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *
  * Addon installed ≠ Service active. Only ops-server may provision entitlements
  * via signed `services.apply`. Client Admin must not create/activate Services.
+ *
+ * External API callers use {@see ServiceApiCredential} — never `service_key`.
  */
 class Service extends Model
 {
@@ -43,8 +46,14 @@ class Service extends Model
         return $this->hasOne(ServiceDatabaseConnection::class);
     }
 
+    public function apiCredentials(): HasMany
+    {
+        return $this->hasMany(ServiceApiCredential::class);
+    }
+
     public function hasServiceKey(): bool
     {
         return filled($this->service_key);
     }
 }
+

@@ -1,6 +1,6 @@
 # Service Architecture (canonical)
 
-**Last verified:** 2026-09-05
+**Last verified:** 2026-09-26
 
 ## A. Addon vs Service
 
@@ -37,14 +37,18 @@ ops-server sends signed services.apply
 Service rows + service_key updated
 ```
 
-### Four credential concepts
+### Credential separation (canonical)
 
 | Secret | Role | Storage |
 |--------|------|---------|
-| Enrollment API Key | One-time connect | **Never persisted** |
+| Enrollment API Key | One-time ops-server enrollment | **Never persisted** |
 | `installation_secret` | Control-channel HMAC | `client_control_state` encrypted |
-| `service_key` | Per-Service provisioned secret | `services.service_key` encrypted |
+| `service_key` | Per-Service provisioned entitlement/internal secret | `services.service_key` encrypted |
+| `service_api_credentials` | External/service API caller credentials | `key_prefix` + `key_hash` only (raw key never stored) |
 | DB password | Service DB infrastructure | `service_database_connections.password` encrypted **or null** |
+
+**`service_key` ≠ API key.** Public/service APIs **MUST** authenticate using `service_api_credentials`, never `services.service_key`.  
+Do not migrate/copy `service_key` or legacy `SiteService.settings.api_key` into API credentials.
 
 DB password may be empty/null (valid for local MySQL root). Canonical Admin health uses **only** `service_database_connections` (`connection_source=canonical`) — never env/legacy false-positive.
 
@@ -68,10 +72,33 @@ Canonical payload field: **`service_key`** (sibling of `slug` / `config`).
 
 - Column: `services.service_key` (nullable during migration)
 - Encrypted Eloquent cast, `$hidden`, never in `config` JSON, never Admin raw, never localStorage
-- Distinct from DB password and from legacy `SiteService.settings.api_key`
+- Distinct from DB password, from **`service_api_credentials`**, and from legacy `SiteService.settings.api_key`
+- **Not** used for public/service API Bearer auth
 
 Legacy snapshots without `service_key` remain accepted (existing key retained).  
 Revocation (removed from active snapshot) **clears** `service_key`.
+
+## D2. Service API credentials (`service_api_credentials`)
+
+Core-owned table for **external/service API** callers (Agent, integrations, tools). Many credentials per Service.
+
+| Concern | Rule |
+|---------|------|
+| Format | `svc_live_{lookupId}_{secret}` |
+| Persist | `key_prefix` + HMAC-SHA256 `key_hash` only |
+| Raw key | Returned once at create/rotate; never stored/logged |
+| Auth | `Authorization: Bearer …` → `AuthenticateServiceApi` → `ServiceApiContext` |
+| Isolation | Credential `service_id` must match route `{service}` |
+| Scopes | Flat string list (`service:read`, `*`, …) via `RequireServiceApiScope` |
+| Lifecycle | create / revoke / rotate — independent of `services.apply` |
+
+Foundation probe only (business APIs later):
+
+```http
+GET /api/v1/services/{service}/status
+```
+
+Requires scope `service:read`. Admin management: `/admin/services/{service}` → **API Access** section.
 
 ## E. Service config
 
@@ -112,9 +139,10 @@ Not primary product resources. No connection list/CRUD as top-level Admin produc
 ## I. Admin UX
 
 - Nav: **Dịch vụ** → `/admin/services` (read-only entitlement status)
-- Detail: `/admin/services/{seo|seeding}` — status + DB upsert/test only
+- Detail: `/admin/services/{seo|seeding}` — status + DB upsert/test + **API Access** (create/revoke/rotate credentials)
 - Dashboard quick cards → `/seo`, `/seeding` (+ Cấu hình)
 - Legacy `/admin/seo-database-connections` and `/admin/seeding-database-connections` redirect to Service detail
+- Never show raw `service_key`, `key_hash`, or recovered API keys after leave/reload
 
 ## J. DB planes
 
@@ -133,7 +161,8 @@ Not primary product resources. No connection list/CRUD as top-level Admin produc
 5. DB connection ≠ product identity.  
 6. `service_key` never in JSON config.  
 7. `service_key` and DB password encrypted separately.  
-8. Core owns Service + ServiceDatabaseConnection.  
+7b. Public/service APIs use `service_api_credentials` only — never `service_key`.  
+8. Core owns Service + ServiceDatabaseConnection + ServiceApiCredential.  
 9. Addons own business models/migrations/maintenance.  
 10. No new addon-specific DB connection models.  
 11. SiteService is binding only.  

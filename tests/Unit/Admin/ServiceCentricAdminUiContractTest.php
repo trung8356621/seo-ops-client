@@ -43,8 +43,10 @@ final class ServiceCentricAdminUiContractTest extends TestCase
 
         $view = (string) file_get_contents(resource_path('views/filament/pages/service-configure.blade.php'));
         self::assertStringContainsString('key_provisioned', $view);
+        self::assertStringContainsString('api_access_section_title', $view);
         self::assertStringNotContainsString('service_key', $view);
         self::assertStringNotContainsString('{{ $svc->service_key', $view);
+        self::assertStringNotContainsString('key_hash', $view);
     }
 
     public function test_overview_has_no_entitlement_controls(): void

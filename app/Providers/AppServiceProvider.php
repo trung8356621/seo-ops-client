@@ -17,11 +17,16 @@ use App\Enums\ControlCommandName;
 use App\Support\ImageDriverResolver;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use App\Api\Middleware\AuthenticateServiceApi;
+use App\Api\Services\ServiceApiContext;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Laravel\Facades\Image as InterventionImage;
 
@@ -100,6 +105,21 @@ class AppServiceProvider extends ServiceProvider
 
         $this->registerClientLockQueueGuard();
         $this->registerClientLockHttpMiddleware();
+        $this->registerServiceApiRateLimiter();
+    }
+
+    private function registerServiceApiRateLimiter(): void
+    {
+        RateLimiter::for('service-api', function (Request $request) {
+            $context = $request->attributes->get(AuthenticateServiceApi::REQUEST_CONTEXT_KEY);
+            if ($context instanceof ServiceApiContext) {
+                return Limit::perMinute(120)->by('svc-api:'.$context->credentialId());
+            }
+
+            $prefix = substr((string) $request->bearerToken(), 0, 17);
+
+            return Limit::perMinute(60)->by('svc-api-ip:'.$request->ip().':'.$prefix);
+        });
     }
 
     private function registerClientLockHttpMiddleware(): void

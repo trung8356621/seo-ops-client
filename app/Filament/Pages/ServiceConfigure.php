@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Api\Auth\ServiceApiCredentialManager;
 use App\Models\Service;
+use App\Models\ServiceApiCredential;
 use App\Models\ServiceDatabaseConnection;
 use App\Models\User;
 use App\Services\ServiceDatabaseConnectionResolver;
 use App\Services\ServiceDatabasePasswordIntent;
 use App\Services\ServiceIdentity;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -19,12 +23,16 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
 
 /**
- * Generic Service detail: status + one DB connection upsert (no entitlement controls).
+ * Generic Service detail: status + DB connection upsert + API Access credentials.
+ * No entitlement Create/Activate controls. Never shows service_key or key_hash.
  */
 final class ServiceConfigure extends Page implements HasForms
 {
@@ -43,6 +51,11 @@ final class ServiceConfigure extends Page implements HasForms
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
+    /** One-time raw API key shown only immediately after create/rotate. */
+    public ?string $revealedApiKey = null;
+
+    public ?string $revealedApiKeyName = null;
+
     public static function canAccess(array $parameters = []): bool
     {
         $user = Auth::user();
@@ -55,6 +68,8 @@ final class ServiceConfigure extends Page implements HasForms
     {
         abort_unless(in_array($service, ServiceIdentity::knownPublicSlugs(), true), 404);
         $this->service = $service;
+        $this->revealedApiKey = null;
+        $this->revealedApiKeyName = null;
 
         $row = app(ServiceDatabaseConnectionResolver::class)->resolve($service);
         $this->form->fill([
@@ -130,6 +145,27 @@ final class ServiceConfigure extends Page implements HasForms
             : null;
     }
 
+    /**
+     * @return Collection<int, ServiceApiCredential>
+     */
+    public function apiCredentials(): Collection
+    {
+        $service = $this->catalogService();
+        if (! $service instanceof Service) {
+            return collect();
+        }
+
+        return $service->apiCredentials()
+            ->orderByDesc('id')
+            ->get();
+    }
+
+    public function dismissRevealedApiKey(): void
+    {
+        $this->revealedApiKey = null;
+        $this->revealedApiKeyName = null;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -144,7 +180,128 @@ final class ServiceConfigure extends Page implements HasForms
             Action::make('save')
                 ->label(__('site-service.save'))
                 ->action(fn () => $this->save()),
+            Action::make('createApiKey')
+                ->label(__('site-service.api_access_create'))
+                ->color('primary')
+                ->visible(fn (): bool => $this->catalogService() instanceof Service)
+                ->form([
+                    TextInput::make('name')
+                        ->label(__('site-service.api_access_name'))
+                        ->required()
+                        ->maxLength(120)
+                        ->default(fn (): string => $this->apiCredentials()->isEmpty()
+                            ? 'Default API Key'
+                            : ''),
+                    TagsInput::make('scopes')
+                        ->label(__('site-service.api_access_scopes'))
+                        ->placeholder('service:read')
+                        ->helperText(__('site-service.api_access_scopes_helper'))
+                        ->default(['service:read']),
+                    DateTimePicker::make('expires_at')
+                        ->label(__('site-service.api_access_expires'))
+                        ->native(false)
+                        ->seconds(false),
+                ])
+                ->action(function (array $data): void {
+                    $this->createApiCredential($data);
+                }),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createApiCredential(array $data): void
+    {
+        $service = $this->catalogService();
+        if (! $service instanceof Service) {
+            Notification::make()->title(__('site-service.service_not_provisioned'))->danger()->send();
+
+            return;
+        }
+
+        try {
+            $expiresAt = filled($data['expires_at'] ?? null)
+                ? Carbon::parse((string) $data['expires_at'])
+                : null;
+            $result = app(ServiceApiCredentialManager::class)->create(
+                $service,
+                (string) ($data['name'] ?? ''),
+                $data['scopes'] ?? [],
+                $expiresAt,
+                Auth::id() !== null ? (int) Auth::id() : null,
+            );
+        } catch (InvalidArgumentException $e) {
+            Notification::make()->title(__('site-service.api_access_create_failed'))->body($e->getMessage())->danger()->send();
+
+            return;
+        } catch (Throwable $e) {
+            Notification::make()->title(__('site-service.api_access_create_failed'))->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->revealedApiKey = $result->rawKey;
+        $this->revealedApiKeyName = $result->credential->name;
+        Notification::make()->title(__('site-service.api_access_created_notice'))->success()->send();
+    }
+
+    public function revokeApiCredential(int $credentialId): void
+    {
+        $credential = $this->findOwnedCredential($credentialId);
+        if (! $credential instanceof ServiceApiCredential) {
+            return;
+        }
+
+        app(ServiceApiCredentialManager::class)->revoke($credential);
+        $this->dismissRevealedApiKey();
+        Notification::make()->title(__('site-service.api_access_revoked'))->success()->send();
+    }
+
+    public function rotateApiCredential(int $credentialId): void
+    {
+        $credential = $this->findOwnedCredential($credentialId);
+        if (! $credential instanceof ServiceApiCredential) {
+            return;
+        }
+
+        try {
+            $result = app(ServiceApiCredentialManager::class)->rotate(
+                $credential,
+                createdBy: Auth::id() !== null ? (int) Auth::id() : null,
+            );
+        } catch (Throwable $e) {
+            Notification::make()->title(__('site-service.api_access_rotate_failed'))->body($e->getMessage())->danger()->send();
+
+            return;
+        }
+
+        $this->revealedApiKey = $result->rawKey;
+        $this->revealedApiKeyName = $result->credential->name;
+        Notification::make()->title(__('site-service.api_access_rotated'))->success()->send();
+    }
+
+    private function findOwnedCredential(int $credentialId): ?ServiceApiCredential
+    {
+        $service = $this->catalogService();
+        if (! $service instanceof Service) {
+            Notification::make()->title(__('site-service.service_not_provisioned'))->danger()->send();
+
+            return null;
+        }
+
+        $credential = ServiceApiCredential::query()
+            ->whereKey($credentialId)
+            ->where('service_id', $service->id)
+            ->first();
+
+        if (! $credential instanceof ServiceApiCredential) {
+            Notification::make()->title(__('site-service.api_access_not_found'))->danger()->send();
+
+            return null;
+        }
+
+        return $credential;
     }
 
     public function testConnection(): void

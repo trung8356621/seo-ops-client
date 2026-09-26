@@ -25,6 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/system/v1')
                 ->middleware('throttle:120,1')
                 ->group(base_path('routes/system.php'));
+
+            Route::prefix('api/v1/services')
+                ->group(base_path('routes/api-services.php'));
         },
     )
     ->withCommands([
@@ -46,11 +49,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
-        ]);
-
-        $middleware->alias([
-            'admin' => \App\Http\Middleware\AdminMiddleware::class, // Thay bằng class middleware của bạn
+            'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'seo.planner' => \App\Addons\SeoContentAi\Http\Middleware\SeoPlannerPermissionMiddleware::class,
+            'service.api' => \App\Api\Middleware\AuthenticateServiceApi::class,
+            'service.api.scope' => \App\Api\Middleware\RequireServiceApiScope::class,
         ]);
 
         $middleware->validateCsrfTokens(except: [

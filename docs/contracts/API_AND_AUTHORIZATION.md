@@ -2,7 +2,7 @@
 
 > Status: Canonical  
 > Owner: Core (auth) + peer addons (panel authorization)  
-> Last verified: 2026-09-22  
+> Last verified: 2026-09-26  
 > Supersedes: auth slices formerly scattered across MAP_SEO_TEAM, CONTENT_PROJECT_APPLICATION_API, Agent security satellites; multi-panel Filament login pages (retired 2026-09-22)
 
 ## 1. Purpose
@@ -70,7 +70,30 @@ Staff hitting `/admin` home are redirected to `/workspace` (`RedirectStaffFromAd
 | Agent execute `/api/v1/agent/execute` | Sanctum | Capability + confirmation gated |
 | WordPress bridge REST | Site token / HMAC (bridge) | See [WORDPRESS_BRIDGE.md](../modules/WORDPRESS_BRIDGE.md) |
 | Site Sync inbound callback | Signed callback | See [SITE_SYNC.md](../modules/SITE_SYNC.md) |
-| Admin Service pages `/admin/services*` | Admin session | Read entitlement + DB upsert only — no Create/Activate |
+| Admin Service pages `/admin/services*` | Admin session | Read entitlement + DB upsert + API Access credentials — no Create/Activate Service |
+| Service API `/api/v1/services/{service}/*` | Bearer `service_api_credentials` | Core `AuthenticateServiceApi` + scopes; **not** `service_key` |
+
+### Service API foundation (external callers)
+
+Canonical auth plane for future Agent / integrations / public service APIs.
+
+| Piece | Location |
+|-------|----------|
+| Table | `service_api_credentials` (`key_prefix` + `key_hash`; raw never stored) |
+| Middleware | `service.api`, `service.api.scope:{scope}` |
+| Context | `App\Api\Services\ServiceApiContext` |
+| Routes | `routes/api-services.php` → `/api/v1/services/{service}/…` |
+| Probe | `GET /api/v1/services/{service}/status` (scope `service:read`) |
+
+**Invariant:** `service_key` (ops-server provisioning) ≠ Service API key. Do not authenticate Service API with `service_key` or legacy `SiteService.settings.api_key`.
+
+Business Domain / MCP / Content Project endpoints under this prefix are **not** part of the foundation phase.
+
+Error envelope:
+
+```json
+{ "error": { "code": "service_api_unauthorized", "message": "Unauthorized." } }
+```
 
 ### Failure policy (SEO context)
 

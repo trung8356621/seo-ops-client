@@ -9,7 +9,10 @@
 
 Canonical SoT for SEO **domain context** architecture: MCP-independent slices, a **strict Context Registry**, projection, and formatter.
 
-**Not implemented here:** unified HTTP API, AI Context Planner, AI tool calling, new Agent, new MCP sources, Planning Context.
+**Not implemented here:** unified HTTP API, AI Context Planner inside Registry, AI tool calling, new Agent, new MCP sources, Planning Context.
+
+AI discovery/selective read over this registry: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
+HTTP wire format (when built): [`SEO_SERVICE_API.md`](../api/SEO_SERVICE_API.md).
 
 ## Architecture
 
@@ -27,8 +30,9 @@ Canonical Formatter
 ────────────────────────────
 internal consumers
 Monthly MCP compatibility
-future HTTP API
-future AI Context Planner
+MCP Router (discovery + selective parts) — see SEO_MCP_ROUTER.md
+future HTTP API (docs/api/**)
+future AI (consumes MCP Router / Context — not a planner inside Registry)
 ```
 
 ### Dependency rules
@@ -81,12 +85,13 @@ AI → will consume Context
 | `seo.internal_links` | summary, standard, detail | — | `limit` | no |
 | `publishing.status` | summary, standard, detail | — | — | no |
 | `keywords.landscape` | summary, standard, detail | — | `limit` | no |
-| `keywords.relationship` | summary, standard, detail | `keyword_ref` | `keyword_id` (compat alias) | no |
+| `keywords.relationship` | summary, standard, detail | `keyword_ref` | `keyword_id` (compat alias), `sections` (allowlisted projection) | no |
 | `gsc.performance` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
 | `gsc.opportunities` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
 | `gsc.cannibalization` | summary, standard, detail | — | `period`, `period_key`, `limit` | yes |
 
 `keyword_id` satisfies `keyword_ref` requirement as a declared optional alias on `keywords.relationship` only.  
+`sections` on `keywords.relationship` is an allowlisted projection filter (`keyword`, `topics`, `focus_articles`, `related_keywords`, `internal_links`, `gsc`, `meta`) — not a new Context slice family.  
 `period_key` is a declared optional alias of `period` on GSC slices only.
 
 ## Canonical gateways (presets)
@@ -111,20 +116,22 @@ Adapters own `MonthlyMcpSourcePayload`. Do not add per-slice MCP families.
 
 ## Future HTTP adapter (deferred — not implemented)
 
-Requirements only (no fake routes):
+Preferred stack:
 
 ```text
-HTTP
- → authentication
+HTTP (docs/api/SEO_SERVICE_API.md)
+ → authentication (service_api_credentials)
  → tenant/site authorization
- → ContextRegistry
+ → McpRouterReader / ContextRegistry
  → ContextFormatter
  → JSON
 ```
 
 The future API must not bypass Registry/provider validation, must not query domain models directly, must not duplicate projection/formatter, and must not expose Monthly MCP payloads as the generic API.
 
-Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md). Context capability SoT: this document.
+Auth/transport SoT: [`API_AND_AUTHORIZATION.md`](API_AND_AUTHORIZATION.md).  
+MCP router SoT: [`SEO_MCP_ROUTER.md`](../modules/SEO_MCP_ROUTER.md).  
+Context capability SoT: this document.
 
 ## HTTP API handoff
 
