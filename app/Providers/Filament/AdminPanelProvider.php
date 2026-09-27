@@ -115,8 +115,8 @@ class AdminPanelProvider extends PanelProvider
             $resources[] = $promptResource;
         }
 
-        // Dual-register existing Task/Workflow management (same class as SEO panel). Do not clone UI.
-        $taskResource = \Omnichannel\Addons\ContentProjects\Filament\Resources\TaskResource::class;
+        // Dual-register existing Task/Workflow management (canonical under AiPrompt). Do not clone UI.
+        $taskResource = \Omnichannel\Addons\AiPrompt\Filament\Resources\TaskResource::class;
         if (class_exists($taskResource)) {
             $resources[] = $taskResource;
         }
