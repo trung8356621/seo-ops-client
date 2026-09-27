@@ -143,7 +143,7 @@
     "name": "watermarkApi"
   },
   "addons/agent-runtime/resources/js/app/main.jsx": {
-    "file": "assets/main-DuYapJvg.js",
+    "file": "assets/main-DvIo7Sou.js",
     "name": "main",
     "src": "addons/agent-runtime/resources/js/app/main.jsx",
     "isEntry": true,
@@ -152,7 +152,7 @@
       "_vendor-DkX7a6jy.js"
     ],
     "css": [
-      "assets/main-CpYUkn41.css"
+      "assets/main-BwIqIjVC.css"
     ]
   },
   "addons/agent/resources/css/agent-workspace.css": {
