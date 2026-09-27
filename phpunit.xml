@@ -45,6 +45,9 @@
             <directory suffix="Test.php">./addons/agent/tests/Unit</directory>
             <!-- Agent Workspace product tests archived under tests/Reference — not active CI -->
         </testsuite>
+        <testsuite name="AgentRuntimeAddon">
+            <directory suffix="Test.php">./addons/agent-runtime/tests</directory>
+        </testsuite>
         <testsuite name="SocialAddon">
             <directory suffix="Test.php">./addons/social/tests</directory>
         </testsuite>

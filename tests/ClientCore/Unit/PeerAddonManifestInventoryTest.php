@@ -45,6 +45,7 @@ final class PeerAddonManifestInventoryTest extends TestCase
             'publishing',
             'site-sync',
             'agent',
+            'agent-runtime',
             'social',
             'commerce',
         ];
@@ -52,6 +53,11 @@ final class PeerAddonManifestInventoryTest extends TestCase
         foreach ($expected as $slug) {
             $this->assertArrayHasKey($slug, $bySlug, "Missing peer addon manifest: {$slug}");
             $this->assertNotSame('', $bySlug[$slug]->provider);
+            if ($slug === 'agent') {
+                $this->assertTrue($bySlug[$slug]->legacy);
+
+                continue;
+            }
             $this->assertFalse($bySlug[$slug]->legacy);
         }
     }

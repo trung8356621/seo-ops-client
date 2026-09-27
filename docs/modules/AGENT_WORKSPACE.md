@@ -3,6 +3,7 @@
 > Status: **LEGACY / REFERENCE-ONLY (isolated from active runtime)**  
 > Owner: historical `omnichannel-addons/agent` (not canonical product runtime)  
 > Last verified: 2026-09-26  
+> Successor: [AGENT_RUNTIME.md](AGENT_RUNTIME.md) (`addons/agent-runtime`)  
 > Supersedes: `docs/AGENT_WORKSPACE.md`, `docs/archive/agent/AGENT_WORKSPACE_*.md`, … (see archive tree)
 
 ## 0. Retirement CLOSED (2026-09-26)

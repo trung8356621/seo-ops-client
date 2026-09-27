@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e607333cce6e6167cfa61263d2850f2d",
+    "content-hash": "79d71c5c0016e6006ca7839f6febb883",
     "packages": [
         {
             "name": "anourvalar/eloquent-serialize",
@@ -4750,7 +4750,7 @@
             "dist": {
                 "type": "path",
                 "url": "../omnichannel-addons",
-                "reference": "eab79faa595c863d45fe8556753f22800904a580"
+                "reference": "1f213dbfe9a40a770933533d7b6be408b8c6a21d"
             },
             "require": {
                 "php": "^8.2"
@@ -4769,6 +4769,7 @@
                     "Omnichannel\\Addons\\Publishing\\": "publishing/src/",
                     "Omnichannel\\Addons\\SiteSync\\": "site-sync/src/",
                     "Omnichannel\\Addons\\Agent\\": "agent/src/",
+                    "Omnichannel\\Addons\\AgentRuntime\\": "agent-runtime/src/",
                     "Omnichannel\\Addons\\Social\\": "social/src/",
                     "Omnichannel\\Addons\\Commerce\\": "commerce/src/",
                     "Omnichannel\\Addons\\Seeding\\": "seeding/src/",
@@ -4780,6 +4781,7 @@
                     "Omnichannel\\Addons\\Content\\Tests\\": "content/tests/",
                     "Omnichannel\\Addons\\Media\\Tests\\": "media/tests/",
                     "Omnichannel\\Addons\\Seo\\Tests\\": "seo/tests/",
+                    "Omnichannel\\Addons\\SearchFoundation\\Tests\\": "search-foundation/tests/",
                     "Omnichannel\\Addons\\WordPress\\Tests\\": "wordpress/tests/",
                     "Omnichannel\\Addons\\Publishing\\Tests\\": "publishing/tests/",
                     "Omnichannel\\Addons\\ContentProjects\\Tests\\": "content-projects/tests/",
@@ -4787,6 +4789,7 @@
                     "Omnichannel\\Addons\\AiPrompt\\Tests\\": "ai-prompt/tests/",
                     "Omnichannel\\Addons\\SiteSync\\Tests\\": "site-sync/tests/",
                     "Omnichannel\\Addons\\Agent\\Tests\\": "agent/tests/",
+                    "Omnichannel\\Addons\\AgentRuntime\\Tests\\": "agent-runtime/tests/",
                     "Omnichannel\\Addons\\Social\\Tests\\": "social/tests/",
                     "Omnichannel\\Addons\\Seeding\\Tests\\": "seeding/tests/"
                 }

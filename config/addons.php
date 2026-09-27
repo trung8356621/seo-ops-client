@@ -42,6 +42,7 @@ return [
         'publishing',
         'site-sync',
         'agent',
+        'agent-runtime',
         'social',
         'commerce',
         'seeding',
