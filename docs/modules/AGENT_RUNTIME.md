@@ -33,11 +33,12 @@ Decision Models is the AI Settings area. It is not Text, Reasoning, or Long-form
 | Decision routing profile | `AiExecutionProfile::DecisionRoute` (`decision.route`) |
 | Capabilities | `decision.choice`, `decision.score`, `decision.probability` |
 
-Jev is discovered from supported provider catalogs (currently OpenRouter `typesafe/jev-*`). `DecisionModelIdentityCatalog` recognises a row only after provider discovery stores it on that connection:
+Jev is discovered from supported provider catalogs. OpenRouter's default `GET /api/v1/models` returns text-output models only. Sync also requests `GET /api/v1/models?output_modalities=decisions` and stores Jev ids that catalog returns. `typesafe/jev-router` is text output on the default catalog and is not a Decision model.
+
+Current Decisions ids:
 
 - `typesafe/jev-latest` (alias `~typesafe/jev-latest`)
 - `typesafe/jev-1.13` (dated pins such as `typesafe/jev-1.13-20260917`)
-- `typesafe/jev-router`
 
 The catalog does not insert `SeoAiModel` rows. Execution uses `POST https://openrouter.ai/api/alpha/decisions` with the OpenRouter connection key. It does not call chat completions.
 
