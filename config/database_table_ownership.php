@@ -73,6 +73,13 @@ return [
                 'ai_routing_profiles',
                 'ai_routing_targets',
                 'ai_provider_templates',
+                // AI Prompt & Task core (canonical main client DB)
+                'prompts',
+                'prompt_versions',
+                'prompt_results',
+                'prompt_result_routing_attempts',
+                'seo_tasks',
+                'task_test_results',
                 'service_database_connections',
                 'team_messages',
                 'team_chat_read_cursors',

@@ -136,6 +136,33 @@ echo "    Prompt Nav Label: {$promptNavLabel}\n";
 echo "    Task Nav Label: {$taskNavLabel}\n";
 $results['i18n_labels'] = filled($promptNavLabel) && filled($taskNavLabel);
 
+// 11. Database Inspection Proof: Prove loaded records come from CLIENT DB, not omi_seo_ai
+echo "[11] Proving runtime reads Prompt/Task from CLIENT DB (omi_client)...\n";
+$promptModel = new Prompt();
+$taskModel = new SeoTask();
+$promptDb = $promptModel->getConnection()->getDatabaseName();
+$taskDb = $taskModel->getConnection()->getDatabaseName();
+$coreDb = config('database.connections.mysql.database');
+$seoDb = config('database.connections.omi_seo_ai.database');
+
+echo "    Prompt Model DB: {$promptDb} (Core expected: {$coreDb})\n";
+echo "    Task Model DB: {$taskDb} (Core expected: {$coreDb})\n";
+
+$isPromptOnCore = ($promptDb === $coreDb) && ($promptDb !== $seoDb);
+$isTaskOnCore = ($taskDb === $coreDb) && ($taskDb !== $seoDb);
+
+// Verify actual record loaded
+$verifiedPrompt = Prompt::query()->find(2);
+$verifiedTask = SeoTask::query()->find(1);
+
+$promptLoadedFromCore = $verifiedPrompt && $verifiedPrompt->getConnection()->getDatabaseName() === $coreDb;
+$taskLoadedFromCore = $verifiedTask && $verifiedTask->getConnection()->getDatabaseName() === $coreDb;
+
+echo "    Prompt loaded from client DB: " . ($promptLoadedFromCore ? 'YES' : 'NO') . "\n";
+echo "    Task loaded from client DB: " . ($taskLoadedFromCore ? 'YES' : 'NO') . "\n";
+
+$results['db_inspection_client_db_proof'] = $isPromptOnCore && $isTaskOnCore && $promptLoadedFromCore && $taskLoadedFromCore;
+
 echo "\n=== SMOKE TEST SUMMARY ===\n";
 $allPassed = true;
 foreach ($results as $check => $passed) {
