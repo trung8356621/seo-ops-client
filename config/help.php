@@ -155,6 +155,20 @@ return [
             'sort_order' => 160,
             'context_prefix' => 'account',
         ],
+        'admin' => [
+            'id' => 'admin',
+            'title' => 'Admin',
+            'modalTitle' => 'Admin',
+            'sort_order' => 170,
+            'context_prefix' => 'admin',
+        ],
+        'seeding' => [
+            'id' => 'seeding',
+            'title' => 'Seeding',
+            'modalTitle' => 'Seeding',
+            'sort_order' => 180,
+            'context_prefix' => 'seeding',
+        ],
     ],
 
 ];

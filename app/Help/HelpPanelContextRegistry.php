@@ -1,0 +1,42 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Help;
+
+/**
+ * Panel-level Help contexts owned by the client shell.
+ * SEO page contexts stay in the legacy SEO registry and resolve first.
+ */
+final class HelpPanelContextRegistry
+{
+    /**
+     * @return array<string, array<string, mixed>>
+     */
+    public static function contexts(): array
+    {
+        $groupIds = array_map(
+            static fn (array $group): string => $group['id'],
+            HelpGroupRegistry::all(),
+        );
+
+        return [
+            'admin' => [
+                'id' => 'admin',
+                'modalTitle' => 'Admin',
+                'defaultGroupId' => 'admin',
+                'routeNames' => ['filament.admin.*'],
+                'pathPatterns' => ['\\/admin(?:\\/|$)'],
+                'groupIds' => $groupIds !== [] ? $groupIds : ['admin'],
+            ],
+            'seeding' => [
+                'id' => 'seeding',
+                'modalTitle' => 'Seeding',
+                'defaultGroupId' => 'seeding',
+                'routeNames' => ['filament.seeding.*'],
+                'pathPatterns' => ['\\/seeding(?:\\/|$)'],
+                'groupIds' => $groupIds !== [] ? $groupIds : ['seeding'],
+            ],
+        ];
+    }
+}

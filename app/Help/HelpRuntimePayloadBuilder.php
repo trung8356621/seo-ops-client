@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace App\Help;
 
-use Omnichannel\Addons\Seo\Support\SeoHelpRegistry;
+use Omnichannel\Addons\Seo\Support\SeoHelpRegistry; // legacy SEO groups/contexts fallback — do not add new client Help dependencies here
 
 /**
- * Builds Alpine Help modal payload: Git cache topics + legacy fallback groups.
+ * Builds the global Help drawer payload: Git cache topics + legacy SEO fallback groups.
+ * Canonical registry groups are included even when they have zero topics.
  */
 final class HelpRuntimePayloadBuilder
 {
@@ -43,26 +44,45 @@ final class HelpRuntimePayloadBuilder
         $legacyTopicByKey = $this->legacyTopicByKeyMap($legacy['groups'] ?? []);
 
         if ($topics === []) {
-            return [
-                'groups' => $legacy['groups'],
-                'contexts' => $legacy['contexts'],
-                'topic_by_key' => $legacyTopicByKey,
-                'context_keys' => HelpContextKeyRegistry::keys(),
-                'help_version' => $this->cache->cachedVersion(),
-                'source' => 'legacy',
-            ];
+            return $this->finalizePayload(
+                groups: is_array($legacy['groups'] ?? null) ? $legacy['groups'] : [],
+                topicByKey: $legacyTopicByKey,
+                source: 'legacy',
+            );
         }
 
         $gitGroups = $this->groupsFromTopics($topics);
 
+        return $this->finalizePayload(
+            groups: $this->mergeGroups($legacy['groups'] ?? [], $gitGroups),
+            topicByKey: array_merge($legacyTopicByKey, $this->topicByKeyMap($topics)),
+            source: $sourcePrefix.'+legacy',
+        );
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $groups
+     * @param  array<string, array{groupId: string, topicId: string}>  $topicByKey
+     * @return array{
+     *   groups: list<array<string, mixed>>,
+     *   contexts: array<string, array<string, mixed>>,
+     *   topic_by_key: array<string, array{groupId: string, topicId: string}>,
+     *   context_keys: list<string>,
+     *   context_resolution: list<array<string, mixed>>,
+     *   help_version: string|null,
+     *   source: string
+     * }
+     */
+    private function finalizePayload(array $groups, array $topicByKey, string $source): array
+    {
         return [
-            'groups' => $this->mergeGroups($legacy['groups'] ?? [], $gitGroups),
+            'groups' => $this->withCanonicalGroups($groups),
             'contexts' => $this->mergedContexts(),
-            // Git/cache topics win over legacy same key.
-            'topic_by_key' => array_merge($legacyTopicByKey, $this->topicByKeyMap($topics)),
+            'topic_by_key' => $topicByKey,
             'context_keys' => HelpContextKeyRegistry::keys(),
+            'context_resolution' => HelpContextResolver::steps(),
             'help_version' => $this->cache->cachedVersion(),
-            'source' => $sourcePrefix.'+legacy',
+            'source' => $source,
         ];
     }
 
@@ -121,15 +141,57 @@ final class HelpRuntimePayloadBuilder
             }
         }
 
+        return $this->withCanonicalGroups(array_values($byId));
+    }
+
+    /**
+     * Canonical registry groups stay in the payload even when they have zero topics.
+     *
+     * @param  list<array<string, mixed>>  $groups
+     * @return list<array<string, mixed>>
+     */
+    private function withCanonicalGroups(array $groups): array
+    {
+        $byId = [];
+        foreach ($groups as $group) {
+            if (! is_array($group) || ! isset($group['id'])) {
+                continue;
+            }
+            $id = (string) $group['id'];
+            if ($id === '') {
+                continue;
+            }
+            if (! isset($group['topics']) || ! is_array($group['topics'])) {
+                $group['topics'] = [];
+            }
+            $byId[$id] = $group;
+        }
+
         $ordered = [];
         foreach (HelpGroupRegistry::all() as $meta) {
             $id = $meta['id'];
-            if (! isset($byId[$id])) {
+            if (isset($byId[$id])) {
+                $row = $byId[$id];
+                if (! isset($row['title']) || $row['title'] === '') {
+                    $row['title'] = $meta['title'];
+                }
+                if (! isset($row['modalTitle']) || $row['modalTitle'] === '') {
+                    $row['modalTitle'] = $meta['modalTitle'];
+                }
+                $ordered[] = $row;
+                unset($byId[$id]);
+
                 continue;
             }
-            $ordered[] = $byId[$id];
-            unset($byId[$id]);
+
+            $ordered[] = [
+                'id' => $id,
+                'title' => $meta['title'],
+                'modalTitle' => $meta['modalTitle'],
+                'topics' => [],
+            ];
         }
+
         foreach ($byId as $group) {
             $ordered[] = $group;
         }
@@ -189,6 +251,9 @@ final class HelpRuntimePayloadBuilder
     private function mergedContexts(): array
     {
         $contexts = SeoHelpRegistry::contexts();
+        foreach (HelpPanelContextRegistry::contexts() as $id => $panelContext) {
+            $contexts[$id] = $panelContext;
+        }
         $groupIds = array_map(
             static fn (array $g): string => $g['id'],
             HelpGroupRegistry::all(),

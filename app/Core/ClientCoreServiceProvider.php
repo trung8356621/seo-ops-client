@@ -83,6 +83,9 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
         $this->registerSupportTicketHeaderHook();
+        $this->registerGlobalHelpHeaderHook();
+        $this->registerGlobalHelpAssetsHook();
+        $this->registerGlobalHelpDrawerHook();
 
         if ($this->app->bound(SettingsSectionRegistry::class)) {
             $this->app->make(CoreSettingsBootstrap::class)
@@ -142,6 +145,78 @@ final class ClientCoreServiceProvider extends ServiceProvider
                 );
             },
         );
+    }
+
+    /**
+     * Global Help trigger — one registration for Admin / SEO / Seeding.
+     */
+    private function registerGlobalHelpHeaderHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_BEFORE,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.global-help-trigger')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * Global Help payload + drawer behavior. Does not depend on the SEO panel provider.
+     */
+    private function registerGlobalHelpAssetsHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::HEAD_END,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.global-help-assets')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * Global Help right drawer — one host per page.
+     */
+    private function registerGlobalHelpDrawerHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.global-help-drawer')->render()
+                );
+            },
+        );
+    }
+
+    private function isGlobalHelpSurface(): bool
+    {
+        if (! auth()->check()) {
+            return false;
+        }
+
+        try {
+            $panelId = \Filament\Facades\Filament::getCurrentPanel()?->getId();
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return is_string($panelId) && in_array($panelId, ServiceTopbarRouter::PANEL_IDS, true);
     }
 
     /**
