@@ -665,8 +665,15 @@ final class SeoAccessHttpTest extends TestCase
             ->assertJsonPath('data.scope', 'global')
             ->assertJsonPath('data.site_ref', null);
 
-        $accessUrl = (string) $response->json('data.access_url');
-        $token = $this->tokenFromAccessUrl($accessUrl);
+        $globalAccessUrl = (string) $response->json('data.access_url');
+        self::assertStringEndsWith('/site-network', $globalAccessUrl);
+
+        // GET global access_url works directly and returns 200
+        $this->getJson($globalAccessUrl)
+            ->assertOk()
+            ->assertJsonPath('data.schema', 'seo.site_network.v1');
+
+        $token = $this->tokenFromAccessUrl($globalAccessUrl);
 
         // Site-bound endpoints MUST reject global token with 403 Forbidden
         $this->getJson('/api/v1/access/'.$token.'/site')
@@ -686,8 +693,25 @@ final class SeoAccessHttpTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.schema', 'seo.site_network.v1');
 
+        // Site-scoped token mint returns root access_url, works directly, and allows site-bound resources
+        $siteResponse = $this->postJson('/api/v1/services/seo/access', [
+            'site_id' => 7,
+        ], $this->auth())->assertOk();
+
+        $siteAccessUrl = (string) $siteResponse->json('data.access_url');
+        self::assertStringNotContainsString('/site-network', $siteAccessUrl);
+
+        $this->getJson($siteAccessUrl)
+            ->assertOk()
+            ->assertJsonPath('data.schema', 'seo.access.v1');
+
+        $siteToken = $this->tokenFromAccessUrl($siteAccessUrl);
+
+        $this->getJson('/api/v1/access/'.$siteToken.'/site')->assertOk();
+        $this->getJson('/api/v1/access/'.$siteToken.'/keywords')->assertOk();
+        $this->getJson('/api/v1/access/'.$siteToken.'/gsc')->assertOk();
+
         // Site-scoped token MUST be rejected with 403 Forbidden from global site-network
-        $siteToken = $this->mintToken(7);
         $this->getJson('/api/v1/access/'.$siteToken.'/site-network')
             ->assertStatus(403)
             ->assertJsonPath('error.code', 'service_api_forbidden');
@@ -716,6 +740,11 @@ final class SeoAccessHttpTest extends TestCase
         $path = parse_url($accessUrl, PHP_URL_PATH);
         self::assertIsString($path);
         $parts = explode('/', trim($path, '/'));
+        foreach ($parts as $part) {
+            if (str_starts_with($part, 'access_tmp_')) {
+                return $part;
+            }
+        }
         $token = end($parts);
         self::assertIsString($token);
         self::assertStringStartsWith('access_tmp_', $token);

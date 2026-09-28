@@ -93,12 +93,14 @@ Content-Type: application/json
 {
   "data": {
     "scope": "global",
-    "access_url": "https://host/api/v1/access/access_tmp_…",
+    "access_url": "https://host/api/v1/access/access_tmp_…/site-network",
     "site_ref": null,
     "expires_at": "2026-09-28T12:15:00+00:00"
   }
 }
 ```
+
+The global `access_url` points directly to `/api/v1/access/{token}/site-network` and is immediately usable with `GET`. No separate global root catalog currently exists because Site Network is the only global public resource.
 
 ## C. Temporary Access root (runtime README)
 
