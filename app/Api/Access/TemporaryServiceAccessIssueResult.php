@@ -12,12 +12,23 @@ final class TemporaryServiceAccessIssueResult
     public function __construct(
         public readonly string $rawToken,
         public readonly string $expiresAt,
-        public readonly int $siteId,
+        public readonly ?int $siteId,
         public readonly string $lookupId,
+        public readonly string $scope = 'site',
     ) {}
 
-    public function siteRef(): string
+    public function isSite(): bool
     {
-        return 'site:'.$this->siteId;
+        return $this->scope === 'site';
+    }
+
+    public function isGlobal(): bool
+    {
+        return $this->scope === 'global';
+    }
+
+    public function siteRef(): ?string
+    {
+        return $this->siteId !== null && $this->siteId > 0 ? 'site:'.$this->siteId : null;
     }
 }

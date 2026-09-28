@@ -25,6 +25,10 @@ final class TemporaryServiceAccessManager
 
     public const READ_SCOPE = 'seo:read';
 
+    public const SCOPE_SITE = 'site';
+
+    public const SCOPE_GLOBAL = 'global';
+
     private const CACHE_PREFIX = 'tmp_service_access:';
 
     public function issue(
@@ -46,6 +50,7 @@ final class TemporaryServiceAccessManager
         $expiresAt = $issuedAt->modify('+'.self::TTL_SECONDS.' seconds');
 
         $payload = [
+            'scope' => self::SCOPE_SITE,
             'service_id' => (int) $service->id,
             'credential_id' => (int) $credential->id,
             'site_id' => $siteId,
@@ -63,6 +68,44 @@ final class TemporaryServiceAccessManager
             expiresAt: $expiresAt->format(DateTimeInterface::ATOM),
             siteId: $siteId,
             lookupId: $lookupId,
+            scope: self::SCOPE_SITE,
+        );
+    }
+
+    public function issueGlobal(
+        Service $service,
+        ServiceApiCredential $credential,
+    ): TemporaryServiceAccessIssueResult {
+        if ((int) $credential->service_id !== (int) $service->id) {
+            throw new InvalidArgumentException('Credential does not belong to Service.');
+        }
+
+        $lookupId = Str::lower(bin2hex(random_bytes(4)));
+        $secret = rtrim(strtr(base64_encode(random_bytes(30)), '+/', '-_'), '=');
+        $rawToken = self::TOKEN_PREFIX.$lookupId.'_'.$secret;
+        $issuedAt = new DateTimeImmutable('now');
+        $expiresAt = $issuedAt->modify('+'.self::TTL_SECONDS.' seconds');
+
+        $payload = [
+            'scope' => self::SCOPE_GLOBAL,
+            'service_id' => (int) $service->id,
+            'credential_id' => (int) $credential->id,
+            'site_id' => null,
+            'scopes' => [self::READ_SCOPE],
+            'issued_at' => $issuedAt->format(DateTimeInterface::ATOM),
+            'expires_at' => $expiresAt->format(DateTimeInterface::ATOM),
+            'token_hash' => $this->hash($rawToken),
+            'lookup_id' => $lookupId,
+        ];
+
+        Cache::put($this->cacheKey($lookupId), $payload, self::TTL_SECONDS);
+
+        return new TemporaryServiceAccessIssueResult(
+            rawToken: $rawToken,
+            expiresAt: $expiresAt->format(DateTimeInterface::ATOM),
+            siteId: null,
+            lookupId: $lookupId,
+            scope: self::SCOPE_GLOBAL,
         );
     }
 

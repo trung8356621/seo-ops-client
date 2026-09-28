@@ -46,10 +46,24 @@ final class TemporaryServiceAccessResolver
         }
 
         $serviceId = (int) ($payload['service_id'] ?? 0);
-        $siteId = (int) ($payload['site_id'] ?? 0);
         $credentialId = (int) ($payload['credential_id'] ?? 0);
-        if ($serviceId <= 0 || $siteId <= 0 || $credentialId <= 0) {
+        if ($serviceId <= 0 || $credentialId <= 0) {
             return null;
+        }
+
+        $scope = (string) ($payload['scope'] ?? TemporaryServiceAccessContext::SCOPE_SITE);
+        if (! in_array($scope, [TemporaryServiceAccessContext::SCOPE_SITE, TemporaryServiceAccessContext::SCOPE_GLOBAL], true)) {
+            return null;
+        }
+
+        $rawSiteId = $payload['site_id'] ?? null;
+        $siteId = is_numeric($rawSiteId) && (int) $rawSiteId > 0 ? (int) $rawSiteId : null;
+
+        if ($scope === TemporaryServiceAccessContext::SCOPE_SITE && $siteId === null) {
+            return null;
+        }
+        if ($scope === TemporaryServiceAccessContext::SCOPE_GLOBAL) {
+            $siteId = null;
         }
 
         $service = Service::query()->find($serviceId);
@@ -68,9 +82,9 @@ final class TemporaryServiceAccessResolver
             $scopes = [TemporaryServiceAccessManager::READ_SCOPE];
         }
         $normalizedScopes = [];
-        foreach ($scopes as $scope) {
-            if (is_string($scope) && trim($scope) !== '') {
-                $normalizedScopes[] = trim($scope);
+        foreach ($scopes as $s) {
+            if (is_string($s) && trim($s) !== '') {
+                $normalizedScopes[] = trim($s);
             }
         }
         if ($normalizedScopes === []) {
@@ -85,6 +99,7 @@ final class TemporaryServiceAccessResolver
             issuedAt: (string) ($payload['issued_at'] ?? ''),
             expiresAt: $expiresAt,
             lookupId: $lookupId,
+            scope: $scope,
         );
     }
 

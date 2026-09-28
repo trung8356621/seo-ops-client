@@ -656,6 +656,37 @@ final class SeoAccessHttpTest extends TestCase
             ->assertJsonPath('error.code', 'service_api_temporary_access_invalid');
     }
 
+    public function test_mint_global_token_and_site_bound_route_rejection(): void
+    {
+        $response = $this->postJson('/api/v1/services/seo/access', [
+            'scope' => 'global',
+        ], $this->auth())
+            ->assertOk()
+            ->assertJsonPath('data.scope', 'global')
+            ->assertJsonPath('data.site_ref', null);
+
+        $accessUrl = (string) $response->json('data.access_url');
+        $token = $this->tokenFromAccessUrl($accessUrl);
+
+        // Site-bound endpoints MUST reject global token with 403 Forbidden
+        $this->getJson('/api/v1/access/'.$token.'/site')
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_forbidden');
+
+        $this->getJson('/api/v1/access/'.$token.'/keywords')
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_forbidden');
+
+        $this->getJson('/api/v1/access/'.$token.'/gsc')
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_forbidden');
+
+        // Site network endpoint allows global token
+        $this->getJson('/api/v1/access/'.$token.'/site-network')
+            ->assertOk()
+            ->assertJsonPath('data.schema', 'seo.site_network.v1');
+    }
+
     private function mintToken(int $siteId): string
     {
         $response = $this->postJson('/api/v1/services/seo/access', [

@@ -15,27 +15,41 @@ use DateTimeInterface;
  */
 final class TemporaryServiceAccessContext
 {
+    public const SCOPE_SITE = 'site';
+    public const SCOPE_GLOBAL = 'global';
+
     /**
      * @param  list<string>  $scopes
      */
     public function __construct(
         public readonly Service $service,
-        public readonly int $siteId,
+        public readonly ?int $siteId,
         public readonly int $credentialId,
         public readonly array $scopes,
         public readonly string $issuedAt,
         public readonly string $expiresAt,
         public readonly string $lookupId,
+        public readonly string $scope = self::SCOPE_SITE,
     ) {}
+
+    public function isSite(): bool
+    {
+        return $this->scope === self::SCOPE_SITE;
+    }
+
+    public function isGlobal(): bool
+    {
+        return $this->scope === self::SCOPE_GLOBAL;
+    }
 
     public function serviceId(): int
     {
         return (int) $this->service->id;
     }
 
-    public function siteRef(): string
+    public function siteRef(): ?string
     {
-        return 'site:'.$this->siteId;
+        return $this->siteId !== null && $this->siteId > 0 ? 'site:'.$this->siteId : null;
     }
 
     public function publicServiceSlug(): string
