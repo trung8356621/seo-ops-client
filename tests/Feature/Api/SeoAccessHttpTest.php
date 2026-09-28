@@ -685,6 +685,21 @@ final class SeoAccessHttpTest extends TestCase
         $this->getJson('/api/v1/access/'.$token.'/site-network')
             ->assertOk()
             ->assertJsonPath('data.schema', 'seo.site_network.v1');
+
+        // Site-scoped token MUST be rejected with 403 Forbidden from global site-network
+        $siteToken = $this->mintToken(7);
+        $this->getJson('/api/v1/access/'.$siteToken.'/site-network')
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_forbidden');
+
+        $this->getJson('/api/v1/access/'.$siteToken.'/site-network/topics?source_site=1&target_site=2')
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_forbidden');
+
+        // Invalid token returns 401
+        $this->getJson('/api/v1/access/access_tmp_nonexistent/site-network')
+            ->assertStatus(401)
+            ->assertJsonPath('error.code', 'service_api_temporary_access_invalid');
     }
 
     private function mintToken(int $siteId): string

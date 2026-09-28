@@ -8,26 +8,29 @@
 
 ## Purpose
 
-Unified **site-bound SEO read plane** for external Agents / integrations.
+Unified **SEO read plane** for external Agents / integrations.
 
 External callers MUST NOT need to understand MCP, ContextRegistry, routers, parts, ContextSlice, or addon ownership. Those remain internal.
 
 ```text
 1. GET  /api/v1/services/seo/access          → list sites
-2. POST /api/v1/services/seo/access          → mint temporary URL
-3. GET  /api/v1/access/{token}               → resource index
+2. POST /api/v1/services/seo/access          → mint temporary URL (scope: site | global)
+3. GET  /api/v1/access/{token}               → resource index (site scope)
 4. GET  /api/v1/access/{token}/{resource}    → read SEO context
 5. POST /api/v1/services/seo/content-projects/draft/intake  → only Agent write
 ```
 
-Canonical public resources: **site**, **keywords**, **gsc** only.
+Canonical public resources:
+- **Site-scoped**: `site`, `keywords`, `gsc`
+- **Global-scoped**: `site-network`
 
 ## Authentication planes
 
 | Mode | Auth | Scope | Site |
 |------|------|-------|------|
 | **A. Permanent Service API** | `Authorization: Bearer svc_live_…` (`service_api_credentials`) | **`seo:read`** | List / mint |
-| **B. Temporary Access** | Opaque path token only (no Bearer) | Bound as `seo:read` at mint | Fixed at mint |
+| **B. Temporary Access (Site)** | Opaque path token only (no Bearer) | Bound as `scope=site` | Fixed at mint (`site_ref`) |
+| **C. Temporary Access (Global)** | Opaque path token only (no Bearer) | Bound as `scope=global` | `null` (cross-site topology only) |
 
 Permanent API key stays **server/runtime-only**. Models receive only the temporary `access_url`.
 
@@ -47,7 +50,13 @@ Authorization: Bearer svc_live_…
 
 Compact Site rows only — no credentials, no Site configuration dump.
 
-## B. Mint temporary site-bound access
+## B. Mint temporary access
+
+Permanent credentials mint short-lived capability tokens via `POST /api/v1/services/seo/access`. Tokens expire after `ttl` (default **900 seconds / 15 minutes**).
+
+### 1. Site-Scoped Temporary Token (Default)
+
+Grants access to site-bound resources (`/site`, `/keywords`, `/gsc`). Requires a valid, active `site_id`.
 
 ```http
 POST /api/v1/services/seo/access
@@ -57,14 +66,36 @@ Content-Type: application/json
 { "site_id": 7 }
 ```
 
-Allowed body field: **`site_id` only**. TTL **900 seconds (15 minutes)**.
+```json
+{
+  "data": {
+    "scope": "site",
+    "access_url": "https://host/api/v1/access/access_tmp_…",
+    "site_ref": "site:7",
+    "expires_at": "2026-09-28T12:15:00+00:00"
+  }
+}
+```
+
+### 2. Global-Scoped Temporary Token
+
+Grants access strictly to cross-site topology (`/site-network`). Requires `scope: "global"` and **forbids `site_id`**.
+
+```http
+POST /api/v1/services/seo/access
+Authorization: Bearer svc_live_…
+Content-Type: application/json
+
+{ "scope": "global" }
+```
 
 ```json
 {
   "data": {
+    "scope": "global",
     "access_url": "https://host/api/v1/access/access_tmp_…",
-    "site_ref": "site:7",
-    "expires_at": "2026-09-26T12:15:00+00:00"
+    "site_ref": null,
+    "expires_at": "2026-09-28T12:15:00+00:00"
   }
 }
 ```
@@ -374,6 +405,104 @@ Unavailable responses omit `performance` / `opportunities` / `cannibalization` a
 When persisted daily rows exist for the period and aggregation is genuinely zero: `available: true` and zeros are valid.
 
 Evidence = persisted fact existence for the period (not merely property existence).
+
+## G. Site Network resource (Global Scope)
+
+Cross-site topology aggregate between managed sites. Requires a **global-scoped temporary access token** (`scope: "global"`). Site-scoped tokens cannot access this resource and receive `403 Forbidden`.
+
+### 1. Overview graph
+
+```http
+GET /api/v1/access/{globalToken}/site-network
+```
+
+Schema: `seo.site_network.v1`
+
+```json
+{
+  "data": {
+    "schema": "seo.site_network.v1",
+    "sites": [
+      {
+        "site_ref": "site:1",
+        "site_id": 1,
+        "domain": "alpha.example.com"
+      },
+      {
+        "site_ref": "site:2",
+        "site_id": 2,
+        "domain": "beta.example.com"
+      }
+    ],
+    "edges": [
+      {
+        "source_site_ref": "site:1",
+        "target_site_ref": "site:2",
+        "article_link_count": 14,
+        "source_article_count": 6,
+        "target_article_count": 4,
+        "source_keyword_count": 8
+      }
+    ],
+    "note": "Direction preserved. A→B and B→A are separate edges."
+  }
+}
+```
+
+### 2. Edge Metrics & Directionality
+
+- **Strictly Directional**: An edge `A -> B` represents hyperlinks in articles on Site A linking to articles on Site B. `A -> B` and `B -> A` are separate edges and never collapsed.
+- **`article_link_count`**: Total number of hyperlinks from articles on `source_site` pointing to `target_site`.
+- **`source_article_count`**: Number of distinct source articles on `source_site` containing at least one link to `target_site`.
+- **`target_article_count`**: Number of distinct target articles on `target_site` linked from `source_site`.
+- **`source_keyword_count`**: Number of distinct source keywords (from `seo_link_maps.keyword_id`) originating the links.
+
+### 3. Topics drilldown for site pair
+
+```http
+GET /api/v1/access/{globalToken}/site-network/topics?source_site={sourceSiteId}&target_site={targetSiteId}
+```
+
+Schema: `seo.site_network.topics.v1`
+
+Query parameters:
+- `source_site` (integer, required): ID of source site
+- `target_site` (integer, required): ID of target site
+
+```json
+{
+  "data": {
+    "schema": "seo.site_network.topics.v1",
+    "source_site_ref": "site:1",
+    "target_site_ref": "site:2",
+    "topics": [
+      {
+        "topic_id": 42,
+        "topic_ref": "topic:42",
+        "name": "Organic Coffee",
+        "cross_site_link_count": 7
+      }
+    ]
+  }
+}
+```
+
+## Authorization Matrix
+
+| Endpoint | Resource | Token Scope | Site Token (`scope: site`) | Global Token (`scope: global`) | Invalid / Expired Token |
+|----------|----------|-------------|----------------------------|--------------------------------|-------------------------|
+| `GET /api/v1/access/{token}/site` | Site Knowledge | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/keywords` | Keyword Landscape | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/keywords/topics/{ref}` | Topic Detail | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `POST /api/v1/access/{token}/keywords` | Relationship Read | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/gsc` | GSC Performance | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `POST /api/v1/access/{token}/gsc` | GSC Query | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/site-network` | Site Network Overview | Global | **403 Forbidden** | **200 OK** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/site-network/topics` | Site Network Topics | Global | **403 Forbidden** | **200 OK** | 401 Unauthorized |
+
+## Global Agent Retrieval Guard
+
+Agent Runtime global retrieval remains **intentionally unsupported**. `SeoAccessExecutor` enforces site scope and rejects global retrieval requests with an explicit exception. Global Site Network data is consumed exclusively by overview APIs and the Topical Map interface.
 
 ## Read-only guarantee
 
