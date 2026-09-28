@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Control\Commands\Handlers\ServicesApplyHandler;
-use App\Models\ClientControlState;
 use App\Models\Service;
 use App\Services\AddonManager;
 use Illuminate\Console\Command;
@@ -14,8 +12,7 @@ use Omnichannel\Addons\Seeding\Support\SeedingServiceResolver;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Local/dev bootstrap that mimics ops-server `services.apply` for one slug.
- * Replace-safe: keeps all currently active services and adds/activates the target.
+ * Local/dev bootstrap to activate a service for one slug.
  */
 final class SimulateServiceCommand extends Command
 {
@@ -23,9 +20,9 @@ final class SimulateServiceCommand extends Command
         {slug=seeding : Service slug to activate}
         {--force : Allow outside local/testing when SERVICE_SIMULATE_FORCE=1}';
 
-    protected $description = 'Local-only: simulate ops-server services.apply for a catalog slug (replace-safe)';
+    protected $description = 'Local-only: simulate service activation for a catalog slug';
 
-    public function handle(ServicesApplyHandler $handler): int
+    public function handle(): int
     {
         if (! $this->environmentAllowed()) {
             $this->error('service:simulate is refused outside local/testing (pass --force with SERVICE_SIMULATE_FORCE=1).');
@@ -70,52 +67,21 @@ final class SimulateServiceCommand extends Command
                 'database' => 'omi_seeding',
             ];
             $target->config = $config;
-            $target->save();
         }
 
-        $wanted = [];
-        foreach (Service::query()->where('is_active', true)->orderBy('id')->get() as $row) {
-            $entry = [
-                'slug' => (string) $row->slug,
-                'config' => is_array($row->config) ? $row->config : [],
-            ];
-            if (filled($row->service_key)) {
-                $entry['service_key'] = (string) $row->service_key;
-            }
-            $wanted[(string) $row->slug] = $entry;
+        $target->is_active = true;
+        $hasServiceKeyColumn = Schema::hasColumn('services', 'service_key');
+        if ($hasServiceKeyColumn && ! filled($target->service_key)) {
+            $target->service_key = 'local-fixture-'.bin2hex(random_bytes(20));
         }
+        $target->save();
 
-        $fresh = $target->fresh();
-        $targetEntry = [
-            'slug' => $slug,
-            'config' => is_array($fresh?->config) ? $fresh->config : [],
-            'service_key' => filled($fresh?->service_key)
-                ? (string) $fresh->service_key
-                : ('local-fixture-'.bin2hex(random_bytes(20))),
-        ];
-        $wanted[$slug] = $targetEntry;
-
-        $revision = (int) (ClientControlState::query()->orderBy('id')->value('services_revision') ?? 0) + 1;
-
-        $result = $handler->handle([
-            'mode' => 'replace',
-            'revision' => $revision,
-            'active_services' => array_values($wanted),
-        ]);
-
-        if ($result->error !== null) {
-            $this->error('services.apply failed: '.$result->error);
-
-            return self::FAILURE;
-        }
-
-        $row = Service::query()->where('slug', $slug)->first();
-        $this->info("Simulated services.apply for [{$slug}]");
+        $row = $target->fresh();
+        $this->info("Simulated service activation for [{$slug}]");
         $this->line('  is_active: '.((bool) $row?->is_active ? '1' : '0'));
         $this->line('  db_connection: '.((string) ($row?->db_connection ?? '')));
         $this->line('  key_provisioned: '.($row?->hasServiceKey() ? 'yes' : 'no'));
-        $this->line('  activated: '.implode(', ', $result->result['activated'] ?? []));
-        $this->line('  deactivated: '.implode(', ', $result->result['deactivated'] ?? []) ?: '(none)');
+        $this->line('  activated: '.$slug);
 
         return self::SUCCESS;
     }

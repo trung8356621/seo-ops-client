@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Filament\Pages\ControlServer;
 use App\Filament\Pages\ManageServices;
 use App\Filament\Pages\ServiceStatusOverview;
 use App\Filament\Resources\SeedingDatabaseConnectionResource;
@@ -16,7 +15,6 @@ use App\Models\Service;
 use App\Models\SiteService;
 use App\Models\User;
 use Filament\Facades\Filament;
-use Filament\Pages\Dashboard;
 use Omnichannel\Addons\Agent\Filament\Pages\AutomationFlowsPage;
 use Omnichannel\Addons\Agent\Filament\Pages\AutomationSettings;
 use Omnichannel\Addons\Agent\Filament\Pages\AutomationWorkflowBuilder;
@@ -95,7 +93,7 @@ final class AdminPanelBoundaryTest extends TestCase
     {
         $panel = Filament::getPanel('admin');
 
-        $this->assertContains(Dashboard::class, $panel->getPages());
+        $this->assertContains(\App\Filament\Pages\Dashboard::class, $panel->getPages());
         $this->assertContains(UserResource::class, $panel->getResources());
         $this->assertContains(SeoDatabaseConnectionResource::class, $panel->getResources());
         $this->assertContains(SeedingDatabaseConnectionResource::class, $panel->getResources());
@@ -108,8 +106,7 @@ final class AdminPanelBoundaryTest extends TestCase
 
         $this->actingAs($this->userWithRole(User::ROLE_OWNER));
         $this->assertTrue(UserResource::canAccess());
-        $this->assertTrue(ControlServer::canAccess());
-        $this->assertContains(ControlServer::class, $panel->getPages());
+        $this->assertFalse(class_exists(\App\Filament\Pages\ControlServer::class));
         $this->assertTrue(SeedingDatabaseConnectionResource::canAccess());
         $this->assertTrue(ServiceStatusOverview::canAccess());
         $this->assertTrue(\App\Filament\Pages\HelpTopicsAdmin::canAccess());

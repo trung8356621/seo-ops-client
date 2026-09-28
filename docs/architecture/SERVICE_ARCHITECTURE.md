@@ -19,31 +19,15 @@ Client Admin **must not** expose: Create / Install / Activate / Deactivate / Del
 
 Local `php artisan service:simulate` is a **dev fixture only** (local/testing), not a product feature.
 
-### Control Server (`/admin/control-server`)
+### Legacy Control Server Integration (Removed)
 
-Connects this installation to ops-server. Does **not** manage Services.
-
-```
-Owner enters one-time Enrollment API Key
-        ↓
-Client POST /api/control/v1/enrollments
-        ↓
-raw API key discarded (never persisted)
-        ↓
-installation_secret encrypted locally
-        ↓
-ops-server sends signed services.apply
-        ↓
-Service rows + service_key updated
-```
+The legacy `/admin/control-server` page and enrollment flow have been removed. ops-client runs completely standalone without requiring a Control Server connection. ops-server is a future component and will be designed separately.
 
 ### Credential separation (canonical)
 
 | Secret | Role | Storage |
 |--------|------|---------|
-| Enrollment API Key | One-time ops-server enrollment | **Never persisted** |
-| `installation_secret` | Control-channel HMAC | `client_control_state` encrypted |
-| `service_key` | Per-Service provisioned entitlement/internal secret | `services.service_key` encrypted |
+| `service_key` | Per-Service provisioned internal secret | `services.service_key` encrypted |
 | `service_api_credentials` | External/service API caller credentials | `key_prefix` + `key_hash` only (raw key never stored) |
 | DB password | Service DB infrastructure | `service_database_connections.password` encrypted **or null** |
 

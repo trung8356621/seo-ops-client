@@ -2,24 +2,34 @@
 
 declare(strict_types=1);
 
-namespace Tests\Unit\Control;
+namespace Tests\Unit\Services;
 
 use App\Models\Service;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Omnichannel\Addons\Seeding\Support\SeedingServiceConfig;
 use Omnichannel\Addons\Seeding\Support\SeedingServiceResolver;
 use Tests\TestCase;
 
 final class SimulateServiceCommandTest extends TestCase
 {
-    use InteractsWithClientControl;
-    use UsesClientControlSchema;
-
     protected function setUp(): void
     {
         parent::setUp();
-        $this->bootClientControlSchema();
-        $this->seedEnrolledState();
         $this->app['env'] = 'local';
+
+        Schema::dropIfExists('services');
+        Schema::create('services', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('addon_namespace');
+            $table->string('db_connection')->default('mysql');
+            $table->boolean('is_active')->default(true);
+            $table->json('config')->nullable();
+            $table->text('service_key')->nullable();
+            $table->timestamps();
+        });
     }
 
     public function test_simulate_seeding_activates_without_deactivating_existing(): void
@@ -47,7 +57,7 @@ final class SimulateServiceCommandTest extends TestCase
             Service::query()->where('slug', 'seeding')->value('db_connection'),
         );
 
-        // Ensure previously active rows were not flipped off by replace mode.
+        // Ensure previously active rows were not flipped off.
         self::assertSame($seo->id, Service::query()->where('slug', 'seo-content-ai')->value('id'));
         self::assertSame($media->id, Service::query()->where('slug', 'media')->value('id'));
     }
@@ -89,5 +99,17 @@ final class SimulateServiceCommandTest extends TestCase
             ->assertFailed();
 
         self::assertFalse((bool) Service::query()->where('slug', 'seeding')->value('is_active'));
+    }
+
+    private function makeRuntimeService(string $slug, bool $active = true, array $config = []): Service
+    {
+        return Service::query()->create([
+            'name' => $slug,
+            'slug' => $slug,
+            'addon_namespace' => 'App\\Addons\\Fake\\'.$slug,
+            'db_connection' => 'mysql',
+            'is_active' => $active,
+            'config' => $config,
+        ]);
     }
 }

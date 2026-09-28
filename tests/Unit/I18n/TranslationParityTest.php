@@ -26,7 +26,6 @@ final class TranslationParityTest extends TestCase
      * @var list<string>
      */
     private const KNOWN_HARDCODED_VI_NAV_PROPS = [
-        'app/Filament/Pages/ControlServer.php|$navigationGroup',
         'app/Filament/Pages/CoreSettingsHub.php|$navigationGroup',
         'app/Filament/Pages/CoreSettingsHub.php|$navigationLabel',
         'app/Filament/Pages/HelpTopicsAdmin.php|$navigationGroup',
@@ -65,7 +64,6 @@ final class TranslationParityTest extends TestCase
     public static function strictPhpLangPairsProvider(): array
     {
         return [
-            'client_control' => ['lang/en/client_control.php', 'lang/vi/client_control.php'],
             'seo' => ['lang/en/seo.php', 'lang/vi/seo.php'],
             'seo_rules' => ['lang/en/seo_rules.php', 'lang/vi/seo_rules.php'],
             'site-service' => ['lang/en/site-service.php', 'lang/vi/site-service.php'],

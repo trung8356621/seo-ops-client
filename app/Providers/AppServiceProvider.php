@@ -2,18 +2,8 @@
 
 namespace App\Providers;
 
-use App\Control\ClientLockGuard;
-use App\Control\Commands\ControlCommandDispatcher;
 use App\Http\Responses\Auth\CanonicalLogoutResponse;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as FilamentLogoutResponse;
-use App\Control\Commands\Handlers\ClientLockHandler;
-use App\Control\Commands\Handlers\ClientUnlockHandler;
-use App\Control\Commands\Handlers\ClientUpdateHandler;
-use App\Control\Commands\Handlers\ServicesApplyHandler;
-use App\Control\Exceptions\ClientLockedException;
-use App\Control\Update\ClientUpdater;
-use App\Control\Update\NotConfiguredClientUpdater;
-use App\Enums\ControlCommandName;
 use App\Support\ImageDriverResolver;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
 use Illuminate\Auth\Notifications\ResetPassword;
@@ -43,7 +33,6 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->registerInterventionImageManager();
-        $this->registerClientControlBindings();
         $this->app->bind(FilamentLogoutResponse::class, CanonicalLogoutResponse::class);
 
         // Panel providers need early registration (Filament). Discover from filesystem
@@ -105,8 +94,6 @@ class AppServiceProvider extends ServiceProvider
                 ]);
         });
 
-        $this->registerClientLockQueueGuard();
-        $this->registerClientLockHttpMiddleware();
         $this->registerServiceApiRateLimiter();
         $this->registerTemporaryAccessRateLimiter();
     }
@@ -139,38 +126,6 @@ class AppServiceProvider extends ServiceProvider
                 : 'unknown';
 
             return Limit::perMinute(30)->by('tmp-access-ip:'.$request->ip().':'.$lookup);
-        });
-    }
-
-    private function registerClientLockHttpMiddleware(): void
-    {
-        $kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-        if (! $kernel->hasMiddleware(\App\Http\Middleware\EnsureClientIsNotLocked::class)) {
-            $kernel->pushMiddleware(\App\Http\Middleware\EnsureClientIsNotLocked::class);
-        }
-    }
-
-    private function registerClientControlBindings(): void
-    {
-        $this->app->singleton(ClientUpdater::class, NotConfiguredClientUpdater::class);
-        $this->app->singleton(ControlCommandDispatcher::class, function ($app): ControlCommandDispatcher {
-            return new ControlCommandDispatcher([
-                ControlCommandName::ServicesApply->value => $app->make(ServicesApplyHandler::class),
-                ControlCommandName::ClientLock->value => $app->make(ClientLockHandler::class),
-                ControlCommandName::ClientUnlock->value => $app->make(ClientUnlockHandler::class),
-                ControlCommandName::ClientUpdate->value => $app->make(ClientUpdateHandler::class),
-            ]);
-        });
-    }
-
-    private function registerClientLockQueueGuard(): void
-    {
-        Queue::before(function (JobProcessing $_event): void {
-            if (! app(ClientLockGuard::class)->isLocked()) {
-                return;
-            }
-
-            throw new ClientLockedException(__('client_control.locked_message'));
         });
     }
 

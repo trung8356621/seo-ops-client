@@ -1,6 +1,5 @@
 <?php
 
-use App\Control\ClientLockGuard;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
@@ -32,12 +31,6 @@ Route::middleware(['web', 'auth'])->group(function (): void {
             ->name('support-tickets.store');
     });
 });
-
-Route::get('/client-locked', function (ClientLockGuard $lockGuard) {
-    return response()->view('client-locked', [
-        'message' => $lockGuard->publicMessage(),
-    ]);
-})->name('client-locked');
 
 require __DIR__.'/auth.php';
 

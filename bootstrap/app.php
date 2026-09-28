@@ -18,10 +18,6 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         then: function (): void {
-            Route::prefix('api/control/v1')
-                ->middleware('throttle:60,1')
-                ->group(base_path('routes/control.php'));
-
             Route::prefix('api/system/v1')
                 ->middleware('throttle:120,1')
                 ->group(base_path('routes/system.php'));
@@ -69,19 +65,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi(); // Đảm bảo session được giữ cho các request API/Livewire
 
         $middleware->append(\App\Http\Middleware\LogLocalSlowHttpMiddleware::class);
-        $middleware->append(\App\Http\Middleware\EnsureClientIsNotLocked::class);
-        $middleware->web(append: [
-            \App\Http\Middleware\EnsureClientIsNotLocked::class,
-        ]);
-        $middleware->api(append: [
-            \App\Http\Middleware\EnsureClientIsNotLocked::class,
-        ]);
-
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [
             'admin/wp-headless/connect/*', // Cho phép các route này bỏ qua CSRF
-            'api/control/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Api;
 
 use App\Api\Middleware\AuthenticateServiceApi;
-use App\Control\Commands\Handlers\ServicesApplyHandler;
 use App\Filament\Pages\ServiceConfigure;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -40,15 +39,6 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
         self::assertStringNotContainsString("'api_key'", $migration);
         self::assertStringNotContainsString('->string(\'api_key\'', $migration);
         self::assertStringNotContainsString('->text(\'api_key\'', $migration);
-    }
-
-    public function test_services_apply_handler_does_not_write_api_credentials(): void
-    {
-        $src = (string) file_get_contents(app_path('Control/Commands/Handlers/ServicesApplyHandler.php'));
-        self::assertStringNotContainsString('ServiceApiCredential', $src);
-        self::assertStringNotContainsString('service_api_credentials', $src);
-        self::assertStringNotContainsString('ApiKeyGenerator', $src);
-        self::assertSame(ServicesApplyHandler::class, ServicesApplyHandler::class);
     }
 
     public function test_service_api_controllers_do_not_import_control_handlers(): void
