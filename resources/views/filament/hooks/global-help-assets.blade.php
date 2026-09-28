@@ -163,16 +163,31 @@
             window.dispatchEvent(new CustomEvent(AGENT_DRAWER_CLOSE));
         }
 
-        function groupsForContext(context) {
-            const ids = Array.isArray(context?.groupIds) && context.groupIds.length
+        function groupsForContext(context, locked) {
+            let ids = Array.isArray(context?.groupIds) && context.groupIds.length
                 ? context.groupIds
-                : (payload().contexts?.system?.groupIds || []);
-            const groups = [];
+                : null;
+            if (!ids && context?.defaultGroupId) {
+                ids = [context.defaultGroupId];
+            }
+            if (!ids || !ids.length) {
+                ids = payload().contexts?.system?.groupIds || [];
+            }
+            const allGroups = payload().groups || [];
+            const result = [];
             for (const id of ids) {
                 const group = findGroup(id);
-                if (group) groups.push(group);
+                if (group) {
+                    result.push(group);
+                }
             }
-            return groups.length ? groups : (payload().groups || []);
+            if (locked && locked.groupId && !result.some((g) => g.id === locked.groupId)) {
+                const extraGroup = findGroup(locked.groupId);
+                if (extraGroup) {
+                    result.push(extraGroup);
+                }
+            }
+            return result;
         }
 
         function topicMatchesQuery(topic, q) {
@@ -274,7 +289,7 @@
                     return (this.context && this.context.modalTitle) || @js(__('help.system_title'));
                 },
                 get groups() {
-                    return groupsForContext(this.context);
+                    return groupsForContext(this.context, this.resolveLockedTopic());
                 },
                 get filteredGroups() {
                     const locked = this.resolveLockedTopic();
@@ -298,7 +313,8 @@
                     }).filter(Boolean);
                 },
                 get activeGroup() {
-                    return findGroup(this.activeGroupId) || this.filteredGroups[0] || this.groups[0] || null;
+                    const groups = this.filteredGroups.length ? this.filteredGroups : this.groups;
+                    return groups.find((g) => g.id === this.activeGroupId) || groups[0] || null;
                 },
                 get activeTopics() {
                     const locked = this.resolveLockedTopic();
@@ -402,7 +418,7 @@
                 selectGroup(groupId, opts) {
                     const resetTopic = !opts || opts.resetTopic !== false;
                     const groups = this.filteredGroups.length ? this.filteredGroups : this.groups;
-                    const group = groups.find((g) => g.id === groupId) || findGroup(groupId);
+                    const group = groups.find((g) => g.id === groupId);
                     if (!group) return;
                     this.activeGroupId = group.id;
                     if (resetTopic) {
@@ -535,6 +551,35 @@
                         return (filtered && filtered.topics) || group.topics || [];
                     },
                 });
+
+                Object.defineProperty(store, 'groups', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function () {
+                        return groupsForContext(this.context, this.resolveLockedTopic());
+                    },
+                });
+
+                Object.defineProperty(store, 'activeGroup', {
+                    configurable: true,
+                    enumerable: true,
+                    get: function () {
+                        const groups = this.filteredGroups.length ? this.filteredGroups : this.groups;
+                        return groups.find((g) => g.id === this.activeGroupId) || groups[0] || null;
+                    },
+                });
+
+                store.selectGroup = function (groupId, opts) {
+                    const resetTopic = !opts || opts.resetTopic !== false;
+                    const groups = this.filteredGroups.length ? this.filteredGroups : this.groups;
+                    const group = groups.find((g) => g.id === groupId);
+                    if (!group) return;
+                    this.activeGroupId = group.id;
+                    if (resetTopic) {
+                        this.activeTopicId = group.topics && group.topics[0] ? group.topics[0].id : null;
+                    }
+                    this.mobileView = 'topics';
+                };
 
                 Object.defineProperty(store, 'filteredGroups', {
                     configurable: true,

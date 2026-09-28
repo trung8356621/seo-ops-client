@@ -15,11 +15,6 @@ final class HelpPanelContextRegistry
      */
     public static function contexts(): array
     {
-        $groupIds = array_map(
-            static fn (array $group): string => $group['id'],
-            HelpGroupRegistry::all(),
-        );
-
         return [
             'admin' => [
                 'id' => 'admin',
@@ -27,7 +22,7 @@ final class HelpPanelContextRegistry
                 'defaultGroupId' => 'admin',
                 'routeNames' => ['filament.admin.*'],
                 'pathPatterns' => ['\\/admin(?:\\/|$)'],
-                'groupIds' => $groupIds !== [] ? $groupIds : ['admin'],
+                'groupIds' => ['admin'],
             ],
             'seeding' => [
                 'id' => 'seeding',
@@ -35,7 +30,7 @@ final class HelpPanelContextRegistry
                 'defaultGroupId' => 'seeding',
                 'routeNames' => ['filament.seeding.*'],
                 'pathPatterns' => ['\\/seeding(?:\\/|$)'],
-                'groupIds' => $groupIds !== [] ? $groupIds : ['seeding'],
+                'groupIds' => ['seeding'],
             ],
         ];
     }

@@ -259,8 +259,8 @@ body.article-editor-page .seo-article-editor-sticky-header {
     right: 0;
     bottom: 0;
     z-index: 10041;
-    width: 520px;
-    max-width: 550px;
+    width: 740px;
+    max-width: min(740px, 100vw);
     height: 100vh;
     height: 100dvh;
     display: flex;
@@ -428,7 +428,7 @@ body.article-editor-page .seo-article-editor-sticky-header {
 
 .global-help-drawer__body {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     min-height: 0;
     flex: 1;
     overflow: hidden;
@@ -436,16 +436,24 @@ body.article-editor-page .seo-article-editor-sticky-header {
 
 .help-navigation {
     min-height: 0;
-    max-height: 42%;
-    overflow: auto;
-    border-bottom: 1px solid #e2e8f0;
-    padding: 0.65rem;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    flex: 0 0 220px;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 0;
+    padding: 0.75rem 0.5rem;
     scrollbar-gutter: stable;
-    flex: 0 0 auto;
+    background: #fafafa;
 }
 
 .dark .help-navigation {
-    border-bottom-color: #334155;
+    border-right-color: #334155;
+    border-bottom: 0;
+    background: #0b1120;
 }
 
 .help-group {
@@ -458,7 +466,7 @@ body.article-editor-page .seo-article-editor-sticky-header {
     align-items: center;
     gap: 0.45rem;
     text-align: left;
-    padding: 0.55rem 0.65rem;
+    padding: 0.55rem 0.75rem;
     border-radius: 0.5rem;
     border: 0;
     background: transparent;
@@ -466,6 +474,7 @@ body.article-editor-page .seo-article-editor-sticky-header {
     font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .help-group-trigger:hover {
@@ -475,6 +484,8 @@ body.article-editor-page .seo-article-editor-sticky-header {
 .help-group.is-active .help-group-trigger {
     background: #ecfdf5;
     color: #065f46;
+    font-weight: 700;
+    box-shadow: inset 3px 0 0 #10b981;
 }
 
 .dark .help-group-trigger {
@@ -488,14 +499,24 @@ body.article-editor-page .seo-article-editor-sticky-header {
 .dark .help-group.is-active .help-group-trigger {
     background: rgb(6 95 70 / 35%);
     color: #a7f3d0;
+    font-weight: 700;
+    box-shadow: inset 3px 0 0 #34d399;
 }
 
 .help-main {
     min-height: 0;
-    flex: 1 1 auto;
-    overflow: auto;
-    padding: 0.75rem 1rem 1.1rem;
+    flex: 1 1 0;
+    min-width: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1rem 1.25rem 1.5rem;
     scrollbar-gutter: stable;
+    background: #fff;
+}
+
+.dark .help-main {
+    background: #0f172a;
 }
 
 .help-topic-list {
@@ -613,13 +634,20 @@ body.article-editor-page .seo-article-editor-sticky-header {
 }
 
 .help-breadcrumb {
-    display: none;
-    margin-bottom: 0.65rem;
-    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0.85rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
     color: #64748b;
 }
 
-@media (max-width: 640px) {
+.dark .help-breadcrumb {
+    color: #94a3b8;
+}
+
+@media (max-width: 768px) {
     .global-help-drawer__panel {
         width: 100%;
         min-width: 0;
@@ -630,15 +658,27 @@ body.article-editor-page .seo-article-editor-sticky-header {
         display: inline-flex;
     }
 
-    .help-breadcrumb {
-        display: block;
+    .global-help-drawer__body {
+        flex-direction: column;
+    }
+
+    .help-navigation {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        flex: 1 1 auto;
+        border-right: 0;
+        background: transparent;
+    }
+
+    .help-main {
+        width: 100%;
+        padding: 0.75rem 1rem 1.1rem;
     }
 
     .help-navigation,
     .help-main {
         display: none;
-        max-height: none;
-        border-bottom: 0;
     }
 
     .global-help-drawer__body[data-mobile-view="groups"] .help-navigation,

@@ -113,6 +113,8 @@ final class GlobalHelpContractTest extends TestCase
         self::assertArrayHasKey('seeding', $payload['contexts']);
         self::assertSame('admin', $payload['contexts']['admin']['defaultGroupId']);
         self::assertSame('seeding', $payload['contexts']['seeding']['defaultGroupId']);
+        self::assertSame(['admin'], $payload['contexts']['admin']['groupIds']);
+        self::assertSame(['seeding'], $payload['contexts']['seeding']['groupIds']);
     }
 
     public function test_panel_context_priority_keeps_seo_dashboard(): void
@@ -128,6 +130,7 @@ final class GlobalHelpContractTest extends TestCase
         );
         self::assertSame('dashboard', $dashboard['id']);
         self::assertSame('dashboard', $dashboard['defaultGroupId']);
+        self::assertSame(['dashboard', 'overview', 'articles', 'settings'], $dashboard['groupIds']);
 
         $admin = HelpContextResolver::resolve(
             $contexts,
@@ -138,6 +141,7 @@ final class GlobalHelpContractTest extends TestCase
         );
         self::assertSame('admin', $admin['id']);
         self::assertSame('admin', $admin['defaultGroupId']);
+        self::assertSame(['admin'], $admin['groupIds']);
 
         $seeding = HelpContextResolver::resolve(
             $contexts,
@@ -148,9 +152,11 @@ final class GlobalHelpContractTest extends TestCase
         );
         self::assertSame('seeding', $seeding['id']);
         self::assertSame('seeding', $seeding['defaultGroupId']);
+        self::assertSame(['seeding'], $seeding['groupIds']);
 
         $adminByPath = HelpContextResolver::resolve($contexts, null, '/admin', '', null);
         self::assertSame('admin', $adminByPath['defaultGroupId']);
+        self::assertSame(['admin'], $adminByPath['groupIds']);
 
         $seoSettingsOnAdmin = HelpContextResolver::resolve(
             $contexts,

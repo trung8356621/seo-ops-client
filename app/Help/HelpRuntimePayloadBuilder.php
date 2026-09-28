@@ -259,12 +259,6 @@ final class HelpRuntimePayloadBuilder
             HelpGroupRegistry::all(),
         );
 
-        foreach ($contexts as $id => &$context) {
-            $existing = is_array($context['groupIds'] ?? null) ? $context['groupIds'] : [];
-            $context['groupIds'] = array_values(array_unique(array_merge($existing, $groupIds)));
-        }
-        unset($context);
-
         if (! isset($contexts['system'])) {
             $contexts['system'] = [
                 'id' => 'system',
