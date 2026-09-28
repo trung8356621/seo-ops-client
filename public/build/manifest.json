@@ -1,23 +1,23 @@
 {
-  "_BlockFormatToolbar-BSXFv-5N.js": {
-    "file": "assets/BlockFormatToolbar-BSXFv-5N.js",
+  "_BlockFormatToolbar-B4iAJijc.js": {
+    "file": "assets/BlockFormatToolbar-B4iAJijc.js",
     "name": "BlockFormatToolbar",
     "imports": [
       "_tiptap-vendor-CHcMRlsJ.js",
       "_react-vendor-BJWL6Tay.js",
       "_i18n-D97pljYJ.js",
       "_vendor-fSYu3P1K.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoArticleApi-CPKqx417.js"
     ]
   },
-  "_FaqAnswerEditor-Cfj4sA9u.js": {
-    "file": "assets/FaqAnswerEditor-Cfj4sA9u.js",
+  "_FaqAnswerEditor-BY-Kt0z0.js": {
+    "file": "assets/FaqAnswerEditor-BY-Kt0z0.js",
     "name": "FaqAnswerEditor",
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_BlockFormatToolbar-BSXFv-5N.js"
+      "_BlockFormatToolbar-B4iAJijc.js"
     ]
   },
   "_ImageSplitterPanel-YM5ZlAR4.js": {
@@ -37,20 +37,20 @@
       "_react-vendor-BJWL6Tay.js"
     ]
   },
-  "_article-editor-DhdDRgoJ.css": {
-    "file": "assets/article-editor-DhdDRgoJ.css",
-    "src": "_article-editor-DhdDRgoJ.css"
-  },
-  "_article-editor-esbnfgUa.js": {
-    "file": "assets/article-editor-esbnfgUa.js",
+  "_article-editor-1H3Nd5p4.js": {
+    "file": "assets/article-editor-1H3Nd5p4.js",
     "name": "article-editor",
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-fSYu3P1K.js"
     ],
     "css": [
-      "assets/article-editor-DhdDRgoJ.css"
+      "assets/article-editor-DZn0_e-W.css"
     ]
+  },
+  "_article-editor-DZn0_e-W.css": {
+    "file": "assets/article-editor-DZn0_e-W.css",
+    "src": "_article-editor-DZn0_e-W.css"
   },
   "_articleMediaPickerCache-Cxa_A24x.js": {
     "file": "assets/articleMediaPickerCache-Cxa_A24x.js",
@@ -60,8 +60,8 @@
     "file": "assets/articleMediaPickerCustomTabs-B_yuEDmG.js",
     "name": "articleMediaPickerCustomTabs"
   },
-  "_articlePhraseOccurrences-BkRdvi1N.js": {
-    "file": "assets/articlePhraseOccurrences-BkRdvi1N.js",
+  "_articlePhraseOccurrences-DBYl7MaX.js": {
+    "file": "assets/articlePhraseOccurrences-DBYl7MaX.js",
     "name": "articlePhraseOccurrences",
     "imports": [
       "addons/content/resources/js/article-editor.jsx"
@@ -177,18 +177,18 @@
     "isEntry": true
   },
   "addons/ai-prompt/resources/js/components/ArticleAiChatPanel.jsx": {
-    "file": "assets/ArticleAiChatPanel-BB5d05O5.js",
+    "file": "assets/ArticleAiChatPanel-Dd6RDMdB.js",
     "name": "ArticleAiChatPanel",
     "src": "addons/ai-prompt/resources/js/components/ArticleAiChatPanel.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-fSYu3P1K.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_seoArticleApi-CPKqx417.js",
       "_i18n-D97pljYJ.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_article-editor-esbnfgUa.js"
+      "_article-editor-1H3Nd5p4.js"
     ]
   },
   "addons/content-projects/resources/css/automation-workflow-builder.css": {
@@ -263,16 +263,16 @@
     "isEntry": true
   },
   "addons/content/resources/js/article-editor.jsx": {
-    "file": "assets/article-editor-rit-b-hl.js",
+    "file": "assets/article-editor-DZCaTBiS.js",
     "name": "article-editor",
     "src": "addons/content/resources/js/article-editor.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_i18n-D97pljYJ.js",
       "_vendor-fSYu3P1K.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -330,19 +330,19 @@
     "isEntry": true
   },
   "addons/content/resources/js/components/ArticleFaqEditor.jsx": {
-    "file": "assets/ArticleFaqEditor-BnVzHCDE.js",
+    "file": "assets/ArticleFaqEditor-Bi3bujzD.js",
     "name": "ArticleFaqEditor",
     "src": "addons/content/resources/js/components/ArticleFaqEditor.jsx",
     "isDynamicEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "_vendor-fSYu3P1K.js",
-      "_FaqAnswerEditor-Cfj4sA9u.js",
+      "_FaqAnswerEditor-BY-Kt0z0.js",
       "addons/content/resources/js/article-editor.jsx",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_i18n-D97pljYJ.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -356,7 +356,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleLinksSidebar.jsx": {
-    "file": "assets/ArticleLinksSidebar-ByjfJYyB.js",
+    "file": "assets/ArticleLinksSidebar-DspecovF.js",
     "name": "ArticleLinksSidebar",
     "src": "addons/content/resources/js/components/ArticleLinksSidebar.jsx",
     "isDynamicEntry": true,
@@ -366,9 +366,9 @@
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
       "_seoArticleApi-CPKqx417.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
-      "_articlePhraseOccurrences-BkRdvi1N.js",
-      "_article-editor-esbnfgUa.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
+      "_articlePhraseOccurrences-DBYl7MaX.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
       "_mediaI18n-DfT05-NG.js",
@@ -382,7 +382,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleVocabularySidebar.jsx": {
-    "file": "assets/ArticleVocabularySidebar-DBw44nyF.js",
+    "file": "assets/ArticleVocabularySidebar-BLjJ1iQ9.js",
     "name": "ArticleVocabularySidebar",
     "src": "addons/content/resources/js/components/ArticleVocabularySidebar.jsx",
     "isDynamicEntry": true,
@@ -392,9 +392,9 @@
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
       "_seoArticleApi-CPKqx417.js",
-      "_articlePhraseOccurrences-BkRdvi1N.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
-      "_article-editor-esbnfgUa.js",
+      "_articlePhraseOccurrences-DBYl7MaX.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
       "_mediaI18n-DfT05-NG.js",
@@ -408,7 +408,7 @@
     ]
   },
   "addons/content/resources/js/modules/ReviewsModule.jsx": {
-    "file": "assets/ReviewsModule-BVoADqWC.js",
+    "file": "assets/ReviewsModule-9yvJgWOA.js",
     "name": "ReviewsModule",
     "src": "addons/content/resources/js/modules/ReviewsModule.jsx",
     "isDynamicEntry": true,
@@ -417,9 +417,9 @@
       "_vendor-fSYu3P1K.js",
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -472,7 +472,7 @@
     ]
   },
   "addons/media/resources/js/components/GenerateImageModal.jsx": {
-    "file": "assets/GenerateImageModal-DyxZ9sWQ.js",
+    "file": "assets/GenerateImageModal-CyCsZYxn.js",
     "name": "GenerateImageModal",
     "src": "addons/media/resources/js/components/GenerateImageModal.jsx",
     "isDynamicEntry": true,
@@ -485,9 +485,9 @@
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
       "_seoArticleApi-CPKqx417.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_mediaI18n-DfT05-NG.js",
       "_seoScoreCalculator-wVAguMec.js",
       "_articleMediaPickerCache-Cxa_A24x.js",
@@ -498,7 +498,7 @@
     ]
   },
   "addons/media/resources/js/editor/host/SharedMediaPicker.jsx": {
-    "file": "assets/SharedMediaPicker-9gXNPb32.js",
+    "file": "assets/SharedMediaPicker-CHwv7yc_.js",
     "name": "SharedMediaPicker",
     "src": "addons/media/resources/js/editor/host/SharedMediaPicker.jsx",
     "isDynamicEntry": true,
@@ -508,11 +508,11 @@
       "addons/content/resources/js/article-editor.jsx",
       "_seoArticleApi-CPKqx417.js",
       "_i18n-D97pljYJ.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_seoLocalMediaUpload-BjXMRm-K.js",
       "_articleMediaPickerCustomTabs-B_yuEDmG.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_SeoSelect-xrvCEU2O.js",
       "_mediaI18n-DfT05-NG.js",
       "_seoScoreCalculator-wVAguMec.js",
@@ -524,7 +524,7 @@
     ]
   },
   "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx": {
-    "file": "assets/GallerySidebarPanel-BBhw8JUi.js",
+    "file": "assets/GallerySidebarPanel-CwBxApo5.js",
     "name": "GallerySidebarPanel",
     "src": "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx",
     "isDynamicEntry": true,
@@ -533,8 +533,8 @@
       "_vendor-fSYu3P1K.js",
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
-      "_article-editor-esbnfgUa.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_article-editor-1H3Nd5p4.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_tiptap-vendor-CHcMRlsJ.js",
       "_seoArticleApi-CPKqx417.js",
       "_seoMediaApi-DNqx8MRR.js",
@@ -595,7 +595,7 @@
     ]
   },
   "addons/media/resources/js/modules/ImagesModule.jsx": {
-    "file": "assets/ImagesModule-EgyFCwts.js",
+    "file": "assets/ImagesModule-C6ctYzd5.js",
     "name": "ImagesModule",
     "src": "addons/media/resources/js/modules/ImagesModule.jsx",
     "isDynamicEntry": true,
@@ -605,9 +605,9 @@
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-D97pljYJ.js",
       "_seoMediaApi-DNqx8MRR.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_seoArticleApi-CPKqx417.js",
       "_SeoSelect-xrvCEU2O.js",
       "_mediaI18n-DfT05-NG.js",
@@ -656,14 +656,14 @@
     "isEntry": true
   },
   "addons/seo/resources/js/article-seo-preview.jsx": {
-    "file": "assets/article-seo-preview-DdTGVBt_.js",
+    "file": "assets/article-seo-preview-Cwt2rJ7Q.js",
     "name": "article-seo-preview",
     "src": "addons/seo/resources/js/article-seo-preview.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
       "addons/seo/resources/js/modules/SeoModule.jsx",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_vendor-fSYu3P1K.js",
       "_i18n-D97pljYJ.js",
       "_seoScoreCalculator-wVAguMec.js"
@@ -699,7 +699,7 @@
     "isEntry": true
   },
   "addons/seo/resources/js/modules/SeoModule.jsx": {
-    "file": "assets/SeoModule-054DKDJd.js",
+    "file": "assets/SeoModule-CSqH99U0.js",
     "name": "SeoModule",
     "src": "addons/seo/resources/js/modules/SeoModule.jsx",
     "isDynamicEntry": true,
@@ -708,7 +708,7 @@
       "_vendor-fSYu3P1K.js",
       "_i18n-D97pljYJ.js",
       "_seoScoreCalculator-wVAguMec.js",
-      "_article-editor-esbnfgUa.js"
+      "_article-editor-1H3Nd5p4.js"
     ]
   },
   "addons/wordpress/resources/js/components/WordPressMediaRenameModal.jsx": {
@@ -758,16 +758,16 @@
     ]
   },
   "resources/js/help-admin/help-admin-editor.jsx": {
-    "file": "assets/help-admin-editor-CWRgDggc.js",
+    "file": "assets/help-admin-editor-CWnshSz0.js",
     "name": "help-admin-editor",
     "src": "resources/js/help-admin/help-admin-editor.jsx",
     "isEntry": true,
     "imports": [
       "_react-vendor-BJWL6Tay.js",
-      "_article-editor-esbnfgUa.js",
+      "_article-editor-1H3Nd5p4.js",
       "_tiptap-vendor-CHcMRlsJ.js",
-      "_BlockFormatToolbar-BSXFv-5N.js",
-      "_FaqAnswerEditor-Cfj4sA9u.js",
+      "_BlockFormatToolbar-B4iAJijc.js",
+      "_FaqAnswerEditor-BY-Kt0z0.js",
       "_vendor-fSYu3P1K.js",
       "_i18n-D97pljYJ.js",
       "_seoArticleApi-CPKqx417.js"
