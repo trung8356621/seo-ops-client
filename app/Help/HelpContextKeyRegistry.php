@@ -227,7 +227,7 @@ final class HelpContextKeyRegistry
             [
                 'key' => 'settings.editor.wiki_trust',
                 'group' => 'settings',
-                'label' => 'Wiki Trust Domains',
+                'label' => 'Trusted External Domains',
             ],
             [
                 'key' => 'settings.editor.faq_catch',
