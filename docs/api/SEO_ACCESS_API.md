@@ -21,7 +21,7 @@ External callers MUST NOT need to understand MCP, ContextRegistry, routers, part
 ```
 
 Canonical public resources:
-- **Site-scoped**: `site`, `keywords`, `gsc`
+- **Site-scoped**: `site`, `articles`, `internal-links`, `external-links`, `keywords`, `content-projects`, `gsc`
 - **Global-scoped**: `site-network`
 
 ## Authentication planes
@@ -56,7 +56,7 @@ Permanent credentials mint short-lived capability tokens via `POST /api/v1/servi
 
 ### 1. Site-Scoped Temporary Token (Default)
 
-Grants access to site-bound resources (`/site`, `/keywords`, `/gsc`). Requires a valid, active `site_id`.
+Grants access to site-bound resources (`/site`, `/articles`, `/internal-links`, `/external-links`, `/keywords`, `/content-projects`, `/gsc`). Requires a valid, active `site_id`.
 
 ```http
 POST /api/v1/services/seo/access
@@ -251,6 +251,16 @@ Schema: `seo.access.site.v2`
 **Not exposed:** local article indexability counters, workflow published/draft/scheduled counts, site tone.
 
 ## E. Keywords resource
+
+## E1. Article and link resources
+
+- `GET /api/v1/access/{token}/articles?limit=30` returns a compact, site-scoped existing-Article inventory ordered by oldest update, including identity, status, focus keyword, SEO score, link counts, and timestamps where available. It never returns article bodies.
+- `GET /api/v1/access/{token}/internal-links` returns same-site Article relationships.
+- `GET /api/v1/access/{token}/external-links` separately returns external, trusted/reference, Needs Review, and Managed Cross-Site relationships.
+
+## E2. Content Projects resource
+
+`GET /api/v1/access/{token}/content-projects?period=YYYY-MM` is read-only and delegates to `ContentProjectAgentReadService`. It returns site projects and their existing item read DTOs so Agents can detect work already planned. No Content Project command bus or write capability is exposed.
 
 ### Site landscape
 
@@ -494,11 +504,15 @@ Query parameters:
 | Endpoint | Resource | Token Scope | Site Token (`scope: site`) | Global Token (`scope: global`) | Invalid / Expired Token |
 |----------|----------|-------------|----------------------------|--------------------------------|-------------------------|
 | `GET /api/v1/access/{token}/site` | Site Knowledge | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/articles` | Article inventory | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/internal-links` | Internal links | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/external-links` | External links | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/keywords` | Keyword Landscape | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/keywords/topics/{ref}` | Topic Detail | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `POST /api/v1/access/{token}/keywords` | Relationship Read | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/gsc` | GSC Performance | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `POST /api/v1/access/{token}/gsc` | GSC Query | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/content-projects` | Content Project reads | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/site-network` | Site Network Overview | Global | **403 Forbidden** | **200 OK** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/site-network/topics` | Site Network Topics | Global | **403 Forbidden** | **200 OK** | 401 Unauthorized |
 
