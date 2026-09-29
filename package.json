@@ -4,6 +4,7 @@
     "scripts": {
         "dev": "vite",
         "build": "vite build",
+        "build:agent": "vite build --config vite.agent.config.js",
         "dev:seeding": "npm --prefix addons/seeding run dev",
         "build:seeding": "npm --prefix addons/seeding run build",
         "dev:topical-map": "npm --prefix addons/search-intelligence run dev",
