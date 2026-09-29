@@ -11,6 +11,14 @@ Runtime expectation: host cron runs `php artisan schedule:run` every minute; que
 
 ## Site Sync
 
+### Global Site Health
+
+| Schedule name | Cadence | Command |
+|---------------|---------|---------|
+| Site Health monitor | Every 5 minutes (`withoutOverlapping(10)`, `onOneServer`) | `seo:site-health:monitor` |
+
+This is an active DNS/HTTP/WordPress Bridge check, independent from `SiteSyncHeartbeatService`. It runs inline in the scheduler with short timeouts and a per-site cache lock; no queue worker or Site Sync operation is involved. See [../modules/SITE_HEALTH.md](../modules/SITE_HEALTH.md).
+
 ### Queues
 
 | Queue | Jobs | Notes |

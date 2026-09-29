@@ -83,6 +83,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
         $this->registerSupportTicketHeaderHook();
+        $this->registerGlobalSiteHealthHook();
         $this->registerGlobalHelpHeaderHook();
         $this->registerGlobalHelpAssetsHook();
         $this->registerGlobalHelpDrawerHook();
@@ -143,6 +144,31 @@ final class ClientCoreServiceProvider extends ServiceProvider
                 return new HtmlString(
                     view('filament.hooks.support-ticket-header')->render()
                 );
+            },
+        );
+    }
+
+    /** Global business-alert host; the Site Sync addon owns its component and data. */
+    private function registerGlobalSiteHealthHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::CONTENT_BEFORE,
+            static function (): HtmlString {
+                if (! auth()->check()) {
+                    return new HtmlString('');
+                }
+
+                try {
+                    $panelId = \Filament\Facades\Filament::getCurrentPanel()?->getId();
+                } catch (\Throwable) {
+                    return new HtmlString('');
+                }
+
+                if (! is_string($panelId) || ! in_array($panelId, ServiceTopbarRouter::PANEL_IDS, true)) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(view('filament.hooks.global-site-health')->render());
             },
         );
     }
