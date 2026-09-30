@@ -588,10 +588,10 @@ POST /api/v1/services/seo/tools/{toolKey}/execute    → Execute tool with fail-
 2. **Capability ownership follows business ownership**: Read operations for SEO Audit belong to `seo` (`seo_audit.list`), while planning draft writes belong to `content_project` (`content_project.draft_intake`).
 3. **Fail-closed validation order**:
    1. Tool exists in registry (`404 tool_not_found`)
-   2. Tool is exposed and enabled (`404 tool_disabled`)
-   3. Caller possesses required scopes (`403 forbidden_scope`)
+   2. Tool is exposed and enabled (`404 tool_not_exposed`)
+   3. Caller possesses all required scopes (`403 scope_denied`; `*` satisfies all)
    4. Required execution context provided (`422 missing_context`)
-   5. Site / tenant access verified (`403 site_access_denied` / `404 site_not_found`)
+   5. Site context resolves to an existing site (`404 site_not_found`)
    6. Input validated against tool JSON Schema (`422 validation_failed`)
    7. Confirmation policy checked (`422 confirmation_required` if write tool unconfirmed)
    8. Execute canonical handler (`200 OK` / `201 Created`)
@@ -601,8 +601,8 @@ POST /api/v1/services/seo/tools/{toolKey}/execute    → Execute tool with fail-
 
 | Capability Key | Module | Kind | Scopes | Required Context | Confirmation | Handler Delegation |
 |---|---|---|---|---|---|---|
-| `seo_audit.list` | `seo` | `read` | `seo:read` | `site` | `none` | `SeoAuditAgentReadService::listArticles()` |
-| `content_project.draft_intake` | `content_project` | `write` | `content-projects:draft:write` | `site` | `required` | `ServiceApiDraftIntakeService::intake()` |
+| `seo_audit.list` | `seo_audit` | `read` | `seo:read` | `site_ref` | `none` | `SeoAuditAgentReadService::listArticles()` |
+| `content_project.draft_intake` | `content_projects` | `write` | `content-projects:draft:write` | `site_ref` | `required` | `ServiceApiDraftIntakeService::intake()` |
 
 ### 1. Discover Tools
 
@@ -621,18 +621,17 @@ Authorization: Bearer <service_key>
         "key": "seo_audit.list",
         "name": "List SEO Audit Articles",
         "description": "List articles with SEO audit scoring and optimization recommendations for a site.",
-        "module": "seo",
+        "module": "seo_audit",
         "kind": "read",
-        "scopes": ["seo:read"],
-        "required_context": ["site"],
+        "required_context": ["site_ref"],
         "confirmation_policy": "none",
-        "is_exposed": true,
+        "availability": { "available": false, "reason": "missing_site_context" },
         "input_schema": {
           "type": "object",
           "properties": {
             "post_type": { "type": "string" },
-            "limit": { "type": "integer" },
-            "rules": { "type": "array" },
+            "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+            "rules": { "type": "array", "items": { "type": "string" } },
             "low_score": { "type": "boolean" }
           }
         }
@@ -651,8 +650,8 @@ X-Site-Ref: site:123
 Content-Type: application/json
 
 {
-  "limit": 20,
-  "low_score": true
+  "context": { "site_ref": "site:123" },
+  "input": { "limit": 20, "low_score": true }
 }
 ```
 
@@ -690,10 +689,10 @@ Authorization: Bearer <key with content-projects:draft:write>
 Content-Type: application/json
 
 {
-  "site_id": 123,
-  "items": [
+  "context": { "site_ref": "site:123" },
+  "input": { "items": [
     { "keyword": "laravel tips", "title": "10 Laravel Tips", "type": "new" }
-  ],
+  ] },
   "confirmed": false
 }
 ```
@@ -720,10 +719,10 @@ Authorization: Bearer <key with content-projects:draft:write>
 Content-Type: application/json
 
 {
-  "site_id": 123,
-  "items": [
+  "context": { "site_ref": "site:123" },
+  "input": { "items": [
     { "keyword": "laravel tips", "title": "10 Laravel Tips", "type": "new" }
-  ],
+  ] },
   "confirmed": true
 }
 ```

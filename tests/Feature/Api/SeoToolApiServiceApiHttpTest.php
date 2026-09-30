@@ -94,6 +94,12 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $keys = array_column($tools, 'key');
         $this->assertContains('seo_audit.list', $keys);
         $this->assertNotContains('content_project.draft_intake', $keys);
+        $this->assertFalse($tools[0]['availability']['available']);
+
+        $withSite = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
+            ->withHeader('X-Site-Ref', 'site:123')
+            ->getJson('/api/v1/services/seo/tools');
+        $withSite->assertStatus(200)->assertJsonPath('data.tools.0.availability.available', true);
 
         // 2. Caller with wildcard * sees both tools
         $resAdmin = $this->withHeader('Authorization', 'Bearer ' . $this->wildcardKey)
@@ -120,36 +126,63 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         // Calling draft intake with only seo:read
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
             ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
-                'site_id' => 123,
-                'items' => [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['items' => [
                     ['keyword' => 'test', 'type' => 'new'],
-                ],
+                ]],
                 'confirmed' => true,
             ]);
 
         $res->assertStatus(403);
-        $res->assertJsonPath('error.code', 'forbidden_scope');
+        $res->assertJsonPath('error.code', 'scope_denied');
     }
 
     public function test_tool_execute_missing_context(): void
     {
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
             ->postJson('/api/v1/services/seo/tools/seo_audit.list/execute', [
-                'limit' => 10,
+                'input' => ['limit' => 10],
             ]);
 
         $res->assertStatus(422);
         $res->assertJsonPath('error.code', 'missing_context');
     }
 
+    public function test_tool_execute_rejects_mismatched_site_context(): void
+    {
+        $res = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
+            ->withHeader('X-Site-Ref', 'site:123')
+            ->postJson('/api/v1/services/seo/tools/seo_audit.list/execute', [
+                'context' => ['site_ref' => 'site:999'],
+                'input' => [],
+            ]);
+
+        $res->assertStatus(422)->assertJsonPath('error.code', 'context_mismatch');
+    }
+
+    public function test_tool_execute_rejects_site_id_in_public_input(): void
+    {
+        $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
+            ->withHeader('X-Site-Ref', 'site:123')
+            ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
+                'input' => [
+                    'site_id' => 999,
+                    'items' => [['keyword' => 'test', 'type' => 'new']],
+                ],
+                'confirmed' => true,
+            ]);
+
+        $res->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+    }
+
     public function test_tool_execute_confirmation_required(): void
     {
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
             ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
-                'site_id' => 123,
-                'items' => [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['items' => [
                     ['keyword' => 'test', 'type' => 'new'],
-                ],
+                ]],
                 'confirmed' => false,
             ]);
 
@@ -175,7 +208,7 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
             ->withHeader('X-Site-Ref', 'site:123')
             ->postJson('/api/v1/services/seo/tools/seo_audit.list/execute', [
-                'limit' => 20,
+                'input' => ['limit' => 20],
             ]);
 
         $res->assertStatus(200);
@@ -203,10 +236,10 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
 
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
             ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
-                'site_id' => 123,
-                'items' => [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['items' => [
                     ['keyword' => 'brand new keyword', 'type' => 'new'],
-                ],
+                ]],
                 'confirmed' => true,
             ]);
 
