@@ -60,8 +60,8 @@
     "file": "assets/articleMediaPickerCustomTabs-B_yuEDmG.js",
     "name": "articleMediaPickerCustomTabs"
   },
-  "_articlePhraseOccurrences-HLmPR_Dz.js": {
-    "file": "assets/articlePhraseOccurrences-HLmPR_Dz.js",
+  "_articlePhraseOccurrences-mZuVTRwf.js": {
+    "file": "assets/articlePhraseOccurrences-mZuVTRwf.js",
     "name": "articlePhraseOccurrences",
     "imports": [
       "addons/content/resources/js/article-editor.jsx"
@@ -263,7 +263,7 @@
     "isEntry": true
   },
   "addons/content/resources/js/article-editor.jsx": {
-    "file": "assets/article-editor-Cx3MGB4P.js",
+    "file": "assets/article-editor-Ch5K-eCa.js",
     "name": "article-editor",
     "src": "addons/content/resources/js/article-editor.jsx",
     "isEntry": true,
@@ -330,7 +330,7 @@
     "isEntry": true
   },
   "addons/content/resources/js/components/ArticleFaqEditor.jsx": {
-    "file": "assets/ArticleFaqEditor-B0icT3C6.js",
+    "file": "assets/ArticleFaqEditor-DN2FM91r.js",
     "name": "ArticleFaqEditor",
     "src": "addons/content/resources/js/components/ArticleFaqEditor.jsx",
     "isDynamicEntry": true,
@@ -356,7 +356,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleLinksSidebar.jsx": {
-    "file": "assets/ArticleLinksSidebar-AKysEL-N.js",
+    "file": "assets/ArticleLinksSidebar-DwTRssdj.js",
     "name": "ArticleLinksSidebar",
     "src": "addons/content/resources/js/components/ArticleLinksSidebar.jsx",
     "isDynamicEntry": true,
@@ -367,7 +367,7 @@
       "_i18n-ENcihyFv.js",
       "_seoArticleApi-CPKqx417.js",
       "_BlockFormatToolbar-C2XFO28m.js",
-      "_articlePhraseOccurrences-HLmPR_Dz.js",
+      "_articlePhraseOccurrences-mZuVTRwf.js",
       "_article-editor-DXCNjApp.js",
       "_seoMediaApi-DNqx8MRR.js",
       "_SeoSelect-xrvCEU2O.js",
@@ -382,7 +382,7 @@
     ]
   },
   "addons/content/resources/js/components/ArticleVocabularySidebar.jsx": {
-    "file": "assets/ArticleVocabularySidebar-DMjVbS4c.js",
+    "file": "assets/ArticleVocabularySidebar-DydNenRS.js",
     "name": "ArticleVocabularySidebar",
     "src": "addons/content/resources/js/components/ArticleVocabularySidebar.jsx",
     "isDynamicEntry": true,
@@ -392,7 +392,7 @@
       "addons/content/resources/js/article-editor.jsx",
       "_i18n-ENcihyFv.js",
       "_seoArticleApi-CPKqx417.js",
-      "_articlePhraseOccurrences-HLmPR_Dz.js",
+      "_articlePhraseOccurrences-mZuVTRwf.js",
       "_BlockFormatToolbar-C2XFO28m.js",
       "_article-editor-DXCNjApp.js",
       "_seoMediaApi-DNqx8MRR.js",
@@ -408,7 +408,7 @@
     ]
   },
   "addons/content/resources/js/modules/ReviewsModule.jsx": {
-    "file": "assets/ReviewsModule-BjNRgpiA.js",
+    "file": "assets/ReviewsModule-DnbbxvB8.js",
     "name": "ReviewsModule",
     "src": "addons/content/resources/js/modules/ReviewsModule.jsx",
     "isDynamicEntry": true,
@@ -472,7 +472,7 @@
     ]
   },
   "addons/media/resources/js/components/GenerateImageModal.jsx": {
-    "file": "assets/GenerateImageModal-BFaVqi1A.js",
+    "file": "assets/GenerateImageModal-CVigzCMe.js",
     "name": "GenerateImageModal",
     "src": "addons/media/resources/js/components/GenerateImageModal.jsx",
     "isDynamicEntry": true,
@@ -498,7 +498,7 @@
     ]
   },
   "addons/media/resources/js/editor/host/SharedMediaPicker.jsx": {
-    "file": "assets/SharedMediaPicker-BuA4FG0R.js",
+    "file": "assets/SharedMediaPicker-CNOHGskQ.js",
     "name": "SharedMediaPicker",
     "src": "addons/media/resources/js/editor/host/SharedMediaPicker.jsx",
     "isDynamicEntry": true,
@@ -524,7 +524,7 @@
     ]
   },
   "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx": {
-    "file": "assets/GallerySidebarPanel-CJz4PkC7.js",
+    "file": "assets/GallerySidebarPanel-DlmdV_UU.js",
     "name": "GallerySidebarPanel",
     "src": "addons/media/resources/js/editor/modules/gallery/GallerySidebarPanel.jsx",
     "isDynamicEntry": true,
@@ -595,7 +595,7 @@
     ]
   },
   "addons/media/resources/js/modules/ImagesModule.jsx": {
-    "file": "assets/ImagesModule-nh6RaQ6N.js",
+    "file": "assets/ImagesModule-Eeclv4WF.js",
     "name": "ImagesModule",
     "src": "addons/media/resources/js/modules/ImagesModule.jsx",
     "isDynamicEntry": true,
