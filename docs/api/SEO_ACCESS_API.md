@@ -254,7 +254,10 @@ Schema: `seo.access.site.v2`
 
 ## E1. Article and link resources
 
-- `GET /api/v1/access/{token}/articles?limit=30` returns a compact, site-scoped existing-Article inventory ordered by oldest update, including identity, status, focus keyword, SEO score, link counts, and timestamps where available. It never returns article bodies.
+- `GET /api/v1/access/{token}/articles?limit=30`: returns compact, site-scoped Article evidence.
+  - Generic query (no `task`): returns existing-Article inventory ordered by oldest update, including identity, status, focus keyword, SEO score, link counts, and timestamps where available.
+  - `task=improve`: reuses canonical Web SEO Audit / Articles Optimal logic to retrieve prioritized candidate articles needing revision (incorporating SEO score, reason labels/issues, focus keyword, and keyword review flags). Candidate discovery pool is bounded rather than blindly truncated by the answer limit before canonical ranking.
+- `GET /api/v1/access/{token}/articles/{articleRef}`: returns exact Article evidence for a single Article strictly scoped to the token's Site (returns 404 for unknown or other-site articles). Never returns article bodies.
 - `GET /api/v1/access/{token}/internal-links` returns same-site Article relationships.
 - `GET /api/v1/access/{token}/external-links` separately returns external, trusted/reference, Needs Review, and Managed Cross-Site relationships.
 
@@ -505,6 +508,7 @@ Query parameters:
 |----------|----------|-------------|----------------------------|--------------------------------|-------------------------|
 | `GET /api/v1/access/{token}/site` | Site Knowledge | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/articles` | Article inventory | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
+| `GET /api/v1/access/{token}/articles/{ref}` | Article detail | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/internal-links` | Internal links | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/external-links` | External links | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
 | `GET /api/v1/access/{token}/keywords` | Keyword Landscape | Site | **200 OK** | **403 Forbidden** | 401 Unauthorized |
