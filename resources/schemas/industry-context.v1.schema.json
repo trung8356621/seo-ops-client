@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seo-ops.local/schemas/industry-context.v1.schema.json",
+  "title": "Industry Context Profile v1",
+  "description": "Reusable global industry and business context. Field names are English; human-readable values may use the profile locale. Collections are always arrays. Unknown facts use null or empty collections and must never be fabricated. This profile must not contain current dates, current hot trends, or site-specific Topics, Keywords, Articles, GSC, or SEO Audit state.",
+  "$comment": "Future generated content uses context_links entries shaped as {type: audience|customer_need|offering|demand_driver|seasonality|content_universe, ref: stable-id}. A candidate with zero valid context_links is invalid. Never store chain-of-thought.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "identity", "industry_taxonomy", "business", "audiences", "offerings", "customer_needs", "demand_drivers", "purchase_behavior", "seasonality", "market_context", "trend_sensitivity", "content_universe", "search_behavior", "content_boundaries"],
+  "properties": {
+    "schema_version": { "const": "1.0", "description": "Mandatory schema version." },
+    "identity": {
+      "type": "object", "additionalProperties": false,
+      "required": ["context_name", "context_slug", "language", "market"],
+      "properties": {
+        "context_name": { "type": "string", "minLength": 1 },
+        "context_slug": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "description": "Stable lowercase kebab-case machine key." },
+        "language": { "type": "string", "minLength": 1 },
+        "market": { "type": "array", "items": { "type": "string", "minLength": 1 } }
+      }
+    },
+    "industry_taxonomy": {
+      "type": "object", "additionalProperties": false, "required": ["hierarchy", "industry_keywords"],
+      "description": "Allows discovery to move outward from the exact product while remaining inside the business industry.",
+      "properties": {
+        "hierarchy": { "type": "array", "items": { "$ref": "#/$defs/taxonomyNode" } },
+        "industry_keywords": { "$ref": "#/$defs/stringArray" }
+      }
+    },
+    "business": {
+      "type": "object", "additionalProperties": false,
+      "required": ["business_models", "sales_models", "customer_relationships", "primary_revenue_sources", "typical_order_value", "sales_cycle", "purchase_frequency"],
+      "properties": {
+        "business_models": { "type": "array", "items": { "enum": ["B2B", "B2C", "B2B2C", "C2C", "D2C", "marketplace", "subscription", "service", "saas", "publisher", "lead_generation", "affiliate"] } },
+        "sales_models": { "$ref": "#/$defs/stringArray" },
+        "customer_relationships": { "$ref": "#/$defs/stringArray" },
+        "primary_revenue_sources": { "$ref": "#/$defs/stringArray" },
+        "typical_order_value": { "type": ["string", "null"] },
+        "sales_cycle": { "type": ["string", "null"] },
+        "purchase_frequency": { "type": ["string", "null"] }
+      }
+    },
+    "audiences": { "type": "array", "items": { "$ref": "#/$defs/audience" } },
+    "offerings": {
+      "type": "object", "additionalProperties": false, "required": ["product_families", "adjacent_products", "substitutes"],
+      "description": "Product/service families and adjacent commercial space, not a product database.",
+      "properties": {
+        "product_families": { "type": "array", "items": { "$ref": "#/$defs/offering" } },
+        "adjacent_products": { "type": "array", "items": { "$ref": "#/$defs/refItem" } },
+        "substitutes": { "type": "array", "items": { "$ref": "#/$defs/refItem" } }
+      }
+    },
+    "customer_needs": {
+      "type": "object", "additionalProperties": false, "required": ["jobs_to_be_done", "pain_points", "questions", "decision_factors"],
+      "properties": {
+        "jobs_to_be_done": { "$ref": "#/$defs/refItemArray" },
+        "pain_points": { "$ref": "#/$defs/refItemArray" },
+        "questions": { "$ref": "#/$defs/refItemArray" },
+        "decision_factors": { "$ref": "#/$defs/refItemArray" }
+      }
+    },
+    "demand_drivers": { "type": "array", "items": { "$ref": "#/$defs/demandDriver" } },
+    "purchase_behavior": {
+      "type": "object", "additionalProperties": false,
+      "required": ["research_depth", "price_sensitivity", "brand_sensitivity", "comparison_frequency", "offline_influence", "online_purchase_likelihood"],
+      "properties": {
+        "research_depth": { "$ref": "#/$defs/levelOrNull" }, "price_sensitivity": { "$ref": "#/$defs/levelOrNull" },
+        "brand_sensitivity": { "$ref": "#/$defs/levelOrNull" }, "comparison_frequency": { "$ref": "#/$defs/levelOrNull" },
+        "offline_influence": { "$ref": "#/$defs/levelOrNull" }, "online_purchase_likelihood": { "$ref": "#/$defs/levelOrNull" }
+      }
+    },
+    "seasonality": {
+      "type": "object", "additionalProperties": false, "required": ["annual_pattern", "peak_quarters", "events"],
+      "properties": {
+        "annual_pattern": {
+          "type": "object", "additionalProperties": false, "required": ["peak_months", "strong_months", "normal_months", "low_months"],
+          "properties": { "peak_months": { "$ref": "#/$defs/monthArray" }, "strong_months": { "$ref": "#/$defs/monthArray" }, "normal_months": { "$ref": "#/$defs/monthArray" }, "low_months": { "$ref": "#/$defs/monthArray" } }
+        },
+        "peak_quarters": { "type": "array", "items": { "enum": ["Q1", "Q2", "Q3", "Q4"] } },
+        "events": { "type": "array", "items": { "$ref": "#/$defs/seasonalEvent" } }
+      }
+    },
+    "market_context": {
+      "type": "object", "additionalProperties": false, "required": ["geographies", "climate_factors", "cultural_factors"],
+      "description": "Durable market context only.",
+      "properties": { "geographies": { "$ref": "#/$defs/stringArray" }, "climate_factors": { "$ref": "#/$defs/stringArray" }, "cultural_factors": { "$ref": "#/$defs/stringArray" } }
+    },
+    "trend_sensitivity": {
+      "type": "object", "additionalProperties": false, "required": ["level", "trend_sources"],
+      "description": "Describes durable sensitivity to trends; never stores current viral products, people, memes, or other hot trends.",
+      "properties": { "level": { "$ref": "#/$defs/levelOrNull" }, "trend_sources": { "$ref": "#/$defs/stringArray" } }
+    },
+    "content_universe": {
+      "type": "object", "additionalProperties": false,
+      "description": "Exploration universe for discovering ideas beyond a site's current Topic database. Adjacent, lifestyle, educational, commercial, and business expansion is intentional.",
+      "x-agent-purpose": "Defines where future content discovery may explore beyond existing SEO Topics.",
+      "x-generation-rules": ["Do not copy a site's current Topics.", "Include genuinely new but business-relevant exploration areas.", "Use stable ids for future context_links."],
+      "required": ["core_topics", "adjacent_topics", "lifestyle_topics", "educational_topics", "commercial_topics", "business_topics"],
+      "properties": { "core_topics": { "$ref": "#/$defs/refItemArray" }, "adjacent_topics": { "$ref": "#/$defs/refItemArray" }, "lifestyle_topics": { "$ref": "#/$defs/refItemArray" }, "educational_topics": { "$ref": "#/$defs/refItemArray" }, "commercial_topics": { "$ref": "#/$defs/refItemArray" }, "business_topics": { "$ref": "#/$defs/refItemArray" } }
+    },
+    "search_behavior": {
+      "type": "object", "additionalProperties": false, "required": ["common_intents", "query_patterns", "modifier_groups"],
+      "description": "Describes search space; it must not instruct runtime to mechanically concatenate keyword strings.",
+      "properties": {
+        "common_intents": { "$ref": "#/$defs/stringArray" }, "query_patterns": { "$ref": "#/$defs/stringArray" },
+        "modifier_groups": { "type": "object", "additionalProperties": false, "required": ["audience", "use_case", "attributes", "price"], "properties": { "audience": { "$ref": "#/$defs/stringArray" }, "use_case": { "$ref": "#/$defs/stringArray" }, "attributes": { "$ref": "#/$defs/stringArray" }, "price": { "$ref": "#/$defs/stringArray" } } }
+      }
+    },
+    "content_boundaries": {
+      "type": "object", "additionalProperties": false, "required": ["allowed_distance", "excluded_topics", "require_business_relevance", "relevance_rule"],
+      "properties": {
+        "allowed_distance": { "type": "object", "additionalProperties": false, "required": ["core", "adjacent", "lifestyle", "broad_industry", "unrelated"], "properties": { "core": { "type": "boolean" }, "adjacent": { "type": "boolean" }, "lifestyle": { "type": "boolean" }, "broad_industry": { "type": "boolean" }, "unrelated": { "type": "boolean", "default": false } } },
+        "excluded_topics": { "$ref": "#/$defs/stringArray" },
+        "require_business_relevance": { "type": "boolean", "default": true },
+        "relevance_rule": { "type": "string", "description": "Every future idea must link to at least one audience, customer need, offering, demand driver, seasonal event, or allowed content-universe area." }
+      }
+    }
+  },
+  "$defs": {
+    "stringArray": { "type": "array", "items": { "type": "string" } },
+    "refItemArray": { "type": "array", "items": { "$ref": "#/$defs/refItem" } },
+    "refItem": { "type": "object", "additionalProperties": false, "required": ["id", "name"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "name": { "type": "string", "minLength": 1 }, "description": { "type": ["string", "null"] } } },
+    "taxonomyNode": { "type": "object", "additionalProperties": false, "required": ["level", "name"], "properties": { "level": { "type": "string" }, "id": { "type": ["string", "null"] }, "name": { "type": "string", "minLength": 1 } } },
+    "levelOrNull": { "type": ["string", "null"], "enum": ["low", "medium", "high", null] },
+    "importanceOrNull": { "type": ["string", "null"], "enum": ["low", "medium", "high", "critical", null] },
+    "confidenceOrNull": { "type": ["string", "null"], "enum": ["low", "medium", "high", null] },
+    "audience": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "priority", "decision_roles", "needs", "pain_points", "purchase_triggers", "content_interests"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "enum": ["consumer", "organization"] }, "priority": { "$ref": "#/$defs/importanceOrNull" }, "decision_roles": { "$ref": "#/$defs/stringArray" }, "needs": { "$ref": "#/$defs/stringArray" }, "pain_points": { "$ref": "#/$defs/stringArray" }, "purchase_triggers": { "$ref": "#/$defs/stringArray" }, "content_interests": { "$ref": "#/$defs/stringArray" } } },
+    "offering": { "type": "object", "additionalProperties": false, "required": ["id", "name", "importance", "audiences"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "audiences": { "$ref": "#/$defs/stringArray" } } },
+    "demandDriver": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "audiences", "related_needs", "importance", "confidence", "source_type"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "enum": ["calendar_event", "seasonal", "life_event", "business_event", "replacement_cycle", "trend", "weather", "regulatory", "economic", "technology", "social_event", "travel", "education"] }, "audiences": { "$ref": "#/$defs/stringArray" }, "related_needs": { "$ref": "#/$defs/stringArray" }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "confidence": { "$ref": "#/$defs/confidenceOrNull" }, "source_type": { "type": ["string", "null"] } } },
+    "monthArray": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 12 }, "uniqueItems": true },
+    "seasonalEvent": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "months", "date_rule", "lead_time_days", "importance", "audiences", "opportunities", "confidence", "source_type"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "type": "string" }, "months": { "$ref": "#/$defs/monthArray" }, "date_rule": { "type": ["string", "null"] }, "lead_time_days": { "type": ["integer", "null"], "minimum": 0 }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "audiences": { "$ref": "#/$defs/stringArray" }, "opportunities": { "$ref": "#/$defs/stringArray" }, "confidence": { "$ref": "#/$defs/confidenceOrNull" }, "source_type": { "type": ["string", "null"] } } }
+  }
+}
