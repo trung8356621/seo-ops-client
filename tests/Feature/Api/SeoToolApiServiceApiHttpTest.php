@@ -9,6 +9,7 @@ use App\Models\Service;
 use App\Models\Site;
 use Omnichannel\Addons\ContentProjects\Services\ContentProject\ServiceApi\ServiceApiDraftIntakeResult;
 use Omnichannel\Addons\ContentProjects\Services\ContentProject\ServiceApi\ServiceApiDraftIntakeService;
+use Omnichannel\Addons\SearchIntelligence\Services\Topic\TopicServiceApiWriteService;
 use Omnichannel\Addons\Seo\Services\SeoAudit\Agent\SeoAuditAgentReadService;
 use Tests\TestCase;
 use Tests\Unit\Api\UsesServiceApiCredentialSchema;
@@ -22,6 +23,7 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
 
     private string $seoReadKey = '';
     private string $draftWriteKey = '';
+    private string $topicWriteKey = '';
     private string $wildcardKey = '';
     private string $mediaKey = '';
 
@@ -46,6 +48,12 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             $this->seo,
             'Draft Write Key',
             ['content-projects:draft:write']
+        )->rawKey;
+
+        $this->topicWriteKey = $manager->create(
+            $this->seo,
+            'Topic Write Key',
+            ['topics:write']
         )->rawKey;
 
         $this->wildcardKey = $manager->create(
@@ -89,10 +97,13 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ->getJson('/api/v1/services/seo/tools');
 
         $res->assertStatus(200);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
         $tools = $res->json('data.tools');
         $this->assertIsArray($tools);
         $keys = array_column($tools, 'key');
         $this->assertContains('seo_audit.list', $keys);
+        $this->assertNotContains('draft.intake', $keys);
+        $this->assertNotContains('topic.create', $keys);
         $this->assertNotContains('content_project.draft_intake', $keys);
         $this->assertFalse($tools[0]['availability']['available']);
 
@@ -101,7 +112,17 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ->getJson('/api/v1/services/seo/tools');
         $withSite->assertStatus(200)->assertJsonPath('data.tools.0.availability.available', true);
 
-        // 2. Caller with wildcard * sees both tools
+        // 2. Caller with only topics:write
+        $resTopic = $this->withHeader('Authorization', 'Bearer ' . $this->topicWriteKey)
+            ->getJson('/api/v1/services/seo/tools');
+        $resTopic->assertStatus(200);
+        $topicTools = $resTopic->json('data.tools');
+        $topicKeys = array_column($topicTools, 'key');
+        $this->assertContains('topic.create', $topicKeys);
+        $this->assertNotContains('draft.intake', $topicKeys);
+        $this->assertNotContains('seo_audit.list', $topicKeys);
+
+        // 3. Caller with wildcard * sees all 3 tools
         $resAdmin = $this->withHeader('Authorization', 'Bearer ' . $this->wildcardKey)
             ->getJson('/api/v1/services/seo/tools');
 
@@ -109,7 +130,9 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $adminTools = $resAdmin->json('data.tools');
         $adminKeys = array_column($adminTools, 'key');
         $this->assertContains('seo_audit.list', $adminKeys);
-        $this->assertContains('content_project.draft_intake', $adminKeys);
+        $this->assertContains('draft.intake', $adminKeys);
+        $this->assertContains('topic.create', $adminKeys);
+        $this->assertNotContains('content_project.draft_intake', $adminKeys);
     }
 
     public function test_tool_execute_not_found(): void
@@ -118,14 +141,15 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ->postJson('/api/v1/services/seo/tools/nonexistent.tool/execute', []);
 
         $res->assertStatus(404);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
         $res->assertJsonPath('error.code', 'tool_not_found');
     }
 
     public function test_tool_execute_forbidden_scope(): void
     {
         // Calling draft intake with only seo:read
-        $res = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
-            ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
+        $resDraft = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
+            ->postJson('/api/v1/services/seo/tools/draft.intake/execute', [
                 'context' => ['site_ref' => 'site:123'],
                 'input' => ['items' => [
                     ['keyword' => 'test', 'type' => 'new'],
@@ -133,8 +157,21 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
                 'confirmed' => true,
             ]);
 
-        $res->assertStatus(403);
-        $res->assertJsonPath('error.code', 'scope_denied');
+        $resDraft->assertStatus(403);
+        $this->assertStringContainsString('no-store', (string) $resDraft->headers->get('Cache-Control'));
+        $resDraft->assertJsonPath('error.code', 'scope_denied');
+
+        // Calling topic create with only seo:read
+        $resTopic = $this->withHeader('Authorization', 'Bearer ' . $this->seoReadKey)
+            ->postJson('/api/v1/services/seo/tools/topic.create/execute', [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['name' => 'Balo laptop'],
+                'confirmed' => true,
+            ]);
+
+        $resTopic->assertStatus(403);
+        $this->assertStringContainsString('no-store', (string) $resTopic->headers->get('Cache-Control'));
+        $resTopic->assertJsonPath('error.code', 'scope_denied');
     }
 
     public function test_tool_execute_missing_context(): void
@@ -145,6 +182,7 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ]);
 
         $res->assertStatus(422);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
         $res->assertJsonPath('error.code', 'missing_context');
     }
 
@@ -158,13 +196,15 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ]);
 
         $res->assertStatus(422)->assertJsonPath('error.code', 'context_mismatch');
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
     }
 
     public function test_tool_execute_rejects_site_id_in_public_input(): void
     {
-        $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
+        // Draft intake rejects site_id in input
+        $resDraft = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
             ->withHeader('X-Site-Ref', 'site:123')
-            ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
+            ->postJson('/api/v1/services/seo/tools/draft.intake/execute', [
                 'input' => [
                     'site_id' => 999,
                     'items' => [['keyword' => 'test', 'type' => 'new']],
@@ -172,13 +212,29 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
                 'confirmed' => true,
             ]);
 
-        $res->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+        $resDraft->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+        $this->assertStringContainsString('no-store', (string) $resDraft->headers->get('Cache-Control'));
+
+        // Topic create rejects site_id in input
+        $resTopic = $this->withHeader('Authorization', 'Bearer ' . $this->topicWriteKey)
+            ->withHeader('X-Site-Ref', 'site:123')
+            ->postJson('/api/v1/services/seo/tools/topic.create/execute', [
+                'input' => [
+                    'name' => 'Balo laptop',
+                    'site_id' => 999,
+                ],
+                'confirmed' => true,
+            ]);
+
+        $resTopic->assertStatus(422)->assertJsonPath('error.code', 'validation_failed');
+        $this->assertStringContainsString('no-store', (string) $resTopic->headers->get('Cache-Control'));
     }
 
     public function test_tool_execute_confirmation_required(): void
     {
-        $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
-            ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
+        // Draft intake unconfirmed
+        $resDraft = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
+            ->postJson('/api/v1/services/seo/tools/draft.intake/execute', [
                 'context' => ['site_ref' => 'site:123'],
                 'input' => ['items' => [
                     ['keyword' => 'test', 'type' => 'new'],
@@ -186,8 +242,21 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
                 'confirmed' => false,
             ]);
 
-        $res->assertStatus(422);
-        $res->assertJsonPath('error.code', 'confirmation_required');
+        $resDraft->assertStatus(422);
+        $this->assertStringContainsString('no-store', (string) $resDraft->headers->get('Cache-Control'));
+        $resDraft->assertJsonPath('error.code', 'confirmation_required');
+
+        // Topic create unconfirmed
+        $resTopic = $this->withHeader('Authorization', 'Bearer ' . $this->topicWriteKey)
+            ->postJson('/api/v1/services/seo/tools/topic.create/execute', [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['name' => 'Balo laptop'],
+                'confirmed' => false,
+            ]);
+
+        $resTopic->assertStatus(422);
+        $this->assertStringContainsString('no-store', (string) $resTopic->headers->get('Cache-Control'));
+        $resTopic->assertJsonPath('error.code', 'confirmation_required');
     }
 
     public function test_tool_execute_read_success_delegates(): void
@@ -212,12 +281,13 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ]);
 
         $res->assertStatus(200);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
         $res->assertJsonPath('data.tool', 'seo_audit.list');
         $res->assertJsonPath('data.result.total', 1);
         $res->assertJsonPath('data.result.items.0.title', 'Sample Article');
     }
 
-    public function test_tool_execute_write_confirmed_success_delegates(): void
+    public function test_tool_execute_draft_write_confirmed_success_delegates(): void
     {
         $mockDraftService = $this->createMock(ServiceApiDraftIntakeService::class);
         $mockDraftService->expects($this->once())
@@ -235,7 +305,7 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $this->app->instance(ServiceApiDraftIntakeService::class, $mockDraftService);
 
         $res = $this->withHeader('Authorization', 'Bearer ' . $this->draftWriteKey)
-            ->postJson('/api/v1/services/seo/tools/content_project.draft_intake/execute', [
+            ->postJson('/api/v1/services/seo/tools/draft.intake/execute', [
                 'context' => ['site_ref' => 'site:123'],
                 'input' => ['items' => [
                     ['keyword' => 'brand new keyword', 'type' => 'new'],
@@ -244,9 +314,79 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
             ]);
 
         $res->assertStatus(200);
-        $res->assertJsonPath('data.tool', 'content_project.draft_intake');
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
+        $res->assertJsonPath('data.tool', 'draft.intake');
         $res->assertJsonPath('data.result.draft_ref', 'project:50');
         $res->assertJsonPath('data.result.added', 1);
+    }
+
+    public function test_tool_execute_topic_write_confirmed_success_delegates(): void
+    {
+        $mockTopicService = $this->createMock(TopicServiceApiWriteService::class);
+        $mockTopicService->expects($this->once())
+            ->method('create')
+            ->with(123, 'Balo laptop')
+            ->willReturn([
+                'ok' => true,
+                'data' => [
+                    'topic_ref' => 'topic:88',
+                    'topic_id' => 88,
+                    'topic_name' => 'Balo laptop',
+                    'reused' => false,
+                    'reconcile' => [
+                        'checked' => 4,
+                        'matched' => 1,
+                        'attached' => 1,
+                        'moved' => 0,
+                        'skipped_locked' => 0,
+                        'skipped_seed' => 0,
+                    ],
+                ],
+            ]);
+
+        $this->app->instance(TopicServiceApiWriteService::class, $mockTopicService);
+
+        $res = $this->withHeader('Authorization', 'Bearer ' . $this->topicWriteKey)
+            ->postJson('/api/v1/services/seo/tools/topic.create/execute', [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['name' => 'Balo laptop'],
+                'confirmed' => true,
+            ]);
+
+        $res->assertStatus(200);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
+        $res->assertJsonPath('data.tool', 'topic.create');
+        $res->assertJsonPath('data.result.topic_ref', 'topic:88');
+        $res->assertJsonPath('data.result.topic_id', 88);
+        $res->assertJsonPath('data.result.topic_name', 'Balo laptop');
+        $res->assertJsonPath('data.result.reused', false);
+        $res->assertJsonPath('data.result.reconcile.attached', 1);
+    }
+
+    public function test_tool_execute_topic_write_failure_envelope(): void
+    {
+        $mockTopicService = $this->createMock(TopicServiceApiWriteService::class);
+        $mockTopicService->expects($this->once())
+            ->method('create')
+            ->with(123, 'Invalid Topic')
+            ->willReturn([
+                'ok' => false,
+                'error' => 'topic_locked',
+            ]);
+
+        $this->app->instance(TopicServiceApiWriteService::class, $mockTopicService);
+
+        $res = $this->withHeader('Authorization', 'Bearer ' . $this->topicWriteKey)
+            ->postJson('/api/v1/services/seo/tools/topic.create/execute', [
+                'context' => ['site_ref' => 'site:123'],
+                'input' => ['name' => 'Invalid Topic'],
+                'confirmed' => true,
+            ]);
+
+        $res->assertStatus(422);
+        $this->assertStringContainsString('no-store', (string) $res->headers->get('Cache-Control'));
+        $res->assertJsonPath('error.code', 'topic_locked');
+        $res->assertJsonPath('error.message', 'This topic is locked against modification.');
     }
 
     private function bootSitesSchema(): void

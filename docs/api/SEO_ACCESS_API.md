@@ -584,8 +584,8 @@ POST /api/v1/services/seo/tools/{toolKey}/execute    → Execute tool with fail-
 
 ### Architectural Principles
 
-1. **Zero duplicated SEO algorithms or scoring logic**: Tool handlers delegate directly to existing canonical module services (`SeoAuditAgentReadService`, `ServiceApiDraftIntakeService`).
-2. **Capability ownership follows business ownership**: Read operations for SEO Audit belong to `seo` (`seo_audit.list`), while planning draft writes belong to `content_project` (`content_project.draft_intake`).
+1. **Zero duplicated SEO algorithms or scoring logic**: Tool handlers delegate directly to existing canonical module services (`SeoAuditAgentReadService`, `ServiceApiDraftIntakeService`, `TopicServiceApiWriteService`).
+2. **Capability ownership follows business ownership**: Read operations for SEO Audit belong to `seo` (`seo_audit.list`), planning draft writes belong to `draft` (`draft.intake`), and topic writes belong to `topic` (`topic.create`).
 3. **Fail-closed validation order**:
    1. Tool exists in registry (`404 tool_not_found`)
    2. Tool is exposed and enabled (`404 tool_not_exposed`)
@@ -597,12 +597,44 @@ POST /api/v1/services/seo/tools/{toolKey}/execute    → Execute tool with fail-
    8. Execute canonical handler (`200 OK` / `201 Created`)
 4. **Safe public discovery**: `GET /api/v1/services/seo/tools` filters capabilities against the caller's scopes and NEVER leaks internal PHP classes, database table names, or credentials.
 
+### Tool write boundary
+
+The Tool API is NOT a second UI and is NOT a generic command bus.
+
+AI-originated NEW BUSINESS DATA may be written ONLY into:
+1. `draft.*` — AI-originated content planning data (enters Shared Planning Draft via `draft.intake`).
+2. `topic.*` — AI-originated Topic data (site-scoped manual Topic entity creation / reuse via `topic.create`).
+
+Everything else must remain under the existing product UI / workflow / internal application commands.
+
+**Allowed public write namespaces:**
+- `draft.*`
+- `topic.*`
+
+**Explicitly forbidden public write namespaces include:**
+- `content_project.*` (Content Project is NOT an ingestion surface; items enter Shared Planning Draft first)
+- `article.*`
+- `wordpress.*`
+- `publishing.*`
+- `site.*`
+- `site_sync.*`
+- `serp.*`
+- `internal_links.*`
+- `external_links.*`
+- `link_health.*`
+- `gsc.*`
+- `seo_audit.*`
+
+> [!NOTE]
+> This restriction applies strictly to **WRITE** tools. READ tools are completely unaffected. For example, `seo_audit.list` continues to operate as an authorized read tool under `seo:read`.
+
 ### Canonical Tools
 
 | Capability Key | Module | Kind | Scopes | Required Context | Confirmation | Handler Delegation |
 |---|---|---|---|---|---|---|
 | `seo_audit.list` | `seo_audit` | `read` | `seo:read` | `site_ref` | `none` | `SeoAuditAgentReadService::listArticles()` |
-| `content_project.draft_intake` | `content_projects` | `write` | `content-projects:draft:write` | `site_ref` | `required` | `ServiceApiDraftIntakeService::intake()` |
+| `draft.intake` | `draft` | `write` | `content-projects:draft:write` | `site_ref` | `required` | `ServiceApiDraftIntakeService::intake()` |
+| `topic.create` | `topic` | `write` | `topics:write` | `site_ref` | `required` | `TopicServiceApiWriteService::create()` |
 
 ### 1. Discover Tools
 
@@ -634,6 +666,42 @@ Authorization: Bearer <service_key>
             "rules": { "type": "array", "items": { "type": "string" } },
             "low_score": { "type": "boolean" }
           }
+        }
+      },
+      {
+        "key": "draft.intake",
+        "name": "Intake Items into Planning Draft",
+        "description": "Intake new or rewrite content items into the shared planning draft for a site.",
+        "module": "draft",
+        "kind": "write",
+        "required_context": ["site_ref"],
+        "confirmation_policy": "required",
+        "availability": { "available": false, "reason": "missing_site_context" },
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "items": { "type": "array", "minItems": 1, "maxItems": 100 }
+          },
+          "required": ["items"],
+          "additionalProperties": false
+        }
+      },
+      {
+        "key": "topic.create",
+        "name": "Create Topic",
+        "description": "Create or reuse a site-scoped manual topic.",
+        "module": "topic",
+        "kind": "write",
+        "required_context": ["site_ref"],
+        "confirmation_policy": "required",
+        "availability": { "available": false, "reason": "missing_site_context" },
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string", "minLength": 1, "maxLength": 255 }
+          },
+          "required": ["name"],
+          "additionalProperties": false
         }
       }
     ]
@@ -678,13 +746,13 @@ Content-Type: application/json
 }
 ```
 
-### 3. Execute Write Tool (`content_project.draft_intake`)
+### 3. Execute Write Tool (`draft.intake`)
 
 Write tools modify persistent state and enforce explicit confirmation. If `confirmed !== true`, execution is aborted with zero mutations.
 
 #### Step 3a: Unconfirmed attempt (`422 Unprocessable Content`)
 ```http
-POST /api/v1/services/seo/tools/content_project.draft_intake/execute
+POST /api/v1/services/seo/tools/draft.intake/execute
 Authorization: Bearer <key with content-projects:draft:write>
 Content-Type: application/json
 
@@ -702,9 +770,9 @@ Response:
 {
   "error": {
     "code": "confirmation_required",
-    "message": "Tool 'content_project.draft_intake' modifies state and requires explicit confirmation before execution.",
+    "message": "Tool 'draft.intake' modifies state and requires explicit confirmation before execution.",
     "meta": {
-      "tool": "content_project.draft_intake",
+      "tool": "draft.intake",
       "confirmation_policy": "required",
       "kind": "write"
     }
@@ -714,7 +782,7 @@ Response:
 
 #### Step 3b: Confirmed execution (`200 OK` / `201 Created`)
 ```http
-POST /api/v1/services/seo/tools/content_project.draft_intake/execute
+POST /api/v1/services/seo/tools/draft.intake/execute
 Authorization: Bearer <key with content-projects:draft:write>
 Content-Type: application/json
 
@@ -731,7 +799,7 @@ Response:
 ```json
 {
   "data": {
-    "tool": "content_project.draft_intake",
+    "tool": "draft.intake",
     "result": {
       "draft_ref": "project:10",
       "site_ref": "site:123",
@@ -749,6 +817,53 @@ Response:
       "added_count": 1,
       "already_in_draft_count": 0,
       "failed_count": 0
+    }
+  }
+}
+```
+
+### 4. Execute Write Tool (`topic.create`)
+
+Topic creation is site-scoped. It creates a new Topic or reuses an existing same-site Topic without synthesizing synthetic Keywords.
+
+#### Step 4a: Confirmed execution (`200 OK`)
+```http
+POST /api/v1/services/seo/tools/topic.create/execute
+Authorization: Bearer <key with topics:write>
+Content-Type: application/json
+
+{
+  "context": { "site_ref": "site:123" },
+  "input": {
+    "name": "Balo laptop"
+  },
+  "confirmed": true
+}
+```
+
+Response:
+```json
+{
+  "data": {
+    "tool": "topic.create",
+    "result": {
+      "topic_ref": "topic:88",
+      "topic_id": 88,
+      "topic_name": "Balo laptop",
+      "reused": false,
+      "reconcile": {
+        "checked": 4,
+        "matched": 1,
+        "attached": 1,
+        "moved": 0,
+        "skipped_locked": 0,
+        "skipped_seed": 0
+      }
+    },
+    "meta": {
+      "topic_ref": "topic:88",
+      "topic_id": 88,
+      "reused": false
     }
   }
 }
