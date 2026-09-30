@@ -565,6 +565,192 @@ See [`CONTENT_PROJECT_SERVICE_API.md`](CONTENT_PROJECT_SERVICE_API.md).
 | Layer | Owns |
 |-------|------|
 | Core | Auth, temporary Service Access manager/resolver, error envelope, rate limits, route hook |
-| SEO addon | `SeoAccessController`, `TemporarySeoAccessController`, composers, `EnsureSeoServiceApi` |
+| SEO addon | `SeoAccessController`, `TemporarySeoAccessController`, composers, `EnsureSeoServiceApi`, `SeoToolApiController`, `SeoToolExecutor`, `SeoToolRegistry` |
 
 Internal MCP Router / ContextRegistry may remain as composition helpers — they are **not** the public contract.
+
+---
+
+## SEO Tool / Capability API
+
+### Purpose
+
+Provides a clean, modular Capability / Tool execution boundary for external Agents, automated pipelines, or future Agent Action Resolvers without direct coupling to internal PHP services or duplicate business logic.
+
+```text
+GET  /api/v1/services/seo/tools                     → List authorized tools for caller
+POST /api/v1/services/seo/tools/{toolKey}/execute    → Execute tool with fail-closed policy
+```
+
+### Architectural Principles
+
+1. **Zero duplicated SEO algorithms or scoring logic**: Tool handlers delegate directly to existing canonical module services (`SeoAuditAgentReadService`, `ServiceApiDraftIntakeService`).
+2. **Capability ownership follows business ownership**: Read operations for SEO Audit belong to `seo` (`seo_audit.list`), while planning draft writes belong to `content_project` (`content_project.draft_intake`).
+3. **Fail-closed validation order**:
+   1. Tool exists in registry (`404 tool_not_found`)
+   2. Tool is exposed and enabled (`404 tool_disabled`)
+   3. Caller possesses required scopes (`403 forbidden_scope`)
+   4. Required execution context provided (`422 missing_context`)
+   5. Site / tenant access verified (`403 site_access_denied` / `404 site_not_found`)
+   6. Input validated against tool JSON Schema (`422 validation_failed`)
+   7. Confirmation policy checked (`422 confirmation_required` if write tool unconfirmed)
+   8. Execute canonical handler (`200 OK` / `201 Created`)
+4. **Safe public discovery**: `GET /api/v1/services/seo/tools` filters capabilities against the caller's scopes and NEVER leaks internal PHP classes, database table names, or credentials.
+
+### Canonical Tools
+
+| Capability Key | Module | Kind | Scopes | Required Context | Confirmation | Handler Delegation |
+|---|---|---|---|---|---|---|
+| `seo_audit.list` | `seo` | `read` | `seo:read` | `site` | `none` | `SeoAuditAgentReadService::listArticles()` |
+| `content_project.draft_intake` | `content_project` | `write` | `content-projects:draft:write` | `site` | `required` | `ServiceApiDraftIntakeService::intake()` |
+
+### 1. Discover Tools
+
+```http
+GET /api/v1/services/seo/tools
+Authorization: Bearer <service_key>
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "data": {
+    "service": "seo",
+    "tools": [
+      {
+        "key": "seo_audit.list",
+        "name": "List SEO Audit Articles",
+        "description": "List articles with SEO audit scoring and optimization recommendations for a site.",
+        "module": "seo",
+        "kind": "read",
+        "scopes": ["seo:read"],
+        "required_context": ["site"],
+        "confirmation_policy": "none",
+        "is_exposed": true,
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "post_type": { "type": "string" },
+            "limit": { "type": "integer" },
+            "rules": { "type": "array" },
+            "low_score": { "type": "boolean" }
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+### 2. Execute Read Tool (`seo_audit.list`)
+
+```http
+POST /api/v1/services/seo/tools/seo_audit.list/execute
+Authorization: Bearer <key with seo:read>
+X-Site-Ref: site:123
+Content-Type: application/json
+
+{
+  "limit": 20,
+  "low_score": true
+}
+```
+
+#### Response (`200 OK`)
+```json
+{
+  "data": {
+    "tool": "seo_audit.list",
+    "result": {
+      "items": [
+        {
+          "article_ref": "article:456",
+          "title": "Optimizing Laravel Performance",
+          "score": 58,
+          "post_type": "post",
+          "focus_keyword": "laravel performance",
+          "reason_labels": ["Missing focus keyword in H2", "Low content length"]
+        }
+      ],
+      "total": 1,
+      "post_type": null
+    }
+  }
+}
+```
+
+### 3. Execute Write Tool (`content_project.draft_intake`)
+
+Write tools modify persistent state and enforce explicit confirmation. If `confirmed !== true`, execution is aborted with zero mutations.
+
+#### Step 3a: Unconfirmed attempt (`422 Unprocessable Content`)
+```http
+POST /api/v1/services/seo/tools/content_project.draft_intake/execute
+Authorization: Bearer <key with content-projects:draft:write>
+Content-Type: application/json
+
+{
+  "site_id": 123,
+  "items": [
+    { "keyword": "laravel tips", "title": "10 Laravel Tips", "type": "new" }
+  ],
+  "confirmed": false
+}
+```
+
+Response:
+```json
+{
+  "error": {
+    "code": "confirmation_required",
+    "message": "Tool 'content_project.draft_intake' modifies state and requires explicit confirmation before execution.",
+    "meta": {
+      "tool": "content_project.draft_intake",
+      "confirmation_policy": "required",
+      "kind": "write"
+    }
+  }
+}
+```
+
+#### Step 3b: Confirmed execution (`200 OK` / `201 Created`)
+```http
+POST /api/v1/services/seo/tools/content_project.draft_intake/execute
+Authorization: Bearer <key with content-projects:draft:write>
+Content-Type: application/json
+
+{
+  "site_id": 123,
+  "items": [
+    { "keyword": "laravel tips", "title": "10 Laravel Tips", "type": "new" }
+  ],
+  "confirmed": true
+}
+```
+
+Response:
+```json
+{
+  "data": {
+    "tool": "content_project.draft_intake",
+    "result": {
+      "draft_ref": "project:10",
+      "site_ref": "site:123",
+      "submitted": 1,
+      "added": 1,
+      "already_in_draft": 0,
+      "failed": 0,
+      "items": [
+        { "index": 0, "status": "added", "item_ref": "item:88" }
+      ],
+      "idempotent_replay": false
+    },
+    "meta": {
+      "draft_ref": "project:10",
+      "added_count": 1,
+      "already_in_draft_count": 0,
+      "failed_count": 0
+    }
+  }
+}
+```
