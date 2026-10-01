@@ -6,7 +6,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Forms\Components\JsonCodeEditor;
 use App\Filament\Resources\IndustryContextProfileResource\Pages;
-use App\Filament\Support\IndustryContextClipboard;
 use App\IndustryContext\IndustryContextSchema;
 use App\Models\IndustryContextProfile;
 use App\Models\User;
@@ -78,11 +77,14 @@ final class IndustryContextProfileResource extends Resource
                 ->helperText(__('Stable Industry Context key used by Sites.')),
             Forms\Components\TextInput::make('schema_version')
                 ->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated(),
-            Forms\Components\TextInput::make('language')
-                ->label(__('Language'))->default('vi')
+            Forms\Components\Select::make('language')
+                ->label(__('Language'))->options(self::languageOptions())
+                ->default(fn (): string => self::defaultLanguage(request()->query('defaultLanguage')))
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
-            Forms\Components\TextInput::make('market')
-                ->label(__('Market'))
+            Forms\Components\Select::make('prompt_type')
+                ->label('Loại prompt')
+                ->options(['core' => 'Core', 'discovery' => 'Discovery & Attention', 'breakout' => 'Breakout'])
+                ->default('core')
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Textarea::make('notes')
                 ->label(__('Temporary generation notes'))->rows(3)
@@ -134,21 +136,32 @@ final class IndustryContextProfileResource extends Resource
             Tables\Actions\ViewAction::make()->label('Xem'),
             Tables\Actions\Action::make('copy_prompt')
                 ->label('Copy Prompt')->icon('heroicon-o-clipboard')
-                ->extraAttributes(function (IndustryContextProfile $record): array {
+                ->modalHeading('Prompt tạo Industry Context')
+                ->modalContent(function (IndustryContextProfile $record) {
                     $identity = (array) ($record->context_json['identity'] ?? []);
                     $prompt = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)->compilePrompt(
                         (string) ($identity['context_name'] ?? $record->name),
                         (string) ($identity['language'] ?? 'en'),
-                        implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
 
-                    return IndustryContextClipboard::copyAttributes($prompt);
+                    return view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt]);
                 })
-                ->action(fn (): null => null),
+                ->modalWidth('7xl')->modalSubmitAction(false)->modalCancelActionLabel('Đóng'),
             Tables\Actions\EditAction::make()->label('Sửa'),
             Tables\Actions\DeleteAction::make()
                 ->action(fn (IndustryContextProfile $record) => IndustryContextProfile::query()->where('key', $record->key)->delete()),
         ]);
+    }
+
+    /** @return array<string, string> */
+    public static function languageOptions(): array
+    {
+        return ['vi' => 'Tiếng Việt', 'en' => 'English'];
+    }
+
+    public static function defaultLanguage(?string $suggested = null): string
+    {
+        return array_key_exists((string) $suggested, self::languageOptions()) ? (string) $suggested : 'vi';
     }
 
     public static function getEloquentQuery(): Builder

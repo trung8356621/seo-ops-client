@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seo-ops.local/schemas/industry-breakout.v1.schema.json",
+  "title": "Industry Breakout v1",
+  "description": "A large reusable brainstorming pool of attention-worthy territories derived from a valid Core Industry Context. Explore farther through culture, behavior, lifestyle, technology, education, workplace, travel, consumer habits, and broad use cases without producing unrelated garbage or finished clickbait headlines. Do not limit useful output to 3-5 items.",
+  "x-generation-rules": ["A business bridge is preferred but less strict than Discovery and may be absent when the audience or use-case connection remains meaningful.", "Prefer breadth of distinct candidates over verbose explanations.", "Keywords are short seed phrases: normally 1-4 words and strongly prefer 5 words or fewer. Put long attention concepts in attention_angle, not in keywords.", "When language is vi, human-readable values must primarily be Vietnamese. English acronyms or standard terms may be included with a Vietnamese explanation where useful; do not produce entire descriptions or headings in English."],
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "items"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "topic", "attention_angle", "possible_bridges", "keywords"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "topic": { "type": "string", "minLength": 1, "description": "Reusable far-distance territory, never a finished headline." },
+        "attention_angle": { "type": "string", "minLength": 1 },
+        "possible_bridges": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "keywords": { "type": "array", "uniqueItems": true, "items": { "type": "string" } }
+      }
+    }
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seo-ops.local/schemas/industry-discovery.v1.schema.json",
+  "title": "Industry Discovery & Attention v1",
+  "description": "A broad reusable pool of new topic and keyword territories derived from a valid Core Industry Context. The Core input is read-only context, not output to rewrite. Generate many distinct useful candidates rather than limiting output to 3-5 items. Candidates are territories, not finished article titles or headlines.",
+  "x-generation-rules": ["Every item must have a reasonable contextual bridge to the supplied Core Industry Context.", "Prefer breadth of distinct candidates over verbose explanations.", "Primary keywords are short SEO-capable seed phrases: normally 1-4 words and strongly prefer 5 words or fewer. Longer phrases are allowed only when meaning cannot be preserved; long natural searches belong in query_examples.", "When language is vi, human-readable values must primarily be Vietnamese. English acronyms or standard terms may be included with a Vietnamese explanation where useful; do not produce entire descriptions or headings in English."],
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "items"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "items": { "type": "array", "items": { "$ref": "#/$defs/item" } }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "topic", "keywords", "attention_reason", "bridge"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+        "topic": { "type": "string", "minLength": 1, "description": "Reusable topic territory, never a finished headline." },
+        "keywords": { "type": "array", "uniqueItems": true, "items": { "type": "string" } },
+        "query_examples": { "type": "array", "uniqueItems": true, "items": { "type": "string" }, "description": "Optional longer natural search expressions; do not treat these mechanically as primary keywords." },
+        "attention_reason": { "type": "string", "minLength": 1 },
+        "bridge": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "refs"],
+          "properties": {
+            "type": { "enum": ["audience", "need", "offering", "seasonality", "use_case", "industry", "market"] },
+            "refs": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string" } }
+          }
+        }
+      }
+    }
+  }
+}

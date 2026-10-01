@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Filament\Support\IndustryContextClipboard;
+use App\Filament\Resources\IndustryContextProfileResource;
 use Tests\TestCase;
 
 final class IndustryContextAdminResourceContractTest extends TestCase
@@ -27,54 +27,35 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('createInitial(', (string) $page);
     }
 
-    public function test_create_and_existing_copy_actions_use_same_direct_exact_compile_path(): void
+    public function test_create_and_existing_copy_actions_use_same_exact_modal_preview_path(): void
     {
         $resource = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource.php');
         $create = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
         $edit = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/EditIndustryContextProfile.php');
 
         foreach ([$resource, $create, $edit] as $source) {
-            self::assertStringContainsString('->compilePrompt(', (string) $source);
-            self::assertStringContainsString('IndustryContextClipboard::copyAttributes($prompt)', (string) $source);
-            self::assertStringNotContainsString("'x-on:click'", (string) $source);
-            self::assertStringNotContainsString("'onclick'", (string) $source);
-            self::assertStringNotContainsString('->modalContent(', (string) $source);
-            self::assertStringNotContainsString('->modalHeading(', (string) $source);
+            self::assertStringContainsString('->compilePrompt', (string) $source);
+            self::assertStringContainsString("view('filament.components.industry-context-prompt-preview'", (string) $source);
+            self::assertStringContainsString('->modalContent(', (string) $source);
+            self::assertStringContainsString('->modalHeading(', (string) $source);
             self::assertStringNotContainsString('navigator.clipboard.writeText', (string) $source);
         }
-        self::assertFileDoesNotExist(resource_path('views/filament/components/industry-context-prompt-preview.blade.php'));
+        self::assertFileExists(resource_path('views/filament/components/industry-context-prompt-preview.blade.php'));
     }
 
     public function test_direct_clipboard_helper_has_http_fallback_and_notifications(): void
     {
-        $helper = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Support/IndustryContextClipboard.php');
-        $browser = file_get_contents(resource_path('views/filament/components/industry-context-clipboard-script.blade.php'));
-        self::assertStringContainsString('base64_encode($prompt)', (string) $helper);
-        self::assertStringContainsString('base64_encode($message)', (string) $helper);
-        self::assertStringContainsString('copyIndustryContextPromptFromBase64', (string) $browser);
-        self::assertStringContainsString('notifyIndustryContextClipboardWarningFromBase64', (string) $browser);
-        self::assertStringContainsString("'data-industry-context-action' => 'copy'", (string) $helper);
-        self::assertStringContainsString("'data-industry-context-action' => 'warning'", (string) $helper);
-        self::assertStringContainsString("'data-industry-context-payload'", (string) $helper);
-        self::assertStringNotContainsString('Js::from', (string) $helper);
-        self::assertStringContainsString('new TextDecoder().decode(bytes)', (string) $browser);
-        self::assertStringContainsString("document.addEventListener('click'", (string) $browser);
-        self::assertStringContainsString("event.target.closest('[data-industry-context-action]')", (string) $browser);
-        self::assertStringContainsString('event.stopImmediatePropagation()', (string) $browser);
-        self::assertStringContainsString('trigger.dataset.industryContextPayload', (string) $browser);
+        $browser = file_get_contents(resource_path('views/filament/components/industry-context-prompt-preview.blade.php'));
         self::assertStringContainsString('navigator.clipboard.writeText(text)', (string) $browser);
         self::assertStringContainsString("document.execCommand('copy')", (string) $browser);
         self::assertStringContainsString("document.createElement('textarea')", (string) $browser);
         self::assertStringContainsString('textarea.remove()', (string) $browser);
-        self::assertStringContainsString('Đã copy Prompt', (string) $browser);
-        self::assertStringContainsString('Không thể copy Prompt', (string) $browser);
+        self::assertStringContainsString('Đã copy prompt', (string) $browser);
+        self::assertStringContainsString('Không thể copy prompt', (string) $browser);
         self::assertStringNotContainsString('undefined', (string) $browser);
 
-        $warning = IndustryContextClipboard::warningAttributes('Vui lòng nhập tên Ngữ cảnh ngành trước.');
-        self::assertSame(base64_encode('Vui lòng nhập tên Ngữ cảnh ngành trước.'), $warning['data-industry-context-payload']);
-        self::assertSame('warning', $warning['data-industry-context-action']);
-        self::assertArrayNotHasKey('onclick', $warning);
-        self::assertArrayNotHasKey('x-on:click', $warning);
+        self::assertStringContainsString('{{ $prompt }}', (string) $browser);
+        self::assertStringContainsString('readonly', (string) $browser);
     }
 
     public function test_create_copy_and_quick_generate_use_current_form_seed_and_guard_blank_name(): void
@@ -85,19 +66,17 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertSame(2, substr_count((string) $page, "if (\$seed['name'] === '')"));
         self::assertSame(2, substr_count((string) $page, 'Vui lòng nhập tên Ngữ cảnh ngành trước.'));
         self::assertStringContainsString("'language' => \$language !== '' ? \$language : 'vi'", (string) $page);
-        self::assertStringContainsString("'market' => \$market !== '' ? \$market : null", (string) $page);
+        self::assertStringNotContainsString("['market']", (string) $page);
         self::assertStringContainsString("'notes' => \$notes !== '' ? \$notes : null", (string) $page);
         $copyStart = strpos((string) $page, "Action::make('copy_prompt')");
         $quickStart = strpos((string) $page, "Action::make('quick_generate')");
         self::assertIsInt($copyStart);
         self::assertIsInt($quickStart);
         $copyBlock = substr((string) $page, $copyStart, $quickStart - $copyStart);
-        self::assertStringContainsString('$this->copyPromptAttributes()', $copyBlock);
-        self::assertStringNotContainsString('context_json', $copyBlock);
+        self::assertStringContainsString('$this->copyPromptError()', $copyBlock);
+        self::assertStringContainsString('$this->compiledPrompt()', $copyBlock);
         self::assertStringNotContainsString('->generate(', $copyBlock);
-        self::assertStringNotContainsString('modal', strtolower($copyBlock));
-        self::assertStringContainsString('->compilePrompt(', (string) $page);
-        self::assertStringContainsString('IndustryContextClipboard::copyAttributes($prompt)', (string) $page);
+        self::assertStringContainsString('->compilePromptForType(', (string) $page);
     }
 
     public function test_context_json_uses_editable_json_code_surface_with_existing_validation_contract(): void
@@ -115,5 +94,25 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('spellcheck="false"', (string) $editor);
         self::assertStringContainsString('font-mono', (string) $editor);
         self::assertStringContainsString('overflow-auto', (string) $editor);
+    }
+
+    public function test_generation_ui_has_language_and_prompt_type_selects_without_market_persistence(): void
+    {
+        $resource = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource.php');
+        $page = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
+
+        self::assertStringContainsString("Select::make('language')", (string) $resource);
+        self::assertStringContainsString("['vi' => 'Tiếng Việt', 'en' => 'English']", (string) $resource);
+        self::assertSame('vi', IndustryContextProfileResource::defaultLanguage());
+        self::assertSame('en', IndustryContextProfileResource::defaultLanguage('en'));
+        self::assertStringContainsString("Select::make('prompt_type')", (string) $resource);
+        self::assertStringContainsString("'core' => 'Core'", (string) $resource);
+        self::assertStringContainsString("'discovery' => 'Discovery & Attention'", (string) $resource);
+        self::assertStringContainsString("'breakout' => 'Breakout'", (string) $resource);
+        self::assertStringNotContainsString("make('market')", (string) $resource);
+        self::assertStringContainsString('->dehydrated(false)', (string) $resource);
+        self::assertStringContainsString("['prompt_type'] !== 'core'", (string) $page);
+        self::assertStringContainsString('Vui lòng tạo hoặc nhập Core Industry Context hợp lệ trước.', (string) $page);
+        self::assertStringContainsString('$this->generationPreviewJson', (string) $page);
     }
 }
