@@ -142,7 +142,7 @@ final class IndustryContextProfileResource extends Resource
                         implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
 
-                    return ['x-on:click' => IndustryContextClipboard::copyScript($prompt)];
+                    return IndustryContextClipboard::copyAttributes($prompt);
                 })
                 ->action(fn (): null => null),
             Tables\Actions\EditAction::make()->label('Sửa'),

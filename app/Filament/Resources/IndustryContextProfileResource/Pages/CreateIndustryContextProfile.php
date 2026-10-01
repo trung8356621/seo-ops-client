@@ -21,7 +21,7 @@ final class CreateIndustryContextProfile extends CreateRecord
         return [
             Action::make('copy_prompt')
                 ->label('Copy Prompt')
-                ->extraAttributes(fn (): array => ['x-on:click' => $this->copyPromptScript()])
+                ->extraAttributes(fn (): array => $this->copyPromptAttributes())
                 ->action(fn (): null => null),
             Action::make('quick_generate')->label('Gen nhanh')->icon('heroicon-o-sparkles')->action(function (): void {
                 $seed = $this->generationSeed();
@@ -58,18 +58,19 @@ final class CreateIndustryContextProfile extends CreateRecord
         ];
     }
 
-    private function copyPromptScript(): string
+    /** @return array<string, string> */
+    private function copyPromptAttributes(): array
     {
         $seed = $this->generationSeed();
         if ($seed['name'] === '') {
-            return IndustryContextClipboard::warningScript('Vui lòng nhập tên Ngữ cảnh ngành trước.');
+            return IndustryContextClipboard::warningAttributes('Vui lòng nhập tên Ngữ cảnh ngành trước.');
         }
 
         $prompt = app(IndustryContextGenerationService::class)->compilePrompt(
             $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
         );
 
-        return IndustryContextClipboard::copyScript($prompt);
+        return IndustryContextClipboard::copyAttributes($prompt);
     }
 
     /** @return array<string, mixed> */

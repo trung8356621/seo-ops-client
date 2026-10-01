@@ -1,5 +1,47 @@
 @once
     <script>
+        const decodeIndustryContextBase64 = (encoded) => {
+            const bytes = Uint8Array.from(atob(encoded), character => character.charCodeAt(0));
+
+            return new TextDecoder().decode(bytes);
+        };
+
+        window.copyIndustryContextPromptFromBase64 = function (encodedPrompt) {
+            return window.copyIndustryContextPrompt(decodeIndustryContextBase64(encodedPrompt));
+        };
+
+        window.notifyIndustryContextClipboardWarningFromBase64 = function (encodedMessage) {
+            new FilamentNotification()
+                .title(decodeIndustryContextBase64(encodedMessage))
+                .warning()
+                .send();
+
+            return false;
+        };
+
+        if (! window.industryContextClipboardListenerInstalled) {
+            document.addEventListener('click', function (event) {
+                const trigger = event.target.closest('[data-industry-context-action]');
+
+                if (! trigger) {
+                    return;
+                }
+
+                event.preventDefault();
+                event.stopImmediatePropagation();
+
+                if (trigger.dataset.industryContextAction === 'copy') {
+                    window.copyIndustryContextPromptFromBase64(trigger.dataset.industryContextPayload);
+
+                    return;
+                }
+
+                window.notifyIndustryContextClipboardWarningFromBase64(trigger.dataset.industryContextPayload);
+            }, true);
+
+            window.industryContextClipboardListenerInstalled = true;
+        }
+
         window.copyIndustryContextPrompt = async function (text) {
             let success = false;
 

@@ -31,7 +31,7 @@ final class EditIndustryContextProfile extends EditRecord
                         implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
 
-                    return ['x-on:click' => IndustryContextClipboard::copyScript($prompt)];
+                    return IndustryContextClipboard::copyAttributes($prompt);
                 })
                 ->action(fn (): null => null),
             Actions\DeleteAction::make()

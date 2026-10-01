@@ -4,19 +4,23 @@ declare(strict_types=1);
 
 namespace App\Filament\Support;
 
-use Illuminate\Support\Js;
-
 final class IndustryContextClipboard
 {
-    public static function copyScript(string $prompt): string
+    /** @return array<string, string> */
+    public static function copyAttributes(string $prompt): array
     {
-        return '$event.preventDefault(); $event.stopImmediatePropagation(); '
-            .'window.copyIndustryContextPrompt('.Js::from($prompt).');';
+        return [
+            'data-industry-context-action' => 'copy',
+            'data-industry-context-payload' => base64_encode($prompt),
+        ];
     }
 
-    public static function warningScript(string $message): string
+    /** @return array<string, string> */
+    public static function warningAttributes(string $message): array
     {
-        return '$event.preventDefault(); $event.stopImmediatePropagation(); '
-            .'new FilamentNotification().title('.Js::from($message).').warning().send();';
+        return [
+            'data-industry-context-action' => 'warning',
+            'data-industry-context-payload' => base64_encode($message),
+        ];
     }
 }
