@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://seo-ops.local/schemas/industry-context.v1.schema.json",
   "title": "Industry Context Profile v1",
-  "description": "Reusable global industry and business context. Field names are English; human-readable values may use the profile locale. Collections are always arrays. Unknown facts use null or empty collections and must never be fabricated. This profile must not contain current dates, current hot trends, or site-specific Topics, Keywords, Articles, GSC, or SEO Audit state.",
+  "description": "Reusable global industry and business context. Field names are English; human-readable values use identity.language. Collections are always arrays. Unknown facts use null or empty collections and must never be fabricated. This profile must not contain current dates, current hot trends, or site-specific Topics, Keywords, Articles, GSC, or SEO Audit state.",
   "$comment": "Future generated content uses context_links entries shaped as {type: audience|customer_need|offering|demand_driver|seasonality|content_universe, ref: stable-id}. A candidate with zero valid context_links is invalid. Never store chain-of-thought.",
   "type": "object",
   "additionalProperties": false,
@@ -92,11 +92,40 @@
     },
     "content_universe": {
       "type": "object", "additionalProperties": false,
-      "description": "Exploration universe for discovering ideas beyond a site's current Topic database. Adjacent, lifestyle, educational, commercial, and business expansion is intentional.",
+      "description": "Exploration universe for discovering reusable topic territories beyond a site's current Topic database. It is a map, not a collection of article titles, headlines, content briefs, or ready-made article ideas. Core planning primarily draws on the detailed industry knowledge already present throughout this profile.",
       "x-agent-purpose": "Defines where future content discovery may explore beyond existing SEO Topics.",
-      "x-generation-rules": ["Do not copy a site's current Topics.", "Include genuinely new but business-relevant exploration areas.", "Use stable ids for future context_links."],
+      "x-generation-rules": ["Do not copy a site's current Topics.", "Generate topic territories, never numbered headlines, clickbait titles, final SEO titles, full article ideas, or content briefs.", "Favor breadth and many meaningful distinct territories over long descriptions; do not hard-limit pools to 3-5 entries.", "Discovery/attention stays near the audience or industry and requires a reasonable bridge.", "Breakout may travel far outside direct business intent; a possible bridge is preferred but not required.", "When identity.language is vi, all human-readable values must primarily be Vietnamese. English is reference metadata, not a writing style. Use English only for useful acronyms, industry-standard terms, or hard-to-translate technology/product terms, and include a Vietnamese explanation, for example MOQ (số lượng đặt hàng tối thiểu), OEM/ODM (sản xuất theo thiết kế hoặc thương hiệu đặt hàng), and EDC (các vật dụng thường mang theo hằng ngày). Do not write complete names, descriptions, sentences, or headings in English. Other languages retain normal locale-aware behavior."],
       "required": ["core_topics", "adjacent_topics", "lifestyle_topics", "educational_topics", "commercial_topics", "business_topics"],
-      "properties": { "core_topics": { "$ref": "#/$defs/refItemArray" }, "adjacent_topics": { "$ref": "#/$defs/refItemArray" }, "lifestyle_topics": { "$ref": "#/$defs/refItemArray" }, "educational_topics": { "$ref": "#/$defs/refItemArray" }, "commercial_topics": { "$ref": "#/$defs/refItemArray" }, "business_topics": { "$ref": "#/$defs/refItemArray" } }
+      "properties": {
+        "topic_mix": {
+          "type": "object",
+          "description": "Planning weights, not item counts, article counts, title quotas, or output quotas. Values must total 100.",
+          "default": { "core": 60, "discovery_attention": 30, "breakout": 10 },
+          "additionalProperties": false,
+          "required": ["core", "discovery_attention", "breakout"],
+          "properties": {
+            "core": { "type": "integer", "minimum": 0, "maximum": 100, "default": 60 },
+            "discovery_attention": { "type": "integer", "minimum": 0, "maximum": 100, "default": 30 },
+            "breakout": { "type": "integer", "minimum": 0, "maximum": 100, "default": 10 }
+          }
+        },
+        "core_topics": { "$ref": "#/$defs/refItemArray" },
+        "adjacent_topics": { "$ref": "#/$defs/refItemArray" },
+        "lifestyle_topics": { "$ref": "#/$defs/refItemArray" },
+        "educational_topics": { "$ref": "#/$defs/refItemArray" },
+        "commercial_topics": { "$ref": "#/$defs/refItemArray" },
+        "business_topics": { "$ref": "#/$defs/refItemArray" },
+        "discovery_attention_topics": {
+          "type": "array",
+          "description": "A broad reusable pool of concise topic territories likely to attract search, curiosity, social attention, or wider audience interest. Each territory requires a contextual bridge. These are not article titles.",
+          "items": { "$ref": "#/$defs/discoveryAttentionTopic" }
+        },
+        "breakout_topics": {
+          "type": "array",
+          "description": "A broad reusable brainstorming pool for attention and view potential. Territories may be far or weakly related to the industry. A possible bridge is preferred but is not mandatory during Industry Context generation. These are not article titles.",
+          "items": { "$ref": "#/$defs/breakoutTopic" }
+        }
+      }
     },
     "search_behavior": {
       "type": "object", "additionalProperties": false, "required": ["common_intents", "query_patterns", "modifier_groups"],
@@ -112,7 +141,18 @@
         "allowed_distance": { "type": "object", "additionalProperties": false, "required": ["core", "adjacent", "lifestyle", "broad_industry", "unrelated"], "properties": { "core": { "type": "boolean" }, "adjacent": { "type": "boolean" }, "lifestyle": { "type": "boolean" }, "broad_industry": { "type": "boolean" }, "unrelated": { "type": "boolean", "default": false } } },
         "excluded_topics": { "$ref": "#/$defs/stringArray" },
         "require_business_relevance": { "type": "boolean", "default": true },
-        "relevance_rule": { "type": "string", "description": "Every future idea must link to at least one audience, customer need, offering, demand driver, seasonal event, or allowed content-universe area." }
+        "relevance_rule": { "type": "string", "description": "Legacy/default relevance rule for existing V1 readers. Tier-specific rules take precedence for discovery_attention and breakout." },
+        "tier_rules": {
+          "type": "object",
+          "description": "Tier-aware planning boundaries. Breakout explicitly may escape direct business relevance.",
+          "additionalProperties": false,
+          "required": ["core", "discovery_attention", "breakout"],
+          "properties": {
+            "core": { "$ref": "#/$defs/coreBoundary" },
+            "discovery_attention": { "$ref": "#/$defs/discoveryBoundary" },
+            "breakout": { "$ref": "#/$defs/breakoutBoundary" }
+          }
+        }
       }
     }
   },
@@ -128,6 +168,11 @@
     "offering": { "type": "object", "additionalProperties": false, "required": ["id", "name", "importance", "audiences"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "audiences": { "$ref": "#/$defs/stringArray" } } },
     "demandDriver": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "audiences", "related_needs", "importance", "confidence", "source_type"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "enum": ["calendar_event", "seasonal", "life_event", "business_event", "replacement_cycle", "trend", "weather", "regulatory", "economic", "technology", "social_event", "travel", "education"] }, "audiences": { "$ref": "#/$defs/stringArray" }, "related_needs": { "$ref": "#/$defs/stringArray" }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "confidence": { "$ref": "#/$defs/confidenceOrNull" }, "source_type": { "type": ["string", "null"] } } },
     "monthArray": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 12 }, "uniqueItems": true },
-    "seasonalEvent": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "months", "date_rule", "lead_time_days", "importance", "audiences", "opportunities", "confidence", "source_type"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "type": "string" }, "months": { "$ref": "#/$defs/monthArray" }, "date_rule": { "type": ["string", "null"] }, "lead_time_days": { "type": ["integer", "null"], "minimum": 0 }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "audiences": { "$ref": "#/$defs/stringArray" }, "opportunities": { "$ref": "#/$defs/stringArray" }, "confidence": { "$ref": "#/$defs/confidenceOrNull" }, "source_type": { "type": ["string", "null"] } } }
+    "seasonalEvent": { "type": "object", "additionalProperties": false, "required": ["id", "name", "type", "months", "date_rule", "lead_time_days", "importance", "audiences", "opportunities", "confidence", "source_type"], "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "type": { "type": "string" }, "months": { "$ref": "#/$defs/monthArray" }, "date_rule": { "type": ["string", "null"] }, "lead_time_days": { "type": ["integer", "null"], "minimum": 0 }, "importance": { "$ref": "#/$defs/importanceOrNull" }, "audiences": { "$ref": "#/$defs/stringArray" }, "opportunities": { "$ref": "#/$defs/stringArray" }, "confidence": { "$ref": "#/$defs/confidenceOrNull" }, "source_type": { "type": ["string", "null"] } } },
+    "discoveryAttentionTopic": { "type": "object", "additionalProperties": false, "required": ["id", "name", "description", "bridge_types"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "name": { "type": "string", "minLength": 1, "description": "Concise topic territory name, never an article title." }, "description": { "type": "string", "maxLength": 500 }, "bridge_types": { "type": "array", "uniqueItems": true, "items": { "enum": ["audience", "use_case", "seasonal", "trend", "lifestyle"] } } } },
+    "breakoutTopic": { "type": "object", "additionalProperties": false, "required": ["id", "name", "description", "context_distance", "possible_bridges"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "name": { "type": "string", "minLength": 1, "description": "Concise far-distance topic territory name, never an article title." }, "description": { "type": "string", "maxLength": 500 }, "context_distance": { "const": "far" }, "possible_bridges": { "type": "array", "uniqueItems": true, "items": { "enum": ["audience", "behavior", "culture", "lifestyle", "product_use"] } } } },
+    "coreBoundary": { "type": "object", "additionalProperties": false, "required": ["require_business_relevance", "require_context_bridge"], "properties": { "require_business_relevance": { "const": true }, "require_context_bridge": { "const": true } } },
+    "discoveryBoundary": { "type": "object", "additionalProperties": false, "required": ["require_business_relevance", "require_context_bridge"], "properties": { "require_business_relevance": { "const": false }, "require_context_bridge": { "const": true } } },
+    "breakoutBoundary": { "type": "object", "additionalProperties": false, "required": ["require_business_relevance", "require_context_bridge", "prefer_possible_bridge", "allowed_context_distance"], "properties": { "require_business_relevance": { "const": false }, "require_context_bridge": { "const": false }, "prefer_possible_bridge": { "const": true }, "allowed_context_distance": { "const": "far" } } }
   }
 }

@@ -77,6 +77,23 @@ final class IndustryContextSchema
             }
         }
 
+        $contentUniverse = $context['content_universe'] ?? null;
+        $topicMix = is_array($contentUniverse) ? ($contentUniverse['topic_mix'] ?? null) : null;
+        if ($topicMix !== null) {
+            if (! is_array($topicMix) || array_is_list($topicMix)) {
+                $errors[] = '[content_universe.topic_mix] must be an object.';
+            } else {
+                $expectedKeys = ['core', 'discovery_attention', 'breakout'];
+                if (array_diff(array_keys($topicMix), $expectedKeys) !== [] || array_diff($expectedKeys, array_keys($topicMix)) !== []) {
+                    $errors[] = '[content_universe.topic_mix] must contain only core, discovery_attention, and breakout.';
+                } elseif (array_filter($topicMix, static fn (mixed $value): bool => ! is_int($value)) !== []) {
+                    $errors[] = '[content_universe.topic_mix] weights must be integers.';
+                } elseif (array_sum($topicMix) !== 100) {
+                    $errors[] = '[content_universe.topic_mix] weights must total 100.';
+                }
+            }
+        }
+
         return $errors;
     }
 

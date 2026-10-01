@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources;
 
+use App\Filament\Forms\Components\JsonCodeEditor;
 use App\Filament\Resources\IndustryContextProfileResource\Pages;
+use App\Filament\Support\IndustryContextClipboard;
 use App\IndustryContext\IndustryContextSchema;
 use App\Models\IndustryContextProfile;
 use App\Models\User;
@@ -61,7 +63,7 @@ final class IndustryContextProfileResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\TextInput::make('name')->required()->maxLength(255),
+            Forms\Components\TextInput::make('name')->required()->maxLength(255)->live(debounce: 300),
             Forms\Components\TextInput::make('key')
                 ->required()->maxLength(255)
                 ->readOnly(fn (?IndustryContextProfile $record): bool => $record !== null)
@@ -78,14 +80,14 @@ final class IndustryContextProfileResource extends Resource
                 ->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated(),
             Forms\Components\TextInput::make('language')
                 ->label(__('Language'))->default('vi')
-                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\TextInput::make('market')
                 ->label(__('Market'))
-                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Textarea::make('notes')
                 ->label(__('Temporary generation notes'))->rows(3)
-                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
-            Forms\Components\Textarea::make('context_json')
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
+            JsonCodeEditor::make('context_json')
                 ->label(__('Context JSON'))
                 ->rows(30)->columnSpanFull()->required()
                 ->formatStateUsing(fn (mixed $state): string => is_array($state)
@@ -132,8 +134,7 @@ final class IndustryContextProfileResource extends Resource
             Tables\Actions\ViewAction::make()->label('Xem'),
             Tables\Actions\Action::make('copy_prompt')
                 ->label('Copy Prompt')->icon('heroicon-o-clipboard')
-                ->modalHeading('Prompt tạo Industry Context')
-                ->modalContent(function (IndustryContextProfile $record) {
+                ->extraAttributes(function (IndustryContextProfile $record): array {
                     $identity = (array) ($record->context_json['identity'] ?? []);
                     $prompt = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)->compilePrompt(
                         (string) ($identity['context_name'] ?? $record->name),
@@ -141,11 +142,9 @@ final class IndustryContextProfileResource extends Resource
                         implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
 
-                    return view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt]);
+                    return ['x-on:click' => IndustryContextClipboard::copyScript($prompt)];
                 })
-                ->modalWidth('7xl')
-                ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Đóng'),
+                ->action(fn (): null => null),
             Tables\Actions\EditAction::make()->label('Sửa'),
             Tables\Actions\DeleteAction::make()
                 ->action(fn (IndustryContextProfile $record) => IndustryContextProfile::query()->where('key', $record->key)->delete()),

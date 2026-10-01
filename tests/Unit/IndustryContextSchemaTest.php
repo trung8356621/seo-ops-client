@@ -57,13 +57,39 @@ final class IndustryContextSchemaTest extends TestCase
         self::assertStringNotContainsString('site_id', (string) $migration);
     }
 
+    #[Test]
+    public function v1_schema_exposes_topic_mix_and_tiered_topic_territories(): void
+    {
+        $schema = IndustryContextSchema::schema();
+        $universe = $schema['properties']['content_universe']['properties'];
+        self::assertSame(['core' => 60, 'discovery_attention' => 30, 'breakout' => 10], $universe['topic_mix']['default']);
+        self::assertSame(100, array_sum($universe['topic_mix']['default']));
+        self::assertSame('#/$defs/discoveryAttentionTopic', $universe['discovery_attention_topics']['items']['$ref']);
+        self::assertSame('#/$defs/breakoutTopic', $universe['breakout_topics']['items']['$ref']);
+        self::assertStringContainsString('never an article title', $schema['$defs']['discoveryAttentionTopic']['properties']['name']['description']);
+        self::assertSame('far', $schema['$defs']['breakoutTopic']['properties']['context_distance']['const']);
+        self::assertFalse($schema['$defs']['breakoutBoundary']['properties']['require_context_bridge']['const']);
+        self::assertTrue($schema['$defs']['breakoutBoundary']['properties']['prefer_possible_bridge']['const']);
+    }
+
+    #[Test]
+    public function topic_mix_must_total_one_hundred_when_present(): void
+    {
+        $context = $this->validContext();
+        $context['content_universe'] = ['topic_mix' => ['core' => 60, 'discovery_attention' => 30, 'breakout' => 10]];
+        self::assertSame([], IndustryContextSchema::validate($context));
+
+        $context['content_universe']['topic_mix']['breakout'] = 9;
+        self::assertStringContainsString('weights must total 100', implode(' ', IndustryContextSchema::validate($context)));
+    }
+
     /** @return array<string,mixed> */
     private function validContext(): array
     {
         $context = array_fill_keys(IndustryContextSchema::TOP_LEVEL_KEYS, []);
         $context['schema_version'] = '1.0';
         foreach (array_diff(IndustryContextSchema::TOP_LEVEL_KEYS, ['schema_version', 'audiences', 'demand_drivers']) as $key) {
-            $context[$key] = [];
+            $context[$key] = ['fixture' => null];
         }
 
         return $context;

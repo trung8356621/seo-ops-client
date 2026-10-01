@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
+use App\Filament\Support\IndustryContextClipboard;
 use App\IndustryContext\IndustryContextProfileManager;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -20,22 +21,8 @@ final class CreateIndustryContextProfile extends CreateRecord
         return [
             Action::make('copy_prompt')
                 ->label('Copy Prompt')
-                ->modalHeading('Prompt tạo Industry Context')
-                ->modalHidden(fn (): bool => $this->generationSeed()['name'] === '')
-                ->action(function (): void {
-                    Notification::make()->title('Vui lòng nhập tên Ngữ cảnh ngành trước.')->warning()->send();
-                })
-                ->modalContent(function () {
-                    $seed = $this->generationSeed();
-                    $prompt = app(IndustryContextGenerationService::class)->compilePrompt(
-                        $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
-                    );
-
-                    return view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt]);
-                })
-                ->modalWidth('7xl')
-                ->modalSubmitAction(false)
-                ->modalCancelActionLabel('Đóng'),
+                ->extraAttributes(fn (): array => ['x-on:click' => $this->copyPromptScript()])
+                ->action(fn (): null => null),
             Action::make('quick_generate')->label('Gen nhanh')->icon('heroicon-o-sparkles')->action(function (): void {
                 $seed = $this->generationSeed();
                 if ($seed['name'] === '') {
@@ -69,6 +56,20 @@ final class CreateIndustryContextProfile extends CreateRecord
             'market' => $market !== '' ? $market : null,
             'notes' => $notes !== '' ? $notes : null,
         ];
+    }
+
+    private function copyPromptScript(): string
+    {
+        $seed = $this->generationSeed();
+        if ($seed['name'] === '') {
+            return IndustryContextClipboard::warningScript('Vui lòng nhập tên Ngữ cảnh ngành trước.');
+        }
+
+        $prompt = app(IndustryContextGenerationService::class)->compilePrompt(
+            $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
+        );
+
+        return IndustryContextClipboard::copyScript($prompt);
     }
 
     /** @return array<string, mixed> */
