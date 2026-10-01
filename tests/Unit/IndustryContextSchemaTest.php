@@ -58,29 +58,52 @@ final class IndustryContextSchemaTest extends TestCase
     }
 
     #[Test]
-    public function v1_schema_exposes_topic_mix_and_tiered_topic_territories(): void
+    public function v1_schema_is_full_core_only_without_retired_lanes_or_weights(): void
     {
         $schema = IndustryContextSchema::schema();
         $universe = $schema['properties']['content_universe']['properties'];
-        self::assertSame(['core' => 60, 'discovery_attention' => 30, 'breakout' => 10], $universe['topic_mix']['default']);
-        self::assertSame(100, array_sum($universe['topic_mix']['default']));
-        self::assertSame('#/$defs/discoveryAttentionTopic', $universe['discovery_attention_topics']['items']['$ref']);
-        self::assertSame('#/$defs/breakoutTopic', $universe['breakout_topics']['items']['$ref']);
-        self::assertStringContainsString('never an article title', $schema['$defs']['discoveryAttentionTopic']['properties']['name']['description']);
-        self::assertSame('far', $schema['$defs']['breakoutTopic']['properties']['context_distance']['const']);
-        self::assertFalse($schema['$defs']['breakoutBoundary']['properties']['require_context_bridge']['const']);
-        self::assertTrue($schema['$defs']['breakoutBoundary']['properties']['prefer_possible_bridge']['const']);
+        self::assertSame(
+            ['core_topics', 'adjacent_topics', 'lifestyle_topics', 'educational_topics', 'commercial_topics', 'business_topics'],
+            array_keys($universe),
+        );
+        foreach (['topic_mix', 'discovery_attention_topics', 'breakout_topics'] as $removed) {
+            self::assertArrayNotHasKey($removed, $universe);
+        }
+        self::assertArrayNotHasKey('tier_rules', $schema['properties']['content_boundaries']['properties']);
+        foreach (['discoveryAttentionTopic', 'breakoutTopic', 'coreBoundary', 'discoveryBoundary', 'breakoutBoundary'] as $removed) {
+            self::assertArrayNotHasKey($removed, $schema['$defs']);
+        }
+
+        self::assertSame(IndustryContextSchema::TOP_LEVEL_KEYS, $schema['required']);
+        self::assertStringNotContainsString('60/30/10', IndustryContextSchema::json());
     }
 
     #[Test]
-    public function topic_mix_must_total_one_hundred_when_present(): void
+    public function schema_distinguishes_short_keywords_from_queries_and_questions(): void
+    {
+        $schema = IndustryContextSchema::schema();
+        $keywords = $schema['properties']['industry_taxonomy']['properties']['industry_keywords']['description'];
+        $queries = $schema['properties']['search_behavior']['properties']['query_patterns']['description'];
+        $questions = $schema['properties']['customer_needs']['properties']['questions']['description'];
+
+        self::assertStringContainsString('1-4 words', $keywords);
+        self::assertStringContainsString('5 words or fewer', $keywords);
+        self::assertStringContainsString('shortest phrase', $keywords);
+        self::assertStringContainsString('may be longer', $queries);
+        self::assertStringContainsString('never be mechanically treated as primary keyword candidates', $queries);
+        self::assertStringContainsString('Full natural-language questions are allowed', $questions);
+    }
+
+    #[Test]
+    public function validation_rejects_retired_nested_fields(): void
     {
         $context = $this->validContext();
-        $context['content_universe'] = ['topic_mix' => ['core' => 60, 'discovery_attention' => 30, 'breakout' => 10]];
-        self::assertSame([], IndustryContextSchema::validate($context));
+        $context['content_universe'] = ['topic_mix' => []];
+        $context['content_boundaries'] = ['tier_rules' => []];
 
-        $context['content_universe']['topic_mix']['breakout'] = 9;
-        self::assertStringContainsString('weights must total 100', implode(' ', IndustryContextSchema::validate($context)));
+        $errors = implode(' ', IndustryContextSchema::validate($context));
+        self::assertStringContainsString('Unknown content_universe field [topic_mix]', $errors);
+        self::assertStringContainsString('Unknown content_boundaries field [tier_rules]', $errors);
     }
 
     /** @return array<string,mixed> */
