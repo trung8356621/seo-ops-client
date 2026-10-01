@@ -18,6 +18,8 @@ final class IndustryContextSchemaTest extends TestCase
         $model = new IndustryContextProfile(['context_json' => $this->validContext()]);
         self::assertSame(config('database.core_connection', 'mysql'), $model->getConnectionName());
         self::assertSame($this->validContext(), $model->context_json);
+        $model->is_active = 1;
+        self::assertTrue($model->is_active);
         self::assertSame('1.0', IndustryContextSchema::VERSION);
         self::assertSame('https://json-schema.org/draft/2020-12/schema', IndustryContextSchema::schema()['$schema']);
         self::assertSame(IndustryContextSchema::TOP_LEVEL_KEYS, IndustryContextSchema::schema()['required']);
@@ -44,10 +46,13 @@ final class IndustryContextSchemaTest extends TestCase
     }
 
     #[Test]
-    public function migration_declares_a_unique_stable_key(): void
+    public function migration_allows_revision_rows_and_indexes_active_lookup(): void
     {
         $migration = file_get_contents(database_path('migrations/2026_09_30_100000_create_industry_context_profiles_table.php'));
-        self::assertStringContainsString("->string('key')->unique()", (string) $migration);
+        self::assertStringContainsString("->string('key')->index()", (string) $migration);
+        self::assertStringNotContainsString("->string('key')->unique()", (string) $migration);
+        self::assertStringContainsString("->boolean('is_active')->default(false)->index()", (string) $migration);
+        self::assertStringContainsString("->index(['key', 'is_active'])", (string) $migration);
         self::assertStringNotContainsString('user_id', (string) $migration);
         self::assertStringNotContainsString('site_id', (string) $migration);
     }

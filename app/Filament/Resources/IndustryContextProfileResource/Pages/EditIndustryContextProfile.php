@@ -5,6 +5,8 @@ namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 use App\Filament\Resources\IndustryContextProfileResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Support\Js;
+use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService;
 
 final class EditIndustryContextProfile extends EditRecord
 {
@@ -12,6 +14,25 @@ final class EditIndustryContextProfile extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [Actions\DeleteAction::make()];
+        return [
+            Actions\Action::make('quick_generate')->label('Gen nhanh')->icon('heroicon-o-sparkles')
+                ->form([\Filament\Forms\Components\Textarea::make('notes')->label(__('Temporary notes'))])
+                ->action(function (array $data): void {
+                    $context = app(IndustryContextGenerationService::class)->generateFromProfile($this->record, $data['notes'] ?? null);
+                    $revision = app(\App\IndustryContext\IndustryContextProfileManager::class)->createRevision($this->record, $context);
+                    $this->redirect(IndustryContextProfileResource::getUrl('view', ['record' => $revision]));
+                }),
+            Actions\ViewAction::make()->label('Xem'),
+            Actions\Action::make('copy_prompt')->label('Copy Prompt')->action(function (): void {
+                $identity = (array) ($this->record->context_json['identity'] ?? []);
+                $prompt = app(IndustryContextGenerationService::class)->copyPrompt(
+                    (string) ($identity['context_name'] ?? $this->record->name), (string) ($identity['language'] ?? 'en'),
+                    implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
+                );
+                $this->js('navigator.clipboard.writeText('.Js::from($prompt).')');
+            }),
+            Actions\DeleteAction::make()
+                ->action(fn () => \App\Models\IndustryContextProfile::query()->where('key', $this->record->key)->delete()),
+        ];
     }
 }

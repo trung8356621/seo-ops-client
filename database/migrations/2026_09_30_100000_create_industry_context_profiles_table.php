@@ -13,11 +13,14 @@ return new class extends Migration
         Schema::connection((string) config('database.core_connection', 'mysql'))
             ->create('industry_context_profiles', function (Blueprint $table): void {
                 $table->id();
-                $table->string('key')->unique();
+                $table->string('key')->index();
                 $table->string('name');
                 $table->string('schema_version', 16)->default('1.0');
                 $table->json('context_json');
+                $table->boolean('is_active')->default(false)->index();
                 $table->timestamps();
+
+                $table->index(['key', 'is_active']);
             });
     }
 

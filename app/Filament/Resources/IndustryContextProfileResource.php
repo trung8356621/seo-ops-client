@@ -14,6 +14,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use JsonException;
 
@@ -62,11 +63,28 @@ final class IndustryContextProfileResource extends Resource
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->maxLength(255),
             Forms\Components\TextInput::make('key')
-                ->required()->maxLength(255)->unique(ignoreRecord: true)
+                ->required()->maxLength(255)
+                ->readOnly(fn (?IndustryContextProfile $record): bool => $record !== null)
+                ->rule(function (?IndustryContextProfile $record): Closure {
+                    return function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                        if ($record === null && IndustryContextProfile::query()->where('key', (string) $value)->exists()) {
+                            $fail(__('This Industry Context key already exists.'));
+                        }
+                    };
+                })
                 ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                ->helperText(__('Stable future sync identity; local numeric ID is not a sync identity.')),
+                ->helperText(__('Stable Industry Context key used by Sites.')),
             Forms\Components\TextInput::make('schema_version')
                 ->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated(),
+            Forms\Components\TextInput::make('language')
+                ->label(__('Language'))->default('vi')->required()
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
+            Forms\Components\TextInput::make('market')
+                ->label(__('Market'))->required()
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
+            Forms\Components\Textarea::make('notes')
+                ->label(__('Temporary generation notes'))->rows(3)
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
             Forms\Components\Textarea::make('context_json')
                 ->label(__('Context JSON'))
                 ->rows(30)->columnSpanFull()->required()
@@ -101,7 +119,37 @@ final class IndustryContextProfileResource extends Resource
             Tables\Columns\TextColumn::make('key')->searchable()->copyable(),
             Tables\Columns\TextColumn::make('schema_version')->label(__('Schema')),
             Tables\Columns\TextColumn::make('updated_at')->dateTime()->sortable(),
-        ])->actions([Tables\Actions\EditAction::make(), Tables\Actions\DeleteAction::make()]);
+        ])->actions([
+            Tables\Actions\Action::make('quick_generate')
+                ->label('Gen nhanh')->icon('heroicon-o-sparkles')
+                ->form([Forms\Components\Textarea::make('notes')->label(__('Temporary notes'))])
+                ->action(function (IndustryContextProfile $record, array $data, $livewire): void {
+                    $context = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)
+                        ->generateFromProfile($record, $data['notes'] ?? null);
+                    $revision = app(\App\IndustryContext\IndustryContextProfileManager::class)->createRevision($record, $context);
+                    $livewire->redirect(self::getUrl('view', ['record' => $revision]));
+                }),
+            Tables\Actions\ViewAction::make()->label('Xem'),
+            Tables\Actions\Action::make('copy_prompt')
+                ->label('Copy Prompt')->icon('heroicon-o-clipboard')
+                ->action(function (IndustryContextProfile $record, $livewire): void {
+                    $identity = (array) ($record->context_json['identity'] ?? []);
+                    $prompt = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)->copyPrompt(
+                        (string) ($identity['context_name'] ?? $record->name),
+                        (string) ($identity['language'] ?? 'en'),
+                        implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
+                    );
+                    $livewire->js('navigator.clipboard.writeText('.\Illuminate\Support\Js::from($prompt).')');
+                }),
+            Tables\Actions\EditAction::make()->label('Sửa'),
+            Tables\Actions\DeleteAction::make()
+                ->action(fn (IndustryContextProfile $record) => IndustryContextProfile::query()->where('key', $record->key)->delete()),
+        ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->logicalRepresentatives();
     }
 
     public static function getPages(): array
@@ -110,6 +158,7 @@ final class IndustryContextProfileResource extends Resource
             'index' => Pages\ListIndustryContextProfiles::route('/'),
             'create' => Pages\CreateIndustryContextProfile::route('/create'),
             'edit' => Pages\EditIndustryContextProfile::route('/{record}/edit'),
+            'view' => Pages\ViewIndustryContextProfile::route('/{record}'),
         ];
     }
 }
