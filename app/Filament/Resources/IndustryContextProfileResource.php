@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\IndustryContextProfileResource\Pages;
+use App\Filament\Support\IndustryContextClipboard;
 use App\IndustryContext\IndustryContextSchema;
 use App\Models\IndustryContextProfile;
 use App\Models\User;
@@ -77,10 +78,10 @@ final class IndustryContextProfileResource extends Resource
             Forms\Components\TextInput::make('schema_version')
                 ->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated(),
             Forms\Components\TextInput::make('language')
-                ->label(__('Language'))->default('vi')->required()
+                ->label(__('Language'))->default('vi')
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
             Forms\Components\TextInput::make('market')
-                ->label(__('Market'))->required()
+                ->label(__('Market'))
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false),
             Forms\Components\Textarea::make('notes')
                 ->label(__('Temporary generation notes'))->rows(3)
@@ -139,7 +140,7 @@ final class IndustryContextProfileResource extends Resource
                         (string) ($identity['language'] ?? 'en'),
                         implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
-                    $livewire->js('navigator.clipboard.writeText('.\Illuminate\Support\Js::from($prompt).')');
+                    $livewire->js(IndustryContextClipboard::copyScript($prompt));
                 }),
             Tables\Actions\EditAction::make()->label('Sửa'),
             Tables\Actions\DeleteAction::make()

@@ -3,9 +3,9 @@
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
+use App\Filament\Support\IndustryContextClipboard;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
-use Illuminate\Support\Js;
 use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService;
 
 final class EditIndustryContextProfile extends EditRecord
@@ -29,7 +29,7 @@ final class EditIndustryContextProfile extends EditRecord
                     (string) ($identity['context_name'] ?? $this->record->name), (string) ($identity['language'] ?? 'en'),
                     implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                 );
-                $this->js('navigator.clipboard.writeText('.Js::from($prompt).')');
+                $this->js(IndustryContextClipboard::copyScript($prompt));
             }),
             Actions\DeleteAction::make()
                 ->action(fn () => \App\Models\IndustryContextProfile::query()->where('key', $this->record->key)->delete()),
