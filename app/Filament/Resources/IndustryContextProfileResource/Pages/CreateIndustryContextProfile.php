@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
-use App\Filament\Support\IndustryContextClipboard;
 use App\IndustryContext\IndustryContextProfileManager;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -19,23 +18,24 @@ final class CreateIndustryContextProfile extends CreateRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('copy_prompt')->label('Copy Prompt')->action(function (): void {
-                $seed = $this->generationSeed();
-                if ($seed['name'] === '') {
+            Action::make('copy_prompt')
+                ->label('Copy Prompt')
+                ->modalHeading('Prompt tạo Industry Context')
+                ->modalHidden(fn (): bool => $this->generationSeed()['name'] === '')
+                ->action(function (): void {
                     Notification::make()->title('Vui lòng nhập tên Ngữ cảnh ngành trước.')->warning()->send();
+                })
+                ->modalContent(function () {
+                    $seed = $this->generationSeed();
+                    $prompt = app(IndustryContextGenerationService::class)->compilePrompt(
+                        $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
+                    );
 
-                    return;
-                }
-                $prompt = app(IndustryContextGenerationService::class)->copyPrompt(
-                    $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
-                );
-                if (trim($prompt) === '') {
-                    Notification::make()->title('Không thể tạo prompt.')->danger()->send();
-
-                    return;
-                }
-                $this->js(IndustryContextClipboard::copyScript($prompt));
-            }),
+                    return view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt]);
+                })
+                ->modalWidth('7xl')
+                ->modalSubmitAction(false)
+                ->modalCancelActionLabel('Đóng'),
             Action::make('quick_generate')->label('Gen nhanh')->icon('heroicon-o-sparkles')->action(function (): void {
                 $seed = $this->generationSeed();
                 if ($seed['name'] === '') {

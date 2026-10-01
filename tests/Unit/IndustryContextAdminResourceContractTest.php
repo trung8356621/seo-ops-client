@@ -4,12 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
-use App\Filament\Support\IndustryContextClipboard;
-use Illuminate\Support\Facades\DB;
-use Omnichannel\Addons\AiPrompt\Models\SeoPrompt;
-use Omnichannel\Addons\AiPrompt\PromptHooks\Runtime\PromptHookBindingRunner;
-use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService;
-use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextPromptCompiler;
 use Tests\TestCase;
 
 final class IndustryContextAdminResourceContractTest extends TestCase
@@ -32,59 +26,37 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('createInitial(', (string) $page);
     }
 
-    public function test_create_and_existing_copy_actions_use_shared_fallback_clipboard_helper(): void
+    public function test_create_and_existing_copy_actions_use_same_exact_preview_path(): void
     {
         $resource = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource.php');
         $create = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
         $edit = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/EditIndustryContextProfile.php');
 
         foreach ([$resource, $create, $edit] as $source) {
-            self::assertStringContainsString('IndustryContextClipboard::copyScript($prompt)', (string) $source);
+            self::assertStringContainsString('->compilePrompt(', (string) $source);
+            self::assertStringContainsString("view('filament.components.industry-context-prompt-preview'", (string) $source);
+            self::assertStringContainsString('->modalSubmitAction(false)', (string) $source);
             self::assertStringNotContainsString('navigator.clipboard.writeText', (string) $source);
+            self::assertStringNotContainsString('->copyPrompt(', (string) $source);
         }
     }
 
-    public function test_clipboard_helper_falls_back_notifies_and_preserves_complete_prompt(): void
+    public function test_preview_modal_renders_full_selectable_prompt_and_direct_clipboard_fallback(): void
     {
-        $prompt = IndustryContextPromptCompiler::runnablePrompt('Balo & túi xách', 'vi', 'VN', 'Temporary note');
-        $script = IndustryContextClipboard::copyScript($prompt);
+        $prompt = "OPERATOR EDITED PROMPT\n\nCanonical Industry Context JSON Schema:\n{".str_repeat('x', 20000).'}';
+        $html = view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt])->render();
 
-        self::assertStringContainsString('navigator.clipboard.writeText(text)', $script);
-        self::assertStringContainsString("document.execCommand('copy')", $script);
-        self::assertStringContainsString("document.createElement('textarea')", $script);
-        self::assertStringContainsString('Đã copy prompt', $script);
-        self::assertStringContainsString('Không thể copy prompt', $script);
-        self::assertStringContainsString('Balo & túi xách', $prompt);
-        self::assertStringContainsString('in "vi" for market "VN"', $prompt);
-        self::assertStringContainsString('Temporary note', $prompt);
-        self::assertStringContainsString('Canonical Industry Context JSON Schema', $prompt);
-        self::assertStringNotContainsString('CURRENT_CONTEXT_SENTINEL', $prompt);
-        self::assertStringNotContainsString('IndustryContextProfile::', $script);
-    }
-
-    public function test_copy_prompt_performs_no_database_write_or_ai_execution(): void
-    {
-        $runner = new class implements PromptHookBindingRunner
-        {
-            public bool $called = false;
-
-            public function execute(SeoPrompt $prompt, array $variables = [], array $contextExtras = [], array $previousOutputs = []): array
-            {
-                $this->called = true;
-
-                return [];
-            }
-        };
-        $queries = [];
-        DB::listen(function ($query) use (&$queries): void {
-            $queries[] = $query->sql;
-        });
-
-        $prompt = (new IndustryContextGenerationService($runner))->copyPrompt('Bags', 'en', 'US', 'Note');
-
-        self::assertFalse($runner->called);
-        self::assertSame([], $queries);
-        self::assertStringContainsString('Canonical Industry Context JSON Schema', $prompt);
+        self::assertStringContainsString('OPERATOR EDITED PROMPT', $html);
+        self::assertStringContainsString(str_repeat('x', 20000), $html);
+        self::assertStringContainsString('readonly', $html);
+        self::assertStringContainsString('x-on:click="copyPrompt()"', $html);
+        self::assertStringContainsString('navigator.clipboard.writeText(text)', $html);
+        self::assertStringContainsString("document.execCommand('copy')", $html);
+        self::assertStringContainsString("document.createElement('textarea')", $html);
+        self::assertStringContainsString('textarea.remove()', $html);
+        self::assertStringContainsString('Đã copy prompt', $html);
+        self::assertStringContainsString('Không thể copy prompt', $html);
+        self::assertStringNotContainsString('undefined', $html);
     }
 
     public function test_create_copy_and_quick_generate_use_current_form_seed_and_guard_blank_name(): void
@@ -92,22 +64,19 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         $page = file_get_contents(dirname(__DIR__, 2).'/app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
 
         self::assertStringContainsString('$this->form->getRawState()', (string) $page);
-        self::assertSame(2, substr_count((string) $page, "if (\$seed['name'] === '')"));
+        self::assertStringContainsString("->modalHidden(fn (): bool => \$this->generationSeed()['name'] === '')", (string) $page);
+        self::assertSame(1, substr_count((string) $page, "if (\$seed['name'] === '')"));
         self::assertSame(2, substr_count((string) $page, 'Vui lòng nhập tên Ngữ cảnh ngành trước.'));
         self::assertStringContainsString("'language' => \$language !== '' ? \$language : 'vi'", (string) $page);
         self::assertStringContainsString("'market' => \$market !== '' ? \$market : null", (string) $page);
         self::assertStringContainsString("'notes' => \$notes !== '' ? \$notes : null", (string) $page);
-        self::assertStringContainsString("if (trim(\$prompt) === '')", (string) $page);
-        self::assertStringContainsString('Không thể tạo prompt.', (string) $page);
-
-        $copyGuard = strpos((string) $page, "if (\$seed['name'] === '')");
-        $copyCall = strpos((string) $page, '->copyPrompt(');
-        $clipboardCall = strpos((string) $page, 'IndustryContextClipboard::copyScript($prompt)');
-        self::assertIsInt($copyGuard);
-        self::assertIsInt($copyCall);
-        self::assertIsInt($clipboardCall);
-        self::assertLessThan($copyCall, $copyGuard);
-        self::assertLessThan($clipboardCall, $copyCall);
-        self::assertStringNotContainsString("['context_json']", substr((string) $page, $copyGuard, $clipboardCall - $copyGuard));
+        $copyStart = strpos((string) $page, "Action::make('copy_prompt')");
+        $quickStart = strpos((string) $page, "Action::make('quick_generate')");
+        self::assertIsInt($copyStart);
+        self::assertIsInt($quickStart);
+        $copyBlock = substr((string) $page, $copyStart, $quickStart - $copyStart);
+        self::assertStringContainsString('->compilePrompt(', $copyBlock);
+        self::assertStringNotContainsString('context_json', $copyBlock);
+        self::assertStringNotContainsString('->generate(', $copyBlock);
     }
 }
