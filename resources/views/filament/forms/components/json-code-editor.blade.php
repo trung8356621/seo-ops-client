@@ -4,7 +4,7 @@
 @endphp
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
-    <div x-data="industryContextJsonEditor({ schemaType: @js($schemaType) })" x-init="init()" class="overflow-hidden rounded-xl border border-gray-700 bg-gray-950 shadow-sm ring-primary-600/20 focus-within:border-primary-500 focus-within:ring-2">
+    <div wire:key="industry-context-json-editor-{{ $schemaType }}" x-data="industryContextJsonEditor({ schemaType: @js($schemaType) })" x-init="init()" class="overflow-hidden rounded-xl border border-gray-700 bg-gray-950 shadow-sm ring-primary-600/20 focus-within:border-primary-500 focus-within:ring-2">
         <script>
             document.addEventListener('alpine:init', () => {
                 Alpine.data('industryContextJsonEditor', ({ schemaType }) => ({

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Filament\Resources\IndustryContextProfileResource;
+use App\Filament\Support\ValidatesIndustryContextJson;
 use App\Http\Controllers\Admin\IndustryContextPromptDownloadController;
+use App\IndustryContext\IndustryContextSchema;
 use App\IndustryContext\IndustryMarketOptions;
 use App\Models\User;
 use ReflectionMethod;
@@ -130,6 +132,33 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringNotContainsString('x-data="{', $editor);
         self::assertStringContainsString('Alpine.data(', $editor);
         self::assertStringContainsString('x-html="highlight(formatted)"', $editor);
+        self::assertStringContainsString('wire:key="industry-context-json-editor-{{ $schemaType }}"', $editor);
+    }
+
+    public function test_match_json_uses_match_schema_and_not_core_schema(): void
+    {
+        $entity = ['canonical' => 'implant', 'aliases' => ['dental implant']];
+        $payload = ['schema_version' => '1.0',
+            'taxonomy' => array_fill_keys(['products', 'product_families', 'materials', 'services', 'audiences', 'use_cases', 'features', 'adjacent_products'], [$entity]),
+            'topic_rules' => ['generic_cores' => [$entity], 'service_intent_terms' => [$entity]],
+            'aliases' => [], 'ambiguities' => []];
+        $validator = new class
+        {
+            use ValidatesIndustryContextJson;
+        };
+
+        self::assertTrue($validator->validateIndustryContextJson(json_encode($payload, JSON_THROW_ON_ERROR), 'match')['valid']);
+        self::assertNotSame([], IndustryContextSchema::validate($payload));
+    }
+
+    public function test_match_type_switch_sets_never_without_overwriting_custom_expiry(): void
+    {
+        $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
+
+        self::assertStringContainsString("\$state === IndustryContextProfile::TYPE_MATCH && \$expiry === '6_months'", $resource);
+        self::assertStringContainsString("\$set('expiry_preset', 'never')", $resource);
+        self::assertStringContainsString("\$wasMatchDefault && \$expiry === 'never'", $resource);
+        self::assertStringContainsString("make('expiry_defaulted_for_match')", $resource);
     }
 
     public function test_name_slug_contract_and_download_transport_keep_prompts_out_of_dom(): void

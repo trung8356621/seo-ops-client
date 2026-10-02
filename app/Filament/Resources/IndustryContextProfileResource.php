@@ -129,7 +129,18 @@ final class IndustryContextProfileResource extends Resource
                     return $options;
                 })
                 ->default(IndustryContextProfile::TYPE_CORE)->required()->live()->dehydrated(false)
-                ->afterStateUpdated(fn (Set $set) => $set('context_json', null))
+                ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                    $set('context_json', null);
+                    $wasMatchDefault = (bool) $get('expiry_defaulted_for_match');
+                    $expiry = (string) $get('expiry_preset');
+                    if ($state === IndustryContextProfile::TYPE_MATCH && $expiry === '6_months') {
+                        $set('expiry_preset', 'never');
+                        $set('expiry_defaulted_for_match', true);
+                    } elseif ($state !== IndustryContextProfile::TYPE_MATCH && $wasMatchDefault && $expiry === 'never') {
+                        $set('expiry_preset', '6_months');
+                        $set('expiry_defaulted_for_match', false);
+                    }
+                })
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
             Forms\Components\TextInput::make('schema_version')->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated()->hidden(),
             Forms\Components\Select::make('language')->label(__('Language'))->options(self::languageOptions())
@@ -144,7 +155,9 @@ final class IndustryContextProfileResource extends Resource
                 ->default(fn (Get $get, ?IndustryContextProfile $record): string => $record === null
                     ? ($get('type') === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months')
                     : ($record->expires_at === null ? 'never' : 'custom'))
-                ->dehydrated(false)->live(),
+                ->dehydrated(false)->live()
+                ->afterStateUpdated(fn (Set $set) => $set('expiry_defaulted_for_match', false)),
+            Forms\Components\Hidden::make('expiry_defaulted_for_match')->default(false)->dehydrated(false),
             Forms\Components\DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')
                 ->default(fn (?IndustryContextProfile $record) => $record?->expires_at)
                 ->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom')->dehydrated(false),
