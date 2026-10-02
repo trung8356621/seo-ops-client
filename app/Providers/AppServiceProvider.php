@@ -2,23 +2,22 @@
 
 namespace App\Providers;
 
+use App\Api\Access\TemporaryServiceAccessContext;
+use App\Api\Middleware\AuthenticateServiceApi;
+use App\Api\Middleware\ResolveTemporaryServiceAccess;
+use App\Api\Services\ServiceApiContext;
 use App\Http\Responses\Auth\CanonicalLogoutResponse;
-use Filament\Http\Responses\Auth\Contracts\LogoutResponse as FilamentLogoutResponse;
 use App\Support\ImageDriverResolver;
 use BezhanSalleh\FilamentLanguageSwitch\LanguageSwitch;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as FilamentLogoutResponse;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
-use Illuminate\Queue\Events\JobProcessing;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use App\Api\Middleware\AuthenticateServiceApi;
-use App\Api\Middleware\ResolveTemporaryServiceAccess;
-use App\Api\Access\TemporaryServiceAccessContext;
-use App\Api\Services\ServiceApiContext;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Laravel\Facades\Image as InterventionImage;
 
@@ -32,6 +31,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        $this->app->singleton(
+            \Omnichannel\Addons\SearchFoundation\Contracts\IndustryMatchRuleProvider::class,
+            \App\IndustryContext\ActiveIndustryMatchRuleProvider::class,
+        );
         $this->registerInterventionImageManager();
         $this->app->bind(FilamentLogoutResponse::class, CanonicalLogoutResponse::class);
 

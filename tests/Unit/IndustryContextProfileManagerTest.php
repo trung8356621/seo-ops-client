@@ -111,14 +111,22 @@ final class IndustryContextProfileManagerTest extends TestCase
 
         $discovery = [];
         $breakout = [];
+        $match = [];
         foreach (range(1, 4) as $revision) {
             $discovery[] = $this->manager->createAuxiliaryRevision('bags', 'discovery', $this->auxiliary('discovery', $revision));
             $breakout[] = $this->manager->createAuxiliaryRevision('bags', 'breakout', $this->auxiliary('breakout', $revision));
+            $match[] = $this->manager->createAuxiliaryRevision('bags', 'match', $this->auxiliary('match', $revision));
         }
 
         self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'core')->count());
         self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'discovery')->count());
         self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'breakout')->count());
+        self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'match')->count());
+        self::assertSame(12, IndustryContextProfile::query()->where('key', 'bags')->count());
+        self::assertTrue($this->manager->active('bags', 'core')?->is($core));
+
+        $this->manager->activate($match[3]);
+        self::assertTrue($this->manager->active('bags', 'match')?->is($match[3]));
         self::assertTrue($this->manager->active('bags', 'core')?->is($core));
 
         $this->manager->activate($discovery[2]);
@@ -224,6 +232,12 @@ final class IndustryContextProfileManagerTest extends TestCase
     /** @return array<string, mixed> */
     private function auxiliary(string $type, int $revision = 1): array
     {
+        if ($type === 'match') {
+            $entity = ['canonical' => "entity {$revision}", 'aliases' => []];
+
+            return ['schema_version' => '1.0', 'taxonomy' => array_fill_keys(['products', 'product_families', 'materials', 'services', 'audiences', 'use_cases', 'features', 'adjacent_products'], [$entity]), 'topic_rules' => ['generic_cores' => [$entity], 'service_intent_terms' => [$entity]], 'aliases' => [], 'ambiguities' => []];
+        }
+
         $item = $type === 'discovery'
             ? ['id' => "d{$revision}", 'topic' => 'Topic', 'keywords' => ['keyword'], 'attention_reason' => 'Reason', 'bridge' => ['refs' => ['core']]]
             : ['id' => "b{$revision}", 'topic' => 'Topic', 'attention_angle' => 'Angle', 'possible_bridges' => ['Bridge'], 'keywords' => ['keyword']];

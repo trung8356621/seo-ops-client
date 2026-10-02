@@ -44,6 +44,7 @@ final class IndustryContextPromptDownloadController extends Controller
             IndustryContextProfile::TYPE_CORE,
             IndustryContextProfile::TYPE_DISCOVERY,
             IndustryContextProfile::TYPE_BREAKOUT,
+            IndustryContextProfile::TYPE_MATCH,
         ], true), 404);
 
         $seed = $request->validate([

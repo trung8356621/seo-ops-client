@@ -26,7 +26,7 @@ Route::middleware(['web', 'auth'])->group(function (): void {
         ->name('admin.industry-context.prompt.create');
     Route::get('/admin/industry-context-profiles/{key}/prompt/{type}', [IndustryContextPromptDownloadController::class, 'existing'])
         ->where('key', '[a-z0-9]+(?:-[a-z0-9]+)*')
-        ->where('type', 'core|discovery|breakout')
+        ->where('type', 'core|discovery|breakout|match')
         ->name('admin.industry-context.prompt.download');
 
     Route::get('/workspace', \App\Http\Controllers\WorkspaceHubController::class)

@@ -25,15 +25,17 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString("->default('__new__')->searchable()->live()->dehydrated(false)", $resource);
         self::assertStringContainsString("\$profile->name.' — '.\$profile->key", $resource);
         self::assertStringContainsString("Select::make('type')", $resource);
-        self::assertStringContainsString("IndustryContextProfile::TYPE_DISCOVERY] = 'Discovery & Attention'", $resource);
-        self::assertStringContainsString("IndustryContextProfile::TYPE_BREAKOUT] = 'Breakout'", $resource);
+        self::assertStringContainsString("IndustryContextProfile::TYPE_DISCOVERY] = 'Knowledge & Search'", $resource);
+        self::assertStringContainsString("IndustryContextProfile::TYPE_BREAKOUT] = 'Lifestyle & Usage'", $resource);
+        self::assertStringContainsString("IndustryContextProfile::TYPE_MATCH] = 'Match & Research'", $resource);
         self::assertStringNotContainsString("Select::make('type')->disabled", $resource);
         self::assertStringContainsString('->readOnly()->dehydrated()', $resource);
         self::assertStringContainsString('afterStateUpdated', $resource);
         self::assertStringContainsString("Action::make('generate_context')->label", $create);
         self::assertStringContainsString("'Gen Core'", $create);
-        self::assertStringContainsString("'Gen Discovery'", $create);
-        self::assertStringContainsString("'Gen Breakout'", $create);
+        self::assertStringContainsString("'Gen Knowledge & Search'", $create);
+        self::assertStringContainsString("'Gen Lifestyle & Usage'", $create);
+        self::assertStringContainsString("'Gen Match & Research'", $create);
         self::assertStringContainsString('->generateForType(', $create);
         self::assertStringContainsString("Action::make('download_prompt')->label('T\u{1EA3}i Prompt')", $create);
         self::assertStringContainsString("route('admin.industry-context.prompt.create'", $create);
@@ -79,7 +81,7 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         $page = $this->source('app/Filament/Resources/IndustryContextProfileResource/Pages/EditIndustryContextProfile.php');
         $view = $this->source('resources/views/filament/resources/industry-context-profile-resource/pages/edit-industry-context-profile.blade.php');
 
-        foreach (['TYPE_CORE', 'TYPE_DISCOVERY', 'TYPE_BREAKOUT'] as $type) {
+        foreach (['TYPE_CORE', 'TYPE_DISCOVERY', 'TYPE_BREAKOUT', 'TYPE_MATCH'] as $type) {
             self::assertStringContainsString($type, $page);
         }
         self::assertStringContainsString('public string $selectedType = IndustryContextProfile::TYPE_CORE', $page);
@@ -151,7 +153,7 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString("middleware(['web', 'auth'])", $routes);
         self::assertStringContainsString('/admin/industry-context-prompts/create', $routes);
         self::assertStringContainsString('/admin/industry-context-profiles/{key}/prompt/{type}', $routes);
-        self::assertStringContainsString("->where('type', 'core|discovery|breakout')", $routes);
+        self::assertStringContainsString("->where('type', 'core|discovery|breakout|match')", $routes);
         self::assertStringContainsString('User::ROLE_OWNER', $controller);
         self::assertStringContainsString('User::ROLE_ADMIN', $controller);
         self::assertStringContainsString('->active($key, IndustryContextProfile::TYPE_CORE)', $controller);

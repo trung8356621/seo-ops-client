@@ -20,6 +20,8 @@ final class IndustryContextProfile extends Model
 
     public const TYPE_BREAKOUT = IndustryAuxiliarySchema::BREAKOUT;
 
+    public const TYPE_MATCH = IndustryAuxiliarySchema::MATCH;
+
     protected $attributes = ['type' => self::TYPE_CORE];
 
     protected $fillable = ['key', 'name', 'type', 'schema_version', 'context_json', 'is_active', 'expires_at', 'source_core_id', 'source_core_hash'];
@@ -54,7 +56,7 @@ final class IndustryContextProfile extends Model
         self::saving(function (self $profile): void {
             match ($profile->type) {
                 self::TYPE_CORE => IndustryContextSchema::assertValid((array) $profile->context_json),
-                self::TYPE_DISCOVERY, self::TYPE_BREAKOUT => IndustryAuxiliarySchema::validatedOutput($profile->type, $profile->context_json),
+                self::TYPE_DISCOVERY, self::TYPE_BREAKOUT, self::TYPE_MATCH => IndustryAuxiliarySchema::validatedOutput($profile->type, $profile->context_json),
                 default => throw new \UnexpectedValueException("Unknown Industry Context type [{$profile->type}]."),
             };
             if ($profile->schema_version !== IndustryContextSchema::VERSION) {

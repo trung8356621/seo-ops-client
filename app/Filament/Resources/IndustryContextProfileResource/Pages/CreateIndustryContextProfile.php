@@ -30,8 +30,9 @@ final class CreateIndustryContextProfile extends CreateRecord
                 ->openUrlInNewTab()
                 ->disabled(fn (): bool => $this->generationSeed()['name'] === ''),
             Action::make('generate_context')->label(fn (): string => match ($this->generationSeed()['type']) {
-                IndustryContextProfile::TYPE_DISCOVERY => 'Gen Discovery',
-                IndustryContextProfile::TYPE_BREAKOUT => 'Gen Breakout',
+                IndustryContextProfile::TYPE_DISCOVERY => 'Gen Knowledge & Search',
+                IndustryContextProfile::TYPE_BREAKOUT => 'Gen Lifestyle & Usage',
+                IndustryContextProfile::TYPE_MATCH => 'Gen Match & Research',
                 default => 'Gen Core',
             })->icon('heroicon-o-sparkles')
                 ->action(function (): void {
@@ -71,7 +72,7 @@ final class CreateIndustryContextProfile extends CreateRecord
 
         return [
             'group' => $group !== '' ? $group : '__new__',
-            'type' => in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT], true) ? $type : IndustryContextProfile::TYPE_CORE,
+            'type' => in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true) ? $type : IndustryContextProfile::TYPE_CORE,
             'name' => $name,
             'language' => $language !== '' ? $language : 'vi',
             'market' => $market !== '' ? $market : null,
@@ -93,7 +94,8 @@ final class CreateIndustryContextProfile extends CreateRecord
         $state = $this->rawFormState();
         $group = (string) ($state['group_selector'] ?? '__new__');
         $type = (string) ($state['type'] ?? IndustryContextProfile::TYPE_CORE);
-        $expiresAt = IndustryContextExpiry::resolve((string) ($state['expiry_preset'] ?? '6_months'), $state['expires_at_custom'] ?? null);
+        $defaultExpiry = $type === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months';
+        $expiresAt = IndustryContextExpiry::resolve((string) ($state['expiry_preset'] ?? $defaultExpiry), $state['expires_at_custom'] ?? null);
         $manager = app(IndustryContextProfileManager::class);
 
         if ($group === '__new__') {

@@ -5,8 +5,9 @@
         $identity = (array) ($core->context_json['identity'] ?? []);
         $tabs = [
             'core' => 'Core',
-            'discovery' => 'Discovery & Attention',
-            'breakout' => 'Breakout',
+            'discovery' => 'Knowledge & Search',
+            'breakout' => 'Lifestyle & Usage',
+            'match' => 'Match & Research',
         ];
     @endphp
 
@@ -56,11 +57,13 @@
                 <p class="mx-auto mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300">
                     @if ($selectedType === 'discovery')
                         Được tạo từ Core hiện tại và dùng khi Agent cần mở rộng chủ đề/cơ hội nội dung.
+                    @elseif ($selectedType === 'match')
+                        Từ vựng ontology ổn định của ngành dành cho đối sánh deterministic; không chứa dữ liệu website.
                     @else
                         Dùng cho các hướng nội dung xa Core hơn, ưu tiên attention/view nhưng vẫn có liên hệ hợp lý.
                     @endif
                 </p>
-                <p class="mt-4 text-sm text-gray-500">Dùng Tải Prompt hoặc {{ $selectedType === 'discovery' ? 'Gen Discovery' : 'Gen Breakout' }} ở thanh hành động phía trên.</p>
+                <p class="mt-4 text-sm text-gray-500">Dùng Tải Prompt hoặc Gen {{ $tabs[$selectedType] }} ở thanh hành động phía trên.</p>
             </div>
         </x-filament::section>
     @endif

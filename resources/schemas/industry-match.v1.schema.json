@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://seo-ops.local/schemas/industry-match.v1.schema.json",
+  "title": "Industry Match & Research v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "taxonomy", "topic_rules", "aliases", "ambiguities"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "taxonomy": {
+      "type": "object", "additionalProperties": false,
+      "required": ["products", "product_families", "materials", "services", "audiences", "use_cases", "features", "adjacent_products"],
+      "properties": {
+        "products": { "$ref": "#/$defs/entities" }, "product_families": { "$ref": "#/$defs/entities" },
+        "materials": { "$ref": "#/$defs/entities" }, "services": { "$ref": "#/$defs/entities" },
+        "audiences": { "$ref": "#/$defs/entities" }, "use_cases": { "$ref": "#/$defs/entities" },
+        "features": { "$ref": "#/$defs/entities" }, "adjacent_products": { "$ref": "#/$defs/entities" }
+      }
+    },
+    "topic_rules": {
+      "type": "object", "additionalProperties": false,
+      "required": ["generic_cores", "service_intent_terms"],
+      "properties": { "generic_cores": { "$ref": "#/$defs/entities" }, "service_intent_terms": { "$ref": "#/$defs/entities" } }
+    },
+    "aliases": { "$ref": "#/$defs/entities" },
+    "ambiguities": { "type": "array", "items": { "$ref": "#/$defs/ambiguity" } }
+  },
+  "$defs": {
+    "entities": { "type": "array", "items": { "$ref": "#/$defs/entity" } },
+    "entity": { "type": "object", "additionalProperties": false, "required": ["canonical", "aliases"], "properties": { "canonical": { "type": "string", "minLength": 1 }, "aliases": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } }, "match_mode": { "enum": ["exact", "token", "phrase", "prefix", "accent_sensitive", "accent_insensitive"] } } },
+    "ambiguity": { "type": "object", "additionalProperties": false, "required": ["term", "match_mode", "do_not_confuse_with"], "properties": { "term": { "type": "string", "minLength": 1 }, "match_mode": { "enum": ["exact", "token", "phrase", "prefix", "accent_sensitive", "accent_insensitive"] }, "do_not_confuse_with": { "type": "array", "uniqueItems": true, "items": { "type": "string", "minLength": 1 } } } }
+  }
+}

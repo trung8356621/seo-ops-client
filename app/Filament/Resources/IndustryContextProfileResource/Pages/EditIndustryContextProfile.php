@@ -42,7 +42,7 @@ final class EditIndustryContextProfile extends EditRecord
 
     public function selectType(string $type): void
     {
-        abort_unless(in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT], true), 404);
+        abort_unless(in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true), 404);
         $this->selectedType = $type;
         $branch = $this->manager()->active($this->workspaceCore()->key, $type) ?? $this->manager()->revisions($this->workspaceCore()->key, $type)->first();
         if ($branch !== null) {
@@ -61,15 +61,17 @@ final class EditIndustryContextProfile extends EditRecord
                 ]))
                 ->openUrlInNewTab(),
             Actions\Action::make('generate_revision')->label(fn (): string => match ($this->selectedType) {
-                IndustryContextProfile::TYPE_DISCOVERY => 'Gen Discovery',
-                IndustryContextProfile::TYPE_BREAKOUT => 'Gen Breakout',
+                IndustryContextProfile::TYPE_DISCOVERY => 'Gen Knowledge & Search',
+                IndustryContextProfile::TYPE_BREAKOUT => 'Gen Lifestyle & Usage',
+                IndustryContextProfile::TYPE_MATCH => 'Gen Match & Research',
                 default => 'Gen revision',
             })->icon('heroicon-o-sparkles')
                 ->form([
                     Textarea::make('notes')->label(__('Temporary notes')),
                     Select::make('market')->label('Thị trường mục tiêu')->options(\App\IndustryContext\IndustryMarketOptions::options())->searchable()
                         ->default(fn (): ?string => $this->market()),
-                    Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())->default('6_months')->live(),
+                    Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())
+                        ->default(fn (): string => $this->selectedType === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months')->live(),
                     DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom'),
                 ])
                 ->action(fn (array $data) => $this->generateRevision($data)),
@@ -88,7 +90,8 @@ final class EditIndustryContextProfile extends EditRecord
         $context = $this->selectedType === IndustryContextProfile::TYPE_CORE
             ? $service->generateFromProfile($core, $data['notes'] ?? null, $data['market'] ?? null)
             : $service->generateForType($this->selectedType, $core->name, $this->language(), $data['market'] ?? $this->market(), (array) $core->context_json, $data['notes'] ?? null);
-        $expiresAt = IndustryContextExpiry::resolve((string) ($data['expiry_preset'] ?? '6_months'), $data['expires_at_custom'] ?? null);
+        $defaultExpiry = $this->selectedType === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months';
+        $expiresAt = IndustryContextExpiry::resolve((string) ($data['expiry_preset'] ?? $defaultExpiry), $data['expires_at_custom'] ?? null);
         $revision = $this->selectedType === IndustryContextProfile::TYPE_CORE
             ? $this->manager()->createRevision($core, $context, expiresAt: $expiresAt)
             : $this->manager()->createAuxiliaryRevision($core->key, $this->selectedType, $context, $expiresAt);

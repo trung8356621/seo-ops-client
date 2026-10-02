@@ -63,8 +63,8 @@ final class IndustryContextProfileManager
     /** @param array<string, mixed> $context */
     public function createAuxiliaryRevision(string $key, string $type, array $context, mixed $expiresAt = null): IndustryContextProfile
     {
-        if (! in_array($type, [IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT], true)) {
-            throw new InvalidArgumentException('Auxiliary revisions must be discovery or breakout.');
+        if (! in_array($type, [IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true)) {
+            throw new InvalidArgumentException('Auxiliary revisions must be discovery, breakout, or match.');
         }
 
         return DB::connection($this->connection())->transaction(function () use ($key, $type, $context, $expiresAt): IndustryContextProfile {
@@ -120,7 +120,7 @@ final class IndustryContextProfileManager
         if ($profile->type === IndustryContextProfile::TYPE_CORE) {
             return false;
         }
-        if (! in_array($profile->type, [IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT], true)) {
+        if (! in_array($profile->type, [IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true)) {
             throw new InvalidArgumentException("Unknown Industry Context type [{$profile->type}].");
         }
 

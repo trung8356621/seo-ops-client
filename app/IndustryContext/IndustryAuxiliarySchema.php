@@ -16,11 +16,14 @@ final class IndustryAuxiliarySchema
 
     public const BREAKOUT = 'breakout';
 
+    public const MATCH = 'match';
+
     public static function json(string $type): string
     {
         $filename = match ($type) {
             self::DISCOVERY => 'industry-discovery.v1.schema.json',
             self::BREAKOUT => 'industry-breakout.v1.schema.json',
+            self::MATCH => 'industry-match.v1.schema.json',
             default => throw new RuntimeException("Unknown Industry Context prompt type [{$type}]."),
         };
         $contents = file_get_contents(resource_path('schemas/'.$filename));
@@ -34,7 +37,7 @@ final class IndustryAuxiliarySchema
     /** @return array<string, mixed> */
     public static function validatedOutput(string $type, mixed $output): array
     {
-        if (! in_array($type, [self::DISCOVERY, self::BREAKOUT], true)) {
+        if (! in_array($type, [self::DISCOVERY, self::BREAKOUT, self::MATCH], true)) {
             throw new UnexpectedValueException("Unknown auxiliary Industry Context type [{$type}].");
         }
 
@@ -44,6 +47,9 @@ final class IndustryAuxiliarySchema
             } catch (JsonException $exception) {
                 throw new UnexpectedValueException('Generation returned invalid JSON.', 0, $exception);
             }
+        }
+        if ($type === self::MATCH) {
+            return self::validatedMatchOutput($output);
         }
         if (! is_array($output) || array_is_list($output) || ($output['schema_version'] ?? null) !== self::VERSION || ! is_array($output['items'] ?? null) || ! array_is_list($output['items'])) {
             throw new UnexpectedValueException('Generation output does not match the auxiliary Industry Context contract.');
@@ -67,5 +73,48 @@ final class IndustryAuxiliarySchema
         }
 
         return $output;
+    }
+
+    /** @return array<string, mixed> */
+    private static function validatedMatchOutput(mixed $output): array
+    {
+        $groups = ['products', 'product_families', 'materials', 'services', 'audiences', 'use_cases', 'features', 'adjacent_products'];
+        $topicRules = ['generic_cores', 'service_intent_terms'];
+        if (! is_array($output) || array_is_list($output) || ($output['schema_version'] ?? null) !== self::VERSION
+            || ! is_array($output['taxonomy'] ?? null) || ! is_array($output['topic_rules'] ?? null)
+            || ! is_array($output['aliases'] ?? null) || ! array_is_list($output['aliases'])
+            || ! is_array($output['ambiguities'] ?? null) || ! array_is_list($output['ambiguities'])) {
+            throw new UnexpectedValueException('Generation output does not match the Match & Research contract.');
+        }
+        foreach ([...$groups, ...$topicRules] as $group) {
+            $container = in_array($group, $groups, true) ? $output['taxonomy'] : $output['topic_rules'];
+            if (! is_array($container[$group] ?? null) || ! array_is_list($container[$group])) {
+                throw new UnexpectedValueException("Match & Research group [{$group}] must be an array.");
+            }
+            foreach ($container[$group] as $entity) {
+                self::assertEntity($entity);
+            }
+        }
+        foreach ($output['aliases'] as $entity) {
+            self::assertEntity($entity);
+        }
+        $modes = ['exact', 'token', 'phrase', 'prefix', 'accent_sensitive', 'accent_insensitive'];
+        foreach ($output['ambiguities'] as $ambiguity) {
+            if (! is_array($ambiguity) || trim((string) ($ambiguity['term'] ?? '')) === ''
+                || ! in_array($ambiguity['match_mode'] ?? null, $modes, true)
+                || ! is_array($ambiguity['do_not_confuse_with'] ?? null) || ! array_is_list($ambiguity['do_not_confuse_with'])) {
+                throw new UnexpectedValueException('Match & Research contains an invalid ambiguity.');
+            }
+        }
+
+        return $output;
+    }
+
+    private static function assertEntity(mixed $entity): void
+    {
+        if (! is_array($entity) || trim((string) ($entity['canonical'] ?? '')) === ''
+            || ! is_array($entity['aliases'] ?? null) || ! array_is_list($entity['aliases'])) {
+            throw new UnexpectedValueException('Match & Research contains an invalid canonical entity.');
+        }
     }
 }

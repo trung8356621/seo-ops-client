@@ -121,8 +121,9 @@ final class IndustryContextProfileResource extends Resource
                     $options = [IndustryContextProfile::TYPE_CORE => 'Core'];
                     $key = (string) $get('group_selector');
                     if ($key !== '' && $key !== '__new__' && app(IndustryContextProfileManager::class)->active($key, IndustryContextProfile::TYPE_CORE) !== null) {
-                        $options[IndustryContextProfile::TYPE_DISCOVERY] = 'Discovery & Attention';
-                        $options[IndustryContextProfile::TYPE_BREAKOUT] = 'Breakout';
+                        $options[IndustryContextProfile::TYPE_DISCOVERY] = 'Knowledge & Search';
+                        $options[IndustryContextProfile::TYPE_BREAKOUT] = 'Lifestyle & Usage';
+                        $options[IndustryContextProfile::TYPE_MATCH] = 'Match & Research';
                     }
 
                     return $options;
@@ -140,7 +141,9 @@ final class IndustryContextProfileResource extends Resource
             Forms\Components\Textarea::make('notes')->label(__('Temporary generation notes'))->rows(3)
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())
-                ->default(fn (?IndustryContextProfile $record): string => $record === null ? '6_months' : ($record->expires_at === null ? 'never' : 'custom'))
+                ->default(fn (Get $get, ?IndustryContextProfile $record): string => $record === null
+                    ? ($get('type') === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months')
+                    : ($record->expires_at === null ? 'never' : 'custom'))
                 ->dehydrated(false)->live(),
             Forms\Components\DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')
                 ->default(fn (?IndustryContextProfile $record) => $record?->expires_at)
