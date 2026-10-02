@@ -13,27 +13,53 @@ use Tests\TestCase;
 
 final class IndustryContextAdminResourceContractTest extends TestCase
 {
-    public function test_create_is_core_only_and_preserves_generation_inputs(): void
+    public function test_create_orchestrates_new_and_existing_groups(): void
     {
         $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
         $create = $this->source('app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
 
         self::assertStringNotContainsString("make('prompt_type')", $resource);
+        self::assertStringContainsString("Select::make('group_selector')", $resource);
+        self::assertStringContainsString("'__new__' => '+ Tạo mới'", $resource);
+        self::assertStringContainsString('logicalRepresentatives()', $resource);
+        self::assertStringContainsString("->default('__new__')->searchable()->live()->dehydrated(false)", $resource);
+        self::assertStringContainsString("\$profile->name.' — '.\$profile->key", $resource);
         self::assertStringContainsString("Select::make('type')", $resource);
-        self::assertStringContainsString('->default(IndustryContextProfile::TYPE_CORE)->disabled()->dehydrated()', $resource);
+        self::assertStringContainsString("IndustryContextProfile::TYPE_DISCOVERY] = 'Discovery & Attention'", $resource);
+        self::assertStringContainsString("IndustryContextProfile::TYPE_BREAKOUT] = 'Breakout'", $resource);
+        self::assertStringNotContainsString("Select::make('type')->disabled", $resource);
         self::assertStringContainsString('->readOnly()->dehydrated()', $resource);
         self::assertStringContainsString('afterStateUpdated', $resource);
-        self::assertStringContainsString("Action::make('generate_core')->label('Gen Core')", $create);
-        self::assertStringContainsString('->generate(', $create);
+        self::assertStringContainsString("Action::make('generate_context')->label", $create);
+        self::assertStringContainsString("'Gen Core'", $create);
+        self::assertStringContainsString("'Gen Discovery'", $create);
+        self::assertStringContainsString("'Gen Breakout'", $create);
+        self::assertStringContainsString('->generateForType(', $create);
         self::assertStringContainsString("Action::make('download_prompt')->label('T\u{1EA3}i Prompt')", $create);
         self::assertStringContainsString("route('admin.industry-context.prompt.create'", $create);
+        self::assertStringContainsString("route('admin.industry-context.prompt.download'", $create);
         self::assertStringContainsString('createInitial(', $create);
-        self::assertStringNotContainsString('createAuxiliaryRevision', $create);
+        self::assertStringContainsString('createRevision(', $create);
+        self::assertStringContainsString('createAuxiliaryRevision(', $create);
+        self::assertStringContainsString('abort_unless($type === IndustryContextProfile::TYPE_CORE', $create);
         foreach (["make('language')", "make('market')", "make('expiry_preset')", "make('notes')"] as $field) {
             self::assertStringContainsString($field, $resource);
         }
         self::assertSame(['vi' => 'Tiếng Việt', 'en' => 'English'], IndustryContextProfileResource::languageOptions());
         self::assertSame('VN', IndustryMarketOptions::default(null, 'vi'));
+    }
+
+    public function test_create_resets_target_state_and_routes_schema_by_selected_type(): void
+    {
+        $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
+
+        self::assertGreaterThanOrEqual(2, substr_count($resource, "\$set('context_json', null)"));
+        self::assertStringContainsString("\$set('type', IndustryContextProfile::TYPE_CORE)", $resource);
+        self::assertStringContainsString("\$set('name', \$core?->name)", $resource);
+        self::assertStringContainsString("\$set('key', \$core?->key)", $resource);
+        self::assertStringContainsString("\$get('group_selector') === '__new__'", $resource);
+        self::assertStringContainsString("\$get('type') ?: IndustryContextProfile::TYPE_CORE", $resource);
+        self::assertStringContainsString('IndustryAuxiliarySchema::validatedOutput($type, $decoded)', $resource);
     }
 
     public function test_list_is_logical_and_only_exposes_edit_and_delete(): void

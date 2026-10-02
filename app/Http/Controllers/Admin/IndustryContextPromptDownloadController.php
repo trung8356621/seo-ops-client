@@ -46,16 +46,23 @@ final class IndustryContextPromptDownloadController extends Controller
             IndustryContextProfile::TYPE_BREAKOUT,
         ], true), 404);
 
+        $seed = $request->validate([
+            'language' => ['nullable', 'string', 'in:vi,en'],
+            'market' => ['nullable', 'string', 'max:255'],
+            'notes' => ['nullable', 'string', 'max:5000'],
+        ]);
+
         $core = app(IndustryContextProfileManager::class)->active($key, IndustryContextProfile::TYPE_CORE);
         abort_if($core === null, 422, 'Industry Context này không có Core đang hoạt động.');
         $identity = (array) ($core->context_json['identity'] ?? []);
-        $market = implode(', ', array_map('strval', (array) ($identity['market'] ?? [])));
+        $storedMarket = implode(', ', array_map('strval', (array) ($identity['market'] ?? [])));
         $prompt = app(IndustryContextGenerationService::class)->compilePromptForType(
             $type,
             (string) ($identity['context_name'] ?? $core->name),
-            (string) ($identity['language'] ?? 'en'),
-            $market !== '' ? $market : null,
+            (string) ($seed['language'] ?? $identity['language'] ?? 'en'),
+            $seed['market'] ?? ($storedMarket !== '' ? $storedMarket : null),
             $type === IndustryContextProfile::TYPE_CORE ? null : (array) $core->context_json,
+            $seed['notes'] ?? null,
         );
 
         return $this->download($prompt, $key.'-'.$type.'-prompt.txt');
