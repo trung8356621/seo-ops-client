@@ -27,8 +27,11 @@ final class IndustryContextProfileManagerTest extends TestCase
             $table->id();
             $table->string('key')->index();
             $table->string('name');
+            $table->string('type')->default('core');
             $table->string('schema_version')->default('1.0');
             $table->json('context_json');
+            $table->unsignedBigInteger('source_core_id')->nullable();
+            $table->char('source_core_hash', 64)->nullable();
             $table->boolean('is_active')->default(false)->index();
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
@@ -40,6 +43,9 @@ final class IndustryContextProfileManagerTest extends TestCase
     {
         $initial = $this->manager->createInitial('bags', 'Bags', $this->context('Bags'));
         self::assertTrue($initial->is_active);
+        self::assertSame('core', $initial->type);
+        self::assertNull($initial->source_core_id);
+        self::assertNull($initial->source_core_hash);
         $this->expectException(InvalidArgumentException::class);
         $this->manager->createInitial('bags', 'Duplicate', $this->context('Duplicate'));
     }
@@ -96,6 +102,112 @@ final class IndustryContextProfileManagerTest extends TestCase
         self::assertSame('Không hết hạn', IndustryContextExpiry::label(null));
     }
 
+    public function test_type_branches_have_independent_activation_and_history_limits(): void
+    {
+        $core = $this->manager->createInitial('bags', 'Bags', $this->context('Core 1'));
+        foreach (range(2, 4) as $revision) {
+            $this->manager->createRevision($core, $this->context("Core {$revision}"));
+        }
+
+        $discovery = [];
+        $breakout = [];
+        foreach (range(1, 4) as $revision) {
+            $discovery[] = $this->manager->createAuxiliaryRevision('bags', 'discovery', $this->auxiliary('discovery', $revision));
+            $breakout[] = $this->manager->createAuxiliaryRevision('bags', 'breakout', $this->auxiliary('breakout', $revision));
+        }
+
+        self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'core')->count());
+        self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'discovery')->count());
+        self::assertSame(3, IndustryContextProfile::query()->where('key', 'bags')->where('type', 'breakout')->count());
+        self::assertTrue($this->manager->active('bags', 'core')?->is($core));
+
+        $this->manager->activate($discovery[2]);
+        self::assertTrue($this->manager->active('bags', 'discovery')?->is($discovery[2]));
+        self::assertTrue($this->manager->active('bags', 'core')?->is($core));
+
+        $this->manager->activate($discovery[3]);
+        self::assertTrue($this->manager->active('bags', 'discovery')?->is($discovery[3]));
+        self::assertFalse($discovery[2]->refresh()->is_active);
+
+        $this->manager->activate($breakout[3]);
+        self::assertTrue($this->manager->active('bags', 'breakout')?->is($breakout[3]));
+        self::assertTrue($this->manager->active('bags', 'discovery')?->is($discovery[3]));
+        self::assertTrue($this->manager->active('bags', 'core')?->is($core));
+    }
+
+    public function test_auxiliary_creation_requires_active_core_and_stamps_backend_provenance(): void
+    {
+        try {
+            $this->manager->createAuxiliaryRevision('missing', 'discovery', $this->auxiliary('discovery'));
+            self::fail('Creating auxiliary context without active Core should fail.');
+        } catch (InvalidArgumentException) {
+        }
+
+        $core = $this->manager->createInitial('bags', 'Bags', $this->context('Core'));
+        $auxiliary = $this->manager->createAuxiliaryRevision('bags', 'discovery', $this->auxiliary('discovery'));
+
+        self::assertSame($core->id, $auxiliary->source_core_id);
+        self::assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $auxiliary->source_core_hash);
+        self::assertSame('Bags', $auxiliary->name);
+        self::assertFalse($auxiliary->is_active);
+        self::assertFalse($this->manager->isStale($auxiliary));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->manager->createRevision($auxiliary, $this->context('Wrong branch'));
+    }
+
+    public function test_stale_detection_uses_core_content_hash_not_row_id(): void
+    {
+        $core = $this->manager->createInitial('bags', 'Bags', $this->context('Same'));
+        $auxiliary = $this->manager->createAuxiliaryRevision('bags', 'breakout', $this->auxiliary('breakout'));
+
+        $identical = $this->manager->createRevision($core, array_reverse($this->context('Same'), true));
+        $this->manager->activate($identical);
+        self::assertFalse($this->manager->isStale($auxiliary));
+
+        $changed = $this->manager->createRevision($identical, $this->context('Changed'));
+        $this->manager->activate($changed);
+        self::assertTrue($this->manager->isStale($auxiliary));
+
+        $changed->forceFill(['is_active' => false])->save();
+        self::assertTrue($this->manager->isStale($auxiliary));
+    }
+
+    public function test_auxiliary_schema_is_type_specific_and_unknown_types_fail_closed(): void
+    {
+        $this->manager->createInitial('bags', 'Bags', $this->context('Core'));
+
+        $this->expectException(\UnexpectedValueException::class);
+        $this->manager->createAuxiliaryRevision('bags', 'discovery', $this->auxiliary('breakout'));
+    }
+
+    public function test_auxiliary_json_cannot_be_saved_as_core_and_unknown_type_fails_closed(): void
+    {
+        try {
+            IndustryContextProfile::query()->create([
+                'key' => 'bags', 'name' => 'Bags', 'type' => 'core', 'schema_version' => '1.0',
+                'context_json' => $this->auxiliary('discovery'), 'is_active' => false,
+            ]);
+            self::fail('Auxiliary JSON must not validate as Core.');
+        } catch (\UnexpectedValueException) {
+        }
+
+        $this->expectException(\UnexpectedValueException::class);
+        IndustryContextProfile::query()->create([
+            'key' => 'bags', 'name' => 'Bags', 'type' => 'unknown', 'schema_version' => '1.0',
+            'context_json' => $this->context('Core'), 'is_active' => false,
+        ]);
+    }
+
+    public function test_logical_representatives_ignore_active_auxiliary_rows(): void
+    {
+        $core = $this->manager->createInitial('bags', 'Bags', $this->context('Core'));
+        $auxiliary = $this->manager->createAuxiliaryRevision('bags', 'discovery', $this->auxiliary('discovery'));
+        $this->manager->activate($auxiliary);
+
+        self::assertSame([$core->id], IndustryContextProfile::query()->logicalRepresentatives()->pluck('id')->all());
+    }
+
     /** @return array<string, mixed> */
     private function context(string $name): array
     {
@@ -107,5 +219,15 @@ final class IndustryContextProfileManagerTest extends TestCase
         $context['identity'] = ['context_name' => $name];
 
         return $context;
+    }
+
+    /** @return array<string, mixed> */
+    private function auxiliary(string $type, int $revision = 1): array
+    {
+        $item = $type === 'discovery'
+            ? ['id' => "d{$revision}", 'topic' => 'Topic', 'keywords' => ['keyword'], 'attention_reason' => 'Reason', 'bridge' => ['refs' => ['core']]]
+            : ['id' => "b{$revision}", 'topic' => 'Topic', 'attention_angle' => 'Angle', 'possible_bridges' => ['Bridge'], 'keywords' => ['keyword']];
+
+        return ['schema_version' => '1.0', 'items' => [$item]];
     }
 }

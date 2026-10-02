@@ -10,6 +10,8 @@ use UnexpectedValueException;
 
 final class IndustryAuxiliarySchema
 {
+    public const VERSION = '1.0';
+
     public const DISCOVERY = 'discovery';
 
     public const BREAKOUT = 'breakout';
@@ -32,6 +34,10 @@ final class IndustryAuxiliarySchema
     /** @return array<string, mixed> */
     public static function validatedOutput(string $type, mixed $output): array
     {
+        if (! in_array($type, [self::DISCOVERY, self::BREAKOUT], true)) {
+            throw new UnexpectedValueException("Unknown auxiliary Industry Context type [{$type}].");
+        }
+
         if (is_string($output)) {
             try {
                 $output = json_decode($output, true, 512, JSON_THROW_ON_ERROR);
@@ -39,7 +45,7 @@ final class IndustryAuxiliarySchema
                 throw new UnexpectedValueException('Generation returned invalid JSON.', 0, $exception);
             }
         }
-        if (! is_array($output) || array_is_list($output) || ($output['schema_version'] ?? null) !== '1.0' || ! is_array($output['items'] ?? null) || ! array_is_list($output['items'])) {
+        if (! is_array($output) || array_is_list($output) || ($output['schema_version'] ?? null) !== self::VERSION || ! is_array($output['items'] ?? null) || ! array_is_list($output['items'])) {
             throw new UnexpectedValueException('Generation output does not match the auxiliary Industry Context contract.');
         }
         $required = $type === self::DISCOVERY
