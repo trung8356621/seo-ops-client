@@ -7,24 +7,19 @@ namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 use App\Filament\Resources\IndustryContextProfileResource;
 use App\IndustryContext\IndustryContextProfileManager;
 use App\Models\IndustryContextProfile;
-use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 
 final class ViewIndustryContextProfile extends ViewRecord
 {
     protected static string $resource = IndustryContextProfileResource::class;
 
-    protected static string $view = 'filament.resources.industry-context-profile-resource.pages.view-industry-context-profile';
-
-    public function activateRevision(int $id): void
+    public function mount(int|string $record): void
     {
-        $profile = IndustryContextProfile::query()->where('key', $this->record->key)->findOrFail($id);
-        $this->record = app(IndustryContextProfileManager::class)->activate($profile);
-        Notification::make()->title('Đã dùng bản này')->success()->send();
-    }
+        $profile = IndustryContextProfile::query()->findOrFail($record);
+        $this->record = $profile;
+        $core = app(IndustryContextProfileManager::class)->active($profile->key, IndustryContextProfile::TYPE_CORE)
+            ?? IndustryContextProfile::query()->where('key', $profile->key)->where('type', IndustryContextProfile::TYPE_CORE)->latest('id')->firstOrFail();
 
-    public function revisions()
-    {
-        return app(IndustryContextProfileManager::class)->revisions((string) $this->record->key);
+        $this->redirect(IndustryContextProfileResource::getUrl('edit', ['record' => $core]));
     }
 }
