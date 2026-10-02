@@ -17,6 +17,11 @@
 !/storage/framework/views/.gitignore
 /storage/release/
 .phpunit.result.cache
+/_audit_*_report.json
+/_v3_*_report.json
+/_kd_*.json
+/debug-*.log
+/remaining_wp_post_id.txt
 Homestead.json
 Homestead.yaml
 auth.json
