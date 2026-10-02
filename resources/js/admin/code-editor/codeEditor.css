@@ -1,0 +1,45 @@
+.code-editor-shell {
+    overflow: hidden;
+    border: 1px solid #374151;
+    border-radius: 0.75rem;
+    background: #030712;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+
+.code-editor-shell:focus-within {
+    border-color: rgb(245 158 11);
+    box-shadow: 0 0 0 2px rgb(245 158 11 / 0.2);
+}
+
+.code-editor-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #374151;
+    background: #111827;
+}
+
+.code-editor-toolbar__label {
+    color: #fff;
+    font: 700 0.75rem/1rem ui-monospace, monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.code-editor-toolbar button {
+    padding: 0.25rem 0.625rem;
+    border-radius: 0.25rem;
+    color: #e5e7eb;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.code-editor-toolbar button:hover { background: #374151; }
+.code-editor-status { padding: 0.5rem 1rem; border-bottom: 1px solid #1f2937; font-size: 0.875rem; font-weight: 500; }
+.code-editor-status--empty { color: #d1d5db; }
+.code-editor-status--pending, .code-editor-status--warning { color: #fcd34d; }
+.code-editor-status--valid { color: #6ee7b7; }
+.code-editor-status--error { color: #fca5a5; }
+.code-editor-surface { width: 100%; min-width: 0; }

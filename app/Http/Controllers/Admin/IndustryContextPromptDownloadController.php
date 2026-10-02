@@ -69,6 +69,19 @@ final class IndustryContextPromptDownloadController extends Controller
         return $this->download($prompt, $key.'-'.$type.'-prompt.txt');
     }
 
+    public function json(Request $request, IndustryContextProfile $profile): StreamedResponse
+    {
+        $this->authorizeAdmin($request);
+
+        return response()->streamDownload(
+            static function () use ($profile): void {
+                echo json_encode($profile->context_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL;
+            },
+            $profile->key.'-'.$profile->type.'.json',
+            ['Content-Type' => 'application/json; charset=UTF-8'],
+        );
+    }
+
     private function authorizeAdmin(Request $request): void
     {
         abort_unless(in_array((string) $request->user()?->role, [User::ROLE_OWNER, User::ROLE_ADMIN], true), 403);

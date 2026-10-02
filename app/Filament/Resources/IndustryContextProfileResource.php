@@ -8,7 +8,6 @@ use App\Filament\Forms\Components\JsonCodeEditor;
 use App\Filament\Resources\IndustryContextProfileResource\Pages;
 use App\IndustryContext\IndustryAuxiliarySchema;
 use App\IndustryContext\IndustryContextExpiry;
-use App\IndustryContext\IndustryContextProfileManager;
 use App\IndustryContext\IndustryContextSchema;
 use App\IndustryContext\IndustryMarketOptions;
 use App\Models\IndustryContextProfile;
@@ -70,77 +69,25 @@ final class IndustryContextProfileResource extends Resource
     public static function form(Form $form): Form
     {
         return $form->schema([
-            Forms\Components\Select::make('group_selector')->label('Industry Context')
-                ->options(fn (): array => [
-                    '__new__' => '+ Tạo mới',
-                    ...IndustryContextProfile::query()->logicalRepresentatives()->get()
-                        ->mapWithKeys(fn (IndustryContextProfile $profile): array => [$profile->key => $profile->name.' — '.$profile->key])
-                        ->all(),
-                ])
-                ->default('__new__')->searchable()->live()->dehydrated(false)
-                ->afterStateUpdated(function (?string $state, Set $set): void {
-                    $set('type', IndustryContextProfile::TYPE_CORE);
-                    $set('context_json', null);
-                    if ($state === null || $state === '__new__') {
-                        $set('name', null);
-                        $set('key', null);
-
-                        return;
-                    }
-                    $core = app(IndustryContextProfileManager::class)->active($state, IndustryContextProfile::TYPE_CORE)
-                        ?? IndustryContextProfile::query()->where('key', $state)->where('type', IndustryContextProfile::TYPE_CORE)->latest('id')->first();
-                    $set('name', $core?->name);
-                    $set('key', $core?->key);
-                    $identity = (array) ($core?->context_json['identity'] ?? []);
-                    $set('language', (string) ($identity['language'] ?? 'vi'));
-                    $market = (array) ($identity['market'] ?? []);
-                    $set('market', $market === [] ? null : (string) $market[0]);
-                })
-                ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
             Forms\Components\TextInput::make('name')->required()->maxLength(255)->live(debounce: 300)
-                ->afterStateUpdated(function (?string $state, Set $set, Get $get, ?IndustryContextProfile $record): void {
-                    if ($record === null && $get('group_selector') === '__new__') {
+                ->afterStateUpdated(function (?string $state, Set $set, ?IndustryContextProfile $record): void {
+                    if ($record === null) {
                         $set('key', self::keyFromName((string) $state));
                     }
                 })
-                ->readOnly(fn (Get $get): bool => ! in_array($get('group_selector'), [null, '', '__new__'], true))
+                ->columnSpanFull()
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
-            Forms\Components\TextInput::make('key')->required()->maxLength(255)->readOnly()->dehydrated()
-                ->rule(fn (Get $get, ?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $record): void {
-                    if ($record === null && $get('group_selector') === '__new__' && IndustryContextProfile::query()->where('key', (string) $value)->exists()) {
+            Forms\Components\TextInput::make('key')->label('Key (slug)')->required()->maxLength(255)->readOnly()->dehydrated()
+                ->rule(fn (?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                    if ($record === null && IndustryContextProfile::query()->where('key', (string) $value)->exists()) {
                         $fail('Industry Context này có thể đã tồn tại. Key: '.(string) $value);
                     }
                 })
                 ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                ->helperText(fn (Get $get): string => $get('group_selector') === '__new__' && IndustryContextProfile::query()->where('key', (string) $get('key'))->exists()
+                ->helperText(fn (Get $get): string => IndustryContextProfile::query()->where('key', (string) $get('key'))->exists()
                     ? 'Industry Context này có thể đã tồn tại. Mở Industry Context hiện có từ danh sách.'
                     : 'Tự tạo từ Name và không đổi sau khi lưu.')
-                ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
-            Forms\Components\Select::make('type')->label('Type')
-                ->options(function (Get $get): array {
-                    $options = [IndustryContextProfile::TYPE_CORE => 'Core'];
-                    $key = (string) $get('group_selector');
-                    if ($key !== '' && $key !== '__new__' && app(IndustryContextProfileManager::class)->active($key, IndustryContextProfile::TYPE_CORE) !== null) {
-                        $options[IndustryContextProfile::TYPE_DISCOVERY] = 'Knowledge & Search';
-                        $options[IndustryContextProfile::TYPE_BREAKOUT] = 'Lifestyle & Usage';
-                        $options[IndustryContextProfile::TYPE_MATCH] = 'Match & Research';
-                    }
-
-                    return $options;
-                })
-                ->default(IndustryContextProfile::TYPE_CORE)->required()->live()->dehydrated(false)
-                ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
-                    $set('context_json', null);
-                    $wasMatchDefault = (bool) $get('expiry_defaulted_for_match');
-                    $expiry = (string) $get('expiry_preset');
-                    if ($state === IndustryContextProfile::TYPE_MATCH && $expiry === '6_months') {
-                        $set('expiry_preset', 'never');
-                        $set('expiry_defaulted_for_match', true);
-                    } elseif ($state !== IndustryContextProfile::TYPE_MATCH && $wasMatchDefault && $expiry === 'never') {
-                        $set('expiry_preset', '6_months');
-                        $set('expiry_defaulted_for_match', false);
-                    }
-                })
+                ->columnSpanFull()
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
             Forms\Components\TextInput::make('schema_version')->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated()->hidden(),
             Forms\Components\Select::make('language')->label(__('Language'))->options(self::languageOptions())
@@ -152,21 +99,19 @@ final class IndustryContextProfileResource extends Resource
             Forms\Components\Textarea::make('notes')->label(__('Temporary generation notes'))->rows(3)
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())
-                ->default(fn (Get $get, ?IndustryContextProfile $record): string => $record === null
-                    ? ($get('type') === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months')
+                ->default(fn (?IndustryContextProfile $record): string => $record === null
+                    ? '6_months'
                     : ($record->expires_at === null ? 'never' : 'custom'))
-                ->dehydrated(false)->live()
-                ->afterStateUpdated(fn (Set $set) => $set('expiry_defaulted_for_match', false)),
-            Forms\Components\Hidden::make('expiry_defaulted_for_match')->default(false)->dehydrated(false),
+                ->dehydrated(false)->live(),
             Forms\Components\DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')
                 ->default(fn (?IndustryContextProfile $record) => $record?->expires_at)
                 ->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom')->dehydrated(false),
             JsonCodeEditor::make('context_json')->label(__('Context JSON'))->rows(30)->columnSpanFull()->required()
-                ->schemaType(fn (Get $get, ?IndustryContextProfile $record): string => $record?->type ?? (string) ($get('type') ?: IndustryContextProfile::TYPE_CORE))
+                ->schemaType(fn (?IndustryContextProfile $record): string => $record?->type ?? IndustryContextProfile::TYPE_CORE)
                 ->formatStateUsing(fn (mixed $state): string => is_array($state)
                     ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                     : (string) $state)
-                ->rules([fn (Get $get, ?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($get, $record): void {
+                ->rules([fn (?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
                     try {
                         $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
                     } catch (JsonException $exception) {
@@ -174,7 +119,7 @@ final class IndustryContextProfileResource extends Resource
 
                         return;
                     }
-                    $type = $record?->type ?? (string) ($get('type') ?: IndustryContextProfile::TYPE_CORE);
+                    $type = $record?->type ?? IndustryContextProfile::TYPE_CORE;
                     if ($type === IndustryContextProfile::TYPE_CORE) {
                         $errors = IndustryContextSchema::validate($decoded);
                         if ($errors !== []) {

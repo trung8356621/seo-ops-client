@@ -1,6 +1,5 @@
 @php
     $statePath = $getStatePath();
-    $schemaType = $getSchemaType();
 @endphp
 
 @once
@@ -9,24 +8,19 @@
 
 <x-dynamic-component :component="$getFieldWrapperView()" :field="$field">
     <div
-        wire:key="industry-context-json-editor-{{ $schemaType }}"
+        wire:key="prompt-markdown-code-editor-{{ $getId() }}"
         wire:ignore
         x-data="{ state: $wire.entangle(@js($statePath)) }"
         data-code-editor
-        data-language="json"
-        data-schema-type="{{ $schemaType }}"
+        data-language="markdown"
         data-disabled="{{ $isDisabled() ? 'true' : 'false' }}"
         class="code-editor-shell"
-        style="--code-editor-min-height: 32rem"
+        style="--code-editor-min-height: 280px"
     >
         <div class="code-editor-toolbar">
-            <span class="code-editor-toolbar__label">JSON</span>
-            <div>
-                <button type="button" data-code-editor-copy>Copy</button>
-                <button type="button" data-code-editor-format>Format</button>
-            </div>
+            <span class="code-editor-toolbar__label">Markdown</span>
+            <button type="button" data-code-editor-copy>Copy</button>
         </div>
-        <div data-code-editor-status class="code-editor-status code-editor-status--empty"></div>
         <div data-code-editor-surface class="code-editor-surface"></div>
     </div>
 </x-dynamic-component>

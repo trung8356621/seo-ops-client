@@ -29,12 +29,7 @@ final class CreateIndustryContextProfile extends CreateRecord
                 ->url(fn (): string => $this->downloadUrl())
                 ->openUrlInNewTab()
                 ->disabled(fn (): bool => $this->generationSeed()['name'] === ''),
-            Action::make('generate_context')->label(fn (): string => match ($this->generationSeed()['type']) {
-                IndustryContextProfile::TYPE_DISCOVERY => 'Gen Knowledge & Search',
-                IndustryContextProfile::TYPE_BREAKOUT => 'Gen Lifestyle & Usage',
-                IndustryContextProfile::TYPE_MATCH => 'Gen Match & Research',
-                default => 'Gen Core',
-            })->icon('heroicon-o-sparkles')
+            Action::make('generate_context')->label('Gen Core')->icon('heroicon-o-sparkles')
                 ->action(function (): void {
                     $seed = $this->generationSeed();
                     if ($seed['name'] === '') {
@@ -42,14 +37,8 @@ final class CreateIndustryContextProfile extends CreateRecord
 
                         return;
                     }
-                    $core = $seed['group'] === '__new__' ? null : $this->activeCore($seed['group']);
-                    if ($seed['type'] !== IndustryContextProfile::TYPE_CORE && $core === null) {
-                        Notification::make()->title('Industry Context đã chọn không có Core đang hoạt động.')->warning()->send();
-
-                        return;
-                    }
                     $context = app(IndustryContextGenerationService::class)->generateForType(
-                        $seed['type'], $seed['name'], $seed['language'], $seed['market'], $core?->context_json, $seed['notes'],
+                        IndustryContextProfile::TYPE_CORE, $seed['name'], $seed['language'], $seed['market'], null, $seed['notes'],
                     );
                     $state = $this->rawFormState();
                     $state['context_json'] = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -59,7 +48,7 @@ final class CreateIndustryContextProfile extends CreateRecord
         ];
     }
 
-    /** @return array{group:string,type:string,name:string,language:string,market:?string,notes:?string} */
+    /** @return array{name:string,language:string,market:?string,notes:?string} */
     private function generationSeed(): array
     {
         $state = $this->rawFormState();
@@ -67,12 +56,8 @@ final class CreateIndustryContextProfile extends CreateRecord
         $language = trim((string) ($state['language'] ?? ''));
         $market = trim((string) ($state['market'] ?? ''));
         $notes = trim((string) ($state['notes'] ?? ''));
-        $group = (string) ($state['group_selector'] ?? '__new__');
-        $type = (string) ($state['type'] ?? IndustryContextProfile::TYPE_CORE);
 
         return [
-            'group' => $group !== '' ? $group : '__new__',
-            'type' => in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true) ? $type : IndustryContextProfile::TYPE_CORE,
             'name' => $name,
             'language' => $language !== '' ? $language : 'vi',
             'market' => $market !== '' ? $market : null,
@@ -92,26 +77,10 @@ final class CreateIndustryContextProfile extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $state = $this->rawFormState();
-        $group = (string) ($state['group_selector'] ?? '__new__');
-        $type = (string) ($state['type'] ?? IndustryContextProfile::TYPE_CORE);
-        $defaultExpiry = $type === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months';
-        $expiresAt = IndustryContextExpiry::resolve((string) ($state['expiry_preset'] ?? $defaultExpiry), $state['expires_at_custom'] ?? null);
-        $manager = app(IndustryContextProfileManager::class);
+        $expiresAt = IndustryContextExpiry::resolve((string) ($state['expiry_preset'] ?? '6_months'), $state['expires_at_custom'] ?? null);
 
-        if ($group === '__new__') {
-            abort_unless($type === IndustryContextProfile::TYPE_CORE, 422, 'Một Industry Context mới phải bắt đầu bằng Core.');
-
-            return $manager->createInitial((string) $data['key'], (string) $data['name'], (array) $data['context_json'], $expiresAt);
-        }
-
-        $core = $type === IndustryContextProfile::TYPE_CORE
-            ? $this->coreRepresentative($group)
-            : $this->activeCore($group);
-        abort_if($core === null, 422, 'Industry Context đã chọn không có Core đang hoạt động.');
-
-        return $type === IndustryContextProfile::TYPE_CORE
-            ? $manager->createRevision($core, (array) $data['context_json'], expiresAt: $expiresAt)
-            : $manager->createAuxiliaryRevision($group, $type, (array) $data['context_json'], $expiresAt);
+        return app(IndustryContextProfileManager::class)
+            ->createInitial((string) $data['key'], (string) $data['name'], (array) $data['context_json'], $expiresAt);
     }
 
     private function downloadUrl(): string
@@ -121,19 +90,6 @@ final class CreateIndustryContextProfile extends CreateRecord
             'language' => $seed['language'], 'market' => $seed['market'], 'notes' => $seed['notes'],
         ], fn (mixed $value): bool => $value !== null);
 
-        return $seed['group'] === '__new__'
-            ? route('admin.industry-context.prompt.create', [...$parameters, 'name' => $seed['name']])
-            : route('admin.industry-context.prompt.download', [...$parameters, 'key' => $seed['group'], 'type' => $seed['type']]);
-    }
-
-    private function activeCore(string $key): ?IndustryContextProfile
-    {
-        return app(IndustryContextProfileManager::class)->active($key, IndustryContextProfile::TYPE_CORE);
-    }
-
-    private function coreRepresentative(string $key): ?IndustryContextProfile
-    {
-        return $this->activeCore($key)
-            ?? IndustryContextProfile::query()->where('key', $key)->where('type', IndustryContextProfile::TYPE_CORE)->latest('id')->first();
+        return route('admin.industry-context.prompt.create', [...$parameters, 'name' => $seed['name']]);
     }
 }

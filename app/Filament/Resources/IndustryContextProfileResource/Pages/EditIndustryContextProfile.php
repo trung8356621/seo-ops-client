@@ -54,12 +54,6 @@ final class EditIndustryContextProfile extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('download_prompt')->label('Tải Prompt')->icon('heroicon-o-arrow-down-tray')
-                ->url(fn (): string => route('admin.industry-context.prompt.download', [
-                    'key' => $this->workspaceCore()->key,
-                    'type' => $this->selectedType,
-                ]))
-                ->openUrlInNewTab(),
             Actions\Action::make('generate_revision')->label(fn (): string => match ($this->selectedType) {
                 IndustryContextProfile::TYPE_DISCOVERY => 'Gen Knowledge & Search',
                 IndustryContextProfile::TYPE_BREAKOUT => 'Gen Lifestyle & Usage',

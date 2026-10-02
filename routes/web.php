@@ -28,6 +28,9 @@ Route::middleware(['web', 'auth'])->group(function (): void {
         ->where('key', '[a-z0-9]+(?:-[a-z0-9]+)*')
         ->where('type', 'core|discovery|breakout|match')
         ->name('admin.industry-context.prompt.download');
+    Route::get('/admin/industry-context-profiles/{profile}/json', [IndustryContextPromptDownloadController::class, 'json'])
+        ->whereNumber('profile')
+        ->name('admin.industry-context.json.download');
 
     Route::get('/workspace', \App\Http\Controllers\WorkspaceHubController::class)
         ->name('workspace.hub');

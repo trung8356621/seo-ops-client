@@ -15,37 +15,23 @@ use Tests\TestCase;
 
 final class IndustryContextAdminResourceContractTest extends TestCase
 {
-    public function test_create_orchestrates_new_and_existing_groups(): void
+    public function test_create_only_creates_a_new_core_context(): void
     {
         $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
         $create = $this->source('app/Filament/Resources/IndustryContextProfileResource/Pages/CreateIndustryContextProfile.php');
 
         self::assertStringNotContainsString("make('prompt_type')", $resource);
-        self::assertStringContainsString("Select::make('group_selector')", $resource);
-        self::assertStringContainsString("'__new__' => '+ Tạo mới'", $resource);
-        self::assertStringContainsString('logicalRepresentatives()', $resource);
-        self::assertStringContainsString("->default('__new__')->searchable()->live()->dehydrated(false)", $resource);
-        self::assertStringContainsString("\$profile->name.' — '.\$profile->key", $resource);
-        self::assertStringContainsString("Select::make('type')", $resource);
-        self::assertStringContainsString("IndustryContextProfile::TYPE_DISCOVERY] = 'Knowledge & Search'", $resource);
-        self::assertStringContainsString("IndustryContextProfile::TYPE_BREAKOUT] = 'Lifestyle & Usage'", $resource);
-        self::assertStringContainsString("IndustryContextProfile::TYPE_MATCH] = 'Match & Research'", $resource);
-        self::assertStringNotContainsString("Select::make('type')->disabled", $resource);
+        self::assertStringNotContainsString("make('group_selector')", $resource);
+        self::assertStringNotContainsString("make('type')", $resource);
         self::assertStringContainsString('->readOnly()->dehydrated()', $resource);
         self::assertStringContainsString('afterStateUpdated', $resource);
-        self::assertStringContainsString("Action::make('generate_context')->label", $create);
-        self::assertStringContainsString("'Gen Core'", $create);
-        self::assertStringContainsString("'Gen Knowledge & Search'", $create);
-        self::assertStringContainsString("'Gen Lifestyle & Usage'", $create);
-        self::assertStringContainsString("'Gen Match & Research'", $create);
+        self::assertStringContainsString("Action::make('generate_context')->label('Gen Core')", $create);
         self::assertStringContainsString('->generateForType(', $create);
         self::assertStringContainsString("Action::make('download_prompt')->label('T\u{1EA3}i Prompt')", $create);
         self::assertStringContainsString("route('admin.industry-context.prompt.create'", $create);
-        self::assertStringContainsString("route('admin.industry-context.prompt.download'", $create);
         self::assertStringContainsString('createInitial(', $create);
-        self::assertStringContainsString('createRevision(', $create);
-        self::assertStringContainsString('createAuxiliaryRevision(', $create);
-        self::assertStringContainsString('abort_unless($type === IndustryContextProfile::TYPE_CORE', $create);
+        self::assertStringNotContainsString('createRevision(', $create);
+        self::assertStringNotContainsString('createAuxiliaryRevision(', $create);
         foreach (["make('language')", "make('market')", "make('expiry_preset')", "make('notes')"] as $field) {
             self::assertStringContainsString($field, $resource);
         }
@@ -53,16 +39,14 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertSame('VN', IndustryMarketOptions::default(null, 'vi'));
     }
 
-    public function test_create_resets_target_state_and_routes_schema_by_selected_type(): void
+    public function test_create_slug_and_schema_are_fixed_to_core(): void
     {
         $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
 
-        self::assertGreaterThanOrEqual(2, substr_count($resource, "\$set('context_json', null)"));
-        self::assertStringContainsString("\$set('type', IndustryContextProfile::TYPE_CORE)", $resource);
-        self::assertStringContainsString("\$set('name', \$core?->name)", $resource);
-        self::assertStringContainsString("\$set('key', \$core?->key)", $resource);
-        self::assertStringContainsString("\$get('group_selector') === '__new__'", $resource);
-        self::assertStringContainsString("\$get('type') ?: IndustryContextProfile::TYPE_CORE", $resource);
+        self::assertStringContainsString("\$set('key', self::keyFromName((string) \$state))", $resource);
+        self::assertStringContainsString("make('key')->label('Key (slug)')", $resource);
+        self::assertGreaterThanOrEqual(2, substr_count($resource, '->columnSpanFull()'));
+        self::assertStringContainsString('$record?->type ?? IndustryContextProfile::TYPE_CORE', $resource);
         self::assertStringContainsString('IndustryAuxiliarySchema::validatedOutput($type, $decoded)', $resource);
     }
 
@@ -93,7 +77,12 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('->activate(', $page);
         self::assertStringContainsString('createRevision(', $page);
         self::assertStringContainsString('createAuxiliaryRevision(', $page);
-        self::assertStringContainsString("route('admin.industry-context.prompt.download'", $page);
+        self::assertStringNotContainsString("Action::make('download_prompt')", $page);
+        self::assertStringContainsString("route('admin.industry-context.prompt.download'", $view);
+        self::assertStringContainsString("route('admin.industry-context.json.download'", $view);
+        self::assertStringContainsString('Tải Prompt tạo JSON', $view);
+        self::assertStringContainsString('Tải JSON', $view);
+        self::assertStringContainsString('<x-filament::button disabled', $view);
         self::assertStringContainsString('Chưa có {{ $tabs[$selectedType] }} context.', $view);
         self::assertStringContainsString('History (latest 3)', $view);
         self::assertStringContainsString('Dùng bản này', $view);
@@ -124,14 +113,13 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('getSchemaType()', $component);
         self::assertStringContainsString('IndustryContextSchema::validate', $validator);
         self::assertStringContainsString('IndustryAuxiliarySchema::validatedOutput', $validator);
-        foreach (['syntax_error', 'syntax_validating_schema', 'schema_valid', 'schema_invalid'] as $state) {
-            self::assertStringContainsString($state, $editor);
-        }
-        self::assertStringContainsString('validateIndustryContextJson(raw, this.schemaType)', $editor);
-        self::assertStringContainsString('raw !== this.$refs.editor.value', $editor);
-        self::assertStringNotContainsString('x-data="{', $editor);
-        self::assertStringContainsString('Alpine.data(', $editor);
-        self::assertStringContainsString('x-html="highlight(formatted)"', $editor);
+        self::assertStringContainsString("@vite(['resources/js/admin/code-editor/index.js'], 'build-code-editor')", $editor);
+        self::assertStringContainsString('data-language="json"', $editor);
+        self::assertStringContainsString('data-code-editor-format', $editor);
+        self::assertStringContainsString('$wire.entangle(@js($statePath))', $editor);
+        self::assertStringNotContainsString('<textarea', $editor);
+        self::assertStringNotContainsString('<pre', $editor);
+        self::assertStringNotContainsString('highlight(', $editor);
         self::assertStringContainsString('wire:key="industry-context-json-editor-{{ $schemaType }}"', $editor);
     }
 
@@ -151,14 +139,12 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertNotSame([], IndustryContextSchema::validate($payload));
     }
 
-    public function test_match_type_switch_sets_never_without_overwriting_custom_expiry(): void
+    public function test_create_uses_core_expiry_default(): void
     {
         $resource = $this->source('app/Filament/Resources/IndustryContextProfileResource.php');
 
-        self::assertStringContainsString("\$state === IndustryContextProfile::TYPE_MATCH && \$expiry === '6_months'", $resource);
-        self::assertStringContainsString("\$set('expiry_preset', 'never')", $resource);
-        self::assertStringContainsString("\$wasMatchDefault && \$expiry === 'never'", $resource);
-        self::assertStringContainsString("make('expiry_defaulted_for_match')", $resource);
+        self::assertStringContainsString("? '6_months'", $resource);
+        self::assertStringNotContainsString("make('expiry_defaulted_for_match')", $resource);
     }
 
     public function test_name_slug_contract_and_download_transport_keep_prompts_out_of_dom(): void
@@ -182,6 +168,7 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString("middleware(['web', 'auth'])", $routes);
         self::assertStringContainsString('/admin/industry-context-prompts/create', $routes);
         self::assertStringContainsString('/admin/industry-context-profiles/{key}/prompt/{type}', $routes);
+        self::assertStringContainsString('/admin/industry-context-profiles/{profile}/json', $routes);
         self::assertStringContainsString("->where('type', 'core|discovery|breakout|match')", $routes);
         self::assertStringContainsString('User::ROLE_OWNER', $controller);
         self::assertStringContainsString('User::ROLE_ADMIN', $controller);
@@ -192,6 +179,8 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString("['Content-Type' => 'text/plain; charset=UTF-8']", $controller);
         self::assertStringContainsString('streamDownload(', $controller);
         self::assertStringContainsString("\$key.'-'.\$type.'-prompt.txt'", $controller);
+        self::assertStringContainsString("\$profile->key.'-'.\$profile->type.'.json'", $controller);
+        self::assertStringContainsString("['Content-Type' => 'application/json; charset=UTF-8']", $controller);
         self::assertStringNotContainsString('Storage::', $controller);
         self::assertStringNotContainsString('->generateForType(', $controller);
     }
