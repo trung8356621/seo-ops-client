@@ -3,39 +3,9 @@ import { Compartment, EditorState } from '@codemirror/state';
 import { search, openSearchPanel } from '@codemirror/search';
 import { json } from '@codemirror/lang-json';
 import { markdown } from '@codemirror/lang-markdown';
+import { baseDarkTheme, codeEditorSyntaxHighlighting } from './theme.js';
 
 const viewers = new WeakMap();
-
-const viewerTheme = EditorView.theme({
-    '&': {
-        height: '100%',
-        maxHeight: '100%',
-        backgroundColor: '#030712',
-        color: '#f3f4f6',
-        fontSize: '0.8125rem',
-    },
-    '&.cm-focused': { outline: 'none' },
-    '.cm-scroller': {
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-        lineHeight: '1.45rem',
-        overflow: 'auto',
-    },
-    '.cm-gutters': {
-        backgroundColor: '#111827',
-        borderRight: '1px solid #374151',
-        color: '#6b7280',
-    },
-    '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: '#111827' },
-    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: '#374151 !important' },
-    '.cm-content': { padding: '0.5rem 0' },
-    '.cm-line': { padding: '0 0.75rem' },
-    '.cm-tooltip': { backgroundColor: '#111827', borderColor: '#4b5563' },
-    '.cm-panels': { backgroundColor: '#111827', color: '#f3f4f6', borderBottom: '1px solid #374151' },
-    '.cm-search': { padding: '4px 8px' },
-    '.cm-search input': { backgroundColor: '#1f2937', color: '#f9fafb', borderColor: '#4b5563', borderRadius: '0.25rem', padding: '2px 6px' },
-    '.cm-search button': { backgroundColor: '#374151', color: '#f3f4f6', borderRadius: '0.25rem', padding: '2px 6px', margin: '0 2px' },
-    '.cm-search label': { color: '#9ca3af' },
-}, { dark: true });
 
 export function isJsonContent(value) {
     if (typeof value !== 'string') return false;
@@ -91,7 +61,8 @@ export function createCodeViewer({
         search({ top: true }),
         EditorState.readOnly.of(true),
         EditorView.editable.of(false),
-        viewerTheme,
+        baseDarkTheme,
+        codeEditorSyntaxHighlighting,
         wrapCompartment.of(wrap ? EditorView.lineWrapping : []),
         languageCompartment.of(resolveViewerLanguage(language, value)),
         ...extensions,

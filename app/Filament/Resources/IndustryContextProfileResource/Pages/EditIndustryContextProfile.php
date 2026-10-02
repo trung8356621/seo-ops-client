@@ -31,6 +31,13 @@ final class EditIndustryContextProfile extends EditRecord
 
     protected static string $view = 'filament.resources.industry-context-profile-resource.pages.edit-industry-context-profile';
 
+    public const ALLOWED_TYPES = [
+        IndustryContextProfile::TYPE_CORE,
+        IndustryContextProfile::TYPE_DISCOVERY,
+        IndustryContextProfile::TYPE_BREAKOUT,
+        IndustryContextProfile::TYPE_MATCH,
+    ];
+
     public string $selectedType = IndustryContextProfile::TYPE_CORE;
 
     public int $workspaceCoreId;
@@ -38,19 +45,84 @@ final class EditIndustryContextProfile extends EditRecord
     public function mount(int|string $record): void
     {
         parent::mount($record);
-        $this->selectedType = $this->record->type;
+
         $core = $this->manager()->active((string) $this->record->key, IndustryContextProfile::TYPE_CORE)
             ?? IndustryContextProfile::query()->where('key', $this->record->key)->where('type', IndustryContextProfile::TYPE_CORE)->latest('id')->firstOrFail();
         $this->workspaceCoreId = (int) $core->getKey();
-        $this->fillFormForBranch($this->branch());
+
+        $this->selectedType = $this->resolveSelectedType();
+
+        $revisions = $this->manager()->revisions($core->key, $this->selectedType);
+        $branch = $this->resolveBranchRevision($revisions, request()->query('rev'));
+
+        if ($branch !== null) {
+            $this->record = $branch;
+            $this->fillFormForBranch($branch);
+        } else {
+            $this->record = $core;
+            $this->fillFormForBranch(null);
+        }
     }
 
-    public function selectType(string $type): void
+    public function resolveSelectedType(?string $queryType = null): string
     {
-        abort_unless(in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true), 404);
-        $this->selectedType = $type;
-        $branch = $this->manager()->active($this->workspaceCore()->key, $type) ?? $this->manager()->revisions($this->workspaceCore()->key, $type)->first();
-        $this->fillFormForBranch($branch);
+        $queryType ??= request()->query('type');
+
+        if (is_string($queryType) && in_array($queryType, self::ALLOWED_TYPES, true)) {
+            return $queryType;
+        }
+
+        if (isset($this->record) && in_array((string) $this->record->type, self::ALLOWED_TYPES, true)) {
+            return (string) $this->record->type;
+        }
+
+        return IndustryContextProfile::TYPE_CORE;
+    }
+
+    /** @param Collection<int, IndustryContextProfile> $revisions */
+    public function resolveBranchRevision(Collection $revisions, mixed $requestedRev = null): ?IndustryContextProfile
+    {
+        if ($revisions->isEmpty()) {
+            return null;
+        }
+
+        $latest = $revisions->first();
+
+        if (filled($requestedRev) && is_numeric($requestedRev)) {
+            $revId = (int) $requestedRev;
+            $matched = $revisions->firstWhere('id', $revId);
+            if ($matched !== null) {
+                return $matched;
+            }
+
+            $dbMatched = IndustryContextProfile::query()
+                ->where('key', $this->workspaceCore()->key)
+                ->where('type', $this->selectedType)
+                ->find($revId);
+
+            if ($dbMatched !== null) {
+                return $dbMatched;
+            }
+        }
+
+        return $latest;
+    }
+
+    public function tabUrl(string $type): string
+    {
+        return IndustryContextProfileResource::getUrl('edit', [
+            'record' => $this->workspaceCoreId,
+            'type' => $type,
+        ]);
+    }
+
+    public function revisionUrl(string $type, int $revId): string
+    {
+        return IndustryContextProfileResource::getUrl('edit', [
+            'record' => $this->workspaceCoreId,
+            'type' => $type,
+            'rev' => $revId,
+        ]);
     }
 
     public function fillFormForBranch(?IndustryContextProfile $branch): void
@@ -189,14 +261,33 @@ final class EditIndustryContextProfile extends EditRecord
 
         $core = $this->manager()->active($this->workspaceCore()->key, IndustryContextProfile::TYPE_CORE) ?? $this->workspaceCore();
 
+        $latestRevision = $this->manager()->revisions($core->key, $this->selectedType)->first();
+        if ($latestRevision !== null) {
+            $fingerprint = app(\App\IndustryContext\IndustryContextFingerprint::class);
+            $newHash = $fingerprint->hash($decoded);
+            $latestHash = $fingerprint->hash((array) $latestRevision->context_json);
+
+            if (hash_equals($latestHash, $newHash)) {
+                Notification::make()->title('Không có thay đổi')->info()->send();
+
+                return;
+            }
+        }
+
         $revision = $this->selectedType === IndustryContextProfile::TYPE_CORE
             ? $this->manager()->createRevision($core, $decoded, expiresAt: $expiresAt)
             : $this->manager()->createAuxiliaryRevision($core->key, $this->selectedType, $decoded, $expiresAt);
+
+        if ($this->selectedType === IndustryContextProfile::TYPE_CORE) {
+            $this->workspaceCoreId = (int) ($this->manager()->active((string) $revision->key, IndustryContextProfile::TYPE_CORE)?->getKey() ?? $revision->getKey());
+        }
 
         $this->record = $revision;
         $this->fillFormForBranch($revision);
 
         Notification::make()->title('Đã lưu thành revision mới')->success()->send();
+
+        $this->redirect($this->revisionUrl($this->selectedType, (int) $revision->id));
     }
 
     public function save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true): void
@@ -214,7 +305,7 @@ final class EditIndustryContextProfile extends EditRecord
     protected function getSaveFormAction(): Actions\Action
     {
         return Actions\Action::make('save')
-            ->label('Lưu thành revision')
+            ->label('Lưu')
             ->action('saveManualRevision')
             ->keyBindings(['mod+s']);
     }
@@ -309,7 +400,10 @@ final class EditIndustryContextProfile extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        return IndustryContextProfileResource::getUrl('edit', ['record' => $this->workspaceCoreId]);
+        return IndustryContextProfileResource::getUrl('edit', [
+            'record' => $this->workspaceCoreId,
+            'type' => $this->selectedType,
+        ]);
     }
 
     private function language(): string

@@ -5,6 +5,7 @@ import { mountJsonEditor } from './jsonEditor.js';
 import { mountMarkdownEditor } from './markdownEditor.js';
 
 export { createCodeEditor, createCodeViewer, isJsonContent, resolveViewerLanguage };
+export { baseDarkTheme, darkHighlightStyle, codeEditorSyntaxHighlighting } from './theme.js';
 
 if (typeof window !== 'undefined') {
     window.createCodeViewer = createCodeViewer;

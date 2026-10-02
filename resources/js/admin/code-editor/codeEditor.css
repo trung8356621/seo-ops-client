@@ -43,6 +43,10 @@
 .code-editor-status--valid { color: #6ee7b7; }
 .code-editor-status--error { color: #fca5a5; }
 .code-editor-surface { width: 100%; min-width: 0; }
+.code-editor-surface .cm-editor {
+    min-height: var(--code-editor-min-height, 20rem);
+    max-height: 70vh;
+}
 .code-viewer-surface {
     position: relative;
     width: 100%;

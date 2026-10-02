@@ -84,4 +84,44 @@ final class CodeEditorViewerContractTest extends TestCase
         self::assertStringContainsString('code-viewer-surface', $blade);
         self::assertStringNotContainsString('<pre class="min-h-0 flex-1 overflow-auto whitespace-pre-wrap', $blade);
     }
+
+    public function test_shared_codemirror_theme_neutral_palette_and_reuse(): void
+    {
+        $themeJs = (string) file_get_contents(resource_path('js/admin/code-editor/theme.js'));
+        $editorJs = (string) file_get_contents(resource_path('js/admin/code-editor/createCodeEditor.js'));
+        $viewerJs = (string) file_get_contents(resource_path('js/admin/code-editor/createCodeViewer.js'));
+
+        // Property / key: cyan / blue (#38bdf8)
+        self::assertStringContainsString("tag: t.propertyName, color: '#38bdf8'", $themeJs);
+
+        // String: green (#4ade80)
+        self::assertStringContainsString("color: '#4ade80'", $themeJs);
+
+        // Number: violet (#c084fc)
+        self::assertStringContainsString("color: '#c084fc'", $themeJs);
+
+        // Boolean: amber / orange (#fb923c)
+        self::assertStringContainsString("tag: t.bool, color: '#fb923c'", $themeJs);
+
+        // Null: muted violet / gray (#94a3b8)
+        self::assertStringContainsString("tag: t.null, color: '#94a3b8'", $themeJs);
+
+        // Punctuation / brackets: neutral gray (#9ca3af)
+        self::assertStringContainsString("color: '#9ca3af'", $themeJs);
+
+        // Line numbers: muted gray (#6b7280)
+        self::assertStringContainsString("color: '#6b7280'", $themeJs);
+
+        // Red is strictly for invalid / syntax error
+        self::assertStringContainsString("tag: t.invalid, color: '#ef4444'", $themeJs);
+
+        // Both editor and viewer reuse baseDarkTheme and codeEditorSyntaxHighlighting
+        self::assertStringContainsString("from './theme.js'", $editorJs);
+        self::assertStringContainsString("baseDarkTheme", $editorJs);
+        self::assertStringContainsString("codeEditorSyntaxHighlighting", $editorJs);
+
+        self::assertStringContainsString("from './theme.js'", $viewerJs);
+        self::assertStringContainsString("baseDarkTheme", $viewerJs);
+        self::assertStringContainsString("codeEditorSyntaxHighlighting", $viewerJs);
+    }
 }

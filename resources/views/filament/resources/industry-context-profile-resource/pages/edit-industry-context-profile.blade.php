@@ -9,6 +9,14 @@
             'breakout' => 'Lifestyle & Usage',
             'match' => 'Match & Research',
         ];
+        $revisions = $this->revisions();
+        $totalRevisions = $revisions->count();
+        $currentIndex = $branch ? $revisions->search(fn ($rev) => $rev->id === $branch->id) : false;
+        if ($currentIndex === false) {
+            $currentIndex = 0;
+        }
+        $prevRev = $currentIndex > 0 ? $revisions->get($currentIndex - 1) : null;
+        $nextRev = $currentIndex < ($totalRevisions - 1) ? $revisions->get($currentIndex + 1) : null;
     @endphp
 
     <x-filament::section>
@@ -22,13 +30,31 @@
 
     <div class="flex flex-wrap gap-2 border-b border-gray-200 pb-3 dark:border-gray-700">
         @foreach ($tabs as $type => $label)
-            <x-filament::button wire:click="selectType('{{ $type }}')" :color="$selectedType === $type ? 'primary' : 'gray'" size="sm">
+            <x-filament::button tag="a" :href="$this->tabUrl($type)" :color="$selectedType === $type ? 'primary' : 'gray'" size="sm">
                 {{ $label }}
             </x-filament::button>
         @endforeach
     </div>
 
     <x-filament::section :heading="$tabs[$selectedType]">
+        @if ($totalRevisions > 1)
+            <x-slot name="headerEnd">
+                <div class="flex items-center gap-2 text-sm text-gray-500">
+                    @if ($prevRev)
+                        <a href="{{ $this->revisionUrl($selectedType, $prevRev->id) }}" class="p-1 font-bold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" title="Revision mới hơn">‹</a>
+                    @else
+                        <span class="p-1 text-gray-300 dark:text-gray-600 cursor-not-allowed">‹</span>
+                    @endif
+                    <span class="font-mono text-xs">{{ $currentIndex + 1 }} / {{ $totalRevisions }}</span>
+                    @if ($nextRev)
+                        <a href="{{ $this->revisionUrl($selectedType, $nextRev->id) }}" class="p-1 font-bold text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white" title="Revision cũ hơn">›</a>
+                    @else
+                        <span class="p-1 text-gray-300 dark:text-gray-600 cursor-not-allowed">›</span>
+                    @endif
+                </div>
+            </x-slot>
+        @endif
+
         <div class="mb-4 flex flex-wrap justify-end gap-2">
             <x-filament::button tag="a" :href="route('admin.industry-context.prompt.download', ['key' => $core->key, 'type' => $selectedType])" target="_blank" color="gray" icon="heroicon-o-arrow-down-tray" size="sm">
                 Tải Prompt tạo JSON
@@ -47,6 +73,11 @@
         @if ($branch)
             <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
                 <x-filament::badge :color="$branch->is_active ? 'success' : 'gray'">{{ $branch->is_active ? 'Active' : 'Inactive' }}</x-filament::badge>
+                @if (! $branch->is_active)
+                    <x-filament::button wire:click="activateRevision({{ $branch->id }})" size="xs" color="gray">
+                        Dùng bản này
+                    </x-filament::button>
+                @endif
                 <x-filament::badge :color="\App\IndustryContext\IndustryContextExpiry::status($branch->expires_at) === 'expired' ? 'danger' : (\App\IndustryContext\IndustryContextExpiry::status($branch->expires_at) === 'expiring' ? 'warning' : 'success')">
                     {{ \App\IndustryContext\IndustryContextExpiry::label($branch->expires_at) }}
                 </x-filament::badge>
@@ -79,39 +110,6 @@
             {{ $this->form }}
             <x-filament-panels::form.actions :actions="$this->getCachedFormActions()" :full-width="$this->hasFullWidthFormActions()" />
         </x-filament-panels::form>
-    </x-filament::section>
-
-    <x-filament::section heading="History (latest 3)">
-        <div class="space-y-3">
-            @forelse ($this->revisions() as $revision)
-                <div class="rounded-lg border border-gray-200 p-4 dark:border-gray-700">
-                    <div class="flex flex-wrap items-center justify-between gap-3">
-                        <div class="flex flex-wrap items-center gap-2 text-sm">
-                            <span>{{ $revision->created_at?->format('Y-m-d H:i') }}</span>
-                            <x-filament::badge :color="$revision->is_active ? 'success' : 'gray'">{{ $revision->is_active ? 'Active' : 'Inactive' }}</x-filament::badge>
-                            <x-filament::badge :color="\App\IndustryContext\IndustryContextExpiry::status($revision->expires_at) === 'expired' ? 'danger' : (\App\IndustryContext\IndustryContextExpiry::status($revision->expires_at) === 'expiring' ? 'warning' : 'success')">{{ \App\IndustryContext\IndustryContextExpiry::label($revision->expires_at) }}</x-filament::badge>
-                            @if ($selectedType !== 'core' && $this->isStale($revision))
-                                <span class="text-warning-600">Core changed / stale</span>
-                            @endif
-                        </div>
-                        @if (! $revision->is_active)
-                            <x-filament::button wire:click="activateRevision({{ $revision->id }})" size="sm">Dùng bản này</x-filament::button>
-                        @endif
-                    </div>
-                    <details class="mt-3">
-                        <summary class="cursor-pointer text-sm font-medium">Inspect JSON</summary>
-                        <div class="mt-2 rounded-lg bg-gray-950">
-                            <div class="flex justify-end border-b border-gray-700 px-3 py-2">
-                                <button type="button" x-data x-on:click="navigator.clipboard.writeText($refs.json.textContent)" class="text-xs font-semibold text-gray-200">Copy JSON</button>
-                            </div>
-                            <pre x-ref="json" class="max-h-96 overflow-auto whitespace-pre p-4 font-mono text-xs leading-5 text-gray-100">{{ json_encode($revision->context_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
-                        </div>
-                    </details>
-                </div>
-            @empty
-                <p class="text-sm text-gray-500">Chưa có revision.</p>
-            @endforelse
-        </div>
     </x-filament::section>
 
     <x-filament-panels::page.unsaved-data-changes-alert />

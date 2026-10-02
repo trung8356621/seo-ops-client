@@ -1,38 +1,6 @@
 import { basicSetup, EditorView } from 'codemirror';
 import { Compartment, EditorState } from '@codemirror/state';
-
-const editorTheme = EditorView.theme({
-    '&': {
-        backgroundColor: '#030712',
-        color: '#f3f4f6',
-        fontSize: '0.875rem',
-        minHeight: 'var(--code-editor-min-height, 20rem)',
-        maxHeight: '70vh',
-    },
-    '&.cm-focused': { outline: 'none' },
-    '.cm-scroller': {
-        fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
-        lineHeight: '1.5rem',
-        overflow: 'auto',
-    },
-    '.cm-gutters': {
-        backgroundColor: '#111827',
-        borderRight: '1px solid #374151',
-        color: '#6b7280',
-    },
-    '.cm-activeLine, .cm-activeLineGutter': { backgroundColor: '#111827' },
-    '.cm-selectionBackground, &.cm-focused .cm-selectionBackground': { backgroundColor: '#374151 !important' },
-    '.cm-content': { caretColor: '#fff', padding: '0.75rem 0' },
-    '.cm-line': { padding: '0 1rem' },
-    '.cm-tooltip': { backgroundColor: '#111827', borderColor: '#4b5563' },
-    '.cm-panels': { backgroundColor: '#111827', color: '#f3f4f6' },
-    '.cm-prompt-variable': {
-        backgroundColor: 'rgba(245, 158, 11, 0.18)',
-        borderBottom: '1px solid #f59e0b',
-        borderRadius: '0.2rem',
-        color: '#fcd34d',
-    },
-}, { dark: true });
+import { baseDarkTheme, codeEditorSyntaxHighlighting } from './theme.js';
 
 export function createCodeEditor({ parent, value, language, extensions = [], disabled = false, onChange }) {
     const editable = new Compartment();
@@ -43,7 +11,8 @@ export function createCodeEditor({ parent, value, language, extensions = [], dis
             extensions: [
                 basicSetup,
                 EditorView.lineWrapping,
-                editorTheme,
+                baseDarkTheme,
+                codeEditorSyntaxHighlighting,
                 language,
                 ...extensions,
                 editable.of(EditorView.editable.of(! disabled)),
