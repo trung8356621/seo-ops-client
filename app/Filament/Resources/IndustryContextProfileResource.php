@@ -99,19 +99,31 @@ final class IndustryContextProfileResource extends Resource
             Forms\Components\Textarea::make('notes')->label(__('Temporary generation notes'))->rows(3)
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())
-                ->default(fn (?IndustryContextProfile $record): string => $record === null
-                    ? '6_months'
-                    : ($record->expires_at === null ? 'never' : 'custom'))
-                ->dehydrated(false)->live(),
+                ->default(fn (?IndustryContextProfile $record, $livewire): string => ($livewire instanceof Pages\EditIndustryContextProfile && $livewire->selectedType === IndustryContextProfile::TYPE_MATCH)
+                    ? 'never'
+                    : ($record === null
+                        ? '6_months'
+                        : ($record->expires_at === null ? 'never' : 'custom')))
+                ->dehydrated(false)->live()
+                ->afterStateUpdated(function (?string $state, $livewire): void {
+                    if ($livewire instanceof Pages\EditIndustryContextProfile) {
+                        $livewire->handleExpiryPresetUpdated($state);
+                    }
+                }),
             Forms\Components\DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')
                 ->default(fn (?IndustryContextProfile $record) => $record?->expires_at)
-                ->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom')->dehydrated(false),
+                ->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom')->dehydrated(false)->live()
+                ->afterStateUpdated(function (mixed $state, $livewire): void {
+                    if ($livewire instanceof Pages\EditIndustryContextProfile) {
+                        $livewire->handleExpiresAtCustomUpdated($state);
+                    }
+                }),
             JsonCodeEditor::make('context_json')->label(__('Context JSON'))->rows(30)->columnSpanFull()->required()
-                ->schemaType(fn (?IndustryContextProfile $record): string => $record?->type ?? IndustryContextProfile::TYPE_CORE)
+                ->schemaType(fn (?IndustryContextProfile $record, $livewire): string => ($livewire instanceof Pages\EditIndustryContextProfile ? $livewire->selectedType : null) ?? ($record?->type ?? IndustryContextProfile::TYPE_CORE))
                 ->formatStateUsing(fn (mixed $state): string => is_array($state)
                     ? (string) json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
                     : (string) $state)
-                ->rules([fn (?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+                ->rules([fn (?IndustryContextProfile $record, $livewire): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record, $livewire): void {
                     try {
                         $decoded = json_decode((string) $value, true, 512, JSON_THROW_ON_ERROR);
                     } catch (JsonException $exception) {
@@ -119,7 +131,7 @@ final class IndustryContextProfileResource extends Resource
 
                         return;
                     }
-                    $type = $record?->type ?? IndustryContextProfile::TYPE_CORE;
+                    $type = ($livewire instanceof Pages\EditIndustryContextProfile ? $livewire->selectedType : null) ?? ($record?->type ?? IndustryContextProfile::TYPE_CORE);
                     if ($type === IndustryContextProfile::TYPE_CORE) {
                         $errors = IndustryContextSchema::validate($decoded);
                         if ($errors !== []) {

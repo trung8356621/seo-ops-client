@@ -35,6 +35,37 @@ final class IndustryAuxiliarySchema
     }
 
     /** @return array<string, mixed> */
+    public static function template(string $type): array
+    {
+        return match ($type) {
+            self::DISCOVERY, self::BREAKOUT => [
+                'schema_version' => self::VERSION,
+                'items' => [],
+            ],
+            self::MATCH => [
+                'schema_version' => self::VERSION,
+                'taxonomy' => [
+                    'products' => [],
+                    'product_families' => [],
+                    'materials' => [],
+                    'services' => [],
+                    'audiences' => [],
+                    'use_cases' => [],
+                    'features' => [],
+                    'adjacent_products' => [],
+                ],
+                'topic_rules' => [
+                    'generic_cores' => [],
+                    'service_intent_terms' => [],
+                ],
+                'aliases' => [],
+                'ambiguities' => [],
+            ],
+            default => throw new UnexpectedValueException("Unknown auxiliary Industry Context type [{$type}]."),
+        };
+    }
+
+    /** @return array<string, mixed> */
     public static function validatedOutput(string $type, mixed $output): array
     {
         if (! in_array($type, [self::DISCOVERY, self::BREAKOUT, self::MATCH], true)) {

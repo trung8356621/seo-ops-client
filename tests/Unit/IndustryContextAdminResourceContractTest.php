@@ -77,9 +77,15 @@ final class IndustryContextAdminResourceContractTest extends TestCase
         self::assertStringContainsString('->activate(', $page);
         self::assertStringContainsString('createRevision(', $page);
         self::assertStringContainsString('createAuxiliaryRevision(', $page);
+        self::assertStringContainsString('saveManualRevision', $page);
+        self::assertStringContainsString('handleExpiryPresetUpdated', $page);
+        self::assertStringContainsString('handleExpiresAtCustomUpdated', $page);
+        self::assertStringContainsString('canonicalTemplate', $page);
+        self::assertStringContainsString('Lưu thành revision', $page);
         self::assertStringNotContainsString("Action::make('download_prompt')", $page);
         self::assertStringContainsString("route('admin.industry-context.prompt.download'", $view);
         self::assertStringContainsString("route('admin.industry-context.json.download'", $view);
+        self::assertStringContainsString('saveManualRevision', $view);
         self::assertStringContainsString('Tải Prompt tạo JSON', $view);
         self::assertStringContainsString('Tải JSON', $view);
         self::assertStringContainsString('<x-filament::button disabled', $view);

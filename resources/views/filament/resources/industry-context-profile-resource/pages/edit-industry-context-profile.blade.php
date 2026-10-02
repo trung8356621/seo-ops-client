@@ -28,16 +28,23 @@
         @endforeach
     </div>
 
-    @if ($branch)
-        <x-filament::section :heading="$tabs[$selectedType]">
-            <div class="mb-4 flex flex-wrap justify-end gap-2">
-                <x-filament::button tag="a" :href="route('admin.industry-context.prompt.download', ['key' => $core->key, 'type' => $selectedType])" target="_blank" color="gray" icon="heroicon-o-arrow-down-tray" size="sm">
-                    Tải Prompt tạo JSON
-                </x-filament::button>
+    <x-filament::section :heading="$tabs[$selectedType]">
+        <div class="mb-4 flex flex-wrap justify-end gap-2">
+            <x-filament::button tag="a" :href="route('admin.industry-context.prompt.download', ['key' => $core->key, 'type' => $selectedType])" target="_blank" color="gray" icon="heroicon-o-arrow-down-tray" size="sm">
+                Tải Prompt tạo JSON
+            </x-filament::button>
+            @if ($branch)
                 <x-filament::button tag="a" :href="route('admin.industry-context.json.download', ['profile' => $branch])" target="_blank" icon="heroicon-o-arrow-down-tray" size="sm">
                     Tải JSON
                 </x-filament::button>
-            </div>
+            @else
+                <x-filament::button disabled color="gray" icon="heroicon-o-arrow-down-tray" size="sm" title="Tab này chưa có JSON để tải">
+                    Tải JSON
+                </x-filament::button>
+            @endif
+        </div>
+
+        @if ($branch)
             <div class="mb-4 flex flex-wrap items-center gap-3 text-sm">
                 <x-filament::badge :color="$branch->is_active ? 'success' : 'gray'">{{ $branch->is_active ? 'Active' : 'Inactive' }}</x-filament::badge>
                 <x-filament::badge :color="\App\IndustryContext\IndustryContextExpiry::status($branch->expires_at) === 'expired' ? 'danger' : (\App\IndustryContext\IndustryContextExpiry::status($branch->expires_at) === 'expiring' ? 'warning' : 'success')">
@@ -52,25 +59,10 @@
                     @endif
                 @endif
             </div>
-
-            <x-filament-panels::form id="form" wire:key="industry-context-{{ $selectedType }}-{{ $branch->id }}" wire:submit="save">
-                {{ $this->form }}
-                <x-filament-panels::form.actions :actions="$this->getCachedFormActions()" :full-width="$this->hasFullWidthFormActions()" />
-            </x-filament-panels::form>
-        </x-filament::section>
-    @else
-        <x-filament::section :heading="$tabs[$selectedType]">
-            <div class="mb-4 flex flex-wrap justify-end gap-2">
-                <x-filament::button tag="a" :href="route('admin.industry-context.prompt.download', ['key' => $core->key, 'type' => $selectedType])" target="_blank" color="gray" icon="heroicon-o-arrow-down-tray" size="sm">
-                    Tải Prompt tạo JSON
-                </x-filament::button>
-                <x-filament::button disabled color="gray" icon="heroicon-o-arrow-down-tray" size="sm" title="Tab này chưa có JSON để tải">
-                    Tải JSON
-                </x-filament::button>
-            </div>
-            <div class="py-8 text-center">
+        @else
+            <div class="mb-4 rounded-lg bg-gray-50 p-4 text-sm dark:bg-gray-800/50">
                 <p class="font-medium text-gray-950 dark:text-white">Chưa có {{ $tabs[$selectedType] }} context.</p>
-                <p class="mx-auto mt-2 max-w-2xl text-sm text-gray-600 dark:text-gray-300">
+                <p class="mt-1 text-gray-600 dark:text-gray-300">
                     @if ($selectedType === 'discovery')
                         Được tạo từ Core hiện tại và dùng khi Agent cần mở rộng chủ đề/cơ hội nội dung.
                     @elseif ($selectedType === 'match')
@@ -81,8 +73,13 @@
                 </p>
                 <p class="mt-4 text-sm text-gray-500">Bạn có thể tải prompt để tạo JSON từ Core. Nút Tải JSON sẽ khả dụng sau khi tab có context.</p>
             </div>
-        </x-filament::section>
-    @endif
+        @endif
+
+        <x-filament-panels::form id="form" wire:key="industry-context-form-{{ $selectedType }}-{{ $branch?->id ?? 'empty' }}" wire:submit="saveManualRevision">
+            {{ $this->form }}
+            <x-filament-panels::form.actions :actions="$this->getCachedFormActions()" :full-width="$this->hasFullWidthFormActions()" />
+        </x-filament-panels::form>
+    </x-filament::section>
 
     <x-filament::section heading="History (latest 3)">
         <div class="space-y-3">

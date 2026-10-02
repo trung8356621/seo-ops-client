@@ -46,6 +46,44 @@ final class IndustryContextSchema
         return $contents;
     }
 
+    /**
+     * @param  list<string>  $market
+     * @return array<string, mixed>
+     */
+    public static function template(?string $name = null, ?string $key = null, string $language = 'vi', array $market = ['VN']): array
+    {
+        return [
+            'schema_version' => self::VERSION,
+            'identity' => [
+                'context_name' => $name ?? '',
+                'context_slug' => $key ?? '',
+                'language' => $language,
+                'market' => $market,
+            ],
+            'industry_taxonomy' => ['hierarchy' => [], 'industry_keywords' => []],
+            'business' => [
+                'business_models' => [],
+                'sales_models' => [],
+                'customer_relationships' => [],
+                'primary_revenue_sources' => [],
+                'typical_order_value' => null,
+                'sales_cycle' => null,
+                'purchase_frequency' => null,
+            ],
+            'audiences' => [],
+            'offerings' => ['product_families' => [], 'adjacent_products' => [], 'substitutes' => []],
+            'customer_needs' => ['jobs_to_be_done' => [], 'pain_points' => [], 'questions' => [], 'decision_factors' => []],
+            'demand_drivers' => [],
+            'purchase_behavior' => ['journey_stages' => [], 'channels' => [], 'influencers' => []],
+            'seasonality' => ['peak_periods' => [], 'low_periods' => [], 'seasonal_factors' => []],
+            'market_context' => ['macro_factors' => [], 'regulatory_factors' => [], 'competitive_landscape' => []],
+            'trend_sensitivity' => ['emerging_trends' => [], 'fading_trends' => []],
+            'content_universe' => ['content_territories' => [], 'authority_topics' => []],
+            'search_behavior' => ['core_search_patterns' => [], 'modifier_patterns' => []],
+            'content_boundaries' => ['in_scope' => [], 'out_of_scope' => []],
+        ];
+    }
+
     /** @return list<string> */
     public static function validate(mixed $context): array
     {

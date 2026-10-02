@@ -1,6 +1,21 @@
 import './codeEditor.css';
+import { createCodeEditor } from './createCodeEditor.js';
+import { createCodeViewer, isJsonContent, resolveViewerLanguage } from './createCodeViewer.js';
 import { mountJsonEditor } from './jsonEditor.js';
 import { mountMarkdownEditor } from './markdownEditor.js';
+
+export { createCodeEditor, createCodeViewer, isJsonContent, resolveViewerLanguage };
+
+if (typeof window !== 'undefined') {
+    window.createCodeViewer = createCodeViewer;
+    window.createCodeEditor = createCodeEditor;
+    window.isJsonCode = isJsonContent;
+    window.CodeEditor = {
+        createCodeEditor,
+        createCodeViewer,
+        isJsonContent,
+    };
+}
 
 const editors = new WeakMap();
 

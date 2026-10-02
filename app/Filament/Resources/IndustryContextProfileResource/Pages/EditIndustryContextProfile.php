@@ -6,8 +6,10 @@ namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
 use App\Filament\Support\ValidatesIndustryContextJson;
+use App\IndustryContext\IndustryAuxiliarySchema;
 use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
+use App\IndustryContext\IndustryContextSchema;
 use App\Models\IndustryContextProfile;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -17,7 +19,9 @@ use Filament\Forms\Get;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Collection;
+use JsonException;
 use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService;
+use Throwable;
 
 final class EditIndustryContextProfile extends EditRecord
 {
@@ -38,6 +42,7 @@ final class EditIndustryContextProfile extends EditRecord
         $core = $this->manager()->active((string) $this->record->key, IndustryContextProfile::TYPE_CORE)
             ?? IndustryContextProfile::query()->where('key', $this->record->key)->where('type', IndustryContextProfile::TYPE_CORE)->latest('id')->firstOrFail();
         $this->workspaceCoreId = (int) $core->getKey();
+        $this->fillFormForBranch($this->branch());
     }
 
     public function selectType(string $type): void
@@ -45,10 +50,173 @@ final class EditIndustryContextProfile extends EditRecord
         abort_unless(in_array($type, [IndustryContextProfile::TYPE_CORE, IndustryContextProfile::TYPE_DISCOVERY, IndustryContextProfile::TYPE_BREAKOUT, IndustryContextProfile::TYPE_MATCH], true), 404);
         $this->selectedType = $type;
         $branch = $this->manager()->active($this->workspaceCore()->key, $type) ?? $this->manager()->revisions($this->workspaceCore()->key, $type)->first();
+        $this->fillFormForBranch($branch);
+    }
+
+    public function fillFormForBranch(?IndustryContextProfile $branch): void
+    {
         if ($branch !== null) {
             $this->record = $branch;
-            $this->fillForm();
+            $this->form->fill([
+                'context_json' => is_array($branch->context_json)
+                    ? json_encode($branch->context_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                    : (string) $branch->context_json,
+                'expiry_preset' => $branch->expires_at === null ? 'never' : 'custom',
+                'expires_at_custom' => $branch->expires_at?->format('Y-m-d H:i:s'),
+            ]);
+        } else {
+            $defaultPreset = $this->selectedType === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months';
+            $this->form->fill([
+                'context_json' => json_encode($this->canonicalTemplate($this->selectedType), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'expiry_preset' => $defaultPreset,
+                'expires_at_custom' => null,
+            ]);
         }
+    }
+
+    /** @return array<string, mixed> */
+    public function canonicalTemplate(string $type): array
+    {
+        if ($type === IndustryContextProfile::TYPE_CORE) {
+            $core = $this->workspaceCore();
+            $identity = (array) ($core->context_json['identity'] ?? []);
+
+            return IndustryContextSchema::template(
+                $core->name,
+                $core->key,
+                (string) ($identity['language'] ?? 'vi'),
+                (array) ($identity['market'] ?? ['VN']),
+            );
+        }
+
+        return IndustryAuxiliarySchema::template($type);
+    }
+
+    public function handleExpiryPresetUpdated(?string $preset): void
+    {
+        $branch = $this->branch();
+        if ($branch === null) {
+            return;
+        }
+
+        if ($preset === 'custom') {
+            $custom = $this->form->getRawState()['expires_at_custom'] ?? null;
+            if (filled($custom)) {
+                $expiresAt = IndustryContextExpiry::resolve('custom', $custom);
+                $branch->forceFill(['expires_at' => $expiresAt])->save();
+                $this->record = $branch->refresh();
+                Notification::make()->title('Đã cập nhật hạn sử dụng')->success()->send();
+            }
+
+            return;
+        }
+
+        if ($preset !== null) {
+            $expiresAt = IndustryContextExpiry::resolve($preset);
+            $branch->forceFill(['expires_at' => $expiresAt])->save();
+            $this->record = $branch->refresh();
+            Notification::make()->title('Đã cập nhật hạn sử dụng')->success()->send();
+        }
+    }
+
+    public function handleExpiresAtCustomUpdated(mixed $custom): void
+    {
+        $branch = $this->branch();
+        if ($branch === null) {
+            return;
+        }
+
+        $preset = (string) ($this->form->getRawState()['expiry_preset'] ?? 'custom');
+        if ($preset === 'custom' && filled($custom)) {
+            $expiresAt = IndustryContextExpiry::resolve('custom', $custom);
+            $branch->forceFill(['expires_at' => $expiresAt])->save();
+            $this->record = $branch->refresh();
+            Notification::make()->title('Đã cập nhật hạn sử dụng')->success()->send();
+        }
+    }
+
+    public function saveManualRevision(): void
+    {
+        $state = $this->form->getRawState();
+        $rawJson = $state['context_json'] ?? '';
+
+        if (is_array($rawJson)) {
+            $decoded = $rawJson;
+        } else {
+            $rawString = trim((string) $rawJson);
+            if ($rawString === '') {
+                Notification::make()->title('Vui lòng nhập hoặc dán Context JSON.')->danger()->send();
+
+                return;
+            }
+
+            try {
+                $decoded = json_decode($rawString, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                Notification::make()->title('JSON không hợp lệ: '.$exception->getMessage())->danger()->send();
+
+                return;
+            }
+        }
+
+        if (! is_array($decoded) || array_is_list($decoded)) {
+            Notification::make()->title('Context JSON phải là một JSON object.')->danger()->send();
+
+            return;
+        }
+
+        if ($this->selectedType === IndustryContextProfile::TYPE_CORE) {
+            $errors = IndustryContextSchema::validate($decoded);
+            if ($errors !== []) {
+                Notification::make()->title('JSON đúng cú pháp nhưng không đúng Industry Context Schema: '.implode(' ', $errors))->danger()->send();
+
+                return;
+            }
+        } else {
+            try {
+                $decoded = IndustryAuxiliarySchema::validatedOutput($this->selectedType, $decoded);
+            } catch (Throwable $exception) {
+                Notification::make()->title('JSON đúng cú pháp nhưng không đúng Industry Context Schema: '.$exception->getMessage())->danger()->send();
+
+                return;
+            }
+        }
+
+        $defaultExpiry = $this->selectedType === IndustryContextProfile::TYPE_MATCH ? 'never' : '6_months';
+        $preset = (string) ($state['expiry_preset'] ?? $defaultExpiry);
+        $custom = $state['expires_at_custom'] ?? null;
+        $expiresAt = IndustryContextExpiry::resolve($preset, $custom);
+
+        $core = $this->manager()->active($this->workspaceCore()->key, IndustryContextProfile::TYPE_CORE) ?? $this->workspaceCore();
+
+        $revision = $this->selectedType === IndustryContextProfile::TYPE_CORE
+            ? $this->manager()->createRevision($core, $decoded, expiresAt: $expiresAt)
+            : $this->manager()->createAuxiliaryRevision($core->key, $this->selectedType, $decoded, $expiresAt);
+
+        $this->record = $revision;
+        $this->fillFormForBranch($revision);
+
+        Notification::make()->title('Đã lưu thành revision mới')->success()->send();
+    }
+
+    public function save(bool $shouldRedirect = true, bool $shouldSendSavedNotification = true): void
+    {
+        $this->saveManualRevision();
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            $this->getSaveFormAction(),
+        ];
+    }
+
+    protected function getSaveFormAction(): Actions\Action
+    {
+        return Actions\Action::make('save')
+            ->label('Lưu thành revision')
+            ->action('saveManualRevision')
+            ->keyBindings(['mod+s']);
     }
 
     protected function getHeaderActions(): array
@@ -90,7 +258,7 @@ final class EditIndustryContextProfile extends EditRecord
             ? $this->manager()->createRevision($core, $context, expiresAt: $expiresAt)
             : $this->manager()->createAuxiliaryRevision($core->key, $this->selectedType, $context, $expiresAt);
         $this->record = $revision;
-        $this->fillForm();
+        $this->fillFormForBranch($revision);
         Notification::make()->title('Đã tạo revision để xem lại. Chọn “Dùng bản này” khi sẵn sàng.')->success()->send();
     }
 
@@ -98,7 +266,7 @@ final class EditIndustryContextProfile extends EditRecord
     {
         $profile = IndustryContextProfile::query()->where('key', $this->workspaceCore()->key)->where('type', $this->selectedType)->findOrFail($id);
         $this->record = $this->manager()->activate($profile);
-        $this->fillForm();
+        $this->fillFormForBranch($this->record);
         Notification::make()->title('Đã dùng bản này')->success()->send();
     }
 
