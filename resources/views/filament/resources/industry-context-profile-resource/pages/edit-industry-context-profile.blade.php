@@ -60,7 +60,7 @@
                         Dùng cho các hướng nội dung xa Core hơn, ưu tiên attention/view nhưng vẫn có liên hệ hợp lý.
                     @endif
                 </p>
-                <p class="mt-4 text-sm text-gray-500">Dùng Copy Prompt hoặc {{ $selectedType === 'discovery' ? 'Gen Discovery' : 'Gen Breakout' }} ở thanh hành động phía trên.</p>
+                <p class="mt-4 text-sm text-gray-500">Dùng Tải Prompt hoặc {{ $selectedType === 'discovery' ? 'Gen Discovery' : 'Gen Breakout' }} ở thanh hành động phía trên.</p>
             </div>
         </x-filament::section>
     @endif

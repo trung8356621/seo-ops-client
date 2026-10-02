@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\IndustryContextPromptDownloadController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,13 @@ Route::get('/seo/{connection_hash}/login', static function (): \Illuminate\Http\
 })->where(['connection_hash' => '[a-zA-Z0-9]{32,64}']);
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::get('/admin/industry-context-prompts/create', [IndustryContextPromptDownloadController::class, 'create'])
+        ->name('admin.industry-context.prompt.create');
+    Route::get('/admin/industry-context-profiles/{key}/prompt/{type}', [IndustryContextPromptDownloadController::class, 'existing'])
+        ->where('key', '[a-z0-9]+(?:-[a-z0-9]+)*')
+        ->where('type', 'core|discovery|breakout')
+        ->name('admin.industry-context.prompt.download');
+
     Route::get('/workspace', \App\Http\Controllers\WorkspaceHubController::class)
         ->name('workspace.hub');
 

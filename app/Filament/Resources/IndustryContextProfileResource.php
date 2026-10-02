@@ -16,11 +16,13 @@ use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
+use Filament\Forms\Set;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 use JsonException;
 use Throwable;
 
@@ -68,15 +70,25 @@ final class IndustryContextProfileResource extends Resource
     {
         return $form->schema([
             Forms\Components\TextInput::make('name')->required()->maxLength(255)->live(debounce: 300)
+                ->afterStateUpdated(function (?string $state, Set $set, ?IndustryContextProfile $record): void {
+                    if ($record === null) {
+                        $set('key', self::keyFromName((string) $state));
+                    }
+                })
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
-            Forms\Components\TextInput::make('key')->required()->maxLength(255)
+            Forms\Components\TextInput::make('key')->required()->maxLength(255)->readOnly()->dehydrated()
                 ->rule(fn (?IndustryContextProfile $record): Closure => function (string $attribute, mixed $value, Closure $fail) use ($record): void {
                     if ($record === null && IndustryContextProfile::query()->where('key', (string) $value)->exists()) {
-                        $fail(__('This Industry Context key already exists.'));
+                        $fail('Industry Context này có thể đã tồn tại. Key: '.(string) $value);
                     }
                 })
                 ->regex('/^[a-z0-9]+(?:-[a-z0-9]+)*$/')
-                ->helperText(__('Stable Industry Context key used by Sites.'))
+                ->helperText(fn (Get $get): string => IndustryContextProfile::query()->where('key', (string) $get('key'))->exists()
+                    ? 'Industry Context này có thể đã tồn tại. Mở Industry Context hiện có từ danh sách.'
+                    : 'Tự tạo từ Name và không đổi sau khi lưu.')
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
+            Forms\Components\Select::make('type')->label('Type')->options([IndustryContextProfile::TYPE_CORE => 'Core'])
+                ->default(IndustryContextProfile::TYPE_CORE)->disabled()->dehydrated()
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null),
             Forms\Components\TextInput::make('schema_version')->default(IndustryContextSchema::VERSION)->readOnly()->dehydrated()->hidden(),
             Forms\Components\Select::make('language')->label(__('Language'))->options(self::languageOptions())
@@ -147,6 +159,11 @@ final class IndustryContextProfileResource extends Resource
     public static function defaultLanguage(?string $suggested = null): string
     {
         return array_key_exists((string) $suggested, self::languageOptions()) ? (string) $suggested : 'vi';
+    }
+
+    public static function keyFromName(string $name): string
+    {
+        return Str::slug($name);
     }
 
     public static function getEloquentQuery(): Builder

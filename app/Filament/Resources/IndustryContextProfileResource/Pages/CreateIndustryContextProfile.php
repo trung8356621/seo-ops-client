@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
-use App\Filament\Support\IndustryContextClipboard;
 use App\Filament\Support\ValidatesIndustryContextJson;
 use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
@@ -25,9 +24,10 @@ final class CreateIndustryContextProfile extends CreateRecord
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('copy_prompt')->label('Copy Prompt')
-                ->extraAttributes(fn (): array => $this->copyPromptAttributes())
-                ->action(fn (): null => null),
+            Action::make('download_prompt')->label('Tải Prompt')->icon('heroicon-o-arrow-down-tray')
+                ->url(fn (): string => route('admin.industry-context.prompt.create', array_filter($this->generationSeed(), fn (mixed $value): bool => $value !== null)))
+                ->openUrlInNewTab()
+                ->disabled(fn (): bool => $this->generationSeed()['name'] === ''),
             Action::make('generate_core')->label('Gen Core')->icon('heroicon-o-sparkles')
                 ->action(function (): void {
                     $seed = $this->generationSeed();
@@ -62,21 +62,6 @@ final class CreateIndustryContextProfile extends CreateRecord
             'market' => $market !== '' ? $market : null,
             'notes' => $notes !== '' ? $notes : null,
         ];
-    }
-
-    /** @return array<string, string> */
-    private function copyPromptAttributes(): array
-    {
-        $seed = $this->generationSeed();
-        if ($seed['name'] === '') {
-            return IndustryContextClipboard::warningAttributes('Vui lòng nhập tên Ngữ cảnh ngành trước.');
-        }
-
-        $prompt = app(IndustryContextGenerationService::class)->compilePrompt(
-            $seed['name'], $seed['language'], $seed['market'], $seed['notes'],
-        );
-
-        return IndustryContextClipboard::copyAttributes($prompt);
     }
 
     /** @return array<string, mixed> */

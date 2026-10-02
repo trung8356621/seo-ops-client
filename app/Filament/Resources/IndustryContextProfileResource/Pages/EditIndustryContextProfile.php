@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
-use App\Filament\Support\IndustryContextClipboard;
 use App\Filament\Support\ValidatesIndustryContextJson;
 use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
@@ -55,9 +54,12 @@ final class EditIndustryContextProfile extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            Actions\Action::make('copy_prompt')->label('Copy Prompt')->icon('heroicon-o-clipboard')
-                ->extraAttributes(fn (): array => IndustryContextClipboard::copyAttributes($this->compiledPrompt()))
-                ->action(fn (): null => null),
+            Actions\Action::make('download_prompt')->label('Tải Prompt')->icon('heroicon-o-arrow-down-tray')
+                ->url(fn (): string => route('admin.industry-context.prompt.download', [
+                    'key' => $this->workspaceCore()->key,
+                    'type' => $this->selectedType,
+                ]))
+                ->openUrlInNewTab(),
             Actions\Action::make('generate_revision')->label(fn (): string => match ($this->selectedType) {
                 IndustryContextProfile::TYPE_DISCOVERY => 'Gen Discovery',
                 IndustryContextProfile::TYPE_BREAKOUT => 'Gen Breakout',
@@ -143,16 +145,6 @@ final class EditIndustryContextProfile extends EditRecord
     protected function getRedirectUrl(): string
     {
         return IndustryContextProfileResource::getUrl('edit', ['record' => $this->workspaceCoreId]);
-    }
-
-    private function compiledPrompt(): string
-    {
-        $core = $this->manager()->active($this->workspaceCore()->key, IndustryContextProfile::TYPE_CORE) ?? $this->workspaceCore();
-
-        return app(IndustryContextGenerationService::class)->compilePromptForType(
-            $this->selectedType, $core->name, $this->language(), $this->market(),
-            $this->selectedType === IndustryContextProfile::TYPE_CORE ? null : (array) $core->context_json,
-        );
     }
 
     private function language(): string
