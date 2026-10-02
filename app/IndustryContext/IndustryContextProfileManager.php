@@ -23,27 +23,27 @@ final class IndustryContextProfileManager
     }
 
     /** @param array<string, mixed> $context */
-    public function createInitial(string $key, string $name, array $context): IndustryContextProfile
+    public function createInitial(string $key, string $name, array $context, mixed $expiresAt = null): IndustryContextProfile
     {
-        return DB::connection($this->connection())->transaction(function () use ($key, $name, $context): IndustryContextProfile {
+        return DB::connection($this->connection())->transaction(function () use ($key, $name, $context, $expiresAt): IndustryContextProfile {
             if (IndustryContextProfile::query()->where('key', $key)->exists()) {
                 throw new InvalidArgumentException("Industry Context key [{$key}] already exists.");
             }
 
             return IndustryContextProfile::query()->create([
                 'key' => $key, 'name' => $name, 'schema_version' => IndustryContextSchema::VERSION,
-                'context_json' => $context, 'is_active' => true,
+                'context_json' => $context, 'is_active' => true, 'expires_at' => $expiresAt,
             ]);
         });
     }
 
     /** @param array<string, mixed> $context */
-    public function createRevision(IndustryContextProfile $profile, array $context, ?string $name = null): IndustryContextProfile
+    public function createRevision(IndustryContextProfile $profile, array $context, ?string $name = null, mixed $expiresAt = null): IndustryContextProfile
     {
-        return DB::connection($this->connection())->transaction(function () use ($profile, $context, $name): IndustryContextProfile {
+        return DB::connection($this->connection())->transaction(function () use ($profile, $context, $name, $expiresAt): IndustryContextProfile {
             $revision = IndustryContextProfile::query()->create([
                 'key' => $profile->key, 'name' => $name ?? $profile->name,
-                'schema_version' => IndustryContextSchema::VERSION, 'context_json' => $context, 'is_active' => false,
+                'schema_version' => IndustryContextSchema::VERSION, 'context_json' => $context, 'is_active' => false, 'expires_at' => $expiresAt,
             ]);
             $this->prune($profile->key);
 

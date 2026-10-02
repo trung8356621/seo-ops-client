@@ -13,9 +13,9 @@ final class IndustryContextProfile extends Model
 {
     use UsesCoreDatabaseConnection;
 
-    protected $fillable = ['key', 'name', 'schema_version', 'context_json', 'is_active'];
+    protected $fillable = ['key', 'name', 'schema_version', 'context_json', 'is_active', 'expires_at'];
 
-    protected $casts = ['context_json' => 'array', 'is_active' => 'boolean'];
+    protected $casts = ['context_json' => 'array', 'is_active' => 'boolean', 'expires_at' => 'datetime'];
 
     public function scopeLogicalRepresentatives(Builder $query): Builder
     {

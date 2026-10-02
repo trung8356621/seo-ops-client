@@ -6,12 +6,16 @@ namespace App\Filament\Resources;
 
 use App\Filament\Forms\Components\JsonCodeEditor;
 use App\Filament\Resources\IndustryContextProfileResource\Pages;
+use App\Filament\Support\IndustryContextClipboard;
+use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextSchema;
+use App\IndustryContext\IndustryMarketOptions;
 use App\Models\IndustryContextProfile;
 use App\Models\User;
 use Closure;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -86,9 +90,21 @@ final class IndustryContextProfileResource extends Resource
                 ->options(['core' => 'Core', 'discovery' => 'Discovery & Attention', 'breakout' => 'Breakout'])
                 ->default('core')
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
+            Forms\Components\Select::make('market')
+                ->label('Thị trường mục tiêu')->options(IndustryMarketOptions::options())->searchable()
+                ->default(fn (): ?string => IndustryMarketOptions::default(request()->query('defaultMarket'), self::defaultLanguage(request()->query('defaultLanguage'))))
+                ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
             Forms\Components\Textarea::make('notes')
                 ->label(__('Temporary generation notes'))->rows(3)
                 ->visible(fn (?IndustryContextProfile $record): bool => $record === null)->dehydrated(false)->live(debounce: 300),
+            Forms\Components\Select::make('expiry_preset')
+                ->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())
+                ->default(fn (?IndustryContextProfile $record): string => $record === null ? '6_months' : ($record->expires_at === null ? 'never' : 'custom'))
+                ->dehydrated(false)->live(),
+            Forms\Components\DateTimePicker::make('expires_at_custom')
+                ->label('Ngày hết hạn tùy chọn')
+                ->default(fn (?IndustryContextProfile $record) => $record?->expires_at)
+                ->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom')->dehydrated(false),
             JsonCodeEditor::make('context_json')
                 ->label(__('Context JSON'))
                 ->rows(30)->columnSpanFull()->required()
@@ -107,7 +123,7 @@ final class IndustryContextProfileResource extends Resource
                             }
                             $errors = IndustryContextSchema::validate($decoded);
                             if ($errors !== []) {
-                                $fail(implode(' ', $errors));
+                                $fail('JSON hợp lệ nhưng không đúng Industry Context Schema: '.implode(' ', $errors));
                             }
                         };
                     },
@@ -126,27 +142,34 @@ final class IndustryContextProfileResource extends Resource
         ])->actions([
             Tables\Actions\Action::make('quick_generate')
                 ->label('Gen nhanh')->icon('heroicon-o-sparkles')
-                ->form([Forms\Components\Textarea::make('notes')->label(__('Temporary notes'))])
+                ->form([
+                    Forms\Components\Textarea::make('notes')->label(__('Temporary notes')),
+                    Forms\Components\Select::make('market')->label('Thị trường mục tiêu')->options(IndustryMarketOptions::options())->searchable()
+                        ->default(fn (IndustryContextProfile $record): ?string => (array) ($record->context_json['identity']['market'] ?? []) !== [] ? (string) ((array) $record->context_json['identity']['market'])[0] : null),
+                    Forms\Components\Select::make('expiry_preset')->label('Hạn sử dụng')->options(IndustryContextExpiry::presets())->default('6_months')->live(),
+                    Forms\Components\DateTimePicker::make('expires_at_custom')->label('Ngày hết hạn tùy chọn')->visible(fn (Get $get): bool => $get('expiry_preset') === 'custom'),
+                ])
                 ->action(function (IndustryContextProfile $record, array $data, $livewire): void {
                     $context = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)
-                        ->generateFromProfile($record, $data['notes'] ?? null);
-                    $revision = app(\App\IndustryContext\IndustryContextProfileManager::class)->createRevision($record, $context);
+                        ->generateFromProfile($record, $data['notes'] ?? null, $data['market'] ?? null);
+                    $expiresAt = IndustryContextExpiry::resolve((string) ($data['expiry_preset'] ?? '6_months'), $data['expires_at_custom'] ?? null);
+                    $revision = app(\App\IndustryContext\IndustryContextProfileManager::class)->createRevision($record, $context, expiresAt: $expiresAt);
                     $livewire->redirect(self::getUrl('view', ['record' => $revision]));
                 }),
             Tables\Actions\ViewAction::make()->label('Xem'),
             Tables\Actions\Action::make('copy_prompt')
                 ->label('Copy Prompt')->icon('heroicon-o-clipboard')
-                ->modalHeading('Prompt tạo Industry Context')
-                ->modalContent(function (IndustryContextProfile $record) {
+                ->extraAttributes(function (IndustryContextProfile $record): array {
                     $identity = (array) ($record->context_json['identity'] ?? []);
                     $prompt = app(\Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService::class)->compilePrompt(
                         (string) ($identity['context_name'] ?? $record->name),
                         (string) ($identity['language'] ?? 'en'),
+                        implode(', ', array_map('strval', (array) ($identity['market'] ?? []))),
                     );
 
-                    return view('filament.components.industry-context-prompt-preview', ['prompt' => $prompt]);
+                    return IndustryContextClipboard::copyAttributes($prompt);
                 })
-                ->modalWidth('7xl')->modalSubmitAction(false)->modalCancelActionLabel('Đóng'),
+                ->action(fn (): null => null),
             Tables\Actions\EditAction::make()->label('Sửa'),
             Tables\Actions\DeleteAction::make()
                 ->action(fn (IndustryContextProfile $record) => IndustryContextProfile::query()->where('key', $record->key)->delete()),

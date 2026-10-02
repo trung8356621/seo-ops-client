@@ -6,6 +6,7 @@
             <div><dt class="font-medium">Schema</dt><dd>{{ $record->schema_version }}</dd></div>
             <div><dt class="font-medium">Status</dt><dd>{{ $record->is_active ? 'Active' : 'Inactive' }}</dd></div>
             <div><dt class="font-medium">Created</dt><dd>{{ $record->created_at }}</dd></div>
+            <div><dt class="font-medium">Hạn sử dụng</dt><dd>{{ $record->expires_at?->format('d/m/Y H:i') ?? 'Không hết hạn' }} <x-filament::badge :color="\App\IndustryContext\IndustryContextExpiry::status($record->expires_at) === 'expired' ? 'danger' : (\App\IndustryContext\IndustryContextExpiry::status($record->expires_at) === 'expiring' ? 'warning' : 'success')">{{ \App\IndustryContext\IndustryContextExpiry::label($record->expires_at) }}</x-filament::badge></dd></div>
         </dl>
         <pre class="mt-4 max-h-[32rem] overflow-auto rounded-lg bg-gray-950 p-4 text-xs text-gray-100">{{ json_encode($record->context_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</pre>
     </x-filament::section>
@@ -15,7 +16,7 @@
             @foreach ($this->revisions() as $revision)
                 <div class="rounded-lg border p-4">
                     <div class="flex items-center justify-between gap-4">
-                        <div>{{ $revision->created_at }} @if($revision->is_active)<x-filament::badge color="success">Active</x-filament::badge>@endif</div>
+                        <div>{{ $revision->created_at }} · {{ $revision->expires_at?->format('d/m/Y H:i') ?? 'Không hết hạn' }} @if($revision->is_active)<x-filament::badge color="success">Active</x-filament::badge>@endif <x-filament::badge :color="\App\IndustryContext\IndustryContextExpiry::status($revision->expires_at) === 'expired' ? 'danger' : (\App\IndustryContext\IndustryContextExpiry::status($revision->expires_at) === 'expiring' ? 'warning' : 'success')">{{ \App\IndustryContext\IndustryContextExpiry::label($revision->expires_at) }}</x-filament::badge></div>
                         @if(! $revision->is_active)
                             <x-filament::button wire:click="activateRevision({{ $revision->id }})" size="sm">Dùng bản này</x-filament::button>
                         @endif

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit;
 
+use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
 use App\IndustryContext\IndustryContextSchema;
 use App\Models\IndustryContextProfile;
@@ -29,6 +30,7 @@ final class IndustryContextProfileManagerTest extends TestCase
             $table->string('schema_version')->default('1.0');
             $table->json('context_json');
             $table->boolean('is_active')->default(false)->index();
+            $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
         });
         $this->manager = app(IndustryContextProfileManager::class);
@@ -68,6 +70,30 @@ final class IndustryContextProfileManagerTest extends TestCase
         IndustryContextProfile::query()->where('key', 'bags')->update(['is_active' => false]);
         $latest = IndustryContextProfile::query()->where('key', 'bags')->orderByDesc('id')->firstOrFail();
         self::assertSame([$latest->id], IndustryContextProfile::query()->logicalRepresentatives()->pluck('id')->all());
+    }
+
+    public function test_expiry_is_revision_metadata_and_does_not_deactivate_or_prune_active_row(): void
+    {
+        $expiredAt = now()->subDay();
+        $initial = $this->manager->createInitial('bags', 'Bags', $this->context('Initial'), $expiredAt);
+        self::assertTrue($initial->is_active);
+        self::assertSame('expired', IndustryContextExpiry::status($initial->expires_at));
+
+        $revisionExpiry = now()->addMonths(6);
+        $revision = $this->manager->createRevision($initial, $this->context('Revision'), expiresAt: $revisionExpiry);
+        self::assertNotNull($revision->expires_at);
+        self::assertNotSame($initial->expires_at?->toDateTimeString(), $revision->expires_at?->toDateTimeString());
+
+        $this->manager->prune('bags');
+        self::assertTrue(IndustryContextProfile::query()->whereKey($initial->id)->where('is_active', true)->exists());
+    }
+
+    public function test_expiry_presets_default_to_six_months_and_support_never(): void
+    {
+        $now = now()->startOfSecond();
+        self::assertSame($now->copy()->addMonthsNoOverflow(6)->toDateTimeString(), IndustryContextExpiry::resolve(now: $now)?->toDateTimeString());
+        self::assertNull(IndustryContextExpiry::resolve('never', now: $now));
+        self::assertSame('Không hết hạn', IndustryContextExpiry::label(null));
     }
 
     /** @return array<string, mixed> */

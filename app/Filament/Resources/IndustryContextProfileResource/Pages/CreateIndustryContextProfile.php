@@ -3,6 +3,9 @@
 namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
+use App\Filament\Support\IndustryContextClipboard;
+use App\Filament\Support\ValidatesIndustryContextJson;
+use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
 use App\IndustryContext\IndustryContextSchema;
 use Filament\Actions\Action;
@@ -14,6 +17,8 @@ use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerati
 
 final class CreateIndustryContextProfile extends CreateRecord
 {
+    use ValidatesIndustryContextJson;
+
     protected static string $resource = IndustryContextProfileResource::class;
 
     public ?string $generationPreviewJson = null;
@@ -25,15 +30,8 @@ final class CreateIndustryContextProfile extends CreateRecord
         return [
             Action::make('copy_prompt')
                 ->label('Copy Prompt')
-                ->modalHeading('Prompt tạo Industry Context')
-                ->modalHidden(fn (): bool => $this->copyPromptError() !== null)
-                ->action(function (): void {
-                    if (($message = $this->copyPromptError()) !== null) {
-                        Notification::make()->title($message)->warning()->send();
-                    }
-                })
-                ->modalContent(fn () => view('filament.components.industry-context-prompt-preview', ['prompt' => $this->compiledPrompt()]))
-                ->modalWidth('7xl')->modalSubmitAction(false)->modalCancelActionLabel('Đóng'),
+                ->extraAttributes(fn (): array => $this->copyPromptAttributes())
+                ->action(fn (): null => null),
             Action::make('quick_generate')->label('Gen nhanh')->icon('heroicon-o-sparkles')
                 ->modalHeading(fn (): string => $this->generationSeed()['prompt_type'] === 'discovery' ? 'Discovery & Attention JSON' : 'Breakout JSON')
                 ->modalHidden(fn (): bool => $this->generationSeed()['prompt_type'] === 'core')
@@ -56,7 +54,7 @@ final class CreateIndustryContextProfile extends CreateRecord
                         return;
                     }
                     $context = app(IndustryContextGenerationService::class)->generateForType(
-                        $seed['prompt_type'], $seed['name'], $seed['language'], $coreContext, $seed['notes'],
+                        $seed['prompt_type'], $seed['name'], $seed['language'], $seed['market'], $coreContext, $seed['notes'],
                     );
                     if ($seed['prompt_type'] !== 'core') {
                         $this->generationPreviewJson = json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -73,30 +71,38 @@ final class CreateIndustryContextProfile extends CreateRecord
         ];
     }
 
-    /** @return array{name:string,language:string,prompt_type:string,notes:?string} */
+    /** @return array{name:string,language:string,market:?string,prompt_type:string,notes:?string} */
     private function generationSeed(): array
     {
         $state = $this->rawFormState();
         $name = trim((string) ($state['name'] ?? ''));
         $language = trim((string) ($state['language'] ?? ''));
         $promptType = (string) ($state['prompt_type'] ?? 'core');
+        $market = trim((string) ($state['market'] ?? ''));
         $notes = trim((string) ($state['notes'] ?? ''));
 
         return [
             'name' => $name,
             'language' => $language !== '' ? $language : 'vi',
+            'market' => $market !== '' ? $market : null,
             'prompt_type' => in_array($promptType, ['core', 'discovery', 'breakout'], true) ? $promptType : 'core',
             'notes' => $notes !== '' ? $notes : null,
         ];
     }
 
-    private function compiledPrompt(): string
+    /** @return array<string, string> */
+    private function copyPromptAttributes(): array
     {
-        $seed = $this->generationSeed();
+        if (($message = $this->copyPromptError()) !== null) {
+            return IndustryContextClipboard::warningAttributes($message);
+        }
 
-        return app(IndustryContextGenerationService::class)->compilePromptForType(
-            $seed['prompt_type'], $seed['name'], $seed['language'], $seed['prompt_type'] === 'core' ? null : $this->validCoreContext(), $seed['notes'],
+        $seed = $this->generationSeed();
+        $prompt = app(IndustryContextGenerationService::class)->compilePromptForType(
+            $seed['prompt_type'], $seed['name'], $seed['language'], $seed['market'], $seed['prompt_type'] === 'core' ? null : $this->validCoreContext(), $seed['notes'],
         );
+
+        return IndustryContextClipboard::copyAttributes($prompt);
     }
 
     private function copyPromptError(): ?string
@@ -136,6 +142,7 @@ final class CreateIndustryContextProfile extends CreateRecord
     {
         return app(IndustryContextProfileManager::class)->createInitial(
             (string) $data['key'], (string) $data['name'], (array) $data['context_json'],
+            IndustryContextExpiry::resolve((string) ($this->rawFormState()['expiry_preset'] ?? '6_months'), $this->rawFormState()['expires_at_custom'] ?? null),
         );
     }
 }
