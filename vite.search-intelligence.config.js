@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { createViteConfig } from './vite.shared.config.js';
 
 export default defineConfig(createViteConfig({
-    input: ['addons/agent-runtime/resources/js/app/main.jsx'],
-    buildDirectory: 'build-agent',
+    input: ['addons/search-intelligence/resources/js/performance-hub-gsc-chart.js'],
+    buildDirectory: 'build-search',
+    reactPlugin: false,
 }));

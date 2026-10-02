@@ -62,7 +62,7 @@
 @vite([
     'resources/js/support-ticket/headerTicketComposer.js',
     'resources/css/support-ticket-header.css',
-])
+], 'build-support')
 
 <div
     class="support-ticket-header"
