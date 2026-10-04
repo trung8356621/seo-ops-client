@@ -2,6 +2,10 @@
 
 Thin Laravel application shell with embedded platform runtime (`app/Core`).
 
+## Mandatory coding skill
+
+For all coding, editing, debugging, implementation, and testing tasks, always apply `.agents/skills/compact-coding/SKILL.md`.
+
 ## Owns
 - bootstrap / env / public entry
 - root config composition
