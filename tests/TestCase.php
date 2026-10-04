@@ -26,6 +26,8 @@ abstract class TestCase extends BaseTestCase
     {
         parent::refreshApplication();
 
+        TestDatabaseGuard::make()->assertTestingEnvironment((string) app()->environment());
+
         // Must run before setUpTraits (DatabaseTransactions) — afterApplicationCreated is too late.
         $this->configureTestingDatabaseConnections();
         $this->assertTestDatabasesAreSafe();
@@ -159,10 +161,8 @@ abstract class TestCase extends BaseTestCase
 
     private function assertTestDatabasesAreSafe(): void
     {
-        if (! app()->environment('testing')) {
-            return;
-        }
-
-        TestDatabaseGuard::make()->assertConfiguredConnectionsAreTestSafe();
+        $guard = TestDatabaseGuard::make();
+        $guard->assertTestingEnvironment((string) app()->environment());
+        $guard->assertConfiguredConnectionsAreTestSafe();
     }
 }

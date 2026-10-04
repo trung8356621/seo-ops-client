@@ -71,6 +71,20 @@ final class TestDatabaseGuard
         return new self($nameGuardConfig);
     }
 
+    /** @throws RuntimeException */
+    public function assertTestingEnvironment(string $environment): void
+    {
+        if ($environment === 'testing') {
+            return;
+        }
+
+        throw new RuntimeException(
+            self::BLOCK_PREFIX."\n"
+            .'PHPUnit must run with APP_ENV=testing and client phpunit.xml.'."\n"
+            .'Refusing to execute tests against development database.'
+        );
+    }
+
     public function isAllowed(string $driver, string $database): bool
     {
         try {

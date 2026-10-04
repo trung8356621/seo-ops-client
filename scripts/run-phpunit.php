@@ -20,9 +20,22 @@ foreach ($args as $arg) {
 }
 
 $command = [$phpBinary, '-d', 'memory_limit='.$memory, $phpunit];
+$configuration = null;
 if (! $hasConfiguration && is_file($root.'/phpunit.xml')) {
     $command[] = '--configuration';
-    $command[] = $root.'/phpunit.xml';
+    $configuration = $root.'/phpunit.xml';
+    $command[] = $configuration;
+} elseif ($hasConfiguration) {
+    foreach ($args as $index => $arg) {
+        if ($arg === '--configuration') {
+            $configuration = $args[$index + 1] ?? '(missing)';
+            break;
+        }
+        if (str_starts_with($arg, '--configuration=')) {
+            $configuration = substr($arg, strlen('--configuration='));
+            break;
+        }
+    }
 }
 
 array_push($command, ...$args);
@@ -32,6 +45,8 @@ $cmd = implode(' ', array_map(static function (string $part): string {
 }, $command));
 
 fwrite(STDOUT, "[run-phpunit] memory_limit={$memory}\n");
+fwrite(STDOUT, '[run-phpunit] config='.($configuration ?? '(phpunit default)')."\n");
+fwrite(STDOUT, '[run-phpunit] APP_ENV='.(getenv('APP_ENV') ?: '(set by configuration)')."\n");
 
 passthru($cmd, $exitCode);
 exit($exitCode);

@@ -27,6 +27,20 @@ final class TestDatabaseGuardTest extends TestCase
         self::assertTrue($this->guard->isAllowed('sqlite', ':memory:'));
     }
 
+    public function test_non_testing_environment_is_blocked_with_actionable_message(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("TEST DATABASE GUARD BLOCKED\nPHPUnit must run with APP_ENV=testing and client phpunit.xml.\nRefusing to execute tests against development database.");
+
+        $this->guard->assertTestingEnvironment('local');
+    }
+
+    public function test_testing_environment_is_allowed(): void
+    {
+        $this->guard->assertTestingEnvironment('testing');
+        self::assertTrue(true);
+    }
+
     public function test_disposable_mysql_name_seo_ops_test_is_allowed(): void
     {
         $this->guard->assertAllowed('mysql', 'seo_ops_test');
