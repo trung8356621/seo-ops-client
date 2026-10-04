@@ -35,13 +35,3 @@ if (! is_file($phpunit)) {
 }
 
 require $autoload;
-
-// Ensure Seo addon test PSR-4 exists (Linux case: Tests vs tests/).
-$prefixes = require $root.'/vendor/composer/autoload_psr4.php';
-$seoTestsPrefix = 'App\\Addons\\SeoContentAi\\Tests\\';
-if (! isset($prefixes[$seoTestsPrefix])) {
-    testing_tools_fail(
-        "PSR-4 map missing for {$seoTestsPrefix}\n".
-        "Fix: deploy composer.json then COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload"
-    );
-}
