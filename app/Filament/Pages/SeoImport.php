@@ -15,6 +15,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -96,8 +97,8 @@ final class SeoImport extends Page implements HasForms
             return;
         }
 
-        $fullPath = storage_path('app/'.$relativeFile);
-        if (! file_exists($fullPath)) {
+        $fullPath = $this->resolveUploadedPackagePath((string) $relativeFile);
+        if ($fullPath === null) {
             Notification::make()->title('File tải lên không tồn tại')->danger()->send();
 
             return;
@@ -156,6 +157,13 @@ final class SeoImport extends Page implements HasForms
             ->title('Đã đưa tác vụ nhập dữ liệu vào hàng đợi (client-transfer)')
             ->info()
             ->send();
+    }
+
+    private function resolveUploadedPackagePath(string $relativeFile): ?string
+    {
+        $disk = Storage::disk('local');
+
+        return $disk->exists($relativeFile) ? $disk->path($relativeFile) : null;
     }
 
     public function getRunProperty(): ?ClientTransferRun

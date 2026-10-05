@@ -28,6 +28,8 @@ use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use App\Services\ClientTransfer\Support\ZipArchiveManager;
+use Illuminate\Support\Facades\Queue;
+use Illuminate\Support\Facades\Storage;
 use Omnichannel\Addons\Content\Models\ArticleMeta;
 use Omnichannel\Addons\Content\Models\SeoArticle;
 use Omnichannel\Addons\ContentProjects\Models\SeoProject;
@@ -42,6 +44,39 @@ use ZipArchive;
 
 final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
 {
+    public function test_import_upload_resolves_through_local_disk_and_queues_persistent_absolute_path(): void
+    {
+        $relativePath = 'client-transfer/uploads/test.zip';
+        $sourceZip = $this->tempDir.DIRECTORY_SEPARATOR.'test.zip';
+        (new ClientTransferExporter)->export($sourceZip);
+
+        self::assertSame(storage_path('app/private'), config('filesystems.disks.local.root'));
+
+        $disk = Storage::disk('local');
+        $disk->put($relativePath, fopen($sourceZip, 'rb'));
+        $expectedPath = $disk->path($relativePath);
+
+        try {
+            self::assertFileExists($expectedPath);
+
+            $resolver = new \ReflectionMethod(SeoImport::class, 'resolveUploadedPackagePath');
+            $resolvedPath = $resolver->invoke(new SeoImport, $relativePath);
+
+            self::assertSame($expectedPath, $resolvedPath);
+            $inspection = (new \App\Services\ClientTransfer\ClientTransferImporter)->inspect($resolvedPath);
+            self::assertTrue($inspection['target_empty']);
+
+            Queue::fake();
+            PrepareSeoImportJob::dispatch('upload-path-run', $resolvedPath);
+
+            Queue::assertPushed(PrepareSeoImportJob::class, function (PrepareSeoImportJob $job) use ($expectedPath): bool {
+                return $job->uploadedZipPath === $expectedPath && file_exists($job->uploadedZipPath);
+            });
+        } finally {
+            $disk->delete($relativePath);
+        }
+    }
+
     public function test_livewire_pages_do_not_expose_complex_objects_in_public_properties(): void
     {
         $allowedScalarTypes = ['string', 'int', 'bool', 'array', 'null', 'float'];
