@@ -35,48 +35,72 @@ final class ArticlesDataset extends BaseDataset
 
     public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
     {
+        $afterId = 0;
+        $total = 0;
+        do {
+            $slice = $this->exportSlice($writer, $blobs, $afterId, 100);
+            $total += $slice['count'];
+            $afterId = $slice['last_id'];
+        } while ($slice['has_more']);
+
+        return $total;
+    }
+
+    public function exportSlice(NdjsonPartWriter $writer, BlobManager $blobs, int $afterId = 0, int $limit = 100): array
+    {
+        $articles = SeoArticle::withTrashed()
+            ->where('id', '>', $afterId)
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->get();
+
         $count = 0;
-        SeoArticle::withTrashed()->orderBy('id')->chunkById(200, function ($articles) use ($writer, $blobs, &$count): void {
-            foreach ($articles as $article) {
-                // Store body in raw sidecar blob for exact byte fidelity
-                $body = (string) ($article->body ?? '');
-                $blobInfo = $blobs->store($body, 'html');
+        $lastId = $afterId;
 
-                $record = [
-                    'ref' => 'article:' . $article->id,
-                    'site_ref' => 'site:' . $article->site_id,
-                    'author_ref' => $article->author_id ? ('user:' . $article->author_id) : null,
-                    'title' => (string) $article->title,
-                    'slug' => (string) ($article->slug ?? ''),
-                    'language' => $article->language,
-                    'status' => (string) ($article->status ?? 'draft'),
-                    'excerpt' => $article->excerpt,
-                    'focus_keyword' => $article->focus_keyword,
-                    'canonical_url' => $article->canonical_url,
-                    'document_version' => $article->document_version !== null ? (int) $article->document_version : 1,
-                    'editor_document_schema_version' => $article->editor_document_schema_version !== null ? (int) $article->editor_document_schema_version : null,
-                    'editor_document_updated_at' => $article->editor_document_updated_at?->toIso8601String(),
-                    'review_status' => $article->review_status,
-                    'reviewed_at' => $article->reviewed_at?->toIso8601String(),
-                    'reviewed_by_ref' => $article->reviewed_by ? ('user:' . $article->reviewed_by) : null,
-                    'review_notes' => $article->review_notes,
-                    'last_manual_saved_at' => $article->last_manual_saved_at?->toIso8601String(),
-                    'last_ai_content_at' => $article->last_ai_content_at?->toIso8601String(),
-                    'editor_document' => $article->editor_document,
-                    'blocks' => $article->blocks,
-                    'body_blob' => $blobInfo['path'],
-                    'body_sha256' => $blobInfo['sha256'],
-                    'created_at' => $article->created_at?->toIso8601String(),
-                    'updated_at' => $article->updated_at?->toIso8601String(),
-                    'deleted_at' => $article->deleted_at?->toIso8601String(),
-                ];
+        foreach ($articles as $article) {
+            // Store body in raw sidecar blob for exact byte fidelity
+            $body = (string) ($article->body ?? '');
+            $blobInfo = $blobs->store($body, 'html');
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
+            $record = [
+                'ref' => 'article:' . $article->id,
+                'site_ref' => 'site:' . $article->site_id,
+                'author_ref' => $article->author_id ? ('user:' . $article->author_id) : null,
+                'title' => (string) $article->title,
+                'slug' => (string) ($article->slug ?? ''),
+                'language' => $article->language,
+                'status' => (string) ($article->status ?? 'draft'),
+                'excerpt' => $article->excerpt,
+                'focus_keyword' => $article->focus_keyword,
+                'canonical_url' => $article->canonical_url,
+                'document_version' => $article->document_version !== null ? (int) $article->document_version : 1,
+                'editor_document_schema_version' => $article->editor_document_schema_version !== null ? (int) $article->editor_document_schema_version : null,
+                'editor_document_updated_at' => $article->editor_document_updated_at?->toIso8601String(),
+                'review_status' => $article->review_status,
+                'reviewed_at' => $article->reviewed_at?->toIso8601String(),
+                'reviewed_by_ref' => $article->reviewed_by ? ('user:' . $article->reviewed_by) : null,
+                'review_notes' => $article->review_notes,
+                'last_manual_saved_at' => $article->last_manual_saved_at?->toIso8601String(),
+                'last_ai_content_at' => $article->last_ai_content_at?->toIso8601String(),
+                'editor_document' => $article->editor_document,
+                'blocks' => $article->blocks,
+                'body_blob' => $blobInfo['path'],
+                'body_sha256' => $blobInfo['sha256'],
+                'created_at' => $article->created_at?->toIso8601String(),
+                'updated_at' => $article->updated_at?->toIso8601String(),
+                'deleted_at' => $article->deleted_at?->toIso8601String(),
+            ];
 
-        return $count;
+            $writer->writeRecord($record);
+            $count++;
+            $lastId = (int) $article->id;
+        }
+
+        return [
+            'count' => $count,
+            'last_id' => $lastId,
+            'has_more' => $articles->count() >= $limit,
+        ];
     }
 
     public function importRecord(

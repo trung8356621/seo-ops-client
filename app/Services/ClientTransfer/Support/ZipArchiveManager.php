@@ -12,6 +12,10 @@ use ZipArchive;
 
 final class ZipArchiveManager
 {
+    public const MAX_ENTRIES = 50000;
+
+    public const MAX_UNCOMPRESSED_BYTES = 5368709120; // 5 GB
+
     /**
      * Compresses the staging directory into a ZIP archive.
      */
@@ -74,8 +78,45 @@ final class ZipArchiveManager
             throw new FatalImportException("Failed to open transfer ZIP package, error code: {$res}");
         }
 
-        $zip->extractTo($destinationDir);
-        $zip->close();
+        try {
+            if ($zip->numFiles > self::MAX_ENTRIES) {
+                throw new FatalImportException("Transfer package exceeds maximum file entry limit (" . self::MAX_ENTRIES . ").");
+            }
+
+            $totalUncompressedBytes = 0;
+
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $stat = $zip->statIndex($i);
+                if ($stat === false) {
+                    continue;
+                }
+
+                $name = (string) ($stat['name'] ?? '');
+
+                // Path traversal check
+                if (str_contains($name, '../') || str_contains($name, '..\\')) {
+                    throw new FatalImportException("Zip entry [{$name}] attempts illegal directory traversal.");
+                }
+
+                // Absolute path check
+                if (
+                    str_starts_with($name, '/')
+                    || str_starts_with($name, '\\')
+                    || preg_match('/^[a-zA-Z]:/', $name) === 1
+                ) {
+                    throw new FatalImportException("Zip entry [{$name}] contains an illegal absolute path.");
+                }
+
+                $totalUncompressedBytes += (int) ($stat['size'] ?? 0);
+                if ($totalUncompressedBytes > self::MAX_UNCOMPRESSED_BYTES) {
+                    throw new FatalImportException("Transfer package uncompressed size exceeds maximum allowed limit.");
+                }
+            }
+
+            $zip->extractTo($destinationDir);
+        } finally {
+            $zip->close();
+        }
 
         $manifestPath = $destinationDir . DIRECTORY_SEPARATOR . 'manifest.json';
         if (! file_exists($manifestPath)) {

@@ -4,23 +4,25 @@ declare(strict_types=1);
 
 namespace App\Services\ClientTransfer\Logging;
 
+use App\Services\ClientTransfer\Support\ReferenceMap;
+
 final class ImportRun
 {
     /** @var array<string, array{export_count: int, imported: int, failed: int, blocked: int, warnings: int, missing_refs: int}> */
     private array $datasetStats = [];
 
-    /** @var list<ImportRecordLog> */
-    private array $logs = [];
-
-    /** @var array<string, bool> */
-    private array $failedRoots = [];
-
-    /** @var list<array{dataset: string, record: array<string, mixed>, log: ImportRecordLog}> */
-    private array $quarantinedRecords = [];
+    private ReferenceMap $refMap;
 
     public function __construct(
         public readonly string $runId,
+        ?ReferenceMap $refMap = null,
     ) {
+        $this->refMap = $refMap ?? new ReferenceMap($runId);
+    }
+
+    public function getReferenceMap(): ReferenceMap
+    {
+        return $this->refMap;
     }
 
     public function initDataset(string $dataset, int $exportCount = 0): void
@@ -34,19 +36,19 @@ final class ImportRun
                 'warnings' => 0,
                 'missing_refs' => 0,
             ];
-        } else {
+        } elseif ($exportCount > 0) {
             $this->datasetStats[$dataset]['export_count'] = $exportCount;
         }
     }
 
     public function markFailedRoot(string $rootRef): void
     {
-        $this->failedRoots[$rootRef] = true;
+        $this->refMap->markFailedRoot($rootRef);
     }
 
     public function isRootFailed(string $rootRef): bool
     {
-        return isset($this->failedRoots[$rootRef]);
+        return $this->refMap->isRootFailed($rootRef);
     }
 
     public function recordImported(string $dataset, string $ref, ?string $part = null, int $index = 0): void
@@ -68,27 +70,20 @@ final class ImportRun
         $this->initDataset($dataset);
         $this->datasetStats[$dataset]['failed']++;
 
-        $log = new ImportRecordLog(
-            importRunId: $this->runId,
+        $blobRef = ! empty($rawRecord['body_blob']) ? (string) $rawRecord['body_blob'] : null;
+
+        $this->refMap->logRecord(
+            runId: $this->runId,
             dataset: $dataset,
             part: $part ?? 'unknown',
             recordRef: $ref,
-            status: ImportStatus::Failed,
+            status: ImportStatus::Failed->value,
             errorType: $errorType,
             message: $message,
-            sourceFile: $file,
             recordIndex: $index,
-            rawRecord: $rawRecord,
+            sourceFile: $file,
+            blobRef: $blobRef,
         );
-
-        $this->logs[] = $log;
-        if ($rawRecord !== null) {
-            $this->quarantinedRecords[] = [
-                'dataset' => $dataset,
-                'record' => $rawRecord,
-                'log' => $log,
-            ];
-        }
     }
 
     public function recordBlocked(
@@ -103,27 +98,20 @@ final class ImportRun
         $this->initDataset($dataset);
         $this->datasetStats[$dataset]['blocked']++;
 
-        $log = new ImportRecordLog(
-            importRunId: $this->runId,
+        $blobRef = ! empty($rawRecord['body_blob']) ? (string) $rawRecord['body_blob'] : null;
+
+        $this->refMap->logRecord(
+            runId: $this->runId,
             dataset: $dataset,
             part: $part ?? 'unknown',
             recordRef: $ref,
-            status: ImportStatus::BlockedByParent,
+            status: ImportStatus::BlockedByParent->value,
             errorType: 'BLOCKED_BY_PARENT',
             message: "Blocked by failed parent aggregate root [{$parentRef}]",
-            sourceFile: $file,
             recordIndex: $index,
-            rawRecord: $rawRecord,
+            sourceFile: $file,
+            blobRef: $blobRef,
         );
-
-        $this->logs[] = $log;
-        if ($rawRecord !== null) {
-            $this->quarantinedRecords[] = [
-                'dataset' => $dataset,
-                'record' => $rawRecord,
-                'log' => $log,
-            ];
-        }
     }
 
     public function recordWarning(
@@ -140,12 +128,12 @@ final class ImportRun
             $this->datasetStats[$dataset]['missing_refs']++;
         }
 
-        $this->logs[] = new ImportRecordLog(
-            importRunId: $this->runId,
+        $this->refMap->logRecord(
+            runId: $this->runId,
             dataset: $dataset,
             part: $part ?? 'unknown',
             recordRef: $ref,
-            status: ImportStatus::Warning,
+            status: ImportStatus::Warning->value,
             errorType: $isMissingRef ? 'MISSING_REF' : 'WARNING',
             message: $message,
             recordIndex: $index,
@@ -190,15 +178,24 @@ final class ImportRun
      */
     public function getLogs(): array
     {
-        return $this->logs;
-    }
+        $rows = $this->refMap->getLogsChunk(0, 1000);
+        $logs = [];
+        foreach ($rows as $row) {
+            $logs[] = new ImportRecordLog(
+                importRunId: $row['run_id'],
+                dataset: $row['dataset'],
+                part: $row['part'],
+                recordRef: $row['record_ref'],
+                status: ImportStatus::tryFrom($row['status']) ?? ImportStatus::Failed,
+                errorType: $row['error_type'],
+                message: $row['message'],
+                sourceFile: $row['source_file'],
+                recordIndex: $row['record_index'],
+                createdAt: $row['created_at'],
+            );
+        }
 
-    /**
-     * @return list<array{dataset: string, record: array<string, mixed>, log: ImportRecordLog}>
-     */
-    public function getQuarantinedRecords(): array
-    {
-        return $this->quarantinedRecords;
+        return $logs;
     }
 
     public function hasFailures(): bool

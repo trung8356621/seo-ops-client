@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Jobs\ClientTransfer\PrepareSeoImportJob;
+use App\Models\ClientTransferRun;
 use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferImporter;
 use Filament\Forms\Components\FileUpload;
@@ -14,6 +16,7 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class SeoImport extends Page implements HasForms
@@ -31,15 +34,25 @@ final class SeoImport extends Page implements HasForms
     /** @var array<string, mixed>|null */
     public ?array $data = [];
 
-    /** @var array<string, mixed>|null */
-    public ?array $inspectionResult = null;
-
-    /** @var array<string, mixed>|null */
-    public ?array $importResult = null;
+    public ?string $runId = null;
 
     public ?string $uploadedFilePath = null;
 
     public bool $force = false;
+
+    public ?string $inspectedFormat = null;
+
+    public ?string $inspectedVersion = null;
+
+    public ?string $inspectedExportedAt = null;
+
+    public ?bool $targetEmpty = null;
+
+    public ?bool $serviceReady = null;
+
+    public ?int $inspectedTotalRecords = null;
+
+    public ?int $inspectedDatasetCount = null;
 
     public function getTitle(): string
     {
@@ -102,16 +115,13 @@ final class SeoImport extends Page implements HasForms
             $importer = new ClientTransferImporter();
             $inspection = $importer->inspect($fullPath);
 
-            $this->inspectionResult = [
-                'format' => $inspection['manifest']->format,
-                'format_version' => $inspection['manifest']->formatVersion,
-                'exported_at' => $inspection['manifest']->exportedAt,
-                'source' => $inspection['manifest']->source,
-                'datasets' => array_map(fn ($d) => ['count' => $d->count, 'parts' => count($d->parts)], $inspection['manifest']->datasets),
-                'target_empty' => $inspection['target_empty'],
-                'non_empty_tables' => $inspection['non_empty_tables'],
-                'service_ready' => $inspection['service_ready'],
-            ];
+            $this->inspectedFormat = (string) $inspection['manifest']->format;
+            $this->inspectedVersion = (string) $inspection['manifest']->formatVersion;
+            $this->inspectedExportedAt = (string) $inspection['manifest']->exportedAt;
+            $this->targetEmpty = (bool) $inspection['target_empty'];
+            $this->serviceReady = (bool) $inspection['service_ready'];
+            $this->inspectedDatasetCount = count($inspection['manifest']->datasets);
+            $this->inspectedTotalRecords = array_sum(array_map(fn ($d) => $d->count, $inspection['manifest']->datasets));
 
             Notification::make()->title('Kiểm tra gói thành công')->success()->send();
         } catch (\Throwable $e) {
@@ -126,35 +136,44 @@ final class SeoImport extends Page implements HasForms
             return;
         }
 
-        try {
-            $importer = new ClientTransferImporter();
-            $this->importResult = $importer->import($this->uploadedFilePath, $this->force);
+        $this->runId = Str::random(12);
 
-            if ($this->importResult['total_failed'] > 0) {
-                Notification::make()
-                    ->title("Import hoàn tất với {$this->importResult['total_failed']} bản ghi lỗi (đã tạo gói retry).")
-                    ->warning()
-                    ->send();
-            } else {
-                Notification::make()
-                    ->title("Import thành công toàn bộ {$this->importResult['total_imported']} bản ghi!")
-                    ->success()
-                    ->send();
-            }
-        } catch (\Throwable $e) {
-            Notification::make()->title('Import thất bại: ' . $e->getMessage())->danger()->send();
-        }
+        ClientTransferRun::query()->create([
+            'run_id' => $this->runId,
+            'type' => 'import',
+            'status' => 'pending',
+            'phase' => 'queued',
+            'started_at' => now(),
+            'metadata' => [
+                'uploaded_file' => $this->uploadedFilePath,
+                'force' => $this->force,
+            ],
+        ]);
+
+        PrepareSeoImportJob::dispatch($this->runId, $this->uploadedFilePath, $this->force)->onQueue('client-transfer');
+
+        Notification::make()
+            ->title('Đã đưa tác vụ nhập dữ liệu vào hàng đợi (client-transfer)')
+            ->info()
+            ->send();
+    }
+
+    public function getRunProperty(): ?ClientTransferRun
+    {
+        return $this->runId ? ClientTransferRun::query()->where('run_id', $this->runId)->first() : null;
     }
 
     public function downloadRetryPackage(): ?BinaryFileResponse
     {
-        if (empty($this->importResult['retry_package_path'])) {
+        $run = $this->run;
+        if ($run === null || empty($run->retry_package_path)) {
+            Notification::make()->title('Không tìm thấy gói retry.')->warning()->send();
             return null;
         }
 
-        $path = (string) $this->importResult['retry_package_path'];
+        $path = (string) $run->retry_package_path;
         if (! file_exists($path)) {
-            Notification::make()->title('File retry package không tồn tại')->danger()->send();
+            Notification::make()->title('File gói retry không còn tồn tại trên disk.')->danger()->send();
             return null;
         }
 

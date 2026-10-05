@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Jobs\ClientTransfer\PrepareSeoExportJob;
+use App\Models\ClientTransferRun;
 use App\Models\User;
-use App\Services\ClientTransfer\ClientTransferExporter;
-use App\Services\ServiceIdentity;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class SeoExport extends Page
@@ -22,10 +23,7 @@ final class SeoExport extends Page
 
     protected static bool $shouldRegisterNavigation = false;
 
-    /** @var array<string, mixed>|null */
-    public ?array $exportResult = null;
-
-    public bool $isExporting = false;
+    public ?string $runId = null;
 
     public function getTitle(): string
     {
@@ -42,34 +40,40 @@ final class SeoExport extends Page
 
     public function runExport(): void
     {
-        $this->isExporting = true;
-        try {
-            $exporter = new ClientTransferExporter();
-            $this->exportResult = $exporter->export();
+        $this->runId = Str::random(12);
 
-            Notification::make()
-                ->title('SEO package exported successfully')
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Export failed: ' . $e->getMessage())
-                ->danger()
-                ->send();
-        } finally {
-            $this->isExporting = false;
-        }
+        ClientTransferRun::query()->create([
+            'run_id' => $this->runId,
+            'type' => 'export',
+            'status' => 'pending',
+            'phase' => 'queued',
+            'started_at' => now(),
+        ]);
+
+        PrepareSeoExportJob::dispatch($this->runId)->onQueue('client-transfer');
+
+        Notification::make()
+            ->title('Đã đưa tác vụ xuất dữ liệu vào hàng đợi (client-transfer)')
+            ->info()
+            ->send();
+    }
+
+    public function getRunProperty(): ?ClientTransferRun
+    {
+        return $this->runId ? ClientTransferRun::query()->where('run_id', $this->runId)->first() : null;
     }
 
     public function downloadPackage(): ?BinaryFileResponse
     {
-        if ($this->exportResult === null || empty($this->exportResult['destination_path'])) {
+        $run = $this->run;
+        if ($run === null || ! $run->isCompleted() || empty($run->artifact_path)) {
+            Notification::make()->title('File export chưa sẵn sàng.')->warning()->send();
             return null;
         }
 
-        $path = (string) $this->exportResult['destination_path'];
+        $path = (string) $run->artifact_path;
         if (! file_exists($path)) {
-            Notification::make()->title('Export file no longer exists.')->danger()->send();
+            Notification::make()->title('File export không còn tồn tại trên disk.')->danger()->send();
             return null;
         }
 

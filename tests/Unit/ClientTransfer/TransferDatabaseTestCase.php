@@ -401,6 +401,32 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->timestamps();
             $table->unique(['media_id', 'meta_key']);
         });
+
+        Schema::dropIfExists('client_transfer_runs');
+        Schema::create('client_transfer_runs', function (Blueprint $table): void {
+            $table->id();
+            $table->string('run_id', 64)->unique();
+            $table->string('type', 20);
+            $table->string('status', 30)->default('pending');
+            $table->string('phase', 50)->default('queued');
+            $table->string('current_dataset', 100)->nullable();
+            $table->unsignedInteger('current_part')->nullable();
+            $table->unsignedBigInteger('record_offset')->default(0);
+            $table->unsignedBigInteger('total_records')->default(0);
+            $table->unsignedBigInteger('processed_records')->default(0);
+            $table->unsignedBigInteger('imported_count')->default(0);
+            $table->unsignedBigInteger('failed_count')->default(0);
+            $table->unsignedBigInteger('blocked_count')->default(0);
+            $table->unsignedBigInteger('warnings_count')->default(0);
+            $table->unsignedBigInteger('missing_refs_count')->default(0);
+            $table->text('artifact_path')->nullable();
+            $table->text('retry_package_path')->nullable();
+            $table->text('error_message')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
+            $table->timestamps();
+        });
     }
 
     protected function wipeBusinessTables(): void

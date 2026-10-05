@@ -38,6 +38,13 @@ interface DatasetInterface
     public function export(NdjsonPartWriter $writer, BlobManager $blobs): int;
 
     /**
+     * Exports a slice of dataset records.
+     *
+     * @return array{count: int, last_id: int, has_more: bool}
+     */
+    public function exportSlice(NdjsonPartWriter $writer, BlobManager $blobs, int $afterId = 0, int $limit = 500): array;
+
+    /**
      * Imports a single record from the NDJSON part.
      *
      * @param  array<string, mixed>  $record

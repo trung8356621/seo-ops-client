@@ -165,6 +165,14 @@ final class ClientTransferImporter
             return;
         }
 
+        // 1. Strict connection readiness check
+        try {
+            DB::connection('omi_seo_ai')->getPdo();
+        } catch (\Throwable $e) {
+            throw new FatalImportException('Target SEO database connection [omi_seo_ai] failed: ' . $e->getMessage(), 0, $e);
+        }
+
+        // 2. Strict empty check
         $nonEmpty = $this->getNonEmptyTables();
         if (! empty($nonEmpty)) {
             $details = [];
@@ -191,8 +199,12 @@ final class ClientTransferImporter
                         $nonEmpty[$table] = $cnt;
                     }
                 }
-            } catch (\Throwable) {
-                // Connection or table not configured yet
+            } catch (\Throwable $e) {
+                // If it's a connection failure or syntax/fatal error, do not swallow silently
+                if ($this->isSeoServiceReady()) {
+                    throw new FatalImportException("Failed inspecting target table [{$table}]: " . $e->getMessage(), 0, $e);
+                }
+                throw $e;
             }
         }
 

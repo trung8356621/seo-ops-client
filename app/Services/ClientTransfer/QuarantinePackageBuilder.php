@@ -9,6 +9,7 @@ use App\Services\ClientTransfer\Manifest\DatasetManifest;
 use App\Services\ClientTransfer\Manifest\TransferManifest;
 use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\NdjsonPartWriter;
+use App\Services\ClientTransfer\Support\ReferenceMap;
 use App\Services\ClientTransfer\Support\ZipArchiveManager;
 
 final class QuarantinePackageBuilder
@@ -19,37 +20,64 @@ final class QuarantinePackageBuilder
         string $outputZipPath,
         DatasetRegistry $registry,
     ): ?string {
-        $quarantined = $run->getQuarantinedRecords();
-        if (empty($quarantined)) {
+        return self::buildFromRefMap($run->runId, $run->getReferenceMap(), $sourceExtractDir, $outputZipPath, $registry);
+    }
+
+    public static function buildFromRefMap(
+        string $runId,
+        ReferenceMap $refMap,
+        string $sourceExtractDir,
+        string $outputZipPath,
+        DatasetRegistry $registry,
+    ): ?string {
+        if ($refMap->countFailures() === 0) {
             return null;
         }
 
-        $stagingDir = storage_path("app/client-transfer/staging_quarantine_{$run->runId}");
+        $stagingDir = storage_path("app/client-transfer/staging_quarantine_{$runId}");
         if (is_dir($stagingDir)) {
             self::deleteDir($stagingDir);
         }
         mkdir($stagingDir, 0755, true);
 
         try {
-            // 1. Write import-errors.ndjson
+            // 1. Stream import-errors.ndjson in chunks
             $errorsHandle = fopen($stagingDir . DIRECTORY_SEPARATOR . 'import-errors.ndjson', 'wb');
             if ($errorsHandle !== false) {
-                foreach ($run->getLogs() as $log) {
-                    fwrite($errorsHandle, json_encode($log->toArray(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
-                }
+                $afterId = 0;
+                do {
+                    $logChunk = $refMap->getLogsChunk($afterId, 500);
+                    foreach ($logChunk as $logRow) {
+                        $logArray = [
+                            'import_run_id' => $logRow['run_id'],
+                            'dataset' => $logRow['dataset'],
+                            'part' => $logRow['part'],
+                            'record_ref' => $logRow['record_ref'],
+                            'status' => $logRow['status'],
+                            'error_type' => $logRow['error_type'],
+                            'message' => $logRow['message'],
+                            'source_file' => $logRow['source_file'],
+                            'record_index' => $logRow['record_index'],
+                            'created_at' => $logRow['created_at'],
+                        ];
+                        fwrite($errorsHandle, json_encode($logArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
+                        $afterId = (int) $logRow['id'];
+                    }
+                } while (count($logChunk) === 500);
+
                 fclose($errorsHandle);
             }
 
-            // 2. Group records by dataset
+            // 2. Stream quarantined records from original extracted package by locator
+            $failedParts = $refMap->getFailedParts();
             $byDataset = [];
-            foreach ($quarantined as $item) {
-                $byDataset[$item['dataset']][] = $item['record'];
+            foreach ($failedParts as $fp) {
+                $byDataset[$fp['dataset']][] = $fp['part'];
             }
 
-            $blobs = new BlobManager($stagingDir . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'blobs');
             $datasetManifests = [];
 
-            foreach ($byDataset as $datasetKey => $records) {
+            foreach ($byDataset as $datasetKey => $parts) {
                 $dataset = $registry->get($datasetKey);
                 if ($dataset === null) {
                     continue;
@@ -57,32 +85,70 @@ final class QuarantinePackageBuilder
 
                 $datasetDir = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
                 $writer = new NdjsonPartWriter($datasetDir, $dataset->relativeSubdir(), $dataset->maxRecordsPerPart(), $dataset->maxBytesPerPart());
+                $datasetCount = 0;
 
-                foreach ($records as $record) {
-                    // If record has body_blob, copy original blob to quarantine package
-                    if (! empty($record['body_blob'])) {
-                        $blobRel = (string) $record['body_blob'];
-                        $srcBlob = $sourceExtractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
-                        $destBlob = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
-                        $destBlobDir = dirname($destBlob);
-                        if (! is_dir($destBlobDir)) {
-                            mkdir($destBlobDir, 0755, true);
-                        }
-                        if (file_exists($srcBlob) && ! file_exists($destBlob)) {
-                            copy($srcBlob, $destBlob);
-                        }
+                foreach ($parts as $partRel) {
+                    $failedRefs = $refMap->getFailedRecordsForPart($datasetKey, $partRel);
+                    if (empty($failedRefs)) {
+                        continue;
                     }
 
-                    $writer->writeRecord($record);
+                    $partPath = $sourceExtractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $partRel);
+                    if (! file_exists($partPath)) {
+                        continue;
+                    }
+
+                    $handle = fopen($partPath, 'rb');
+                    if ($handle === false) {
+                        continue;
+                    }
+
+                    try {
+                        while (($line = fgets($handle)) !== false) {
+                            $line = trim($line);
+                            if ($line === '') {
+                                continue;
+                            }
+
+                            $record = json_decode($line, true);
+                            if (! is_array($record)) {
+                                continue;
+                            }
+
+                            $ref = (string) ($record['ref'] ?? ($record['_ref'] ?? ''));
+                            if ($ref !== '' && isset($failedRefs[$ref])) {
+                                // If record has body_blob, copy original blob to quarantine package
+                                if (! empty($record['body_blob'])) {
+                                    $blobRel = (string) $record['body_blob'];
+                                    $srcBlob = $sourceExtractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
+                                    $destBlob = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
+                                    $destBlobDir = dirname($destBlob);
+                                    if (! is_dir($destBlobDir)) {
+                                        mkdir($destBlobDir, 0755, true);
+                                    }
+                                    if (file_exists($srcBlob) && ! file_exists($destBlob)) {
+                                        copy($srcBlob, $destBlob);
+                                    }
+                                }
+
+                                $writer->writeRecord($record);
+                                $datasetCount++;
+                            }
+                        }
+                    } finally {
+                        fclose($handle);
+                    }
                 }
 
-                $parts = $writer->finish();
-                $datasetManifests[$datasetKey] = new DatasetManifest(
-                    key: $datasetKey,
-                    count: count($records),
-                    dependsOn: $dataset->dependencies(),
-                    parts: $parts,
-                );
+                $manifestParts = $writer->finish();
+                if ($datasetCount > 0) {
+                    $datasetManifests[$datasetKey] = new DatasetManifest(
+                        key: $datasetKey,
+                        count: $datasetCount,
+                        dependsOn: $dataset->dependencies(),
+                        parts: $manifestParts,
+                    );
+                }
             }
 
             // 3. Write manifest.json
@@ -94,7 +160,7 @@ final class QuarantinePackageBuilder
                     'app_version' => '1.0.0',
                     'database_driver' => config('database.default', 'mysql'),
                     'is_quarantine_retry' => true,
-                    'original_run_id' => $run->runId,
+                    'original_run_id' => $runId,
                 ],
                 datasets: $datasetManifests,
             );

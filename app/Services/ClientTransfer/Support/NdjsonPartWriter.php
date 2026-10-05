@@ -27,7 +27,9 @@ final class NdjsonPartWriter
         public readonly string $relativeSubdir,
         public readonly int $maxRecords = 20000,
         public readonly int $maxBytes = 16777216, // 16 MB
+        int $startPartIndex = 1,
     ) {
+        $this->currentPartIndex = $startPartIndex;
         if (! is_dir($directory)) {
             mkdir($directory, 0755, true);
         }

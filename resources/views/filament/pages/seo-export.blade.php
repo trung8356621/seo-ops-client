@@ -1,16 +1,15 @@
 <x-filament-panels::page>
     <div class="space-y-6">
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-            <h2 class="text-lg font-medium text-gray-900 dark:text-white">Xuất dữ liệu SEO di động (Portable Data Package)</h2>
+            <h2 class="text-lg font-medium text-gray-900 dark:text-white">Xuất dữ liệu SEO di động (Portable Data Export)</h2>
             <p class="mt-2 text-sm text-gray-500">
-                Gói dữ liệu chuyển giao bao gồm toàn bộ thực thể nghiệp vụ SEO (Từ khóa, Phân loại, Chủ đề, Bài viết, Đính kèm hình ảnh, Liên kết và Kế hoạch nội dung).
-                Không chứa thông tin mật, service keys hay credential nhạy cảm.
+                Tác vụ chạy ngầm trên hàng đợi <code>client-transfer</code>. Bộ nhớ và thời gian được phân bổ theo từng lát cắt dữ liệu an toàn.
             </p>
 
             <div class="mt-6 flex items-center gap-3">
                 <x-filament::button wire:click="runExport" wire:loading.attr="disabled" color="primary" icon="heroicon-o-arrow-up-tray">
                     <span wire:loading.remove wire:target="runExport">Bắt đầu xuất dữ liệu</span>
-                    <span wire:loading wire:target="runExport">Đang tạo gói export...</span>
+                    <span wire:loading wire:target="runExport">Đang đưa vào hàng đợi...</span>
                 </x-filament::button>
 
                 <a href="{{ \App\Filament\Pages\ServiceStatusOverview::getUrl() }}" class="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
@@ -19,32 +18,54 @@
             </div>
         </div>
 
-        @if ($exportResult)
-            <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/20">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-base font-semibold text-emerald-900 dark:text-emerald-100">Gói export đã sẵn sàng!</h3>
-                        <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
-                            Thời điểm: {{ $exportResult['exported_at'] }} | Dung lượng: {{ number_format($exportResult['file_size']) }} bytes
-                        </p>
+        @if ($this->run)
+            @if ($this->run->isRunning())
+                <div wire:poll.2s class="rounded-xl border border-blue-200 bg-blue-50/50 p-6 shadow-sm dark:border-blue-900 dark:bg-blue-950/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-blue-900 dark:text-blue-100">Đang xử lý xuất dữ liệu...</h3>
+                            <p class="mt-1 text-xs text-blue-700 dark:text-blue-300">
+                                Run ID: <span class="font-mono">{{ $this->run->run_id }}</span> | Giai đoạn: <span class="font-semibold">{{ $this->run->phase }}</span>
+                                @if ($this->run->current_dataset)
+                                    | Tập dữ liệu: <span class="font-semibold">{{ $this->run->current_dataset }}</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                {{ ucfirst($this->run->status) }}
+                            </span>
+                        </div>
                     </div>
-                    <x-filament::button wire:click="downloadPackage" color="success" icon="heroicon-o-arrow-down-tray">
-                        Tải file ZIP
-                    </x-filament::button>
-                </div>
 
-                <div class="mt-6 border-t border-emerald-200/60 pt-4 dark:border-emerald-800/60">
-                    <h4 class="text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-200">Chi tiết số lượng bản ghi:</h4>
-                    <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-                        @foreach ($exportResult['counts'] as $dataset => $count)
-                            <div class="rounded-lg border border-emerald-100 bg-white p-3 text-sm shadow-xs dark:border-gray-800 dark:bg-gray-900">
-                                <span class="block text-xs text-gray-500">{{ $dataset }}</span>
-                                <span class="text-base font-bold text-gray-900 dark:text-white">{{ number_format($count) }}</span>
-                            </div>
-                        @endforeach
+                    <div class="mt-4">
+                        <div class="flex justify-between text-xs text-blue-700 dark:text-blue-300">
+                            <span>Đã xử lý: {{ number_format($this->run->processed_records) }} bản ghi</span>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @elseif ($this->run->isCompleted())
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/20">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-emerald-900 dark:text-emerald-100">Gói export đã sẵn sàng!</h3>
+                            <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                                Run ID: <span class="font-mono">{{ $this->run->run_id }}</span> | Tổng bản ghi đã xuất: {{ number_format($this->run->processed_records) }}
+                            </p>
+                        </div>
+                        <x-filament::button wire:click="downloadPackage" color="success" icon="heroicon-o-arrow-down-tray">
+                            Tải file ZIP
+                        </x-filament::button>
+                    </div>
+                </div>
+            @elseif ($this->run->isFailed())
+                <div class="rounded-xl border border-rose-200 bg-rose-50/50 p-6 shadow-sm dark:border-rose-900 dark:bg-rose-950/20">
+                    <h3 class="text-base font-semibold text-rose-900 dark:text-rose-100">Xuất dữ liệu thất bại</h3>
+                    <p class="mt-1 text-xs text-rose-700 dark:text-rose-300">
+                        Lỗi: {{ $this->run->error_message }}
+                    </p>
+                </div>
+            @endif
         @endif
     </div>
 </x-filament-panels::page>
