@@ -59,16 +59,73 @@ final class FinalizeSeoExportJob implements ShouldQueue
             mkdir($exportDir, 0755, true);
         }
 
-        $destinationZipPath = $exportDir.DIRECTORY_SEPARATOR.'seo-export-'.date('Ymd-His').'-'.$this->runId.'.zip';
-        ZipArchiveManager::create($stagingDir, $destinationZipPath);
+        $tmpZipPath = $exportDir.DIRECTORY_SEPARATOR.'seo-export-'.$this->runId.'.tmp.zip';
+        $canonicalPath = self::canonicalPath();
+
+        try {
+            ZipArchiveManager::create($stagingDir, $tmpZipPath);
+
+            if (! is_file($tmpZipPath) || (int) filesize($tmpZipPath) <= 0) {
+                throw new \RuntimeException('Generated export ZIP is missing or empty.');
+            }
+
+            // Atomic replace: the previous known-good ZIP is only superseded once the new one is complete.
+            if (! @rename($tmpZipPath, $canonicalPath)) {
+                if (! @copy($tmpZipPath, $canonicalPath)) {
+                    throw new \RuntimeException('Could not move export ZIP into place.');
+                }
+                @unlink($tmpZipPath);
+            }
+        } catch (\Throwable $e) {
+            @unlink($tmpZipPath);
+            self::deleteDir($stagingDir);
+            throw $e;
+        }
+
+        $previousPaths = ClientTransferRun::query()
+            ->where('type', 'export')
+            ->where('run_id', '!=', $this->runId)
+            ->whereNotNull('artifact_path')
+            ->pluck('artifact_path')
+            ->all();
+
+        $run->markCompleted(artifactPath: $canonicalPath);
 
         self::deleteDir($stagingDir);
+        foreach (array_unique($previousPaths) as $old) {
+            if ((string) $old !== $canonicalPath && is_file((string) $old)) {
+                @unlink((string) $old);
+            }
+        }
 
-        $run->markCompleted(artifactPath: $destinationZipPath);
+        self::pruneHistory($this->runId);
+    }
+
+    public static function canonicalPath(): string
+    {
+        return storage_path('app/client-transfer/exports').DIRECTORY_SEPARATOR.'seo-export-latest.zip';
+    }
+
+    private static function pruneHistory(string $keepRunId, int $keep = 3): void
+    {
+        $ids = ClientTransferRun::query()
+            ->where('type', 'export')
+            ->whereIn('status', ['completed', 'failed'])
+            ->orderByDesc('id')
+            ->pluck('id')
+            ->all();
+
+        $stale = array_slice($ids, $keep);
+        if ($stale !== []) {
+            ClientTransferRun::query()->whereIn('id', $stale)->where('run_id', '!=', $keepRunId)->delete();
+        }
     }
 
     public function failed(\Throwable $e): void
     {
+        $exportDir = storage_path('app/client-transfer/exports');
+        @unlink($exportDir.DIRECTORY_SEPARATOR.'seo-export-'.$this->runId.'.tmp.zip');
+        self::deleteDir(storage_path("app/client-transfer/staging_export_{$this->runId}"));
         ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
     }
 
