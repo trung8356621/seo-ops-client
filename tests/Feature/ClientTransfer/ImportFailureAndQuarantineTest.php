@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferExporter;
 use App\Services\ClientTransfer\ClientTransferImporter;
 use App\Services\ClientTransfer\Exceptions\TargetNotEmptyException;
-use App\Services\ClientTransfer\Logging\ImportStatus;
 use App\Services\ClientTransfer\Manifest\TransferManifest;
 use App\Services\ClientTransfer\Support\ZipArchiveManager;
 use Omnichannel\Addons\Content\Models\ArticleMeta;
@@ -24,17 +23,17 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
     {
         $site = Site::query()->create(['domain' => 'test-target.test', 'status' => 'active']);
 
-        $article = new SeoArticle();
+        $article = new SeoArticle;
         $article->site_id = (int) $site->id;
         $article->title = 'Existing Article';
         $article->slug = 'existing-article';
         $article->saveQuietly();
 
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'test_target.zip';
-        $exporter = new ClientTransferExporter();
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'test_target.zip';
+        $exporter = new ClientTransferExporter;
         $exporter->export($zipPath);
 
-        $importer = new ClientTransferImporter();
+        $importer = new ClientTransferImporter;
 
         // 1. Without force -> Throws TargetNotEmptyException
         $this->expectException(TargetNotEmptyException::class);
@@ -45,14 +44,14 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
     {
         $site = Site::query()->create(['domain' => 'forced-target.test', 'status' => 'active']);
 
-        $article = new SeoArticle();
+        $article = new SeoArticle;
         $article->site_id = (int) $site->id;
         $article->title = 'Initial Article';
         $article->slug = 'initial-article';
         $article->saveQuietly();
 
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'forced_target.zip';
-        $exporter = new ClientTransferExporter();
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'forced_target.zip';
+        $exporter = new ClientTransferExporter;
         $exporter->export($zipPath);
 
         // Wipe articles so import can insert cleanly with force
@@ -65,7 +64,7 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
             'updated_at' => now(),
         ]);
 
-        $importer = new ClientTransferImporter();
+        $importer = new ClientTransferImporter;
         $res = $importer->import($zipPath, force: true);
 
         self::assertSame(1, $res['dataset_stats']['articles']['imported']);
@@ -77,7 +76,7 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
         $site = Site::query()->create(['domain' => 'quarantine.test', 'user_id' => $user->id, 'status' => 'active']);
 
         // Article 1: Safe
-        $goodArticle = new SeoArticle();
+        $goodArticle = new SeoArticle;
         $goodArticle->site_id = (int) $site->id;
         $goodArticle->title = 'Good Article';
         $goodArticle->slug = 'good-article';
@@ -85,7 +84,7 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
         $goodArticle->saveQuietly();
 
         // Article 2: Will be tampered in package to become malformed / bad blob
-        $badArticle = new SeoArticle();
+        $badArticle = new SeoArticle;
         $badArticle->site_id = (int) $site->id;
         $badArticle->title = 'Bad Article Target';
         $badArticle->slug = 'bad-article-target';
@@ -112,37 +111,37 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
         ]);
 
         // Export original package
-        $originalZip = $this->tempDir . DIRECTORY_SEPARATOR . 'original_package.zip';
-        $exporter = new ClientTransferExporter();
+        $originalZip = $this->tempDir.DIRECTORY_SEPARATOR.'original_package.zip';
+        $exporter = new ClientTransferExporter;
         $exporter->export($originalZip);
 
         // Tamper with the package: corrupt Bad Article's body blob file so checksum fails
-        $extractDir = $this->tempDir . DIRECTORY_SEPARATOR . 'tamper_staging';
+        $extractDir = $this->tempDir.DIRECTORY_SEPARATOR.'tamper_staging';
         ZipArchiveManager::extractAndValidate($originalZip, $extractDir);
 
         // Find Bad Article's body blob and corrupt its bytes
-        $articlesPartFile = $extractDir . '/content/articles/part-000001.ndjson';
+        $articlesPartFile = $extractDir.'/content/articles/part-000001.ndjson';
         $lines = file($articlesPartFile, FILE_IGNORE_NEW_LINES);
         $newLines = [];
         $tamperedBlobPath = null;
         foreach ($lines as $line) {
             $rec = json_decode($line, true);
-            if ($rec['ref'] === 'article:' . $badArticle->id) {
-                $tamperedBlobPath = $extractDir . '/' . str_replace('/', DIRECTORY_SEPARATOR, $rec['body_blob']);
+            if ($rec['ref'] === 'article:'.$badArticle->id) {
+                $tamperedBlobPath = $extractDir.'/'.str_replace('/', DIRECTORY_SEPARATOR, $rec['body_blob']);
                 file_put_contents($tamperedBlobPath, '<p>CORRUPTED BYTES THAT BREAK SHA256</p>');
             }
             $newLines[] = $line;
         }
 
         // Re-zip the tampered package (manifest has original sha, but blob file is corrupted)
-        $tamperedZip = $this->tempDir . DIRECTORY_SEPARATOR . 'tampered_package.zip';
+        $tamperedZip = $this->tempDir.DIRECTORY_SEPARATOR.'tampered_package.zip';
         ZipArchiveManager::create($extractDir, $tamperedZip);
 
         // Wipe target business tables
         $this->wipeBusinessTables();
 
         // Run import
-        $importer = new ClientTransferImporter();
+        $importer = new ClientTransferImporter;
         $res = $importer->import($tamperedZip);
 
         // Assertions:
@@ -164,13 +163,13 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
         self::assertFileExists($res['retry_package_path']);
 
         // Inspect quarantine package
-        $quarantineInspectDir = $this->tempDir . DIRECTORY_SEPARATOR . 'quarantine_inspect';
+        $quarantineInspectDir = $this->tempDir.DIRECTORY_SEPARATOR.'quarantine_inspect';
         $quarantineRes = ZipArchiveManager::extractAndValidate($res['retry_package_path'], $quarantineInspectDir);
         self::assertInstanceOf(TransferManifest::class, $quarantineRes['manifest']);
-        self::assertFileExists($quarantineInspectDir . DIRECTORY_SEPARATOR . 'import-errors.ndjson');
+        self::assertFileExists($quarantineInspectDir.DIRECTORY_SEPARATOR.'import-errors.ndjson');
 
         // Verify import-errors.ndjson has structured log entries
-        $errorLines = file($quarantineInspectDir . DIRECTORY_SEPARATOR . 'import-errors.ndjson');
+        $errorLines = file($quarantineInspectDir.DIRECTORY_SEPARATOR.'import-errors.ndjson');
         self::assertNotEmpty($errorLines);
         $firstError = json_decode($errorLines[0], true);
         self::assertArrayHasKey('import_run_id', $firstError);
@@ -188,15 +187,15 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
 
         $site = Site::query()->create(['domain' => 'secrets.test', 'user_id' => $user->id, 'status' => 'active']);
 
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'secret_check.zip';
-        $exporter = new ClientTransferExporter();
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'secret_check.zip';
+        $exporter = new ClientTransferExporter;
         $exporter->export($zipPath);
 
-        $inspectDir = $this->tempDir . DIRECTORY_SEPARATOR . 'secret_inspect';
+        $inspectDir = $this->tempDir.DIRECTORY_SEPARATOR.'secret_inspect';
         ZipArchiveManager::extractAndValidate($zipPath, $inspectDir);
 
         // Check user export file does not contain password
-        $userFile = $inspectDir . '/core/users/part-000001.ndjson';
+        $userFile = $inspectDir.'/core/users/part-000001.ndjson';
         $userContent = file_get_contents($userFile);
         self::assertStringNotContainsString('SUPER_SECRET_PASSWORD_HASH', $userContent);
         self::assertStringNotContainsString('password', $userContent);

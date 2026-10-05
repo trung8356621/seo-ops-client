@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\WordPress\Models\WordpressArticleLink;
 
@@ -27,31 +26,26 @@ final class WordpressArticleLinksDataset extends BaseDataset
         return ['articles', 'sites'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        WordpressArticleLink::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'wp_article_link:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'site_ref' => $row->site_id ? ('site:' . $row->site_id) : null,
-                    'wp_post_id' => (int) $row->wp_post_id,
-                    'last_seen_sync_generation' => $row->last_seen_sync_generation !== null ? (int) $row->last_seen_sync_generation : null,
-                    'last_synced_at' => $row->last_synced_at?->toIso8601String(),
-                    'external_modified_at' => $row->external_modified_at?->toIso8601String(),
-                    'observed_modified_at' => $row->observed_modified_at?->toIso8601String(),
-                    'observed_at' => $row->observed_at?->toIso8601String(),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return WordpressArticleLink::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'wp_article_link:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'site_ref' => $row->site_id ? ('site:'.$row->site_id) : null,
+            'wp_post_id' => (int) $row->wp_post_id,
+            'last_seen_sync_generation' => $row->last_seen_sync_generation !== null ? (int) $row->last_seen_sync_generation : null,
+            'last_synced_at' => $row->last_synced_at?->toIso8601String(),
+            'external_modified_at' => $row->external_modified_at?->toIso8601String(),
+            'observed_modified_at' => $row->observed_modified_at?->toIso8601String(),
+            'observed_at' => $row->observed_at?->toIso8601String(),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -67,19 +61,21 @@ final class WordpressArticleLinksDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('wordpress_article_links', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('wordpress_article_links', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         $siteId = ! empty($record['site_ref']) ? $refMap->get((string) $record['site_ref']) : null;
 
         try {
-            $link = new WordpressArticleLink();
+            $link = new WordpressArticleLink;
             $link->article_id = $targetArticleId;
             $link->site_id = $siteId;
             $link->wp_post_id = (int) ($record['wp_post_id'] ?? 0);

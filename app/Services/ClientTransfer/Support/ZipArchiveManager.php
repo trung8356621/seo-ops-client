@@ -30,7 +30,7 @@ final class ZipArchiveManager
             @unlink($destinationZipPath);
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $status = $zip->open($destinationZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
         if ($status !== true) {
             throw new \RuntimeException("Failed to create ZIP archive at [{$destinationZipPath}], code: {$status}");
@@ -72,7 +72,7 @@ final class ZipArchiveManager
             mkdir($destinationDir, 0755, true);
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         $res = $zip->open($zipPath);
         if ($res !== true) {
             throw new FatalImportException("Failed to open transfer ZIP package, error code: {$res}");
@@ -80,7 +80,7 @@ final class ZipArchiveManager
 
         try {
             if ($zip->numFiles > self::MAX_ENTRIES) {
-                throw new FatalImportException("Transfer package exceeds maximum file entry limit (" . self::MAX_ENTRIES . ").");
+                throw new FatalImportException('Transfer package exceeds maximum file entry limit ('.self::MAX_ENTRIES.').');
             }
 
             $totalUncompressedBytes = 0;
@@ -109,7 +109,7 @@ final class ZipArchiveManager
 
                 $totalUncompressedBytes += (int) ($stat['size'] ?? 0);
                 if ($totalUncompressedBytes > self::MAX_UNCOMPRESSED_BYTES) {
-                    throw new FatalImportException("Transfer package uncompressed size exceeds maximum allowed limit.");
+                    throw new FatalImportException('Transfer package uncompressed size exceeds maximum allowed limit.');
                 }
             }
 
@@ -118,14 +118,14 @@ final class ZipArchiveManager
             $zip->close();
         }
 
-        $manifestPath = $destinationDir . DIRECTORY_SEPARATOR . 'manifest.json';
+        $manifestPath = $destinationDir.DIRECTORY_SEPARATOR.'manifest.json';
         if (! file_exists($manifestPath)) {
-            throw new FatalImportException("Package missing mandatory manifest.json.");
+            throw new FatalImportException('Package missing mandatory manifest.json.');
         }
 
         $manifestJson = file_get_contents($manifestPath);
         if ($manifestJson === false) {
-            throw new FatalImportException("Unable to read manifest.json.");
+            throw new FatalImportException('Unable to read manifest.json.');
         }
 
         $manifest = TransferManifest::fromJson($manifestJson);
@@ -133,7 +133,7 @@ final class ZipArchiveManager
         // Validate all part checksums
         foreach ($manifest->datasets as $datasetKey => $datasetManifest) {
             foreach ($datasetManifest->parts as $part) {
-                $partPath = $destinationDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $part->file);
+                $partPath = $destinationDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $part->file);
                 if (! file_exists($partPath)) {
                     throw new FatalImportException("Missing package part file [{$part->file}] for dataset [{$datasetKey}].");
                 }

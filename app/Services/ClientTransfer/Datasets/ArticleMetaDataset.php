@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\ArticleMeta;
 
@@ -27,26 +26,21 @@ final class ArticleMetaDataset extends BaseDataset
         return ['articles'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        ArticleMeta::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'article_meta:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'meta_key' => (string) $row->meta_key,
-                    'meta_value' => $row->meta_value,
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return ArticleMeta::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'article_meta:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'meta_key' => (string) $row->meta_key,
+            'meta_value' => $row->meta_value,
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -62,17 +56,19 @@ final class ArticleMetaDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('article_meta', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('article_meta', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $meta = new ArticleMeta();
+            $meta = new ArticleMeta;
             $meta->article_id = $targetArticleId;
             $meta->meta_key = (string) ($record['meta_key'] ?? '');
             $meta->meta_value = $record['meta_value'] ?? null;

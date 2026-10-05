@@ -8,16 +8,16 @@ use App\Models\ClientTransferRun;
 use App\Models\User;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\ReferenceMap;
-use Omnichannel\Addons\Content\Models\SeoArticleHeading;
-use Omnichannel\Addons\Content\Models\SeoProject;
-use Omnichannel\Addons\Content\Models\SeoProjectTask;
-use Omnichannel\Addons\SearchIntelligence\Models\SeoLinkMap;
-use Omnichannel\Addons\SearchIntelligence\Repositories\KeywordMetaRepository;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Omnichannel\Addons\Content\Models\SeoArticleHeading;
+use Omnichannel\Addons\ContentProjects\Models\SeoProject;
+use Omnichannel\Addons\ContentProjects\Models\SeoProjectTask;
+use Omnichannel\Addons\SearchFoundation\Models\SeoLinkMap;
+use Omnichannel\Addons\SearchFoundation\Services\KeywordMetaRepository;
 
 final class ResolveDeferredSliceJob implements ShouldQueue
 {
@@ -44,6 +44,7 @@ final class ResolveDeferredSliceJob implements ShouldQueue
 
         if (empty($chunk)) {
             ValidateSeoImportJob::dispatch($this->runId)->onQueue('client-transfer');
+
             return;
         }
 

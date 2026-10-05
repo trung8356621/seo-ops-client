@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Media\Models\SeoMedia;
 
@@ -27,53 +26,48 @@ final class MediaDataset extends BaseDataset
         return ['sites', 'articles'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoMedia::query()->orderBy('id')->chunkById(200, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $media) {
-                // Collect embedded article IDs from auxiliary meta
-                $auxArticleIds = $media->getAttribute('article_id');
-                $articleRefs = [];
-                if (is_array($auxArticleIds)) {
-                    foreach ($auxArticleIds as $aId) {
-                        if (is_numeric($aId) && (int) $aId > 0) {
-                            $articleRefs[] = 'article:' . (int) $aId;
-                        }
-                    }
-                } elseif (is_numeric($auxArticleIds) && (int) $auxArticleIds > 0) {
-                    $articleRefs[] = 'article:' . (int) $auxArticleIds;
+        return SeoMedia::query();
+    }
+
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        // Collect embedded article IDs from auxiliary meta
+        $auxArticleIds = $row->getAttribute('article_id');
+        $articleRefs = [];
+        if (is_array($auxArticleIds)) {
+            foreach ($auxArticleIds as $aId) {
+                if (is_numeric($aId) && (int) $aId > 0) {
+                    $articleRefs[] = 'article:'.(int) $aId;
                 }
-
-                $primaryArticleRef = $media->primary_article_id ? ('article:' . $media->primary_article_id) : null;
-
-                $record = [
-                    'ref' => 'media:' . $media->id,
-                    'site_ref' => $media->site_id ? ('site:' . $media->site_id) : null,
-                    'primary_article_ref' => $primaryArticleRef,
-                    'article_refs' => array_values(array_unique($articleRefs)),
-                    'name' => (string) $media->name,
-                    'path' => (string) ($media->path ?? ''),
-                    'url' => (string) ($media->url ?? ''),
-                    'source' => (string) ($media->source ?? 'upload'),
-                    'mime_type' => (string) ($media->mime_type ?? ''),
-                    'file_size' => $media->file_size !== null ? (int) $media->file_size : null,
-                    'width' => $media->width !== null ? (int) $media->width : null,
-                    'height' => $media->height !== null ? (int) $media->height : null,
-                    'alt_text' => (string) ($media->alt_text ?? ''),
-                    'status' => (string) ($media->status ?? 'ready'),
-                    'wp_attachment_id' => $media->wp_attachment_id !== null ? (int) $media->wp_attachment_id : null,
-                    'wp_synced_at' => $media->wp_synced_at?->toIso8601String(),
-                    'created_at' => $media->created_at?->toIso8601String(),
-                    'updated_at' => $media->updated_at?->toIso8601String(),
-                ];
-
-                $writer->writeRecord($record);
-                $count++;
             }
-        });
+        } elseif (is_numeric($auxArticleIds) && (int) $auxArticleIds > 0) {
+            $articleRefs[] = 'article:'.(int) $auxArticleIds;
+        }
 
-        return $count;
+        $primaryArticleRef = $row->primary_article_id ? ('article:'.$row->primary_article_id) : null;
+
+        return [
+            'ref' => 'media:'.$row->id,
+            'site_ref' => $row->site_id ? ('site:'.$row->site_id) : null,
+            'primary_article_ref' => $primaryArticleRef,
+            'article_refs' => array_values(array_unique($articleRefs)),
+            'name' => (string) $row->name,
+            'path' => (string) ($row->path ?? ''),
+            'url' => (string) ($row->url ?? ''),
+            'source' => (string) ($row->source ?? 'upload'),
+            'mime_type' => (string) ($row->mime_type ?? ''),
+            'file_size' => $row->file_size !== null ? (int) $row->file_size : null,
+            'width' => $row->width !== null ? (int) $row->width : null,
+            'height' => $row->height !== null ? (int) $row->height : null,
+            'alt_text' => (string) ($row->alt_text ?? ''),
+            'status' => (string) ($row->status ?? 'ready'),
+            'wp_attachment_id' => $row->wp_attachment_id !== null ? (int) $row->wp_attachment_id : null,
+            'wp_synced_at' => $row->wp_synced_at?->toIso8601String(),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -99,7 +93,7 @@ final class MediaDataset extends BaseDataset
         }
 
         try {
-            $media = new SeoMedia();
+            $media = new SeoMedia;
             $media->site_id = $siteId;
             $media->primary_article_id = $primaryArticleId;
             $media->name = (string) ($record['name'] ?? 'media');

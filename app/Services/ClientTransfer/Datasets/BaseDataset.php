@@ -9,6 +9,8 @@ use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 abstract class BaseDataset implements DatasetInterface
 {
@@ -22,22 +24,74 @@ abstract class BaseDataset implements DatasetInterface
         return 16777216; // 16 MB
     }
 
-    public function resolveDeferred(ReferenceMap $refMap, ImportRun $run): void
+    public function resolveDeferred(ReferenceMap $refMap, ImportRun $run): void {}
+
+    public function sliceLimit(): int
     {
-        // Default no-op for datasets without deferred references
+        return 500;
     }
+
+    abstract protected function queryForExport(): Builder|Relation;
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    abstract protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array;
 
     /**
      * @return array{count: int, last_id: int, has_more: bool}
      */
     public function exportSlice(NdjsonPartWriter $writer, BlobManager $blobs, int $afterId = 0, int $limit = 500): array
     {
-        $count = $this->export($writer, $blobs);
+        $records = $this->fetchSliceRecords($afterId, $limit);
+
+        $count = 0;
+        $lastId = $afterId;
+
+        foreach ($records as $row) {
+            $record = $this->mapRecordForExport($row, $blobs);
+            if ($record !== null) {
+                $writer->writeRecord($record);
+                $count++;
+            }
+            $lastId = $this->getRecordIdForSlice($row, $lastId);
+        }
 
         return [
             'count' => $count,
-            'last_id' => 0,
-            'has_more' => false,
+            'last_id' => $lastId,
+            'has_more' => count($records) >= $limit,
         ];
+    }
+
+    /**
+     * @return iterable<mixed>
+     */
+    protected function fetchSliceRecords(int $afterId, int $limit): iterable
+    {
+        return $this->queryForExport()
+            ->where('id', '>', $afterId)
+            ->orderBy('id', 'asc')
+            ->limit($limit)
+            ->get();
+    }
+
+    protected function getRecordIdForSlice(mixed $row, int $currentLastId): int
+    {
+        return isset($row->id) ? (int) $row->id : $currentLastId + 1;
+    }
+
+    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    {
+        $afterId = 0;
+        $total = 0;
+        $limit = $this->sliceLimit();
+        do {
+            $slice = $this->exportSlice($writer, $blobs, $afterId, $limit);
+            $total += $slice['count'];
+            $afterId = $slice['last_id'];
+        } while ($slice['has_more']);
+
+        return $total;
     }
 }

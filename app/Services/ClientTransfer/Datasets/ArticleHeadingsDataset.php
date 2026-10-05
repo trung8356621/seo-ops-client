@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\SeoArticleHeading;
 
@@ -27,29 +26,24 @@ final class ArticleHeadingsDataset extends BaseDataset
         return ['articles'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoArticleHeading::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'heading:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'parent_heading_ref' => $row->parent_id ? ('heading:' . $row->parent_id) : null,
-                    'level' => (int) $row->level,
-                    'text' => (string) $row->text,
-                    'slug' => (string) ($row->slug ?? ''),
-                    'sort_order' => (int) ($row->sort_order ?? 0),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoArticleHeading::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'heading:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'parent_heading_ref' => $row->parent_id ? ('heading:'.$row->parent_id) : null,
+            'level' => (int) $row->level,
+            'text' => (string) $row->text,
+            'slug' => (string) ($row->slug ?? ''),
+            'sort_order' => (int) ($row->sort_order ?? 0),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -65,17 +59,19 @@ final class ArticleHeadingsDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('article_headings', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('article_headings', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $heading = new SeoArticleHeading();
+            $heading = new SeoArticleHeading;
             $heading->article_id = $targetArticleId;
             $heading->level = (int) ($record['level'] ?? 1);
             $heading->text = (string) ($record['text'] ?? '');
@@ -114,7 +110,7 @@ final class ArticleHeadingsDataset extends BaseDataset
             if ($targetParentId !== null && $targetParentId > 0) {
                 SeoArticleHeading::query()->where('id', $item['target_id'])->update(['parent_id' => $targetParentId]);
             } else {
-                $run->recordWarning('article_headings', 'heading:' . $item['target_id'], "Unresolved deferred parent heading ref [{$item['target_ref']}]", isMissingRef: true);
+                $run->recordWarning('article_headings', 'heading:'.$item['target_id'], "Unresolved deferred parent heading ref [{$item['target_ref']}]", isMissingRef: true);
             }
         }
     }

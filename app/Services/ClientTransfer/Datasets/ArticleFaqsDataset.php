@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\SeoFaq;
 
@@ -27,27 +26,22 @@ final class ArticleFaqsDataset extends BaseDataset
         return ['articles'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoFaq::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'faq:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'question' => (string) $row->question,
-                    'answer' => (string) $row->answer,
-                    'sort_order' => (int) ($row->sort_order ?? 0),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoFaq::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'faq:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'question' => (string) $row->question,
+            'answer' => (string) $row->answer,
+            'sort_order' => (int) ($row->sort_order ?? 0),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -63,17 +57,19 @@ final class ArticleFaqsDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('article_faqs', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('article_faqs', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $faq = new SeoFaq();
+            $faq = new SeoFaq;
             $faq->article_id = $targetArticleId;
             $faq->question = (string) ($record['question'] ?? '');
             $faq->answer = (string) ($record['answer'] ?? '');

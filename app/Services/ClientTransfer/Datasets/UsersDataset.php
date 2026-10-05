@@ -7,8 +7,9 @@ namespace App\Services\ClientTransfer\Datasets;
 use App\Models\User;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -29,27 +30,22 @@ final class UsersDataset extends BaseDataset
         return [];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): Builder|Relation
     {
-        $count = 0;
-        User::query()->orderBy('id')->chunkById(200, function ($users) use ($writer, &$count): void {
-            foreach ($users as $user) {
-                $record = [
-                    'ref' => 'user:' . $user->id,
-                    'name' => (string) $user->name,
-                    'email' => (string) $user->email,
-                    'role' => (string) ($user->role ?? User::ROLE_STAFF),
-                    'status' => (string) ($user->status ?? User::STATUS_NORMAL),
-                    'is_system' => (bool) ($user->is_system ?? false),
-                    'parent_ref' => $user->parent_id ? ('user:' . $user->parent_id) : null,
-                ];
+        return User::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'user:'.$row->id,
+            'name' => (string) $row->name,
+            'email' => (string) $row->email,
+            'role' => (string) ($row->role ?? User::ROLE_STAFF),
+            'status' => (string) ($row->status ?? User::STATUS_NORMAL),
+            'is_system' => (bool) ($row->is_system ?? false),
+            'parent_ref' => $row->parent_id ? ('user:'.$row->parent_id) : null,
+        ];
     }
 
     public function importRecord(
@@ -65,6 +61,7 @@ final class UsersDataset extends BaseDataset
 
         if ($email === '') {
             $run->recordFailed('users', $ref, 'VALIDATION', 'User email is required.', $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
@@ -77,10 +74,11 @@ final class UsersDataset extends BaseDataset
                 if (! empty($record['parent_ref'])) {
                     $refMap->addDeferred('users', (int) $user->id, 'parent_id', (string) $record['parent_ref']);
                 }
+
                 return;
             }
 
-            $newUser = new User();
+            $newUser = new User;
             $newUser->name = (string) ($record['name'] ?? $email);
             $newUser->email = $email;
             $newUser->role = (string) ($record['role'] ?? User::ROLE_STAFF);
@@ -112,7 +110,7 @@ final class UsersDataset extends BaseDataset
             if ($targetParentId !== null && $targetParentId > 0) {
                 User::query()->where('id', $item['target_id'])->update(['parent_id' => $targetParentId]);
             } else {
-                $run->recordWarning('users', 'user:' . $item['target_id'], "Unresolved deferred parent user ref [{$item['target_ref']}]", isMissingRef: true);
+                $run->recordWarning('users', 'user:'.$item['target_id'], "Unresolved deferred parent user ref [{$item['target_ref']}]", isMissingRef: true);
             }
         }
     }

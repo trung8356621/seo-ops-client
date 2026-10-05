@@ -39,7 +39,7 @@ final class BuildRetryPackageJob implements ShouldQueue
                 mkdir($quarantineDir, 0755, true);
             }
 
-            $destZip = $quarantineDir . DIRECTORY_SEPARATOR . 'seo-import-failed-' . date('Ymd-His') . '-' . $this->runId . '.zip';
+            $destZip = $quarantineDir.DIRECTORY_SEPARATOR.'seo-import-failed-'.date('Ymd-His').'-'.$this->runId.'.zip';
             $retryPath = QuarantinePackageBuilder::buildFromRefMap($this->runId, $refMap, $stagingDir, $destZip, $registry);
 
             $run->update([

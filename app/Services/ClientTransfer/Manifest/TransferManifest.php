@@ -24,17 +24,16 @@ final class TransferManifest
         public readonly string $exportedAt,
         public readonly array $source,
         public readonly array $datasets,
-    ) {
-    }
+    ) {}
 
     public function validate(): void
     {
         if ($this->format !== self::FORMAT) {
-            throw new UnsupportedFormatVersionException("Invalid package format [{$this->format}], expected [" . self::FORMAT . '].');
+            throw new UnsupportedFormatVersionException("Invalid package format [{$this->format}], expected [".self::FORMAT.'].');
         }
 
         if (! in_array($this->formatVersion, self::SUPPORTED_VERSIONS, true)) {
-            throw new UnsupportedFormatVersionException("Unsupported transfer format version [{$this->formatVersion}]. Supported versions: " . implode(', ', self::SUPPORTED_VERSIONS));
+            throw new UnsupportedFormatVersionException("Unsupported transfer format version [{$this->formatVersion}]. Supported versions: ".implode(', ', self::SUPPORTED_VERSIONS));
         }
     }
 

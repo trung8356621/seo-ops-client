@@ -6,6 +6,4 @@ namespace App\Services\ClientTransfer\Exceptions;
 
 use RuntimeException;
 
-class TransferException extends RuntimeException
-{
-}
+class TransferException extends RuntimeException {}

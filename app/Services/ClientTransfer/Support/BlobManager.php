@@ -26,13 +26,13 @@ final class BlobManager
     {
         $sha256 = hash('sha256', $content);
         $fileName = "{$sha256}.{$extension}";
-        $fullPath = $this->blobDirectory . DIRECTORY_SEPARATOR . $fileName;
+        $fullPath = $this->blobDirectory.DIRECTORY_SEPARATOR.$fileName;
 
         if (! file_exists($fullPath)) {
             file_put_contents($fullPath, $content);
         }
 
-        $relPath = str_replace('\\', '/', $this->relativeSubdir . '/' . $fileName);
+        $relPath = str_replace('\\', '/', $this->relativeSubdir.'/'.$fileName);
 
         return [
             'path' => $relPath,

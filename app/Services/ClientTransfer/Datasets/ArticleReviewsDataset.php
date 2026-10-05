@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\SeoArticleReview;
 
@@ -27,28 +26,23 @@ final class ArticleReviewsDataset extends BaseDataset
         return ['articles', 'users'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoArticleReview::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'review:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'reviewer_ref' => $row->reviewer_id ? ('user:' . $row->reviewer_id) : null,
-                    'action' => (string) ($row->action ?? ''),
-                    'notes' => $row->notes,
-                    'metadata' => $row->metadata,
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoArticleReview::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'review:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'reviewer_ref' => $row->reviewer_id ? ('user:'.$row->reviewer_id) : null,
+            'action' => (string) ($row->action ?? ''),
+            'notes' => $row->notes,
+            'metadata' => $row->metadata,
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -64,12 +58,14 @@ final class ArticleReviewsDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('article_reviews', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('article_reviews', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
@@ -79,7 +75,7 @@ final class ArticleReviewsDataset extends BaseDataset
         }
 
         try {
-            $review = new SeoArticleReview();
+            $review = new SeoArticleReview;
             $review->article_id = $targetArticleId;
             $review->reviewer_id = $reviewerId;
             $review->action = (string) ($record['action'] ?? '');

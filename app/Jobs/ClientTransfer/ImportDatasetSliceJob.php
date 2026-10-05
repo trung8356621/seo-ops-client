@@ -26,7 +26,8 @@ final class ImportDatasetSliceJob implements ShouldQueue
         public readonly string $datasetKey,
         public readonly int $datasetQueueIndex,
         public readonly int $partIndex = 0,
-        public readonly int $lineOffset = 0,
+        public readonly int $byteOffset = 0,
+        public readonly int $recordIndex = 0,
     ) {
         $this->onQueue('client-transfer');
     }
@@ -35,7 +36,7 @@ final class ImportDatasetSliceJob implements ShouldQueue
     {
         $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
-        $manifestPath = $stagingDir . DIRECTORY_SEPARATOR . 'manifest.json';
+        $manifestPath = $stagingDir.DIRECTORY_SEPARATOR.'manifest.json';
 
         if (! file_exists($manifestPath)) {
             throw new FatalImportException("Manifest missing in import staging dir [{$stagingDir}].");
@@ -47,46 +48,48 @@ final class ImportDatasetSliceJob implements ShouldQueue
 
         if ($dataset === null || $datasetManifest === null || ! isset($datasetManifest->parts[$this->partIndex])) {
             $this->advanceToNextDataset($run);
+
             return;
         }
 
         $part = $datasetManifest->parts[$this->partIndex];
-        $partPath = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $part->file);
+        $partPath = $stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $part->file);
         if (! file_exists($partPath)) {
             throw new FatalImportException("Part file not found: [{$part->file}].");
         }
 
         $refMap = new ReferenceMap($this->runId);
         $importRun = new ImportRun($this->runId, $refMap);
-        $blobs = new BlobManager($stagingDir . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'blobs');
+        $blobs = new BlobManager($stagingDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs');
 
         $handle = fopen($partPath, 'rb');
         if ($handle === false) {
             throw new FatalImportException("Cannot open part file: [{$partPath}].");
         }
 
-        $sliceLimit = $this->datasetKey === 'articles' ? 50 : 500;
-        $currentLine = 0;
-
-        // Skip to offset
-        while ($currentLine < $this->lineOffset && fgets($handle) !== false) {
-            $currentLine++;
+        // Seek directly to persisted byte offset (no line rescanning)
+        if ($this->byteOffset > 0) {
+            fseek($handle, $this->byteOffset);
         }
 
+        $sliceLimit = $this->datasetKey === 'articles' ? 50 : 500;
         $recordsInSlice = 0;
+        $currentRecordIndex = $this->recordIndex;
+        $nextByteOffset = $this->byteOffset;
         $reachedEof = false;
 
         try {
             while ($recordsInSlice < $sliceLimit && ($line = fgets($handle)) !== false) {
-                $lineIndex = $currentLine;
-                $currentLine++;
+                $lineRecordIndex = $currentRecordIndex;
+                $currentRecordIndex++;
+                $nextByteOffset = ftell($handle);
 
-                $line = trim($line);
-                if ($line === '') {
+                $trimmed = trim($line);
+                if ($trimmed === '') {
                     continue;
                 }
 
-                $record = json_decode($line, true);
+                $record = json_decode($trimmed, true);
                 if (! is_array($record)) {
                     continue;
                 }
@@ -96,6 +99,7 @@ final class ImportDatasetSliceJob implements ShouldQueue
                 // Idempotency: skip if already imported
                 if ($recordRef !== '' && $refMap->hasImported($recordRef)) {
                     $recordsInSlice++;
+
                     continue;
                 }
 
@@ -105,7 +109,7 @@ final class ImportDatasetSliceJob implements ShouldQueue
                     run: $importRun,
                     blobs: $blobs,
                     partFile: $part->file,
-                    recordIndex: $lineIndex,
+                    recordIndex: $lineRecordIndex,
                 );
 
                 $recordsInSlice++;
@@ -124,7 +128,7 @@ final class ImportDatasetSliceJob implements ShouldQueue
             'phase' => "import:{$this->datasetKey}",
             'current_dataset' => $this->datasetKey,
             'current_part' => $this->partIndex,
-            'record_offset' => $currentLine,
+            'record_offset' => $nextByteOffset,
             'processed_records' => $run->processed_records + $recordsInSlice,
             'imported_count' => $run->imported_count + ($stats['imported'] ?? 0),
             'failed_count' => $run->failed_count + ($stats['failed'] ?? 0),
@@ -139,7 +143,8 @@ final class ImportDatasetSliceJob implements ShouldQueue
                 datasetKey: $this->datasetKey,
                 datasetQueueIndex: $this->datasetQueueIndex,
                 partIndex: $this->partIndex,
-                lineOffset: $currentLine,
+                byteOffset: $nextByteOffset,
+                recordIndex: $currentRecordIndex,
             )->onQueue('client-transfer');
 
             return;
@@ -153,7 +158,8 @@ final class ImportDatasetSliceJob implements ShouldQueue
                 datasetKey: $this->datasetKey,
                 datasetQueueIndex: $this->datasetQueueIndex,
                 partIndex: $nextPartIndex,
-                lineOffset: 0,
+                byteOffset: 0,
+                recordIndex: 0,
             )->onQueue('client-transfer');
 
             return;
@@ -173,7 +179,8 @@ final class ImportDatasetSliceJob implements ShouldQueue
                 datasetKey: (string) $queue[$nextIndex],
                 datasetQueueIndex: $nextIndex,
                 partIndex: 0,
-                lineOffset: 0,
+                byteOffset: 0,
+                recordIndex: 0,
             )->onQueue('client-transfer');
         } else {
             ResolveDeferredSliceJob::dispatch($this->runId, 0)->onQueue('client-transfer');

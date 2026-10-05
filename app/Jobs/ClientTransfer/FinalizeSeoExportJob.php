@@ -27,7 +27,7 @@ final class FinalizeSeoExportJob implements ShouldQueue
     {
         $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
         $stagingDir = storage_path("app/client-transfer/staging_export_{$this->runId}");
-        $stateFile = $stagingDir . DIRECTORY_SEPARATOR . 'export_state.json';
+        $stateFile = $stagingDir.DIRECTORY_SEPARATOR.'export_state.json';
 
         $state = file_exists($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : [];
         if (! is_array($state)) {
@@ -52,14 +52,14 @@ final class FinalizeSeoExportJob implements ShouldQueue
             datasets: $datasetManifests,
         );
 
-        file_put_contents($stagingDir . DIRECTORY_SEPARATOR . 'manifest.json', $manifest->toJson());
+        file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
 
         $exportDir = storage_path('app/client-transfer/exports');
         if (! is_dir($exportDir)) {
             mkdir($exportDir, 0755, true);
         }
 
-        $destinationZipPath = $exportDir . DIRECTORY_SEPARATOR . 'seo-export-' . date('Ymd-His') . '-' . $this->runId . '.zip';
+        $destinationZipPath = $exportDir.DIRECTORY_SEPARATOR.'seo-export-'.date('Ymd-His').'-'.$this->runId.'.zip';
         ZipArchiveManager::create($stagingDir, $destinationZipPath);
 
         self::deleteDir($stagingDir);
@@ -85,7 +85,7 @@ final class FinalizeSeoExportJob implements ShouldQueue
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $item;
+            $p = $dir.DIRECTORY_SEPARATOR.$item;
             is_dir($p) ? self::deleteDir($p) : @unlink($p);
         }
         @rmdir($dir);

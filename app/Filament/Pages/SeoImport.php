@@ -9,7 +9,6 @@ use App\Models\ClientTransferRun;
 use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferImporter;
 use Filament\Forms\Components\FileUpload;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
@@ -37,8 +36,6 @@ final class SeoImport extends Page implements HasForms
     public ?string $runId = null;
 
     public ?string $uploadedFilePath = null;
-
-    public bool $force = false;
 
     public ?string $inspectedFormat = null;
 
@@ -84,10 +81,6 @@ final class SeoImport extends Page implements HasForms
                     ->maxSize(204800) // 200MB
                     ->required()
                     ->live(),
-                Toggle::make('force')
-                    ->label('Bỏ qua kiểm tra database trống (Force Import)')
-                    ->helperText('Mặc định V1 từ chối import nếu database SEO mục tiêu đã có dữ liệu.')
-                    ->default(false),
             ])
             ->statePath('data');
     }
@@ -99,20 +92,21 @@ final class SeoImport extends Page implements HasForms
 
         if (empty($relativeFile)) {
             Notification::make()->title('Vui lòng chọn file gói zip cần import')->warning()->send();
+
             return;
         }
 
-        $fullPath = storage_path('app/' . $relativeFile);
+        $fullPath = storage_path('app/'.$relativeFile);
         if (! file_exists($fullPath)) {
             Notification::make()->title('File tải lên không tồn tại')->danger()->send();
+
             return;
         }
 
         $this->uploadedFilePath = $fullPath;
-        $this->force = (bool) ($state['force'] ?? false);
 
         try {
-            $importer = new ClientTransferImporter();
+            $importer = new ClientTransferImporter;
             $inspection = $importer->inspect($fullPath);
 
             $this->inspectedFormat = (string) $inspection['manifest']->format;
@@ -125,7 +119,7 @@ final class SeoImport extends Page implements HasForms
 
             Notification::make()->title('Kiểm tra gói thành công')->success()->send();
         } catch (\Throwable $e) {
-            Notification::make()->title('Kiểm tra gói thất bại: ' . $e->getMessage())->danger()->send();
+            Notification::make()->title('Kiểm tra gói thất bại: '.$e->getMessage())->danger()->send();
         }
     }
 
@@ -133,6 +127,13 @@ final class SeoImport extends Page implements HasForms
     {
         if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
             Notification::make()->title('Vui lòng kiểm tra gói dữ liệu trước khi import.')->warning()->send();
+
+            return;
+        }
+
+        if (! $this->targetEmpty) {
+            Notification::make()->title('Database SEO đích có dữ liệu. V1 chỉ hỗ trợ import vào database trống.')->danger()->send();
+
             return;
         }
 
@@ -146,11 +147,10 @@ final class SeoImport extends Page implements HasForms
             'started_at' => now(),
             'metadata' => [
                 'uploaded_file' => $this->uploadedFilePath,
-                'force' => $this->force,
             ],
         ]);
 
-        PrepareSeoImportJob::dispatch($this->runId, $this->uploadedFilePath, $this->force)->onQueue('client-transfer');
+        PrepareSeoImportJob::dispatch($this->runId, $this->uploadedFilePath)->onQueue('client-transfer');
 
         Notification::make()
             ->title('Đã đưa tác vụ nhập dữ liệu vào hàng đợi (client-transfer)')
@@ -168,12 +168,14 @@ final class SeoImport extends Page implements HasForms
         $run = $this->run;
         if ($run === null || empty($run->retry_package_path)) {
             Notification::make()->title('Không tìm thấy gói retry.')->warning()->send();
+
             return null;
         }
 
         $path = (string) $run->retry_package_path;
         if (! file_exists($path)) {
             Notification::make()->title('File gói retry không còn tồn tại trên disk.')->danger()->send();
+
             return null;
         }
 

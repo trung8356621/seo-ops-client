@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Publishing\Models\PublishingArticleState;
 
@@ -27,27 +26,22 @@ final class PublishingArticleStatesDataset extends BaseDataset
         return ['articles'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        PublishingArticleState::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'pub_state:' . $row->id,
-                    'article_ref' => 'article:' . $row->article_id,
-                    'platform' => (string) ($row->platform ?? 'primary'),
-                    'publication_status' => $row->publication_status,
-                    'published_at' => $row->published_at?->toIso8601String(),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return PublishingArticleState::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'pub_state:'.$row->id,
+            'article_ref' => 'article:'.$row->article_id,
+            'platform' => (string) ($row->platform ?? 'primary'),
+            'publication_status' => $row->publication_status,
+            'published_at' => $row->published_at?->toIso8601String(),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -63,17 +57,19 @@ final class PublishingArticleStatesDataset extends BaseDataset
 
         if ($run->isRootFailed($articleRef)) {
             $run->recordBlocked('publishing_article_states', $ref, $articleRef, $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $targetArticleId = $refMap->get($articleRef);
         if ($targetArticleId === null) {
             $run->recordWarning('publishing_article_states', $ref, "Missing parent article [{$articleRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $state = new PublishingArticleState();
+            $state = new PublishingArticleState;
             $state->article_id = $targetArticleId;
             $state->platform = (string) ($record['platform'] ?? 'primary');
             $state->publication_status = $record['publication_status'] ?? null;

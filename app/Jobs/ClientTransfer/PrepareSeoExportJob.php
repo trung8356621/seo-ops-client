@@ -41,7 +41,7 @@ final class PrepareSeoExportJob implements ShouldQueue
 
         // Store state file in staging directory
         file_put_contents(
-            $stagingDir . DIRECTORY_SEPARATOR . 'export_state.json',
+            $stagingDir.DIRECTORY_SEPARATOR.'export_state.json',
             json_encode([
                 'dataset_manifests' => [],
                 'counts' => [],
@@ -56,6 +56,7 @@ final class PrepareSeoExportJob implements ShouldQueue
 
         if (empty($datasetKeys)) {
             FinalizeSeoExportJob::dispatch($this->runId)->onQueue('client-transfer');
+
             return;
         }
 
@@ -65,8 +66,6 @@ final class PrepareSeoExportJob implements ShouldQueue
             datasetQueueIndex: 0,
             afterId: 0,
             partIndex: 1,
-            accumulatedDatasetCount: 0,
-            accumulatedParts: []
         )->onQueue('client-transfer');
     }
 
@@ -88,7 +87,7 @@ final class PrepareSeoExportJob implements ShouldQueue
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $item;
+            $p = $dir.DIRECTORY_SEPARATOR.$item;
             is_dir($p) ? self::deleteDir($p) : @unlink($p);
         }
         @rmdir($dir);

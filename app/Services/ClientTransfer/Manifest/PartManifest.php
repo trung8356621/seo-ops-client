@@ -11,8 +11,7 @@ final class PartManifest
         public readonly int $count,
         public readonly string $sha256,
         public readonly int $bytes = 0,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{file: string, count: int, sha256: string, bytes: int}

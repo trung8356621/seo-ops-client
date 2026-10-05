@@ -45,7 +45,7 @@ final class NdjsonPartWriter
         }
 
         $json = json_encode($record, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-        $line = $json . "\n";
+        $line = $json."\n";
         $bytes = strlen($line);
 
         fwrite($this->currentHandle, $line);
@@ -60,7 +60,7 @@ final class NdjsonPartWriter
     private function openPart(): void
     {
         $fileName = sprintf('part-%06d.ndjson', $this->currentPartIndex);
-        $this->currentFilePath = $this->directory . DIRECTORY_SEPARATOR . $fileName;
+        $this->currentFilePath = $this->directory.DIRECTORY_SEPARATOR.$fileName;
         $handle = fopen($this->currentFilePath, 'wb');
         if ($handle === false) {
             throw new \RuntimeException("Unable to open part file [{$this->currentFilePath}] for writing.");
@@ -78,7 +78,7 @@ final class NdjsonPartWriter
 
             if ($this->currentPartCount > 0 && file_exists($this->currentFilePath)) {
                 $sha256 = hash_file('sha256', $this->currentFilePath);
-                $relFile = str_replace('\\', '/', $this->relativeSubdir . '/' . basename($this->currentFilePath));
+                $relFile = str_replace('\\', '/', $this->relativeSubdir.'/'.basename($this->currentFilePath));
                 $this->parts[] = new PartManifest(
                     file: $relFile,
                     count: $this->currentPartCount,

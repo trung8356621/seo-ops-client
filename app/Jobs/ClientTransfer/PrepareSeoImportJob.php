@@ -23,7 +23,6 @@ final class PrepareSeoImportJob implements ShouldQueue
     public function __construct(
         public readonly string $runId,
         public readonly string $uploadedZipPath,
-        public readonly bool $force = false,
     ) {
         $this->onQueue('client-transfer');
     }
@@ -39,7 +38,7 @@ final class PrepareSeoImportJob implements ShouldQueue
 
         // 1. Strict empty target validation
         $importer = new ClientTransferImporter($registry);
-        $importer->assertTargetEmpty($this->force);
+        $importer->assertTargetEmpty();
 
         // 2. Extract and validate package
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
@@ -81,12 +80,12 @@ final class PrepareSeoImportJob implements ShouldQueue
                 'datasets_queue' => $datasetsQueue,
                 'staging_dir' => $stagingDir,
                 'zip_path' => $this->uploadedZipPath,
-                'force' => $this->force,
             ]),
         ]);
 
         if (empty($datasetsQueue)) {
             FinalizeSeoImportJob::dispatch($this->runId)->onQueue('client-transfer');
+
             return;
         }
 
@@ -95,7 +94,8 @@ final class PrepareSeoImportJob implements ShouldQueue
             datasetKey: $datasetsQueue[0],
             datasetQueueIndex: 0,
             partIndex: 0,
-            lineOffset: 0
+            byteOffset: 0,
+            recordIndex: 0,
         )->onQueue('client-transfer');
     }
 
@@ -117,7 +117,7 @@ final class PrepareSeoImportJob implements ShouldQueue
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $item;
+            $p = $dir.DIRECTORY_SEPARATOR.$item;
             is_dir($p) ? self::deleteDir($p) : @unlink($p);
         }
         @rmdir($dir);

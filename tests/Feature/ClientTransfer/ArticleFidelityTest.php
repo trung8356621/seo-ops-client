@@ -74,14 +74,14 @@ Line B with CRLF
 EOT;
 
         // Make it very long (20,000+ characters)
-        $filler = "\n<p>Đoạn văn mở rộng với ký tự Unicode đặc biệt: Việt Nam tươi đẹp, công nghệ phát triển, dữ liệu số hóa. " . str_repeat('Bản ghi thử nghiệm kiểm tra dung lượng lớn và tính toàn vẹn từng byte. ', 150) . "</p>\n";
+        $filler = "\n<p>Đoạn văn mở rộng với ký tự Unicode đặc biệt: Việt Nam tươi đẹp, công nghệ phát triển, dữ liệu số hóa. ".str_repeat('Bản ghi thử nghiệm kiểm tra dung lượng lớn và tính toàn vẹn từng byte. ', 150)."</p>\n";
         $tortureBody .= $filler;
 
         $originalHash = hash('sha256', $tortureBody);
         $originalLength = strlen($tortureBody);
 
         // 3. Create the article in the source database
-        $article = new SeoArticle();
+        $article = new SeoArticle;
         $article->site_id = (int) $site->id;
         $article->author_id = (int) $user->id;
         $article->title = 'Bài viết kiểm tra độ toàn vẹn: Tiếng Việt 🚀 "Quotes" & \\Backslashes\\';
@@ -105,8 +105,8 @@ EOT;
         $originalArticleId = (int) $article->id;
 
         // 4. Export to ZIP
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'torture_export.zip';
-        $exporter = new ClientTransferExporter();
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'torture_export.zip';
+        $exporter = new ClientTransferExporter;
         $exportResult = $exporter->export($zipPath);
 
         self::assertFileExists($zipPath);
@@ -117,7 +117,7 @@ EOT;
         self::assertSame(0, SeoArticle::query()->count());
 
         // 6. Import package into fresh target
-        $importer = new ClientTransferImporter();
+        $importer = new ClientTransferImporter;
         $importResult = $importer->import($zipPath);
 
         self::assertSame(0, $importResult['total_failed']);

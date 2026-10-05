@@ -29,11 +29,17 @@ final class ValidateSeoImportJob implements ShouldQueue
         ]);
 
         $refMap = new ReferenceMap($this->runId);
-        $failuresCount = $refMap->countFailures();
+        $failedCount = $refMap->countByStatus('failed');
+        $blockedCount = $refMap->countByStatus('blocked_by_parent');
+        $warningsCount = $refMap->countByStatus('warning');
+        $missingRefsCount = $refMap->countMissingRefs();
 
-        // Update run metrics if needed
+        // Update run metrics from persistent log storage without mixing blocked into failed
         $run->update([
-            'failed_count' => max($run->failed_count, $failuresCount),
+            'failed_count' => $failedCount,
+            'blocked_count' => $blockedCount,
+            'warnings_count' => $warningsCount,
+            'missing_refs_count' => $missingRefsCount,
         ]);
 
         BuildRetryPackageJob::dispatch($this->runId)->onQueue('client-transfer');

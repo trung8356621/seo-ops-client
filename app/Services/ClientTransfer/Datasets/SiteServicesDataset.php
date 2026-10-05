@@ -8,8 +8,9 @@ use App\Models\Service;
 use App\Models\SiteService;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class SiteServicesDataset extends BaseDataset
 {
@@ -28,34 +29,29 @@ final class SiteServicesDataset extends BaseDataset
         return ['sites', 'users'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): Builder|Relation
     {
-        $count = 0;
-        SiteService::query()->with('service')->orderBy('id')->chunkById(200, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $serviceSlug = (string) ($row->service?->slug ?? '');
-                if ($serviceSlug === '') {
-                    continue;
-                }
+        return SiteService::query()->with('service');
+    }
 
-                $sanitizedSettings = $this->sanitizeSettings((array) ($row->settings ?? []));
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        $serviceSlug = (string) ($row->service?->slug ?? '');
+        if ($serviceSlug === '') {
+            return null;
+        }
 
-                $record = [
-                    'ref' => 'site_service:' . $row->id,
-                    'site_ref' => $row->site_id ? ('site:' . $row->site_id) : null,
-                    'user_ref' => $row->user_id ? ('user:' . $row->user_id) : null,
-                    'service_slug' => $serviceSlug,
-                    'bound_type' => (string) ($row->bound_type ?? 'site'),
-                    'status' => (string) ($row->status ?? 'active'),
-                    'settings' => $sanitizedSettings,
-                ];
+        $sanitizedSettings = $this->sanitizeSettings((array) ($row->settings ?? []));
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+        return [
+            'ref' => 'site_service:'.$row->id,
+            'site_ref' => $row->site_id ? ('site:'.$row->site_id) : null,
+            'user_ref' => $row->user_id ? ('user:'.$row->user_id) : null,
+            'service_slug' => $serviceSlug,
+            'bound_type' => (string) ($row->bound_type ?? 'site'),
+            'status' => (string) ($row->status ?? 'active'),
+            'settings' => $sanitizedSettings,
+        ];
     }
 
     public function importRecord(
@@ -72,6 +68,7 @@ final class SiteServicesDataset extends BaseDataset
 
         if (! $service instanceof Service) {
             $run->recordWarning('site_services', $ref, "Service slug [{$serviceSlug}] not found in target.", $partFile, $recordIndex);
+
             return;
         }
 
@@ -99,10 +96,11 @@ final class SiteServicesDataset extends BaseDataset
                 $existing->save();
                 $refMap->set($ref, 'site_service', (int) $existing->id);
                 $run->recordImported('site_services', $ref, $partFile, $recordIndex);
+
                 return;
             }
 
-            $siteService = new SiteService();
+            $siteService = new SiteService;
             $siteService->site_id = $siteId;
             $siteService->user_id = $userId;
             $siteService->service_id = (int) $service->id;

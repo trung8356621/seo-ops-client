@@ -19,9 +19,8 @@ use Illuminate\Support\Str;
 final class ClientTransferImporter
 {
     public function __construct(
-        private readonly DatasetRegistry $registry = new DatasetRegistry(),
-    ) {
-    }
+        private readonly DatasetRegistry $registry = new DatasetRegistry,
+    ) {}
 
     /**
      * Inspects a transfer package without importing, returning manifest and target readiness.
@@ -35,7 +34,7 @@ final class ClientTransferImporter
      */
     public function inspect(string $zipPath): array
     {
-        $extractDir = storage_path('app/client-transfer/staging_inspect_' . Str::random(8));
+        $extractDir = storage_path('app/client-transfer/staging_inspect_'.Str::random(8));
         try {
             $res = ZipArchiveManager::extractAndValidate($zipPath, $extractDir);
             $manifest = $res['manifest'];
@@ -84,7 +83,7 @@ final class ClientTransferImporter
         $res = ZipArchiveManager::extractAndValidate($zipPath, $extractDir);
         $manifest = $res['manifest'];
 
-        $blobDir = $extractDir . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'blobs';
+        $blobDir = $extractDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs';
         $blobs = new BlobManager($blobDir);
 
         try {
@@ -106,7 +105,7 @@ final class ClientTransferImporter
                 }
 
                 foreach ($datasetManifest->parts as $part) {
-                    $partPath = $extractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $part->file);
+                    $partPath = $extractDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $part->file);
                     if (! file_exists($partPath)) {
                         throw new FatalImportException("Part file missing [{$part->file}] for dataset [{$datasetKey}].");
                     }
@@ -136,8 +135,8 @@ final class ClientTransferImporter
                 if (! is_dir($quarantineDir)) {
                     mkdir($quarantineDir, 0755, true);
                 }
-                $quarantineZipName = 'seo-import-failed-' . date('Ymd-His') . '-' . $runId . '.zip';
-                $destQuarantineZip = $quarantineDir . DIRECTORY_SEPARATOR . $quarantineZipName;
+                $quarantineZipName = 'seo-import-failed-'.date('Ymd-His').'-'.$runId.'.zip';
+                $destQuarantineZip = $quarantineDir.DIRECTORY_SEPARATOR.$quarantineZipName;
 
                 $retryZipPath = QuarantinePackageBuilder::build($run, $extractDir, $destQuarantineZip, $this->registry);
             } else {
@@ -169,7 +168,7 @@ final class ClientTransferImporter
         try {
             DB::connection('omi_seo_ai')->getPdo();
         } catch (\Throwable $e) {
-            throw new FatalImportException('Target SEO database connection [omi_seo_ai] failed: ' . $e->getMessage(), 0, $e);
+            throw new FatalImportException('Target SEO database connection [omi_seo_ai] failed: '.$e->getMessage(), 0, $e);
         }
 
         // 2. Strict empty check
@@ -179,7 +178,7 @@ final class ClientTransferImporter
             foreach ($nonEmpty as $tbl => $cnt) {
                 $details[] = "{$tbl} ({$cnt} rows)";
             }
-            throw new TargetNotEmptyException('Target SEO database contains existing records: [' . implode(', ', $details) . ']. V1 import requires an empty target database.');
+            throw new TargetNotEmptyException('Target SEO database contains existing records: ['.implode(', ', $details).']. V1 import requires an empty target database.');
         }
     }
 
@@ -202,7 +201,7 @@ final class ClientTransferImporter
             } catch (\Throwable $e) {
                 // If it's a connection failure or syntax/fatal error, do not swallow silently
                 if ($this->isSeoServiceReady()) {
-                    throw new FatalImportException("Failed inspecting target table [{$table}]: " . $e->getMessage(), 0, $e);
+                    throw new FatalImportException("Failed inspecting target table [{$table}]: ".$e->getMessage(), 0, $e);
                 }
                 throw $e;
             }
@@ -215,6 +214,7 @@ final class ClientTransferImporter
     {
         try {
             DB::connection('omi_seo_ai')->getPdo();
+
             return true;
         } catch (\Throwable) {
             return false;
@@ -236,7 +236,7 @@ final class ClientTransferImporter
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            $path = $dir.DIRECTORY_SEPARATOR.$item;
             if (is_dir($path)) {
                 $this->deleteDir($path);
             } else {

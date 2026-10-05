@@ -8,8 +8,9 @@ use App\Models\Site;
 use App\Models\User;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class SitesDataset extends BaseDataset
 {
@@ -28,27 +29,22 @@ final class SitesDataset extends BaseDataset
         return ['users'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): Builder|Relation
     {
-        $count = 0;
-        Site::query()->orderBy('id')->chunkById(200, function ($sites) use ($writer, &$count): void {
-            foreach ($sites as $site) {
-                $record = [
-                    'ref' => 'site:' . $site->id,
-                    'user_ref' => $site->user_id ? ('user:' . $site->user_id) : null,
-                    'domain' => (string) $site->domain,
-                    'status' => (string) ($site->status ?? 'active'),
-                    'ssl' => (bool) $site->ssl,
-                    'created_at' => $site->created_at?->toIso8601String(),
-                    'updated_at' => $site->updated_at?->toIso8601String(),
-                ];
+        return Site::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'site:'.$row->id,
+            'user_ref' => $row->user_id ? ('user:'.$row->user_id) : null,
+            'domain' => (string) $row->domain,
+            'status' => (string) ($row->status ?? 'active'),
+            'ssl' => (bool) $row->ssl,
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -64,6 +60,7 @@ final class SitesDataset extends BaseDataset
 
         if ($domain === '') {
             $run->recordFailed('sites', $ref, 'VALIDATION', 'Site domain is required.', $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
@@ -80,10 +77,11 @@ final class SitesDataset extends BaseDataset
             if ($site instanceof Site) {
                 $refMap->set($ref, 'site', (int) $site->id);
                 $run->recordImported('sites', $ref, $partFile, $recordIndex);
+
                 return;
             }
 
-            $newSite = new Site();
+            $newSite = new Site;
             $newSite->domain = $domain;
             $newSite->user_id = $targetUserId;
             $newSite->status = (string) ($record['status'] ?? 'active');

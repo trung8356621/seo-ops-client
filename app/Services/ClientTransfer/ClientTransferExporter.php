@@ -14,9 +14,8 @@ use Illuminate\Support\Str;
 final class ClientTransferExporter
 {
     public function __construct(
-        private readonly DatasetRegistry $registry = new DatasetRegistry(),
-    ) {
-    }
+        private readonly DatasetRegistry $registry = new DatasetRegistry,
+    ) {}
 
     /**
      * @return array{
@@ -35,7 +34,7 @@ final class ClientTransferExporter
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
-            $destinationZipPath = $dir . DIRECTORY_SEPARATOR . 'seo-export-' . date('Ymd-His') . '-' . $exportId . '.zip';
+            $destinationZipPath = $dir.DIRECTORY_SEPARATOR.'seo-export-'.date('Ymd-His').'-'.$exportId.'.zip';
         }
 
         $stagingDir = storage_path("app/client-transfer/staging_export_{$exportId}");
@@ -44,7 +43,7 @@ final class ClientTransferExporter
         }
         mkdir($stagingDir, 0755, true);
 
-        $blobDir = $stagingDir . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'blobs';
+        $blobDir = $stagingDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs';
         $blobs = new BlobManager($blobDir);
 
         $datasetManifests = [];
@@ -54,7 +53,7 @@ final class ClientTransferExporter
             $datasets = $this->registry->sortedDatasets();
 
             foreach ($datasets as $dataset) {
-                $datasetDir = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
+                $datasetDir = $stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
                 $writer = new NdjsonPartWriter(
                     directory: $datasetDir,
                     relativeSubdir: $dataset->relativeSubdir(),
@@ -85,7 +84,7 @@ final class ClientTransferExporter
                 datasets: $datasetManifests,
             );
 
-            file_put_contents($stagingDir . DIRECTORY_SEPARATOR . 'manifest.json', $manifest->toJson());
+            file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
 
             ZipArchiveManager::create($stagingDir, $destinationZipPath);
 
@@ -116,7 +115,7 @@ final class ClientTransferExporter
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            $path = $dir.DIRECTORY_SEPARATOR.$item;
             if (is_dir($path)) {
                 $this->deleteDir($path);
             } else {

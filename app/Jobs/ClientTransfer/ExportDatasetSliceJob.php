@@ -20,17 +20,12 @@ final class ExportDatasetSliceJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    /**
-     * @param  list<array{file: string, count: int, sha256: string, bytes: int}>  $accumulatedParts
-     */
     public function __construct(
         public readonly string $runId,
         public readonly string $datasetKey,
         public readonly int $datasetQueueIndex,
         public readonly int $afterId = 0,
         public readonly int $partIndex = 1,
-        public readonly int $accumulatedDatasetCount = 0,
-        public readonly array $accumulatedParts = [],
     ) {
         $this->onQueue('client-transfer');
     }
@@ -41,14 +36,15 @@ final class ExportDatasetSliceJob implements ShouldQueue
         $dataset = $registry->get($this->datasetKey);
         if ($dataset === null) {
             $this->advanceToNextDataset($run);
+
             return;
         }
 
         $stagingDir = storage_path("app/client-transfer/staging_export_{$this->runId}");
-        $blobDir = $stagingDir . DIRECTORY_SEPARATOR . 'content' . DIRECTORY_SEPARATOR . 'blobs';
+        $blobDir = $stagingDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs';
         $blobs = new BlobManager($blobDir);
 
-        $datasetDir = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
+        $datasetDir = $stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
         $writer = new NdjsonPartWriter(
             directory: $datasetDir,
             relativeSubdir: $dataset->relativeSubdir(),
@@ -57,15 +53,26 @@ final class ExportDatasetSliceJob implements ShouldQueue
             startPartIndex: $this->partIndex,
         );
 
-        $limit = $this->datasetKey === 'articles' ? 100 : 500;
+        $limit = $dataset->sliceLimit();
         $slice = $dataset->exportSlice($writer, $blobs, $this->afterId, $limit);
         $newParts = $writer->finish();
 
-        $allParts = array_merge(
-            $this->accumulatedParts,
-            array_map(static fn (PartManifest $p): array => $p->toArray(), $newParts)
-        );
-        $totalDatasetCount = $this->accumulatedDatasetCount + $slice['count'];
+        $stateFile = $stagingDir.DIRECTORY_SEPARATOR.'export_state.json';
+        $state = file_exists($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : [];
+        if (! is_array($state)) {
+            $state = [];
+        }
+
+        $existingParts = (array) ($state['parts'][$this->datasetKey] ?? []);
+        $newPartsArray = array_map(static fn (PartManifest $p): array => $p->toArray(), $newParts);
+        $allParts = array_merge($existingParts, $newPartsArray);
+        $state['parts'][$this->datasetKey] = $allParts;
+
+        $previousCount = (int) ($state['counts'][$this->datasetKey] ?? 0);
+        $totalDatasetCount = $previousCount + $slice['count'];
+        $state['counts'][$this->datasetKey] = $totalDatasetCount;
+
+        file_put_contents($stateFile, json_encode($state, JSON_PRETTY_PRINT));
 
         $run->update([
             'phase' => "export:{$this->datasetKey}",
@@ -82,20 +89,12 @@ final class ExportDatasetSliceJob implements ShouldQueue
                 datasetQueueIndex: $this->datasetQueueIndex,
                 afterId: $slice['last_id'],
                 partIndex: $nextPartIndex,
-                accumulatedDatasetCount: $totalDatasetCount,
-                accumulatedParts: $allParts,
             )->onQueue('client-transfer');
 
             return;
         }
 
         // Dataset finished! Save manifest in state file
-        $stateFile = $stagingDir . DIRECTORY_SEPARATOR . 'export_state.json';
-        $state = file_exists($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : [];
-        if (! is_array($state)) {
-            $state = [];
-        }
-
         $datasetManifest = new DatasetManifest(
             key: $this->datasetKey,
             count: $totalDatasetCount,
@@ -104,7 +103,6 @@ final class ExportDatasetSliceJob implements ShouldQueue
         );
 
         $state['dataset_manifests'][$this->datasetKey] = $datasetManifest->toArray();
-        $state['counts'][$this->datasetKey] = $totalDatasetCount;
         file_put_contents($stateFile, json_encode($state, JSON_PRETTY_PRINT));
 
         $this->advanceToNextDataset($run);
@@ -122,8 +120,6 @@ final class ExportDatasetSliceJob implements ShouldQueue
                 datasetQueueIndex: $nextIndex,
                 afterId: 0,
                 partIndex: 1,
-                accumulatedDatasetCount: 0,
-                accumulatedParts: [],
             )->onQueue('client-transfer');
         } else {
             FinalizeSeoExportJob::dispatch($this->runId)->onQueue('client-transfer');

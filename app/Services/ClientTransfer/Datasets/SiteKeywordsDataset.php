@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\SearchIntelligence\Models\SeoSiteKeyword;
 
@@ -27,34 +26,29 @@ final class SiteKeywordsDataset extends BaseDataset
         return ['sites', 'keywords'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoSiteKeyword::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'site_keyword:' . $row->id,
-                    'site_ref' => 'site:' . $row->site_id,
-                    'keyword_ref' => 'keyword:' . $row->keyword_id,
-                    'phrase_kind' => (string) ($row->phrase_kind ?? ''),
-                    'seo_intent' => (string) ($row->seo_intent ?? ''),
-                    'is_seo_keyword' => (bool) $row->is_seo_keyword,
-                    'is_anchor_candidate' => (bool) $row->is_anchor_candidate,
-                    'is_ambiguous' => (bool) $row->is_ambiguous,
-                    'keyword_score' => $row->keyword_score !== null ? (float) $row->keyword_score : null,
-                    'confidence' => $row->confidence !== null ? (float) $row->confidence : null,
-                    'review_state' => (string) ($row->review_state ?? ''),
-                    'source' => (string) ($row->source ?? ''),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoSiteKeyword::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'site_keyword:'.$row->id,
+            'site_ref' => 'site:'.$row->site_id,
+            'keyword_ref' => 'keyword:'.$row->keyword_id,
+            'phrase_kind' => (string) ($row->phrase_kind ?? ''),
+            'seo_intent' => (string) ($row->seo_intent ?? ''),
+            'is_seo_keyword' => (bool) $row->is_seo_keyword,
+            'is_anchor_candidate' => (bool) $row->is_anchor_candidate,
+            'is_ambiguous' => (bool) $row->is_ambiguous,
+            'keyword_score' => $row->keyword_score !== null ? (float) $row->keyword_score : null,
+            'confidence' => $row->confidence !== null ? (float) $row->confidence : null,
+            'review_state' => (string) ($row->review_state ?? ''),
+            'source' => (string) ($row->source ?? ''),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -74,11 +68,12 @@ final class SiteKeywordsDataset extends BaseDataset
 
         if ($targetSiteId === null || $targetKwId === null) {
             $run->recordWarning('site_keywords', $ref, "Missing dependency site [{$siteRef}] or keyword [{$kwRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $row = new SeoSiteKeyword();
+            $row = new SeoSiteKeyword;
             $row->site_id = $targetSiteId;
             $row->keyword_id = $targetKwId;
             $row->phrase_kind = (string) ($record['phrase_kind'] ?? '');

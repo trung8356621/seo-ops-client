@@ -18,8 +18,7 @@ final class ImportRecordLog
         public readonly int $recordIndex = 0,
         public readonly ?string $createdAt = null,
         public readonly ?array $rawRecord = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

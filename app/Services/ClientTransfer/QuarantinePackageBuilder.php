@@ -7,7 +7,6 @@ namespace App\Services\ClientTransfer;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Manifest\DatasetManifest;
 use App\Services\ClientTransfer\Manifest\TransferManifest;
-use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use App\Services\ClientTransfer\Support\ZipArchiveManager;
@@ -42,7 +41,7 @@ final class QuarantinePackageBuilder
 
         try {
             // 1. Stream import-errors.ndjson in chunks
-            $errorsHandle = fopen($stagingDir . DIRECTORY_SEPARATOR . 'import-errors.ndjson', 'wb');
+            $errorsHandle = fopen($stagingDir.DIRECTORY_SEPARATOR.'import-errors.ndjson', 'wb');
             if ($errorsHandle !== false) {
                 $afterId = 0;
                 do {
@@ -60,7 +59,7 @@ final class QuarantinePackageBuilder
                             'record_index' => $logRow['record_index'],
                             'created_at' => $logRow['created_at'],
                         ];
-                        fwrite($errorsHandle, json_encode($logArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . "\n");
+                        fwrite($errorsHandle, json_encode($logArray, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)."\n");
                         $afterId = (int) $logRow['id'];
                     }
                 } while (count($logChunk) === 500);
@@ -83,7 +82,7 @@ final class QuarantinePackageBuilder
                     continue;
                 }
 
-                $datasetDir = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
+                $datasetDir = $stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $dataset->relativeSubdir());
                 $writer = new NdjsonPartWriter($datasetDir, $dataset->relativeSubdir(), $dataset->maxRecordsPerPart(), $dataset->maxBytesPerPart());
                 $datasetCount = 0;
 
@@ -93,7 +92,7 @@ final class QuarantinePackageBuilder
                         continue;
                     }
 
-                    $partPath = $sourceExtractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $partRel);
+                    $partPath = $sourceExtractDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $partRel);
                     if (! file_exists($partPath)) {
                         continue;
                     }
@@ -120,8 +119,8 @@ final class QuarantinePackageBuilder
                                 // If record has body_blob, copy original blob to quarantine package
                                 if (! empty($record['body_blob'])) {
                                     $blobRel = (string) $record['body_blob'];
-                                    $srcBlob = $sourceExtractDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
-                                    $destBlob = $stagingDir . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
+                                    $srcBlob = $sourceExtractDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
+                                    $destBlob = $stagingDir.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $blobRel);
                                     $destBlobDir = dirname($destBlob);
                                     if (! is_dir($destBlobDir)) {
                                         mkdir($destBlobDir, 0755, true);
@@ -165,7 +164,7 @@ final class QuarantinePackageBuilder
                 datasets: $datasetManifests,
             );
 
-            file_put_contents($stagingDir . DIRECTORY_SEPARATOR . 'manifest.json', $manifest->toJson());
+            file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
 
             // 4. Create ZIP
             ZipArchiveManager::create($stagingDir, $outputZipPath);
@@ -191,7 +190,7 @@ final class QuarantinePackageBuilder
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $path = $dir . DIRECTORY_SEPARATOR . $item;
+            $path = $dir.DIRECTORY_SEPARATOR.$item;
             if (is_dir($path)) {
                 self::deleteDir($path);
             } else {

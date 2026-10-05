@@ -6,11 +6,9 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\SearchFoundation\Enums\KeywordMetaKey;
 use Omnichannel\Addons\SearchFoundation\Models\Keyword;
-use Omnichannel\Addons\SearchFoundation\Models\KeywordMeta;
 use Omnichannel\Addons\SearchFoundation\Services\KeywordMetaRepository;
 
 final class KeywordsDataset extends BaseDataset
@@ -35,83 +33,78 @@ final class KeywordsDataset extends BaseDataset
         return 20000;
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        Keyword::query()->with('metas')->orderBy('id')->chunkById(500, function ($keywords) use ($writer, &$count): void {
-            foreach ($keywords as $kw) {
-                $metas = $kw->metas;
+        return Keyword::query()->with('metas');
+    }
 
-                // Group site-scoped metas
-                $siteData = [];
-                $globalMainArticleId = null;
-                $tags = [];
-                $qualityFlags = null;
-                $seoHidden = false;
-                $mcpExcluded = false;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        $metas = $row->metas;
 
-                foreach ($metas as $meta) {
-                    $key = (string) $meta->meta_key;
-                    $val = (string) $meta->meta_value;
+        // Group site-scoped metas
+        $siteData = [];
+        $globalMainArticleId = null;
+        $tags = [];
+        $qualityFlags = null;
+        $seoHidden = false;
+        $mcpExcluded = false;
 
-                    if ($key === KeywordMetaKey::MainArticleId->value) {
-                        $globalMainArticleId = $val;
-                    } elseif ($key === KeywordMetaKey::Tags->value) {
-                        $decoded = json_decode($val, true);
-                        $tags = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $val)));
-                    } elseif ($key === KeywordMetaKey::QualityFlags->value) {
-                        $qualityFlags = $val;
-                    } elseif ($key === KeywordMetaKey::SeoHidden->value) {
-                        $seoHidden = (bool) $val;
-                    } elseif ($key === KeywordMetaKey::McpExcluded->value) {
-                        $mcpExcluded = (bool) $val;
-                    } elseif (KeywordMetaKey::isSiteScopedKey($key)) {
-                        $siteId = KeywordMetaKey::siteIdFromKey($key);
-                        if ($siteId !== null && $siteId > 0) {
-                            $parts = explode('.', $key, 3);
-                            $suffix = $parts[2] ?? '';
-                            $siteData[$siteId][$suffix] = $val;
-                        }
-                    }
+        foreach ($metas as $meta) {
+            $key = (string) $meta->meta_key;
+            $val = (string) $meta->meta_value;
+
+            if ($key === KeywordMetaKey::MainArticleId->value) {
+                $globalMainArticleId = $val;
+            } elseif ($key === KeywordMetaKey::Tags->value) {
+                $decoded = json_decode($val, true);
+                $tags = is_array($decoded) ? $decoded : array_filter(array_map('trim', explode(',', $val)));
+            } elseif ($key === KeywordMetaKey::QualityFlags->value) {
+                $qualityFlags = $val;
+            } elseif ($key === KeywordMetaKey::SeoHidden->value) {
+                $seoHidden = (bool) $val;
+            } elseif ($key === KeywordMetaKey::McpExcluded->value) {
+                $mcpExcluded = (bool) $val;
+            } elseif (KeywordMetaKey::isSiteScopedKey($key)) {
+                $siteId = KeywordMetaKey::siteIdFromKey($key);
+                if ($siteId !== null && $siteId > 0) {
+                    $parts = explode('.', $key, 3);
+                    $suffix = $parts[2] ?? '';
+                    $siteData[$siteId][$suffix] = $val;
                 }
-
-                $siteStates = [];
-                foreach ($siteData as $siteId => $data) {
-                    $siteStates[] = [
-                        'site_ref' => 'site:' . $siteId,
-                        'target_url' => $data['target_url'] ?? null,
-                        'search_volume' => isset($data['search_volume']) && is_numeric($data['search_volume']) ? (int) $data['search_volume'] : null,
-                        'difficulty' => isset($data['difficulty']) && is_numeric($data['difficulty']) ? (float) $data['difficulty'] : null,
-                        'rescrape_keep' => ! empty($data['rescrape_keep']),
-                        'link_policy_source' => $data['link_policy_source'] ?? null,
-                        'main_article_ref' => ! empty($data['main_article_id']) ? ('article:' . $data['main_article_id']) : null,
-                    ];
-                }
-
-                $record = [
-                    'ref' => 'keyword:' . $kw->id,
-                    'phrase' => (string) $kw->phrase,
-                    'type' => (string) ($kw->type ?? Keyword::TYPE_NORMAL),
-                    'source' => (string) ($kw->source ?? ''),
-                    'source_locked' => (bool) $kw->source_locked,
-                    'review_status' => (string) ($kw->review_status ?? ''),
-                    'review_note' => $kw->review_note,
-                    'reviewed_at' => $kw->reviewed_at?->toIso8601String(),
-                    'reviewed_by_ref' => $kw->reviewed_by ? ('user:' . $kw->reviewed_by) : null,
-                    'site_states' => $siteStates,
-                    'main_article_ref' => $globalMainArticleId ? ('article:' . $globalMainArticleId) : null,
-                    'tags' => array_values($tags),
-                    'quality_flags' => $qualityFlags,
-                    'seo_hidden' => $seoHidden,
-                    'mcp_excluded' => $mcpExcluded,
-                ];
-
-                $writer->writeRecord($record);
-                $count++;
             }
-        });
+        }
 
-        return $count;
+        $siteStates = [];
+        foreach ($siteData as $siteId => $data) {
+            $siteStates[] = [
+                'site_ref' => 'site:'.$siteId,
+                'target_url' => $data['target_url'] ?? null,
+                'search_volume' => isset($data['search_volume']) && is_numeric($data['search_volume']) ? (int) $data['search_volume'] : null,
+                'difficulty' => isset($data['difficulty']) && is_numeric($data['difficulty']) ? (float) $data['difficulty'] : null,
+                'rescrape_keep' => ! empty($data['rescrape_keep']),
+                'link_policy_source' => $data['link_policy_source'] ?? null,
+                'main_article_ref' => ! empty($data['main_article_id']) ? ('article:'.$data['main_article_id']) : null,
+            ];
+        }
+
+        return [
+            'ref' => 'keyword:'.$row->id,
+            'phrase' => (string) $row->phrase,
+            'type' => (string) ($row->type ?? Keyword::TYPE_NORMAL),
+            'source' => (string) ($row->source ?? ''),
+            'source_locked' => (bool) $row->source_locked,
+            'review_status' => (string) ($row->review_status ?? ''),
+            'review_note' => $row->review_note,
+            'reviewed_at' => $row->reviewed_at?->toIso8601String(),
+            'reviewed_by_ref' => $row->reviewed_by ? ('user:'.$row->reviewed_by) : null,
+            'site_states' => $siteStates,
+            'main_article_ref' => $globalMainArticleId ? ('article:'.$globalMainArticleId) : null,
+            'tags' => array_values($tags),
+            'quality_flags' => $qualityFlags,
+            'seo_hidden' => $seoHidden,
+            'mcp_excluded' => $mcpExcluded,
+        ];
     }
 
     public function importRecord(
@@ -127,6 +120,7 @@ final class KeywordsDataset extends BaseDataset
 
         if ($phrase === '') {
             $run->recordFailed('keywords', $ref, 'VALIDATION', 'Keyword phrase is required.', $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
@@ -136,7 +130,7 @@ final class KeywordsDataset extends BaseDataset
                 $reviewedBy = $refMap->get((string) $record['reviewed_by_ref']);
             }
 
-            $kw = new Keyword();
+            $kw = new Keyword;
             $kw->phrase = $phrase;
             $kw->type = (string) ($record['type'] ?? Keyword::TYPE_NORMAL);
             $kw->source = (string) ($record['source'] ?? '');
@@ -222,7 +216,7 @@ final class KeywordsDataset extends BaseDataset
             if ($targetArticleId !== null && $targetArticleId > 0) {
                 $repo->set((int) $item['target_id'], $item['field_name'], (string) $targetArticleId);
             } else {
-                $run->recordWarning('keywords', 'keyword:' . $item['target_id'], "Unresolved deferred article ref [{$item['target_ref']}] for meta key [{$item['field_name']}]", isMissingRef: true);
+                $run->recordWarning('keywords', 'keyword:'.$item['target_id'], "Unresolved deferred article ref [{$item['target_ref']}] for meta key [{$item['field_name']}]", isMissingRef: true);
             }
         }
     }

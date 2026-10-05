@@ -77,7 +77,7 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         ]);
 
         // 3. Create Articles first so relations can link
-        $article1 = new SeoArticle();
+        $article1 = new SeoArticle;
         $article1->site_id = (int) $site->id;
         $article1->author_id = (int) $staff->id;
         $article1->title = 'Hướng dẫn chăm sóc da mùa hè';
@@ -87,7 +87,7 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         $article1->body = '<h1>Chăm sóc da</h1><p>Nội dung chi tiết...</p>';
         $article1->saveQuietly();
 
-        $article2 = new SeoArticle();
+        $article2 = new SeoArticle;
         $article2->site_id = (int) $site->id;
         $article2->author_id = (int) $staff->id;
         $article2->title = 'Kem chống nắng tốt nhất';
@@ -268,7 +268,7 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         ]);
 
         // 10. Media
-        $media = new SeoMedia();
+        $media = new SeoMedia;
         $media->site_id = (int) $site->id;
         $media->primary_article_id = (int) $article1->id;
         $media->name = 'kem-chong-nang.jpg';
@@ -278,8 +278,8 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         $media->save();
 
         // EXECUTE EXPORT
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'full_round_trip.zip';
-        $exporter = new ClientTransferExporter();
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'full_round_trip.zip';
+        $exporter = new ClientTransferExporter;
         $exportResult = $exporter->export($zipPath);
 
         self::assertFileExists($zipPath);
@@ -298,7 +298,7 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         DB::statement("INSERT OR REPLACE INTO sqlite_sequence (name, seq) VALUES ('seo_topics', 800)");
 
         // EXECUTE IMPORT
-        $importer = new ClientTransferImporter();
+        $importer = new ClientTransferImporter;
         $importResult = $importer->import($zipPath);
 
         // VERIFY ZERO FAILURES AND CLEAN STATS

@@ -15,8 +15,7 @@ final class DatasetManifest
         public readonly int $count,
         public readonly array $dependsOn,
         public readonly array $parts,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array{count: int, depends_on: list<string>, parts: list<array{file: string, count: int, sha256: string, bytes: int}>}

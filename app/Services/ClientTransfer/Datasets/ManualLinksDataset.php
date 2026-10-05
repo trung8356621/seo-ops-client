@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\SiteSync\Models\SeoSiteManualLink;
 
@@ -27,28 +26,23 @@ final class ManualLinksDataset extends BaseDataset
         return ['sites'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoSiteManualLink::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'manual_link:' . $row->id,
-                    'site_ref' => 'site:' . $row->site_id,
-                    'keyword' => (string) $row->keyword,
-                    'url' => (string) $row->url,
-                    'url_hash' => (string) ($row->url_hash ?? md5((string) $row->url)),
-                    'is_locked' => (bool) $row->is_locked,
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoSiteManualLink::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'manual_link:'.$row->id,
+            'site_ref' => 'site:'.$row->site_id,
+            'keyword' => (string) $row->keyword,
+            'url' => (string) $row->url,
+            'url_hash' => (string) ($row->url_hash ?? md5((string) $row->url)),
+            'is_locked' => (bool) $row->is_locked,
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -65,17 +59,19 @@ final class ManualLinksDataset extends BaseDataset
 
         if ($url === '') {
             $run->recordFailed('manual_links', $ref, 'VALIDATION', 'URL is required.', $partFile, $recordIndex, rawRecord: $record);
+
             return;
         }
 
         $siteId = $refMap->get($siteRef);
         if ($siteId === null) {
             $run->recordWarning('manual_links', $ref, "Missing dependency site [{$siteRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $link = new SeoSiteManualLink();
+            $link = new SeoSiteManualLink;
             $link->site_id = $siteId;
             $link->keyword = (string) ($record['keyword'] ?? '');
             $link->url = $url;

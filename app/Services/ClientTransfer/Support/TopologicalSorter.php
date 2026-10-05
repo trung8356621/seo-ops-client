@@ -9,7 +9,7 @@ use App\Services\ClientTransfer\Exceptions\DependencyCycleException;
 final class TopologicalSorter
 {
     /**
-     * @param  array<string, list<string>>  $dependencyGraph Map of [nodeKey => [dependencyKeys]]
+     * @param  array<string, list<string>>  $dependencyGraph  Map of [nodeKey => [dependencyKeys]]
      * @return list<string> Sorted keys in dependency order (least dependent first)
      */
     public static function sort(array $dependencyGraph): array

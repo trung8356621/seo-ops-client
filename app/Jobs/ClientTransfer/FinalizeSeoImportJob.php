@@ -54,7 +54,7 @@ final class FinalizeSeoImportJob implements ShouldQueue
             if ($item === '.' || $item === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $item;
+            $p = $dir.DIRECTORY_SEPARATOR.$item;
             is_dir($p) ? self::deleteDir($p) : @unlink($p);
         }
         @rmdir($dir);

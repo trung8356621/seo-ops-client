@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\SearchIntelligence\Models\SeoTopicKeywordDna;
 
@@ -27,31 +26,26 @@ final class TopicKeywordDnaDataset extends BaseDataset
         return ['topics', 'keywords', 'sites'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoTopicKeywordDna::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'dna:' . $row->id,
-                    'site_ref' => 'site:' . $row->site_id,
-                    'topic_ref' => 'topic:' . $row->topic_id,
-                    'keyword_ref' => 'keyword:' . $row->keyword_id,
-                    'value' => (string) $row->value,
-                    'facet_type' => (string) ($row->facet_type ?? ''),
-                    'placement' => (string) ($row->placement ?? ''),
-                    'confidence' => $row->confidence !== null ? (float) $row->confidence : null,
-                    'source' => (string) ($row->source ?? ''),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoTopicKeywordDna::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'dna:'.$row->id,
+            'site_ref' => 'site:'.$row->site_id,
+            'topic_ref' => 'topic:'.$row->topic_id,
+            'keyword_ref' => 'keyword:'.$row->keyword_id,
+            'value' => (string) $row->value,
+            'facet_type' => (string) ($row->facet_type ?? ''),
+            'placement' => (string) ($row->placement ?? ''),
+            'confidence' => $row->confidence !== null ? (float) $row->confidence : null,
+            'source' => (string) ($row->source ?? ''),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -73,11 +67,12 @@ final class TopicKeywordDnaDataset extends BaseDataset
 
         if ($siteId === null || $topicId === null || $kwId === null) {
             $run->recordWarning('topic_keyword_dna', $ref, "Missing dependency site [{$siteRef}], topic [{$topicRef}], or keyword [{$kwRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
         try {
-            $dna = new SeoTopicKeywordDna();
+            $dna = new SeoTopicKeywordDna;
             $dna->site_id = $siteId;
             $dna->topic_id = $topicId;
             $dna->keyword_id = $kwId;

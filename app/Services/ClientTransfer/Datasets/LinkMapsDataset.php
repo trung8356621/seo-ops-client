@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\SearchFoundation\Models\SeoLinkMap;
 
@@ -27,37 +26,32 @@ final class LinkMapsDataset extends BaseDataset
         return ['keywords', 'articles', 'sites'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoLinkMap::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'link_map:' . $row->id,
-                    'keyword_ref' => $row->keyword_id ? ('keyword:' . $row->keyword_id) : null,
-                    'source_article_ref' => $row->source_article_id ? ('article:' . $row->source_article_id) : null,
-                    'target_article_ref' => $row->target_article_id ? ('article:' . $row->target_article_id) : null,
-                    'target_site_ref' => $row->target_site_id ? ('site:' . $row->target_site_id) : null,
-                    'target_external_url' => $row->target_external_url,
-                    'anchor_text' => (string) $row->anchor_text,
-                    'context_before' => $row->context_before,
-                    'context_after' => $row->context_after,
-                    'link_type' => $row->link_type instanceof \BackedEnum ? $row->link_type->value : (string) $row->link_type,
-                    'status' => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
-                    'destination_kind' => $row->destination_kind instanceof \BackedEnum ? $row->destination_kind->value : (string) $row->destination_kind,
-                    'is_semantic_eligible' => (bool) $row->is_semantic_eligible,
-                    'last_http_status' => $row->last_http_status,
-                    'last_audited_at' => $row->last_audited_at?->toIso8601String(),
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoLinkMap::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'link_map:'.$row->id,
+            'keyword_ref' => $row->keyword_id ? ('keyword:'.$row->keyword_id) : null,
+            'source_article_ref' => $row->source_article_id ? ('article:'.$row->source_article_id) : null,
+            'target_article_ref' => $row->target_article_id ? ('article:'.$row->target_article_id) : null,
+            'target_site_ref' => $row->target_site_id ? ('site:'.$row->target_site_id) : null,
+            'target_external_url' => $row->target_external_url,
+            'anchor_text' => (string) $row->anchor_text,
+            'context_before' => $row->context_before,
+            'context_after' => $row->context_after,
+            'link_type' => $row->link_type instanceof \BackedEnum ? $row->link_type->value : (string) $row->link_type,
+            'status' => $row->status instanceof \BackedEnum ? $row->status->value : (string) $row->status,
+            'destination_kind' => $row->destination_kind instanceof \BackedEnum ? $row->destination_kind->value : (string) $row->destination_kind,
+            'is_semantic_eligible' => (bool) $row->is_semantic_eligible,
+            'last_http_status' => $row->last_http_status,
+            'last_audited_at' => $row->last_audited_at?->toIso8601String(),
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -77,7 +71,7 @@ final class LinkMapsDataset extends BaseDataset
         $targetSiteId = ! empty($record['target_site_ref']) ? $refMap->get((string) $record['target_site_ref']) : null;
 
         try {
-            $map = new SeoLinkMap();
+            $map = new SeoLinkMap;
             $map->keyword_id = $kwId;
             $map->source_article_id = $srcArticleId;
             $map->target_site_id = $targetSiteId;
@@ -132,7 +126,7 @@ final class LinkMapsDataset extends BaseDataset
             if ($targetArticleId !== null && $targetArticleId > 0) {
                 SeoLinkMap::query()->where('id', $item['target_id'])->update(['target_article_id' => $targetArticleId]);
             } else {
-                $run->recordWarning('link_maps', 'link_map:' . $item['target_id'], "Unresolved deferred target article ref [{$item['target_ref']}]", isMissingRef: true);
+                $run->recordWarning('link_maps', 'link_map:'.$item['target_id'], "Unresolved deferred target article ref [{$item['target_ref']}]", isMissingRef: true);
             }
         }
     }

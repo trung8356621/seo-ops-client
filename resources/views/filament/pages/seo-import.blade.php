@@ -55,13 +55,13 @@
                     </div>
                 </dl>
 
-                @if (! $targetEmpty && ! $force)
+                @if (! $targetEmpty)
                     <div class="mt-4 rounded-lg bg-amber-100 p-3 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-                        <strong>Cảnh báo:</strong> Database SEO đích không trống. Bạn cần bật "Bỏ qua kiểm tra database trống" nếu muốn tiếp tục.
+                        <strong>Lưu ý:</strong> Database SEO đích không trống. V1 chỉ hỗ trợ import vào database trống. Vui lòng làm trống database SEO trước khi import.
                     </div>
                 @endif
 
-                @if ($serviceReady && ($targetEmpty || $force))
+                @if ($serviceReady && $targetEmpty)
                     <div class="mt-6">
                         <x-filament::button wire:click="runImport" wire:loading.attr="disabled" color="success" icon="heroicon-o-play">
                             <span wire:loading.remove wire:target="runImport">Bắt đầu Import dữ liệu ngay</span>

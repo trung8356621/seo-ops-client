@@ -21,7 +21,7 @@ final class ReferenceMap
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
-            $this->dbPath = $dir . "/refmap_{$importRunId}.sqlite";
+            $this->dbPath = $dir."/refmap_{$importRunId}.sqlite";
         } else {
             $this->dbPath = $dbPath;
         }
@@ -268,6 +268,19 @@ final class ReferenceMap
         return (int) $this->pdo->query("
             SELECT COUNT(*) FROM transfer_logs WHERE status IN ('failed', 'blocked_by_parent')
         ")->fetchColumn();
+    }
+
+    public function countByStatus(string $status): int
+    {
+        $stmt = $this->pdo->prepare('SELECT COUNT(*) FROM transfer_logs WHERE status = :status');
+        $stmt->execute([':status' => $status]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function countMissingRefs(): int
+    {
+        return (int) $this->pdo->query("SELECT COUNT(*) FROM transfer_logs WHERE error_type = 'MISSING_REF'")->fetchColumn();
     }
 
     public function countLogs(): int

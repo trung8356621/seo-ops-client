@@ -6,7 +6,6 @@ namespace App\Services\ClientTransfer\Datasets;
 
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
-use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\ContentProjects\Models\SeoProject;
 
@@ -27,34 +26,29 @@ final class ContentProjectsDataset extends BaseDataset
         return ['sites', 'users'];
     }
 
-    public function export(NdjsonPartWriter $writer, BlobManager $blobs): int
+    protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        $count = 0;
-        SeoProject::query()->orderBy('id')->chunkById(500, function ($rows) use ($writer, &$count): void {
-            foreach ($rows as $row) {
-                $record = [
-                    'ref' => 'project:' . $row->id,
-                    'site_ref' => 'site:' . $row->site_id,
-                    'user_ref' => $row->user_id ? ('user:' . $row->user_id) : null,
-                    'source_draft_project_ref' => $row->source_draft_project_id ? ('project:' . $row->source_draft_project_id) : null,
-                    'name' => (string) $row->name,
-                    'month' => $row->month ? (is_string($row->month) ? $row->month : $row->month->format('Y-m-d')) : null,
-                    'status' => (string) ($row->status ?? SeoProject::STATUS_DRAFT),
-                    'kind' => (string) ($row->kind ?? SeoProject::KIND_MONTHLY),
-                    'total_tasks' => (int) ($row->total_tasks ?? 0),
-                    'meta' => $row->meta,
-                    'archived_at' => $row->archived_at?->toIso8601String(),
-                    'archived_by_ref' => $row->archived_by ? ('user:' . $row->archived_by) : null,
-                    'created_at' => $row->created_at?->toIso8601String(),
-                    'updated_at' => $row->updated_at?->toIso8601String(),
-                ];
+        return SeoProject::query();
+    }
 
-                $writer->writeRecord($record);
-                $count++;
-            }
-        });
-
-        return $count;
+    protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
+    {
+        return [
+            'ref' => 'project:'.$row->id,
+            'site_ref' => 'site:'.$row->site_id,
+            'user_ref' => $row->user_id ? ('user:'.$row->user_id) : null,
+            'source_draft_project_ref' => $row->source_draft_project_id ? ('project:'.$row->source_draft_project_id) : null,
+            'name' => (string) $row->name,
+            'month' => $row->month ? (is_string($row->month) ? $row->month : $row->month->format('Y-m-d')) : null,
+            'status' => (string) ($row->status ?? SeoProject::STATUS_DRAFT),
+            'kind' => (string) ($row->kind ?? SeoProject::KIND_MONTHLY),
+            'total_tasks' => (int) ($row->total_tasks ?? 0),
+            'meta' => $row->meta,
+            'archived_at' => $row->archived_at?->toIso8601String(),
+            'archived_by_ref' => $row->archived_by ? ('user:'.$row->archived_by) : null,
+            'created_at' => $row->created_at?->toIso8601String(),
+            'updated_at' => $row->updated_at?->toIso8601String(),
+        ];
     }
 
     public function importRecord(
@@ -72,6 +66,7 @@ final class ContentProjectsDataset extends BaseDataset
         $siteId = $refMap->get($siteRef);
         if ($siteId === null) {
             $run->recordWarning('content_projects', $ref, "Missing dependency site [{$siteRef}]", $partFile, $recordIndex, isMissingRef: true);
+
             return;
         }
 
@@ -79,7 +74,7 @@ final class ContentProjectsDataset extends BaseDataset
         $archivedBy = ! empty($record['archived_by_ref']) ? $refMap->get((string) $record['archived_by_ref']) : null;
 
         try {
-            $project = new SeoProject();
+            $project = new SeoProject;
             $project->site_id = $siteId;
             $project->user_id = $userId;
             $project->name = (string) ($record['name'] ?? 'Imported Project');
@@ -125,7 +120,7 @@ final class ContentProjectsDataset extends BaseDataset
             if ($targetDraftId !== null && $targetDraftId > 0) {
                 SeoProject::query()->where('id', $item['target_id'])->update(['source_draft_project_id' => $targetDraftId]);
             } else {
-                $run->recordWarning('content_projects', 'project:' . $item['target_id'], "Unresolved deferred source draft project ref [{$item['target_ref']}]", isMissingRef: true);
+                $run->recordWarning('content_projects', 'project:'.$item['target_id'], "Unresolved deferred source draft project ref [{$item['target_ref']}]", isMissingRef: true);
             }
         }
     }
