@@ -167,13 +167,21 @@ final class ReferenceMap
     /**
      * @return list<array{id: int, target_key: string, context: array<string, mixed>}>
      */
-    public function getCreatedRecords(string $datasetKey): array
+    public function getCreatedRecordsChunk(string $datasetKey, int $beforeId = 0, int $limit = 500): array
     {
-        $stmt = $this->pdo->prepare('
+        $beforeClause = $beforeId > 0 ? 'AND id < :before_id' : '';
+        $stmt = $this->pdo->prepare("
             SELECT id, target_key, context FROM imported_records
-            WHERE dataset_key = :dataset_key ORDER BY id DESC
-        ');
-        $stmt->execute([':dataset_key' => $datasetKey]);
+            WHERE dataset_key = :dataset_key {$beforeClause}
+            ORDER BY id DESC
+            LIMIT :limit
+        ");
+        $stmt->bindValue(':dataset_key', $datasetKey);
+        if ($beforeId > 0) {
+            $stmt->bindValue(':before_id', $beforeId, PDO::PARAM_INT);
+        }
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
 
         $records = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
@@ -185,6 +193,20 @@ final class ReferenceMap
         }
 
         return $records;
+    }
+
+    /**
+     * @param  list<int>  $journalIds
+     */
+    public function removeCreatedRecords(array $journalIds): void
+    {
+        if ($journalIds === []) {
+            return;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($journalIds), '?'));
+        $stmt = $this->pdo->prepare("DELETE FROM imported_records WHERE id IN ({$placeholders})");
+        $stmt->execute($journalIds);
     }
 
     /**

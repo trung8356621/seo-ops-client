@@ -18,6 +18,8 @@ final class RollbackSeoImportJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    private const CHUNK_SIZE = 500;
+
     public function __construct(public readonly string $runId)
     {
         $this->onQueue('client-transfer');
@@ -26,7 +28,7 @@ final class RollbackSeoImportJob implements ShouldQueue
     public function handle(DatasetRegistry $registry): void
     {
         $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
-        if (! $run->canRollback() && $run->status !== 'rolling_back') {
+        if (! $run->canRollback() && ! in_array($run->status, ['rolling_back', 'rollback_failed'], true)) {
             throw new RuntimeException("Import run [{$this->runId}] cannot be rolled back from status [{$run->status}].");
         }
 
@@ -42,9 +44,13 @@ final class RollbackSeoImportJob implements ShouldQueue
             $datasets = array_reverse($registry->sortedDatasets());
             foreach ($datasets as $dataset) {
                 $run->update(['phase' => 'rollback:'.$dataset->key(), 'current_dataset' => $dataset->key()]);
-                foreach ($refMap->getCreatedRecords($dataset->key()) as $record) {
-                    $dataset->rollbackImportedRecord($record['target_key'], $record['context']);
-                }
+                do {
+                    $records = $refMap->getCreatedRecordsChunk($dataset->key(), limit: self::CHUNK_SIZE);
+                    foreach ($records as $record) {
+                        $dataset->rollbackImportedRecord($record['target_key'], $record['context']);
+                    }
+                    $refMap->removeCreatedRecords(array_column($records, 'id'));
+                } while (count($records) === self::CHUNK_SIZE);
             }
 
             $retryPath = (string) ($run->retry_package_path ?? '');

@@ -181,6 +181,57 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$runId}.sqlite"));
     }
 
+    public function test_rollback_processes_more_than_one_thousand_created_records_in_bounded_chunks(): void
+    {
+        $runId = 'rollback-chunks-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'completed',
+            'phase' => 'finished',
+        ]);
+        $refMap = new ReferenceMap($runId);
+
+        $user = User::query()->create(['name' => 'Chunk User', 'email' => 'chunks@test.test']);
+        $site = Site::query()->create(['domain' => 'chunks.test', 'user_id' => $user->id, 'status' => 'active']);
+        $refMap->trackCreated('users', (int) $user->id);
+        $refMap->trackCreated('sites', (int) $site->id);
+
+        $rows = [];
+        for ($i = 1; $i <= 1201; $i++) {
+            $rows[] = [
+                'site_id' => (int) $site->id,
+                'title' => "Chunked rollback article {$i}",
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+        foreach (array_chunk($rows, 400) as $chunk) {
+            SeoArticle::query()->insert($chunk);
+        }
+        foreach (SeoArticle::query()->orderBy('id')->pluck('id') as $id) {
+            $refMap->trackCreated('articles', (int) $id);
+        }
+
+        $firstChunk = $refMap->getCreatedRecordsChunk('articles', limit: 500);
+        $secondChunk = $refMap->getCreatedRecordsChunk('articles', beforeId: $firstChunk[499]['id'], limit: 500);
+        $thirdChunk = $refMap->getCreatedRecordsChunk('articles', beforeId: $secondChunk[499]['id'], limit: 500);
+        self::assertCount(500, $firstChunk);
+        self::assertCount(500, $secondChunk);
+        self::assertCount(201, $thirdChunk);
+        self::assertGreaterThan($firstChunk[499]['id'], $firstChunk[0]['id'], 'Each chunk must be newest-first.');
+        self::assertGreaterThan($secondChunk[0]['id'], $firstChunk[499]['id'], 'Later pages must continue toward older journal rows.');
+        unset($refMap);
+
+        (new RollbackSeoImportJob($runId))->handle(new DatasetRegistry);
+
+        self::assertTrue($run->refresh()->isRolledBack());
+        self::assertSame(0, SeoArticle::withTrashed()->count());
+        self::assertSame(0, Site::withTrashed()->count());
+        self::assertSame(0, User::withTrashed()->count());
+        self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$runId}.sqlite"));
+    }
+
     public function test_hardened_zip_extraction_rejects_directory_traversal(): void
     {
         $badZipPath = $this->tempDir.DIRECTORY_SEPARATOR.'traversal.zip';
