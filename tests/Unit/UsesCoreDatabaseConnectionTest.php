@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit;
 
 use App\Models\Site;
+use App\Models\WpOption;
 use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
@@ -16,5 +17,13 @@ final class UsesCoreDatabaseConnectionTest extends TestCase
         Config::set('database.core_connection', 'mysql');
 
         $this->assertSame('mysql', (new Site)->getConnectionName());
+    }
+
+    public function test_wp_option_model_uses_core_connection_not_default(): void
+    {
+        Config::set('database.default', 'omi_seo_ai');
+        Config::set('database.core_connection', 'mysql');
+
+        $this->assertSame('mysql', (new WpOption)->getConnectionName());
     }
 }
