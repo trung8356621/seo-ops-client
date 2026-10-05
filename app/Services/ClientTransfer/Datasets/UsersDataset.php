@@ -86,6 +86,7 @@ final class UsersDataset extends BaseDataset
             $newUser->is_system = (bool) ($record['is_system'] ?? false);
             $newUser->password = Hash::make(Str::random(32));
             $newUser->save();
+            $refMap->trackCreated($this->key(), (int) $newUser->id);
 
             $refMap->set($ref, 'user', (int) $newUser->id);
             $run->recordImported('users', $ref, $partFile, $recordIndex);

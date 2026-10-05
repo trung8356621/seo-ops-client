@@ -88,6 +88,7 @@ final class TopicKeywordDnaDataset extends BaseDataset
                 $dna->updated_at = $record['updated_at'];
             }
             $dna->save();
+            $refMap->trackCreated($this->key(), (int) $dna->id);
 
             $refMap->set($ref, 'topic_keyword_dna', (int) $dna->id);
             $run->recordImported('topic_keyword_dna', $ref, $partFile, $recordIndex);

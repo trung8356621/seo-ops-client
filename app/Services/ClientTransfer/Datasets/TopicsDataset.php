@@ -86,6 +86,7 @@ final class TopicsDataset extends BaseDataset
                 $topic->updated_at = $record['updated_at'];
             }
             $topic->save();
+            $refMap->trackCreated($this->key(), (int) $topic->id);
 
             $refMap->set($ref, 'topic', (int) $topic->id);
             $run->recordImported('topics', $ref, $partFile, $recordIndex);

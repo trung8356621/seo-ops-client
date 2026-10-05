@@ -191,6 +191,7 @@ final class ArticlesDataset extends BaseDataset
             }
 
             $article->saveQuietly();
+            $refMap->trackCreated($this->key(), (int) $article->id);
 
             $refMap->set($ref, 'article', (int) $article->id);
             $run->recordImported('articles', $ref, $partFile, $recordIndex);

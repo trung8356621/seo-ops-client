@@ -151,12 +151,43 @@
                             </x-filament::button>
                         </div>
                     @endif
+                    <div class="mt-6">
+                        <x-filament::button
+                            wire:click="rollbackImport"
+                            wire:confirm="Rollback dữ liệu đã import bởi run này?"
+                            wire:loading.attr="disabled"
+                            color="danger"
+                            icon="heroicon-o-arrow-uturn-left"
+                        >
+                            Rollback Import
+                        </x-filament::button>
+                    </div>
                 </div>
             @elseif ($this->run->isFailed())
                 <div class="rounded-xl border border-rose-200 bg-rose-50/50 p-6 shadow-sm dark:border-rose-900 dark:bg-rose-950/20">
                     <h3 class="text-base font-semibold text-rose-900 dark:text-rose-100">Import thất bại</h3>
                     <p class="mt-1 text-xs text-rose-700 dark:text-rose-300">
                         Lỗi: {{ $this->run->error_message }}
+                    </p>
+                    @if ($this->run->canRollback())
+                        <div class="mt-4">
+                            <x-filament::button
+                                wire:click="rollbackImport"
+                                wire:confirm="Rollback dữ liệu đã import bởi run này?"
+                                wire:loading.attr="disabled"
+                                color="danger"
+                                icon="heroicon-o-arrow-uturn-left"
+                            >
+                                Rollback Import
+                            </x-filament::button>
+                        </div>
+                    @endif
+                </div>
+            @elseif ($this->run->isRolledBack())
+                <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-6 shadow-sm dark:border-emerald-900 dark:bg-emerald-950/20">
+                    <h3 class="text-base font-semibold text-emerald-900 dark:text-emerald-100">Rollback hoàn tất</h3>
+                    <p class="mt-1 text-xs text-emerald-700 dark:text-emerald-300">
+                        Dữ liệu được tạo bởi run {{ $this->run->run_id }} đã được gỡ bỏ.
                     </p>
                 </div>
             @endif

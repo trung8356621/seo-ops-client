@@ -14,7 +14,7 @@ return new class extends Migration
             $table->id();
             $table->string('run_id', 64)->unique();
             $table->string('type', 20); // 'export' | 'import'
-            $table->string('status', 30)->default('pending'); // 'pending', 'running', 'completed', 'failed'
+            $table->string('status', 30)->default('pending'); // pending, running, completed, failed, rolling_back, rolled_back, rollback_failed
             $table->string('phase', 50)->default('queued');
             $table->string('current_dataset', 100)->nullable();
             $table->unsignedInteger('current_part')->nullable();

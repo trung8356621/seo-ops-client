@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Jobs\ClientTransfer;
 
 use App\Models\ClientTransferRun;
-use App\Services\ClientTransfer\Support\ReferenceMap;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,11 +26,6 @@ final class FinalizeSeoImportJob implements ShouldQueue
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
 
         self::deleteDir($stagingDir);
-
-        $refMap = new ReferenceMap($this->runId);
-        if ($refMap->countFailures() === 0) {
-            $refMap->cleanup();
-        }
 
         $run->markCompleted(retryPackagePath: $run->retry_package_path);
     }

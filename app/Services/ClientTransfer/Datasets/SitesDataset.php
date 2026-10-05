@@ -93,6 +93,7 @@ final class SitesDataset extends BaseDataset
                 $newSite->updated_at = $record['updated_at'];
             }
             $newSite->save();
+            $refMap->trackCreated($this->key(), (int) $newSite->id);
 
             $refMap->set($ref, 'site', (int) $newSite->id);
             $run->recordImported('sites', $ref, $partFile, $recordIndex);

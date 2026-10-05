@@ -44,6 +44,14 @@ final class ReferenceMap
             );
             CREATE INDEX IF NOT EXISTS idx_entity_type ON references_map (entity_type);
 
+            CREATE TABLE IF NOT EXISTS imported_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                dataset_key TEXT NOT NULL,
+                target_key TEXT NOT NULL,
+                context TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_imported_dataset ON imported_records (dataset_key, id);
+
             CREATE TABLE IF NOT EXISTS deferred_references (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 entity_type TEXT NOT NULL,
@@ -138,6 +146,45 @@ final class ReferenceMap
     public function hasImported(string $sourceRef): bool
     {
         return $this->has($sourceRef);
+    }
+
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    public function trackCreated(string $datasetKey, int|string $targetKey, array $context = []): void
+    {
+        $stmt = $this->pdo->prepare('
+            INSERT INTO imported_records (dataset_key, target_key, context)
+            VALUES (:dataset_key, :target_key, :context)
+        ');
+        $stmt->execute([
+            ':dataset_key' => $datasetKey,
+            ':target_key' => (string) $targetKey,
+            ':context' => $context === [] ? null : json_encode($context, JSON_THROW_ON_ERROR),
+        ]);
+    }
+
+    /**
+     * @return list<array{id: int, target_key: string, context: array<string, mixed>}>
+     */
+    public function getCreatedRecords(string $datasetKey): array
+    {
+        $stmt = $this->pdo->prepare('
+            SELECT id, target_key, context FROM imported_records
+            WHERE dataset_key = :dataset_key ORDER BY id DESC
+        ');
+        $stmt->execute([':dataset_key' => $datasetKey]);
+
+        $records = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) ?: [] as $row) {
+            $records[] = [
+                'id' => (int) $row['id'],
+                'target_key' => (string) $row['target_key'],
+                'context' => $row['context'] === null ? [] : (array) json_decode((string) $row['context'], true, 512, JSON_THROW_ON_ERROR),
+            ];
+        }
+
+        return $records;
     }
 
     /**

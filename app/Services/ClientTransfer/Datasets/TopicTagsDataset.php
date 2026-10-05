@@ -76,6 +76,7 @@ final class TopicTagsDataset extends BaseDataset
                 $tag->created_at = $record['created_at'];
             }
             $tag->save();
+            $refMap->trackCreated($this->key(), (int) $tag->id);
 
             $refMap->set($ref, 'topic_tag', (int) $tag->id);
             $run->recordImported('topic_tags', $ref, $partFile, $recordIndex);

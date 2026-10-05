@@ -88,6 +88,7 @@ final class ArticleReviewsDataset extends BaseDataset
                 $review->updated_at = $record['updated_at'];
             }
             $review->save();
+            $refMap->trackCreated($this->key(), (int) $review->id);
 
             $run->recordImported('article_reviews', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {

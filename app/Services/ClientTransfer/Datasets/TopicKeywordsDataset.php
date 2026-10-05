@@ -86,6 +86,7 @@ final class TopicKeywordsDataset extends BaseDataset
                 $tk->updated_at = $record['updated_at'];
             }
             $tk->save();
+            $refMap->trackCreated($this->key(), (int) $tk->id);
 
             $refMap->set($ref, 'topic_keyword', (int) $tk->id);
             $run->recordImported('topic_keywords', $ref, $partFile, $recordIndex);

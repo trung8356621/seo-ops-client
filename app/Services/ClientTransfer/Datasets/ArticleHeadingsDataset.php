@@ -84,6 +84,7 @@ final class ArticleHeadingsDataset extends BaseDataset
                 $heading->updated_at = $record['updated_at'];
             }
             $heading->save();
+            $refMap->trackCreated($this->key(), (int) $heading->id);
 
             $targetHeadingId = (int) $heading->id;
             $refMap->set($ref, 'heading', $targetHeadingId);

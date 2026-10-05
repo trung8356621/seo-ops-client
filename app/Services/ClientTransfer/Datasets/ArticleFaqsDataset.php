@@ -81,6 +81,7 @@ final class ArticleFaqsDataset extends BaseDataset
                 $faq->updated_at = $record['updated_at'];
             }
             $faq->save();
+            $refMap->trackCreated($this->key(), (int) $faq->id);
 
             $run->recordImported('article_faqs', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {

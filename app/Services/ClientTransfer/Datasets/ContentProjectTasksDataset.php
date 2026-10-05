@@ -118,6 +118,7 @@ final class ContentProjectTasksDataset extends BaseDataset
                 $task->deleted_at = $record['deleted_at'];
             }
             $task->save();
+            $refMap->trackCreated($this->key(), (int) $task->id);
 
             $targetTaskId = (int) $task->id;
             $refMap->set($ref, 'project_task', $targetTaskId);

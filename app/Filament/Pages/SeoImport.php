@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Jobs\ClientTransfer\PrepareSeoImportJob;
+use App\Jobs\ClientTransfer\RollbackSeoImportJob;
 use App\Models\ClientTransferRun;
 use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferImporter;
@@ -188,5 +189,20 @@ final class SeoImport extends Page implements HasForms
         }
 
         return response()->download($path);
+    }
+
+    public function rollbackImport(): void
+    {
+        $run = $this->run;
+        if ($run === null || ! $run->canRollback()) {
+            Notification::make()->title('Run import này không thể rollback.')->warning()->send();
+
+            return;
+        }
+
+        $run->update(['status' => 'rolling_back', 'phase' => 'rollback_queued']);
+        RollbackSeoImportJob::dispatch($run->run_id)->onQueue('client-transfer');
+
+        Notification::make()->title('Đã đưa rollback vào hàng đợi client-transfer.')->info()->send();
     }
 }

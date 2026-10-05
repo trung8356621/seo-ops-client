@@ -94,6 +94,7 @@ final class ContentProjectsDataset extends BaseDataset
                 $project->updated_at = $record['updated_at'];
             }
             $project->save();
+            $refMap->trackCreated($this->key(), (int) $project->id);
 
             $targetProjectId = (int) $project->id;
             $refMap->set($ref, 'project', $targetProjectId);

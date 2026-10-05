@@ -122,6 +122,7 @@ final class MediaDataset extends BaseDataset
             }
 
             $media->save();
+            $refMap->trackCreated($this->key(), (int) $media->id);
 
             $refMap->set($ref, 'media', (int) $media->id);
             $run->recordImported('media', $ref, $partFile, $recordIndex);

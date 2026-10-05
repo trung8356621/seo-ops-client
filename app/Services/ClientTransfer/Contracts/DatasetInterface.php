@@ -62,4 +62,11 @@ interface DatasetInterface
      * Phase 7: Resolves deferred references registered in Pass 1.
      */
     public function resolveDeferred(ReferenceMap $refMap, ImportRun $run): void;
+
+    /**
+     * Removes one target record recorded as created by this import run.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function rollbackImportedRecord(string $targetKey, array $context = []): void;
 }

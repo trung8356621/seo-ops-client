@@ -34,12 +34,22 @@ final class ClientTransferRun extends Model
 
     public function isFailed(): bool
     {
-        return $this->status === 'failed';
+        return in_array($this->status, ['failed', 'rollback_failed'], true);
     }
 
     public function isRunning(): bool
     {
-        return in_array($this->status, ['pending', 'running'], true);
+        return in_array($this->status, ['pending', 'running', 'rolling_back'], true);
+    }
+
+    public function isRolledBack(): bool
+    {
+        return $this->status === 'rolled_back';
+    }
+
+    public function canRollback(): bool
+    {
+        return $this->type === 'import' && in_array($this->status, ['completed', 'failed'], true);
     }
 
     public function markFailed(string $errorMessage): void
@@ -68,5 +78,15 @@ final class ClientTransferRun extends Model
         }
 
         $this->update($updates);
+    }
+
+    public function markRollbackFailed(string $errorMessage): void
+    {
+        $this->update([
+            'status' => 'rollback_failed',
+            'phase' => 'rollback_failed',
+            'error_message' => $errorMessage,
+            'finished_at' => now(),
+        ]);
     }
 }

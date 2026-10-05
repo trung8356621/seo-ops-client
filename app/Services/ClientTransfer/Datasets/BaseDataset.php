@@ -26,6 +26,18 @@ abstract class BaseDataset implements DatasetInterface
 
     public function resolveDeferred(ReferenceMap $refMap, ImportRun $run): void {}
 
+    public function rollbackImportedRecord(string $targetKey, array $context = []): void
+    {
+        $model = $this->queryForExport()->getModel();
+        if (method_exists($model, 'forceDelete')) {
+            $model->newQuery()->withTrashed()->whereKey($targetKey)->forceDelete();
+
+            return;
+        }
+
+        $model->newQuery()->whereKey($targetKey)->delete();
+    }
+
     public function sliceLimit(): int
     {
         return 500;

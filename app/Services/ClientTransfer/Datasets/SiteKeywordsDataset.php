@@ -92,6 +92,7 @@ final class SiteKeywordsDataset extends BaseDataset
                 $row->updated_at = $record['updated_at'];
             }
             $row->save();
+            $refMap->trackCreated($this->key(), (int) $row->id);
 
             $refMap->set($ref, 'site_keyword', (int) $row->id);
             $run->recordImported('site_keywords', $ref, $partFile, $recordIndex);

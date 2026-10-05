@@ -14,6 +14,7 @@ use App\Jobs\ClientTransfer\ImportDatasetSliceJob;
 use App\Jobs\ClientTransfer\PrepareSeoExportJob;
 use App\Jobs\ClientTransfer\PrepareSeoImportJob;
 use App\Jobs\ClientTransfer\ResolveDeferredSliceJob;
+use App\Jobs\ClientTransfer\RollbackSeoImportJob;
 use App\Jobs\ClientTransfer\ValidateSeoImportJob;
 use App\Models\ClientTransferRun;
 use App\Models\Site;
@@ -127,6 +128,7 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
             new ValidateSeoImportJob('test-run'),
             new BuildRetryPackageJob('test-run'),
             new FinalizeSeoImportJob('test-run'),
+            new RollbackSeoImportJob('test-run'),
         ];
 
         foreach ($jobs as $job) {
@@ -154,6 +156,29 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
             'Recording a record must never overwrite or reset export_count to 0.'
         );
         self::assertSame(1, $run->getDatasetStats()['articles']['imported']);
+    }
+
+    public function test_rollback_failure_stops_and_marks_run_without_creating_a_new_journal(): void
+    {
+        $runId = 'rollback-failure-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'completed',
+            'phase' => 'finished',
+        ]);
+
+        try {
+            (new RollbackSeoImportJob($runId))->handle(new DatasetRegistry);
+            self::fail('Rollback must fail when its import journal is unavailable.');
+        } catch (\RuntimeException $e) {
+            self::assertStringContainsString('Import journal is missing', $e->getMessage());
+        }
+
+        $run->refresh();
+        self::assertSame('rollback_failed', $run->status);
+        self::assertSame('rollback_failed', $run->phase);
+        self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$runId}.sqlite"));
     }
 
     public function test_hardened_zip_extraction_rejects_directory_traversal(): void
@@ -220,6 +245,16 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
     public function test_full_export_and_import_pipeline_with_persisted_run_state(): void
     {
         // 1. Create sample source records
+        \Illuminate\Support\Facades\DB::table('services')->insert([
+            'name' => 'SEO',
+            'slug' => 'seo',
+            'db_connection' => 'omi_seo_ai',
+            'is_active' => true,
+            'config' => json_encode(['portable' => true], JSON_THROW_ON_ERROR),
+            'service_key' => 'keep-this-service-key',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
         $user = User::query()->create(['name' => 'Queued Author', 'email' => 'author@queued.test']);
         $site = Site::query()->create(['domain' => 'queued.test', 'user_id' => $user->id, 'status' => 'active']);
 
@@ -255,6 +290,12 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         $this->wipeBusinessTables();
         self::assertSame(0, SeoArticle::query()->count());
 
+        $systemUser = User::query()->create([
+            'name' => 'System User',
+            'email' => 'system@target.test',
+            'is_system' => true,
+        ]);
+
         // 4. Start Queued Import via continuation pipeline
         $importRunId = 'imp-'.\Illuminate\Support\Str::random(8);
         $importRun = ClientTransferRun::query()->create([
@@ -270,6 +311,43 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         self::assertTrue($importRun->isCompleted(), 'Import run must be marked completed by continuation jobs.');
         self::assertSame(5, SeoArticle::query()->count(), 'Target database must contain 5 imported articles.');
         self::assertGreaterThanOrEqual(5, $importRun->imported_count);
+
+        // 5. Roll back only records journaled as created by this run.
+        $retryPath = $this->tempDir.DIRECTORY_SEPARATOR.'retry.zip';
+        file_put_contents($retryPath, 'retry');
+        $stagingPath = storage_path("app/client-transfer/staging_import_{$importRunId}");
+        mkdir($stagingPath, 0755, true);
+        file_put_contents($stagingPath.DIRECTORY_SEPARATOR.'temp.txt', 'temporary');
+        $importRun->update(['retry_package_path' => $retryPath]);
+
+        (new RollbackSeoImportJob($importRunId))->handle(new DatasetRegistry);
+
+        $importRun->refresh();
+        self::assertTrue($importRun->isRolledBack());
+        self::assertSame(0, SeoArticle::withTrashed()->count());
+        self::assertTrue(User::query()->whereKey($systemUser->id)->exists(), 'Unrelated pre-existing rows must remain.');
+        self::assertTrue(User::query()->where('email', 'system@target.test')->where('is_system', true)->exists());
+        self::assertGreaterThan(0, \Illuminate\Support\Facades\DB::table('services')->count(), 'Service config rows must remain.');
+        self::assertSame('keep-this-service-key', \Illuminate\Support\Facades\DB::table('services')->value('service_key'));
+        self::assertTrue(\Illuminate\Support\Facades\Schema::hasTable('client_transfer_runs'), 'Migration-managed tables must remain.');
+        self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$importRunId}.sqlite"));
+        self::assertFileDoesNotExist($retryPath);
+        self::assertDirectoryDoesNotExist($stagingPath);
+        (new \App\Services\ClientTransfer\ClientTransferImporter)->assertTargetEmpty();
+
+        // 6. The rolled-back target accepts the same package again.
+        $secondImportRunId = 'imp-'.\Illuminate\Support\Str::random(8);
+        $secondImportRun = ClientTransferRun::query()->create([
+            'run_id' => $secondImportRunId,
+            'type' => 'import',
+            'status' => 'pending',
+            'phase' => 'queued',
+        ]);
+        PrepareSeoImportJob::dispatchSync($secondImportRunId, $exportRun->artifact_path);
+
+        self::assertTrue($secondImportRun->refresh()->isCompleted());
+        self::assertSame(5, SeoArticle::query()->count());
+        self::assertTrue(User::query()->whereKey($systemUser->id)->exists());
     }
 
     public function test_bounded_export_slices_for_non_article_dataset_with_more_than_slice_limit(): void

@@ -108,6 +108,7 @@ final class SiteServicesDataset extends BaseDataset
             $siteService->status = (string) ($record['status'] ?? 'active');
             $siteService->settings = (array) ($record['settings'] ?? []);
             $siteService->save();
+            $refMap->trackCreated($this->key(), (int) $siteService->id);
 
             $refMap->set($ref, 'site_service', (int) $siteService->id);
             $run->recordImported('site_services', $ref, $partFile, $recordIndex);

@@ -79,6 +79,7 @@ final class ArticleMetaDataset extends BaseDataset
                 $meta->updated_at = $record['updated_at'];
             }
             $meta->save();
+            $refMap->trackCreated($this->key(), (int) $meta->id);
 
             $run->recordImported('article_meta', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {

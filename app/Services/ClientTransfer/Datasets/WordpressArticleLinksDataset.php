@@ -99,6 +99,7 @@ final class WordpressArticleLinksDataset extends BaseDataset
                 $link->updated_at = $record['updated_at'];
             }
             $link->save();
+            $refMap->trackCreated($this->key(), (int) $link->id);
 
             $run->recordImported('wordpress_article_links', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {

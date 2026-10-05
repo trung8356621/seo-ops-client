@@ -83,6 +83,7 @@ final class PublishingArticleStatesDataset extends BaseDataset
                 $state->updated_at = $record['updated_at'];
             }
             $state->save();
+            $refMap->trackCreated($this->key(), (int) $state->id);
 
             $run->recordImported('publishing_article_states', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {

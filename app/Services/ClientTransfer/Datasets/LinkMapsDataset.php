@@ -100,6 +100,7 @@ final class LinkMapsDataset extends BaseDataset
                 $map->updated_at = $record['updated_at'];
             }
             $map->save();
+            $refMap->trackCreated($this->key(), (int) $map->id);
 
             $mapId = (int) $map->id;
             $refMap->set($ref, 'link_map', $mapId);

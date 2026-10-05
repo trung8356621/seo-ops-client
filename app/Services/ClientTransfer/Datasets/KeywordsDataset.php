@@ -142,6 +142,7 @@ final class KeywordsDataset extends BaseDataset
             }
             $kw->reviewed_by = $reviewedBy;
             $kw->save();
+            $refMap->trackCreated($this->key(), (int) $kw->id);
 
             $targetId = (int) $kw->id;
             $refMap->set($ref, 'keyword', $targetId);

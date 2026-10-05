@@ -84,6 +84,7 @@ final class ManualLinksDataset extends BaseDataset
                 $link->updated_at = $record['updated_at'];
             }
             $link->save();
+            $refMap->trackCreated($this->key(), (int) $link->id);
 
             $refMap->set($ref, 'manual_link', (int) $link->id);
             $run->recordImported('manual_links', $ref, $partFile, $recordIndex);

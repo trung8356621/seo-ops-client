@@ -84,6 +84,7 @@ final class LinkExclusionsDataset extends BaseDataset
                 $exclusion->updated_at = $record['updated_at'];
             }
             $exclusion->save();
+            $refMap->trackCreated($this->key(), (int) $exclusion->id);
 
             $refMap->set($ref, 'link_exclusion', (int) $exclusion->id);
             $run->recordImported('link_exclusions', $ref, $partFile, $recordIndex);

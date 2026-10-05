@@ -83,10 +83,20 @@ final class TopicTagAssignmentsDataset extends BaseDataset
                 $assignment->created_at = $record['created_at'];
             }
             $assignment->save();
+            $targetKey = $topicId.':'.$tagId;
+            $refMap->trackCreated($this->key(), $targetKey, ['topic_id' => $topicId, 'tag_id' => $tagId]);
 
             $run->recordImported('topic_tag_assignments', "{$topicRef}_{$tagRef}", $partFile, $recordIndex);
         } catch (\Throwable $e) {
             $run->recordFailed('topic_tag_assignments', "{$topicRef}_{$tagRef}", 'DB_ERROR', $e->getMessage(), $partFile, $recordIndex, rawRecord: $record);
         }
+    }
+
+    public function rollbackImportedRecord(string $targetKey, array $context = []): void
+    {
+        SeoTopicTagAssignment::query()
+            ->where('topic_id', (int) ($context['topic_id'] ?? 0))
+            ->where('tag_id', (int) ($context['tag_id'] ?? 0))
+            ->delete();
     }
 }
