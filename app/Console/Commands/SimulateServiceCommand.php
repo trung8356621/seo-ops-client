@@ -17,10 +17,11 @@ use Illuminate\Support\Facades\Schema;
 final class SimulateServiceCommand extends Command
 {
     protected $signature = 'service:simulate
-        {slug=seeding : Service slug to activate}
+        {slug? : Service slug to activate}
+        {--all : Simulate activation for all discovered addons}
         {--force : Allow outside local/testing when SERVICE_SIMULATE_FORCE=1}';
 
-    protected $description = 'Local-only: simulate service activation for a catalog slug';
+    protected $description = 'Local-only: simulate service activation for catalog slugs';
 
     public function handle(): int
     {
@@ -36,24 +37,63 @@ final class SimulateServiceCommand extends Command
             return self::FAILURE;
         }
 
-        $slug = trim((string) $this->argument('slug'));
-        if ($slug === '') {
-            $this->error('slug required');
+        if ($this->option('all')) {
+            $discovered = AddonManager::discover();
+            if (empty($discovered)) {
+                $this->warn('No addons discovered.');
 
-            return self::FAILURE;
+                return self::SUCCESS;
+            }
+
+            $rows = [];
+            foreach ($discovered as $slug) {
+                $row = $this->activateSlug($slug);
+                $rows[] = [
+                    'slug' => $slug,
+                    'is_active' => (bool) $row?->is_active ? '1' : '0',
+                    'db_connection' => (string) ($row?->db_connection ?? ''),
+                    'key_provisioned' => $row?->hasServiceKey() ? 'yes' : 'no',
+                ];
+            }
+
+            $this->table(['Slug', 'Active', 'DB Connection', 'Key Provisioned'], $rows);
+            $this->info('Simulated service activation for all discovered addons ('.count($rows).' total).');
+
+            return self::SUCCESS;
+        }
+
+        $slug = trim((string) ($this->argument('slug') ?? 'seeding'));
+        if ($slug === '') {
+            $slug = 'seeding';
         }
 
         AddonManager::discover();
 
+        $row = $this->activateSlug($slug);
+        if (! $row instanceof Service) {
+            $this->error("Unknown service slug [{$slug}] — run AddonManager discover / ensure catalog first.");
+
+            return self::FAILURE;
+        }
+
+        $this->info("Simulated service activation for [{$slug}]");
+        $this->line('  is_active: '.((bool) $row->is_active ? '1' : '0'));
+        $this->line('  db_connection: '.((string) ($row->db_connection ?? '')));
+        $this->line('  key_provisioned: '.($row->hasServiceKey() ? 'yes' : 'no'));
+        $this->line('  activated: '.$slug);
+
+        return self::SUCCESS;
+    }
+
+    private function activateSlug(string $slug): ?Service
+    {
         if ($slug === SeedingServiceResolver::SLUG && class_exists(SeedingServiceResolver::class)) {
             app(SeedingServiceResolver::class)->ensureCatalogRow();
         }
 
         $target = Service::query()->where('slug', $slug)->first();
         if (! $target instanceof Service) {
-            $this->error("Unknown service slug [{$slug}] — run AddonManager discover / ensure catalog first.");
-
-            return self::FAILURE;
+            return null;
         }
 
         if ($slug === SeedingServiceResolver::SLUG) {
@@ -76,14 +116,7 @@ final class SimulateServiceCommand extends Command
         }
         $target->save();
 
-        $row = $target->fresh();
-        $this->info("Simulated service activation for [{$slug}]");
-        $this->line('  is_active: '.((bool) $row?->is_active ? '1' : '0'));
-        $this->line('  db_connection: '.((string) ($row?->db_connection ?? '')));
-        $this->line('  key_provisioned: '.($row?->hasServiceKey() ? 'yes' : 'no'));
-        $this->line('  activated: '.$slug);
-
-        return self::SUCCESS;
+        return $target->fresh();
     }
 
     private function environmentAllowed(): bool

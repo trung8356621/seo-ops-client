@@ -49,6 +49,14 @@
                     <a href="{{ $card['setup_url'] }}" class="inline-flex items-center rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800">
                         Cấu hình
                     </a>
+                    @if ($card['slug'] === 'seo')
+                        <a href="{{ \App\Filament\Pages\SeoExport::getUrl() }}" class="inline-flex items-center rounded-lg border border-emerald-300 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 dark:border-emerald-600 dark:text-emerald-300 dark:hover:bg-emerald-900/30">
+                            Export Data
+                        </a>
+                        <a href="{{ \App\Filament\Pages\SeoImport::getUrl() }}" class="inline-flex items-center rounded-lg border border-blue-300 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50 dark:border-blue-600 dark:text-blue-300 dark:hover:bg-blue-900/30">
+                            Import Data
+                        </a>
+                    @endif
                 </div>
             </div>
         @endforeach
