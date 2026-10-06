@@ -25,13 +25,20 @@ final class BuildRetryDataPackageJob implements ShouldQueue
     {
         $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
         $run->update(['status' => 'running', 'phase' => 'retry_export']);
-        $result = $exporter->export($this->failureZipPath);
-        $run->update([
-            'processed_records' => array_sum($result['counts']),
-            'total_records' => array_sum($result['counts']),
-            'metadata' => array_merge($run->metadata ?? [], ['unresolvable_refs' => $result['unresolvable_refs'], 'counts' => $result['counts']]),
-        ]);
-        $run->markCompleted($result['destination_path']);
+
+        try {
+            $result = $exporter->export($this->failureZipPath);
+            $run->update([
+                'processed_records' => array_sum($result['counts']),
+                'total_records' => array_sum($result['counts']),
+                'metadata' => array_merge($run->metadata ?? [], ['unresolvable_refs' => $result['unresolvable_refs'], 'counts' => $result['counts']]),
+            ]);
+            $run->markCompleted($result['destination_path']);
+        } catch (\Throwable $e) {
+            $run->markFailed($e->getMessage());
+
+            throw $e;
+        }
     }
 
     public function failed(\Throwable $e): void

@@ -61,6 +61,7 @@ final class RetryDataPackageExporter
                     'database_driver' => config('database.default', 'mysql'),
                     'service' => 'seo',
                     'is_retry_data' => true,
+                    'package_semantics' => 'retry_data',
                     'original_import_run_id' => $request['original_import_run_id'],
                     'source_failure_package_sha256' => hash_file('sha256', $failureZipPath),
                     'unresolvable_refs' => $unresolved,

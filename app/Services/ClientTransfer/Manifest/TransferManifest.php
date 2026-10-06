@@ -39,12 +39,24 @@ final class TransferManifest
 
     public function isFailureRequest(): bool
     {
-        return ($this->source['is_quarantine_retry'] ?? false) === true;
+        $semantics = $this->source['package_semantics'] ?? null;
+        if ($semantics === 'import_failure_request') {
+            return ($this->source['is_retry_data'] ?? false) !== true;
+        }
+
+        return ($this->source['is_quarantine_retry'] ?? false) === true
+            && ($this->source['is_retry_data'] ?? false) !== true;
     }
 
     public function isRetryData(): bool
     {
-        return ($this->source['is_retry_data'] ?? false) === true;
+        $semantics = $this->source['package_semantics'] ?? null;
+        if ($semantics === 'retry_data') {
+            return ($this->source['is_quarantine_retry'] ?? false) !== true;
+        }
+
+        return ($this->source['is_retry_data'] ?? false) === true
+            && ($this->source['is_quarantine_retry'] ?? false) !== true;
     }
 
     public function originalImportRunId(): ?string

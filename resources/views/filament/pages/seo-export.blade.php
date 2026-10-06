@@ -116,13 +116,17 @@
 
             @php($retryRun = $this->latestRetryRun)
             @if ($retryRun)
-                <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                <div @if($retryRun->isRunning() || $retryRun->status === 'pending') wire:poll.2s @endif class="mt-6 rounded-xl border {{ $retryRun->isFailed() ? 'border-rose-200 bg-rose-50/50 dark:border-rose-900 dark:bg-rose-950/20' : 'border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-800' }} p-4">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Gói Retry Data gần nhất</h4>
-                            <p class="mt-1 text-xs text-gray-500">
+                            <h4 class="text-sm font-semibold {{ $retryRun->isFailed() ? 'text-rose-900 dark:text-rose-100' : 'text-gray-900 dark:text-white' }}">Gói Retry Data gần nhất (Run ID: {{ $retryRun->run_id }})</h4>
+                            <p class="mt-1 text-xs {{ $retryRun->isFailed() ? 'text-rose-700 dark:text-rose-300' : 'text-gray-500' }}">
                                 Trạng thái: <span class="font-semibold">{{ ucfirst($retryRun->status) }}</span>
-                                | Bản ghi: {{ number_format($retryRun->processed_records) }}
+                                @if ($retryRun->isFailed())
+                                    | Lỗi: <span class="font-medium">{{ $retryRun->error_message }}</span>
+                                @else
+                                    | Bản ghi: {{ number_format($retryRun->processed_records) }}
+                                @endif
                             </p>
                         </div>
                         @if ($retryRun->isCompleted() && $retryRun->artifact_path && is_file($retryRun->artifact_path))

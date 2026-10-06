@@ -372,4 +372,29 @@ final class RetryFlowTest extends TransferDatabaseTestCase
         self::assertSame('Queued Fixed Canonical Title', $savedArt->title);
         self::assertSame('<p>Queued Fixed Canonical Body</p>', $savedArt->body);
     }
+
+    public function test_build_retry_data_package_job_marks_run_failed_on_exception(): void
+    {
+        $runId = 'failed-job-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'retry_export',
+            'status' => 'pending',
+            'phase' => 'queued',
+        ]);
+
+        $invalidZipPath = $this->tempDir.DIRECTORY_SEPARATOR.'non_existent_failure_package.zip';
+
+        try {
+            \App\Jobs\ClientTransfer\BuildRetryDataPackageJob::dispatchSync($runId, $invalidZipPath);
+            self::fail('Job should have thrown an exception for invalid package.');
+        } catch (\Throwable $e) {
+            // Expected
+        }
+
+        $run->refresh();
+        self::assertTrue($run->isFailed(), 'Run must be marked failed instead of remaining pending.');
+        self::assertNotNull($run->error_message);
+        self::assertNotEmpty($run->error_message);
+    }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Unit\ClientTransfer;
 
-use App\Services\ClientTransfer\DatasetRegistry;
 use App\Services\ClientTransfer\Exceptions\BlobChecksumMismatchException;
 use App\Services\ClientTransfer\Exceptions\DependencyCycleException;
 use App\Services\ClientTransfer\Exceptions\FatalImportException;
@@ -25,7 +24,7 @@ final class TransferFormatTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'transfer_test_' . bin2hex(random_bytes(6));
+        $this->tempDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'transfer_test_'.bin2hex(random_bytes(6));
         mkdir($this->tempDir, 0755, true);
     }
 
@@ -84,6 +83,82 @@ final class TransferFormatTest extends TestCase
         ))->validate();
     }
 
+    public function test_manifest_identifies_failure_request_package(): void
+    {
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'is_quarantine_retry' => true,
+                'package_semantics' => 'import_failure_request',
+                'original_run_id' => 'orig-run-123',
+            ],
+            datasets: [],
+        );
+
+        self::assertTrue($manifest->isFailureRequest());
+        self::assertFalse($manifest->isRetryData());
+        self::assertSame('orig-run-123', $manifest->originalImportRunId());
+    }
+
+    public function test_manifest_identifies_retry_data_package(): void
+    {
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'is_retry_data' => true,
+                'package_semantics' => 'retry_data',
+                'original_import_run_id' => 'orig-run-456',
+            ],
+            datasets: [],
+        );
+
+        self::assertFalse($manifest->isFailureRequest());
+        self::assertTrue($manifest->isRetryData());
+        self::assertSame('orig-run-456', $manifest->originalImportRunId());
+    }
+
+    public function test_manifest_identifies_normal_full_export_package(): void
+    {
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'database_driver' => 'mysql',
+            ],
+            datasets: [],
+        );
+
+        self::assertFalse($manifest->isFailureRequest());
+        self::assertFalse($manifest->isRetryData());
+        self::assertNull($manifest->originalImportRunId());
+    }
+
+    public function test_manifest_rejects_ambiguous_or_conflicting_retry_flags(): void
+    {
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'is_quarantine_retry' => true,
+                'is_retry_data' => true,
+            ],
+            datasets: [],
+        );
+
+        self::assertFalse($manifest->isFailureRequest());
+        self::assertFalse($manifest->isRetryData());
+    }
+
     public function test_topological_sorter_resolves_dependency_order(): void
     {
         $graph = [
@@ -125,8 +200,8 @@ final class TransferFormatTest extends TestCase
 
     public function test_reference_map_sets_gets_and_tracks_deferred(): void
     {
-        $runId = 'test_run_' . bin2hex(random_bytes(4));
-        $dbPath = $this->tempDir . DIRECTORY_SEPARATOR . 'test_refmap.sqlite';
+        $runId = 'test_run_'.bin2hex(random_bytes(4));
+        $dbPath = $this->tempDir.DIRECTORY_SEPARATOR.'test_refmap.sqlite';
         $refMap = new ReferenceMap($runId, $dbPath);
 
         $refMap->set('user:10', 'user', 101);
@@ -159,17 +234,17 @@ final class TransferFormatTest extends TestCase
 
     public function test_blob_manager_stores_and_verifies_checksum(): void
     {
-        $blobDir = $this->tempDir . DIRECTORY_SEPARATOR . 'blobs';
+        $blobDir = $this->tempDir.DIRECTORY_SEPARATOR.'blobs';
         $blobs = new BlobManager($blobDir);
 
         $content = '<h1>Fidelity Test</h1><p>Sample content</p>';
         $stored = $blobs->store($content, 'html');
 
         self::assertSame(hash('sha256', $content), $stored['sha256']);
-        self::assertFileExists($blobDir . DIRECTORY_SEPARATOR . $stored['sha256'] . '.html');
+        self::assertFileExists($blobDir.DIRECTORY_SEPARATOR.$stored['sha256'].'.html');
 
         // Reading with correct hash succeeds
-        $fullPath = $blobDir . DIRECTORY_SEPARATOR . $stored['sha256'] . '.html';
+        $fullPath = $blobDir.DIRECTORY_SEPARATOR.$stored['sha256'].'.html';
         $read = $blobs->readAndVerify($fullPath, $stored['sha256'], 'articles', 'article:1', 'body');
         self::assertSame($content, $read);
 
@@ -180,10 +255,10 @@ final class TransferFormatTest extends TestCase
 
     public function test_zip_archive_manager_validates_part_checksums_and_detects_tampering(): void
     {
-        $staging = $this->tempDir . DIRECTORY_SEPARATOR . 'staging';
-        mkdir($staging . '/seo/keywords', 0755, true);
+        $staging = $this->tempDir.DIRECTORY_SEPARATOR.'staging';
+        mkdir($staging.'/seo/keywords', 0755, true);
 
-        $keywordFile = $staging . '/seo/keywords/part-000001.ndjson';
+        $keywordFile = $staging.'/seo/keywords/part-000001.ndjson';
         file_put_contents($keywordFile, "{\"ref\":\"keyword:1\",\"phrase\":\"test\"}\n");
         $sha = hash_file('sha256', $keywordFile);
 
@@ -198,28 +273,28 @@ final class TransferFormatTest extends TestCase
                 ]),
             ],
         );
-        file_put_contents($staging . '/manifest.json', $manifest->toJson());
+        file_put_contents($staging.'/manifest.json', $manifest->toJson());
 
-        $zipPath = $this->tempDir . DIRECTORY_SEPARATOR . 'test.zip';
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'test.zip';
         ZipArchiveManager::create($staging, $zipPath);
         self::assertFileExists($zipPath);
 
         // Valid extract succeeds
-        $dest = $this->tempDir . DIRECTORY_SEPARATOR . 'extracted';
+        $dest = $this->tempDir.DIRECTORY_SEPARATOR.'extracted';
         $res = ZipArchiveManager::extractAndValidate($zipPath, $dest);
         self::assertInstanceOf(TransferManifest::class, $res['manifest']);
 
         // Now tamper with the zip by replacing keyword file with different content
-        $tamperedStaging = $this->tempDir . DIRECTORY_SEPARATOR . 'tampered';
-        mkdir($tamperedStaging . '/seo/keywords', 0755, true);
-        file_put_contents($tamperedStaging . '/seo/keywords/part-000001.ndjson', "{\"ref\":\"keyword:1\",\"phrase\":\"TAMPERED\"}\n");
-        file_put_contents($tamperedStaging . '/manifest.json', $manifest->toJson()); // Keep original sha in manifest
+        $tamperedStaging = $this->tempDir.DIRECTORY_SEPARATOR.'tampered';
+        mkdir($tamperedStaging.'/seo/keywords', 0755, true);
+        file_put_contents($tamperedStaging.'/seo/keywords/part-000001.ndjson', "{\"ref\":\"keyword:1\",\"phrase\":\"TAMPERED\"}\n");
+        file_put_contents($tamperedStaging.'/manifest.json', $manifest->toJson()); // Keep original sha in manifest
 
-        $tamperedZip = $this->tempDir . DIRECTORY_SEPARATOR . 'tampered.zip';
+        $tamperedZip = $this->tempDir.DIRECTORY_SEPARATOR.'tampered.zip';
         ZipArchiveManager::create($tamperedStaging, $tamperedZip);
 
         $this->expectException(FatalImportException::class);
-        ZipArchiveManager::extractAndValidate($tamperedZip, $this->tempDir . DIRECTORY_SEPARATOR . 'tampered_extracted');
+        ZipArchiveManager::extractAndValidate($tamperedZip, $this->tempDir.DIRECTORY_SEPARATOR.'tampered_extracted');
     }
 
     private function deleteDirectory(string $dir): void
@@ -235,7 +310,7 @@ final class TransferFormatTest extends TestCase
             if ($file === '.' || $file === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $file;
+            $p = $dir.DIRECTORY_SEPARATOR.$file;
             is_dir($p) ? $this->deleteDirectory($p) : @unlink($p);
         }
         @rmdir($dir);
