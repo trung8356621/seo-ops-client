@@ -397,4 +397,197 @@ final class RetryFlowTest extends TransferDatabaseTestCase
         self::assertNotNull($run->error_message);
         self::assertNotEmpty($run->error_message);
     }
+
+    public function test_explicit_importer_guards_for_full_and_retry_modes(): void
+    {
+        $this->wipeBusinessTables();
+        $importer = new ClientTransferImporter;
+
+        $fullManifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: ['app_version' => '1.0.0'],
+            datasets: [
+                'articles' => new \App\Services\ClientTransfer\Manifest\DatasetManifest('articles', 0, [], []),
+            ],
+        );
+
+        $retryManifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'package_semantics' => 'retry_data',
+                'is_retry_data' => true,
+                'original_import_run_id' => 'orig-run-123',
+            ],
+            datasets: [
+                'articles' => new \App\Services\ClientTransfer\Manifest\DatasetManifest('articles', 0, [], []),
+            ],
+        );
+
+        $retryManifestMissingOrigId = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'package_semantics' => 'retry_data',
+                'is_retry_data' => true,
+            ],
+            datasets: [
+                'articles' => new \App\Services\ClientTransfer\Manifest\DatasetManifest('articles', 0, [], []),
+            ],
+        );
+
+        // 1. Full package + empty target => allowed
+        $importer->assertTargetReadyForFullImport($fullManifest);
+
+        // 2. Full package cannot be imported via retry guard
+        try {
+            $importer->assertTargetReadyForRetryImport($fullManifest);
+            self::fail('assertTargetReadyForRetryImport should reject full package');
+        } catch (\App\Services\ClientTransfer\Exceptions\FatalImportException $e) {
+            self::assertStringContainsString('requires a valid retry-data package', $e->getMessage());
+        }
+
+        // 3. Retry-data package cannot be imported via full guard
+        try {
+            $importer->assertTargetReadyForFullImport($retryManifest);
+            self::fail('assertTargetReadyForFullImport should reject retry-data package');
+        } catch (\App\Services\ClientTransfer\Exceptions\FatalImportException $e) {
+            self::assertStringContainsString('cannot be performed with a retry-data package', $e->getMessage());
+        }
+
+        // 4. Retry-data missing original_import_run_id is rejected
+        try {
+            $importer->assertTargetReadyForRetryImport($retryManifestMissingOrigId);
+            self::fail('assertTargetReadyForRetryImport should reject retry manifest without original run id');
+        } catch (\App\Services\ClientTransfer\Exceptions\FatalImportException $e) {
+            self::assertStringContainsString('missing original import run id', $e->getMessage());
+        }
+
+        // Now populate target with a record
+        $user = User::query()->create(['name' => 'Target User', 'email' => 'tuser@test.local']);
+        $site = Site::query()->create(['domain' => 'site.test', 'user_id' => $user->id, 'status' => 'active']);
+        $art = new SeoArticle;
+        $art->site_id = (int) $site->id;
+        $art->title = 'Existing Article';
+        $art->saveQuietly();
+
+        // 5. Full package + non-empty target => rejected
+        try {
+            $importer->assertTargetReadyForFullImport($fullManifest);
+            self::fail('assertTargetReadyForFullImport should reject non-empty target');
+        } catch (TargetNotEmptyException $e) {
+            self::assertStringContainsString('Target SEO database contains existing records', $e->getMessage());
+        }
+
+        // 6. Retry-data package + non-empty partial target => allowed
+        $importer->assertTargetReadyForRetryImport($retryManifest);
+    }
+
+    public function test_prepare_seo_import_job_persists_retry_mode_and_metadata_authoritatively(): void
+    {
+        // Target is non-empty
+        $this->wipeBusinessTables();
+        $user = User::query()->create(['name' => 'Target User', 'email' => 'tuser2@test.local']);
+        $site = Site::query()->create(['domain' => 'site2.test', 'user_id' => $user->id, 'status' => 'active']);
+        $art = new SeoArticle;
+        $art->site_id = (int) $site->id;
+        $art->title = 'Existing Article 2';
+        $art->saveQuietly();
+
+        // Create a retry data zip package
+        $stagingDir = $this->tempDir.DIRECTORY_SEPARATOR.'retry_pkg_staging';
+        mkdir($stagingDir, 0755, true);
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+                'package_semantics' => 'retry_data',
+                'is_retry_data' => true,
+                'original_import_run_id' => 'orig-run-abc',
+            ],
+            datasets: [],
+        );
+        file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
+        $retryZip = $this->tempDir.DIRECTORY_SEPARATOR.'test_retry_package.zip';
+        ZipArchiveManager::create($stagingDir, $retryZip);
+
+        // Dispatch PrepareSeoImportJob with non-empty target
+        $runId = 'test-retry-meta-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'pending',
+            'phase' => 'queued',
+        ]);
+
+        \App\Jobs\ClientTransfer\PrepareSeoImportJob::dispatchSync($runId, $retryZip);
+
+        $run->refresh();
+        self::assertTrue($run->isCompleted());
+        self::assertSame('retry', $run->metadata['mode'] ?? null);
+        self::assertTrue($run->metadata['is_retry'] ?? false);
+        self::assertSame('orig-run-abc', $run->metadata['original_import_run_id'] ?? null);
+    }
+
+    public function test_fake_retry_cannot_bypass_target_empty_protection(): void
+    {
+        // Target is non-empty
+        $this->wipeBusinessTables();
+        $user = User::query()->create(['name' => 'Target User', 'email' => 'tuser3@test.local']);
+        $site = Site::query()->create(['domain' => 'site3.test', 'user_id' => $user->id, 'status' => 'active']);
+        $art = new SeoArticle;
+        $art->site_id = (int) $site->id;
+        $art->title = 'Existing Article 3';
+        $art->saveQuietly();
+
+        // Package is a normal full export package (NOT retry data)
+        $stagingDir = $this->tempDir.DIRECTORY_SEPARATOR.'fake_retry_pkg_staging';
+        mkdir($stagingDir, 0755, true);
+        $manifest = new TransferManifest(
+            format: 'seo-ops-transfer',
+            formatVersion: 1,
+            exportedAt: date('c'),
+            source: [
+                'app_version' => '1.0.0',
+            ],
+            datasets: [
+                'articles' => new \App\Services\ClientTransfer\Manifest\DatasetManifest('articles', 0, [], []),
+            ],
+        );
+        file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
+        $fakeZip = $this->tempDir.DIRECTORY_SEPARATOR.'fake_package.zip';
+        ZipArchiveManager::create($stagingDir, $fakeZip);
+
+        // ClientTransferRun claims it's retry mode in metadata, but manifest is full export
+        $runId = 'fake-retry-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'pending',
+            'phase' => 'queued',
+            'metadata' => [
+                'mode' => 'retry',
+                'is_retry' => true,
+            ],
+        ]);
+
+        try {
+            \App\Jobs\ClientTransfer\PrepareSeoImportJob::dispatchSync($runId, $fakeZip);
+            self::fail('PrepareSeoImportJob must fail when manifest is not retry data and target is non-empty.');
+        } catch (TargetNotEmptyException $e) {
+            // Expected
+        }
+
+        $run->refresh();
+        self::assertTrue($run->isFailed());
+        self::assertStringContainsString('Target SEO database contains existing records', $run->error_message);
+    }
 }

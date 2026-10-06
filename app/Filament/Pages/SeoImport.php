@@ -174,6 +174,9 @@ final class SeoImport extends Page implements HasForms
             'started_at' => now(),
             'metadata' => [
                 'uploaded_file' => $this->uploadedFilePath,
+                'mode' => $this->isRetryData ? 'retry' : 'full',
+                'is_retry' => $this->isRetryData,
+                'original_import_run_id' => $this->originalImportRunId,
             ],
         ]);
 

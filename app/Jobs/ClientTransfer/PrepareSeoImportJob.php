@@ -45,10 +45,17 @@ final class PrepareSeoImportJob implements ShouldQueue
         $res = ZipArchiveManager::extractAndValidate($this->uploadedZipPath, $stagingDir);
         $manifest = $res['manifest'];
 
-        // 2. Strict connection, schema, and empty-target validation
+        // 2. Strict connection, schema, and empty-target validation based on authoritative package type
         $importer = new ClientTransferImporter($registry);
+        $isRetry = $manifest->isRetryData();
+        $originalImportRunId = $manifest->originalImportRunId();
+
         try {
-            $importer->assertTargetReadyForImport($manifest);
+            if ($isRetry) {
+                $importer->assertTargetReadyForRetryImport($manifest);
+            } else {
+                $importer->assertTargetReadyForFullImport($manifest);
+            }
         } catch (\Throwable $e) {
             $run->markFailed($e->getMessage());
             self::deleteDir($stagingDir);
@@ -87,6 +94,9 @@ final class PrepareSeoImportJob implements ShouldQueue
             'total_records' => $totalRecords,
             'processed_records' => 0,
             'metadata' => array_merge($run->metadata ?? [], [
+                'mode' => $isRetry ? 'retry' : 'full',
+                'is_retry' => $isRetry,
+                'original_import_run_id' => $originalImportRunId,
                 'datasets_queue' => $datasetsQueue,
                 'staging_dir' => $stagingDir,
                 'zip_path' => $this->uploadedZipPath,

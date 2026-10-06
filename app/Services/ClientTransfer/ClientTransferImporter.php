@@ -172,7 +172,55 @@ final class ClientTransferImporter
         }
     }
 
+    public function assertTargetReadyForFullImport(TransferManifest $manifest): void
+    {
+        $this->assertTargetDatabaseAndSchemaReady($manifest);
+
+        if ($manifest->isRetryData()) {
+            throw new FatalImportException('Full import cannot be performed with a retry-data package.');
+        }
+
+        $nonEmpty = $this->getNonEmptyTables($manifest);
+        if (! empty($nonEmpty)) {
+            $details = [];
+            foreach ($nonEmpty as $tbl => $cnt) {
+                $details[] = "{$tbl} ({$cnt} rows)";
+            }
+            throw new TargetNotEmptyException('Target SEO database contains existing records: ['.implode(', ', $details).']. V1 import requires an empty target database.');
+        }
+    }
+
+    public function assertTargetReadyForRetryImport(TransferManifest $manifest): void
+    {
+        $this->assertTargetDatabaseAndSchemaReady($manifest);
+
+        if (! $manifest->isRetryData()) {
+            throw new FatalImportException('Retry import requires a valid retry-data package.');
+        }
+
+        if ($manifest->originalImportRunId() === null) {
+            throw new FatalImportException('Retry-data package is missing original import run id.');
+        }
+    }
+
     public function assertTargetReadyForImport(TransferManifest $manifest, bool $force = false): void
+    {
+        if ($manifest->isRetryData()) {
+            $this->assertTargetReadyForRetryImport($manifest);
+
+            return;
+        }
+
+        if ($force) {
+            $this->assertTargetDatabaseAndSchemaReady($manifest);
+
+            return;
+        }
+
+        $this->assertTargetReadyForFullImport($manifest);
+    }
+
+    private function assertTargetDatabaseAndSchemaReady(TransferManifest $manifest): void
     {
         try {
             DB::connection('omi_seo_ai')->getPdo();
@@ -183,27 +231,6 @@ final class ClientTransferImporter
         $schemaErrors = $this->schemaValidator->validate($manifest);
         if ($schemaErrors !== []) {
             throw new FatalImportException('Target SEO schema is not ready: '.implode('; ', $schemaErrors));
-        }
-
-        if ($manifest->isRetryData()) {
-            if ($manifest->originalImportRunId() === null) {
-                throw new FatalImportException('Retry-data package is missing original import run id.');
-            }
-
-            return;
-        }
-
-        if ($force) {
-            return;
-        }
-
-        $nonEmpty = $this->getNonEmptyTables($manifest);
-        if (! empty($nonEmpty)) {
-            $details = [];
-            foreach ($nonEmpty as $tbl => $cnt) {
-                $details[] = "{$tbl} ({$cnt} rows)";
-            }
-            throw new TargetNotEmptyException('Target SEO database contains existing records: ['.implode(', ', $details).']. V1 import requires an empty target database.');
         }
     }
 
