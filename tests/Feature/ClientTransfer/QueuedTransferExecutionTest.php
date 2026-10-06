@@ -45,6 +45,66 @@ use ZipArchive;
 
 final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
 {
+    public function test_seo_import_page_recovers_active_queued_run_after_refresh(): void
+    {
+        Queue::fake();
+        $packagePath = $this->tempDir.DIRECTORY_SEPARATOR.'queued-import.zip';
+        file_put_contents($packagePath, 'test package');
+
+        $page = new SeoImport;
+        $page->uploadedFilePath = $packagePath;
+        $page->connectionReady = true;
+        $page->schemaReady = true;
+        $page->targetEmpty = true;
+        $page->runImport();
+
+        $run = ClientTransferRun::query()->where('type', 'import')->where('status', 'pending')->firstOrFail();
+        Queue::assertPushed(PrepareSeoImportJob::class, fn (PrepareSeoImportJob $job): bool => $job->runId === $run->run_id);
+
+        $freshPage = new SeoImport;
+        self::assertNull($freshPage->runId);
+        self::assertSame($run->id, $freshPage->getRunProperty()?->id);
+
+        $restore = new \ReflectionMethod($freshPage, 'restoreActiveImportRun');
+        $restore->invoke($freshPage);
+        self::assertSame($run->run_id, $freshPage->runId);
+    }
+
+    public function test_seo_import_page_recovers_latest_terminal_run_after_refresh(): void
+    {
+        foreach (['completed', 'failed', 'rolled_back', 'rollback_failed'] as $status) {
+            $run = ClientTransferRun::query()->create([
+                'run_id' => $status.'-'.\Illuminate\Support\Str::random(8),
+                'type' => 'import',
+                'status' => $status,
+                'phase' => $status,
+            ]);
+
+            $freshPage = new SeoImport;
+            self::assertSame($run->id, $freshPage->getRunProperty()?->id);
+            self::assertSame($status, $freshPage->getRunProperty()?->status);
+        }
+    }
+
+    public function test_seo_import_page_recovers_rolling_back_run_and_blocks_duplicate_import(): void
+    {
+        Queue::fake();
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'rolling-back-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'rolling_back',
+            'phase' => 'rollback',
+        ]);
+
+        $freshPage = new SeoImport;
+        self::assertSame($run->id, $freshPage->getRunProperty()?->id);
+
+        $freshPage->runImport();
+
+        self::assertSame(1, ClientTransferRun::query()->where('type', 'import')->count());
+        Queue::assertNotPushed(PrepareSeoImportJob::class);
+    }
+
     public function test_import_upload_resolves_through_local_disk_and_queues_persistent_absolute_path(): void
     {
         $relativePath = 'client-transfer/uploads/test.zip';
@@ -232,6 +292,25 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$runId}.sqlite"));
     }
 
+    public function test_rollback_deletes_non_soft_delete_dataset_records_without_with_trashed_scope(): void
+    {
+        $user = User::query()->create(['name' => 'Meta User', 'email' => 'meta-rollback@test.test']);
+        $site = Site::query()->create(['domain' => 'meta-rollback.test', 'user_id' => $user->id, 'status' => 'active']);
+        $article = new SeoArticle;
+        $article->site_id = (int) $site->id;
+        $article->title = 'Article meta rollback';
+        $article->saveQuietly();
+        $meta = ArticleMeta::query()->create([
+            'article_id' => (int) $article->id,
+            'meta_key' => 'rollback_test',
+            'meta_value' => 'value',
+        ]);
+
+        (new ArticleMetaDataset)->rollbackImportedRecord((string) $meta->id);
+
+        self::assertSame(0, ArticleMeta::query()->count());
+    }
+
     public function test_hardened_zip_extraction_rejects_directory_traversal(): void
     {
         $badZipPath = $this->tempDir.DIRECTORY_SEPARATOR.'traversal.zip';
@@ -384,7 +463,9 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         self::assertFileDoesNotExist(storage_path("app/client-transfer/refmap_{$importRunId}.sqlite"));
         self::assertFileDoesNotExist($retryPath);
         self::assertDirectoryDoesNotExist($stagingPath);
-        (new \App\Services\ClientTransfer\ClientTransferImporter)->assertTargetEmpty();
+        $rolledBackInspection = (new \App\Services\ClientTransfer\ClientTransferImporter)->inspect($exportRun->artifact_path);
+        self::assertTrue($rolledBackInspection['schema_ready']);
+        self::assertTrue($rolledBackInspection['target_empty']);
 
         // 6. The rolled-back target accepts the same package again.
         $secondImportRunId = 'imp-'.\Illuminate\Support\Str::random(8);

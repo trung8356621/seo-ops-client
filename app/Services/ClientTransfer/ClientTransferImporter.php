@@ -13,13 +13,13 @@ use App\Services\ClientTransfer\Support\NdjsonPartReader;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use App\Services\ClientTransfer\Support\ZipArchiveManager;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 final class ClientTransferImporter
 {
     public function __construct(
         private readonly DatasetRegistry $registry = new DatasetRegistry,
+        private readonly TargetSchemaValidator $schemaValidator = new TargetSchemaValidator,
     ) {}
 
     /**
@@ -27,6 +27,9 @@ final class ClientTransferImporter
      *
      * @return array{
      *     manifest: TransferManifest,
+     *     connection_ready: bool,
+     *     schema_ready: bool,
+     *     schema_errors: list<string>,
      *     target_empty: bool,
      *     non_empty_tables: array<string, int>,
      *     service_ready: bool
@@ -39,13 +42,19 @@ final class ClientTransferImporter
             $res = ZipArchiveManager::extractAndValidate($zipPath, $extractDir);
             $manifest = $res['manifest'];
 
-            $nonEmpty = $this->getNonEmptyTables();
+            $connectionReady = $this->isSeoConnectionReady();
+            $schemaErrors = $connectionReady ? $this->schemaValidator->validate($manifest) : [];
+            $schemaReady = $connectionReady && $schemaErrors === [];
+            $nonEmpty = $schemaReady ? $this->getNonEmptyTables($manifest) : [];
 
             return [
                 'manifest' => $manifest,
-                'target_empty' => empty($nonEmpty),
+                'connection_ready' => $connectionReady,
+                'schema_ready' => $schemaReady,
+                'schema_errors' => $schemaErrors,
+                'target_empty' => $schemaReady && empty($nonEmpty),
                 'non_empty_tables' => $nonEmpty,
-                'service_ready' => $this->isSeoServiceReady(),
+                'service_ready' => $connectionReady && $schemaReady,
             ];
         } finally {
             $this->deleteDir($extractDir);
@@ -72,9 +81,6 @@ final class ClientTransferImporter
         $run = new ImportRun($runId);
         $refMap = new ReferenceMap($runId);
 
-        // Preflight: target empty check
-        $this->assertTargetEmpty($force);
-
         $extractDir = storage_path("app/client-transfer/staging_import_{$runId}");
         if (is_dir($extractDir)) {
             $this->deleteDir($extractDir);
@@ -83,10 +89,12 @@ final class ClientTransferImporter
         $res = ZipArchiveManager::extractAndValidate($zipPath, $extractDir);
         $manifest = $res['manifest'];
 
-        $blobDir = $extractDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs';
-        $blobs = new BlobManager($blobDir);
-
         try {
+            $this->assertTargetReadyForImport($manifest, $force);
+
+            $blobDir = $extractDir.DIRECTORY_SEPARATOR.'content'.DIRECTORY_SEPARATOR.'blobs';
+            $blobs = new BlobManager($blobDir);
+
             // Get topologically sorted datasets
             $datasets = $this->registry->sortedDatasets();
 
@@ -158,21 +166,24 @@ final class ClientTransferImporter
         }
     }
 
-    public function assertTargetEmpty(bool $force = false): void
+    public function assertTargetReadyForImport(TransferManifest $manifest, bool $force = false): void
     {
-        if ($force) {
-            return;
-        }
-
-        // 1. Strict connection readiness check
         try {
             DB::connection('omi_seo_ai')->getPdo();
         } catch (\Throwable $e) {
             throw new FatalImportException('Target SEO database connection [omi_seo_ai] failed: '.$e->getMessage(), 0, $e);
         }
 
-        // 2. Strict empty check
-        $nonEmpty = $this->getNonEmptyTables();
+        $schemaErrors = $this->schemaValidator->validate($manifest);
+        if ($schemaErrors !== []) {
+            throw new FatalImportException('Target SEO schema is not ready: '.implode('; ', $schemaErrors));
+        }
+
+        if ($force) {
+            return;
+        }
+
+        $nonEmpty = $this->getNonEmptyTables($manifest);
         if (! empty($nonEmpty)) {
             $details = [];
             foreach ($nonEmpty as $tbl => $cnt) {
@@ -185,32 +196,26 @@ final class ClientTransferImporter
     /**
      * @return array<string, int>
      */
-    public function getNonEmptyTables(): array
+    public function getNonEmptyTables(TransferManifest $manifest): array
     {
-        $checkTables = ['articles', 'keywords', 'seo_topics', 'seo_site_keywords', 'seo_projects', 'seo_media'];
         $nonEmpty = [];
 
-        foreach ($checkTables as $table) {
+        foreach ($this->schemaValidator->portableTables($manifest) as $target) {
+            $table = $target['table'];
             try {
-                if (Schema::connection('omi_seo_ai')->hasTable($table)) {
-                    $cnt = DB::connection('omi_seo_ai')->table($table)->count();
-                    if ($cnt > 0) {
-                        $nonEmpty[$table] = $cnt;
-                    }
+                $cnt = DB::connection($target['connection'])->table($table)->count();
+                if ($cnt > 0) {
+                    $nonEmpty[$table] = $cnt;
                 }
             } catch (\Throwable $e) {
-                // If it's a connection failure or syntax/fatal error, do not swallow silently
-                if ($this->isSeoServiceReady()) {
-                    throw new FatalImportException("Failed inspecting target table [{$table}]: ".$e->getMessage(), 0, $e);
-                }
-                throw $e;
+                throw new FatalImportException("Failed inspecting target table [{$table}]: ".$e->getMessage(), 0, $e);
             }
         }
 
         return $nonEmpty;
     }
 
-    public function isSeoServiceReady(): bool
+    public function isSeoConnectionReady(): bool
     {
         try {
             DB::connection('omi_seo_ai')->getPdo();

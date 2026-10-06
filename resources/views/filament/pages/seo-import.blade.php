@@ -1,5 +1,6 @@
 <x-filament-panels::page>
     <div class="space-y-6">
+        @if (! $this->activeImportRun())
         <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <h2 class="text-lg font-medium text-gray-900 dark:text-white">Nhập dữ liệu SEO di động (Portable Data Import)</h2>
             <p class="mt-2 text-sm text-gray-500">
@@ -34,15 +35,21 @@
                         <dd class="font-medium text-gray-900 dark:text-white">{{ $inspectedExportedAt }}</dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-gray-500">Kết nối SEO mục tiêu:</dt>
-                        <dd class="font-medium {{ $serviceReady ? 'text-emerald-600' : 'text-rose-600' }}">
-                            {{ $serviceReady ? 'Sẵn sàng' : 'Chưa kết nối được' }}
+                        <dt class="text-xs text-gray-500">Kết nối database:</dt>
+                        <dd class="font-medium {{ $connectionReady ? 'text-emerald-600' : 'text-rose-600' }}">
+                            {{ $connectionReady ? 'Sẵn sàng' : 'Lỗi' }}
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-gray-500">Database mục tiêu trống:</dt>
-                        <dd class="font-medium {{ $targetEmpty ? 'text-emerald-600' : 'text-amber-600' }}">
-                            {{ $targetEmpty ? 'Có (Trống hoàn toàn)' : 'KHÔNG TRỐNG (Có dữ liệu)' }}
+                        <dt class="text-xs text-gray-500">Schema/migrations:</dt>
+                        <dd class="font-medium {{ $schemaReady ? 'text-emerald-600' : 'text-rose-600' }}">
+                            {{ $schemaReady ? 'Sẵn sàng' : 'Chưa sẵn sàng' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-xs text-gray-500">Database business target trống:</dt>
+                        <dd class="font-medium {{ ! $schemaReady ? 'text-gray-500' : ($targetEmpty ? 'text-emerald-600' : 'text-amber-600') }}">
+                            {{ ! $schemaReady ? 'Chưa kiểm tra' : ($targetEmpty ? 'Có' : 'Không') }}
                         </dd>
                     </div>
                     <div>
@@ -55,13 +62,24 @@
                     </div>
                 </dl>
 
-                @if (! $targetEmpty)
+                @if (! $schemaReady && ! empty($schemaErrors))
+                    <div class="mt-4 rounded-lg bg-rose-100 p-3 text-xs text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">
+                        <strong>Schema chưa tương thích:</strong>
+                        <ul class="mt-2 list-disc space-y-1 pl-5">
+                            @foreach ($schemaErrors as $schemaError)
+                                <li>{{ $schemaError }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                @if ($schemaReady && ! $targetEmpty)
                     <div class="mt-4 rounded-lg bg-amber-100 p-3 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
                         <strong>Lưu ý:</strong> Database SEO đích không trống. V1 chỉ hỗ trợ import vào database trống. Vui lòng làm trống database SEO trước khi import.
                     </div>
                 @endif
 
-                @if ($serviceReady && $targetEmpty)
+                @if ($connectionReady && $schemaReady && $targetEmpty)
                     <div class="mt-6">
                         <x-filament::button wire:click="runImport" wire:loading.attr="disabled" color="success" icon="heroicon-o-play">
                             <span wire:loading.remove wire:target="runImport">Bắt đầu Import dữ liệu ngay</span>
@@ -70,6 +88,7 @@
                     </div>
                 @endif
             </div>
+        @endif
         @endif
 
         @if ($this->run)

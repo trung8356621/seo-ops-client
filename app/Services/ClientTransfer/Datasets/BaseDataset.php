@@ -11,6 +11,7 @@ use App\Services\ClientTransfer\Support\NdjsonPartWriter;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 abstract class BaseDataset implements DatasetInterface
 {
@@ -29,7 +30,7 @@ abstract class BaseDataset implements DatasetInterface
     public function rollbackImportedRecord(string $targetKey, array $context = []): void
     {
         $model = $this->queryForExport()->getModel();
-        if (method_exists($model, 'forceDelete')) {
+        if (in_array(SoftDeletes::class, class_uses_recursive($model), true)) {
             $model->newQuery()->withTrashed()->whereKey($targetKey)->forceDelete();
 
             return;

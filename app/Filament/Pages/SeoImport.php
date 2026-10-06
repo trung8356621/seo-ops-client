@@ -47,6 +47,13 @@ final class SeoImport extends Page implements HasForms
 
     public ?bool $targetEmpty = null;
 
+    public ?bool $connectionReady = null;
+
+    public ?bool $schemaReady = null;
+
+    /** @var list<string> */
+    public array $schemaErrors = [];
+
     public ?bool $serviceReady = null;
 
     public ?int $inspectedTotalRecords = null;
@@ -68,6 +75,7 @@ final class SeoImport extends Page implements HasForms
 
     public function mount(): void
     {
+        $this->restoreActiveImportRun();
         $this->form->fill();
     }
 
@@ -114,6 +122,9 @@ final class SeoImport extends Page implements HasForms
             $this->inspectedFormat = (string) $inspection['manifest']->format;
             $this->inspectedVersion = (string) $inspection['manifest']->formatVersion;
             $this->inspectedExportedAt = (string) $inspection['manifest']->exportedAt;
+            $this->connectionReady = (bool) $inspection['connection_ready'];
+            $this->schemaReady = (bool) $inspection['schema_ready'];
+            $this->schemaErrors = (array) $inspection['schema_errors'];
             $this->targetEmpty = (bool) $inspection['target_empty'];
             $this->serviceReady = (bool) $inspection['service_ready'];
             $this->inspectedDatasetCount = count($inspection['manifest']->datasets);
@@ -127,14 +138,22 @@ final class SeoImport extends Page implements HasForms
 
     public function runImport(): void
     {
+        $activeRun = $this->activeImportRun();
+        if ($activeRun !== null) {
+            $this->runId = $activeRun->run_id;
+            Notification::make()->title('Một tác vụ import đang chạy. Không thể bắt đầu import khác.')->warning()->send();
+
+            return;
+        }
+
         if (empty($this->uploadedFilePath) || ! file_exists($this->uploadedFilePath)) {
             Notification::make()->title('Vui lòng kiểm tra gói dữ liệu trước khi import.')->warning()->send();
 
             return;
         }
 
-        if (! $this->targetEmpty) {
-            Notification::make()->title('Database SEO đích có dữ liệu. V1 chỉ hỗ trợ import vào database trống.')->danger()->send();
+        if (! $this->connectionReady || ! $this->schemaReady || ! $this->targetEmpty) {
+            Notification::make()->title('Target import chưa sẵn sàng. Vui lòng kiểm tra kết nối, schema và dữ liệu hiện có.')->danger()->send();
 
             return;
         }
@@ -169,7 +188,44 @@ final class SeoImport extends Page implements HasForms
 
     public function getRunProperty(): ?ClientTransferRun
     {
-        return $this->runId ? ClientTransferRun::query()->where('run_id', $this->runId)->first() : null;
+        if ($this->runId !== null) {
+            $explicitRun = ClientTransferRun::query()
+                ->where('type', 'import')
+                ->where('run_id', $this->runId)
+                ->first();
+
+            if ($explicitRun !== null) {
+                return $explicitRun;
+            }
+        }
+
+        return $this->activeImportRun() ?? $this->latestImportRun();
+    }
+
+    public function activeImportRun(): ?ClientTransferRun
+    {
+        return ClientTransferRun::query()
+            ->where('type', 'import')
+            ->whereIn('status', ['pending', 'running', 'rolling_back'])
+            ->latest('id')
+            ->first();
+    }
+
+    public function latestImportRun(): ?ClientTransferRun
+    {
+        return ClientTransferRun::query()
+            ->where('type', 'import')
+            ->whereIn('status', ['completed', 'failed', 'rolled_back', 'rollback_failed'])
+            ->latest('id')
+            ->first();
+    }
+
+    private function restoreActiveImportRun(): void
+    {
+        $activeRun = $this->activeImportRun();
+        if ($activeRun !== null) {
+            $this->runId = $activeRun->run_id;
+        }
     }
 
     public function downloadRetryPackage(): ?BinaryFileResponse

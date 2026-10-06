@@ -328,6 +328,7 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->unsignedBigInteger('site_id');
             $table->unsignedBigInteger('article_id')->nullable();
             $table->unsignedBigInteger('archived_from_project_id')->nullable();
+            $table->string('source_content')->nullable();
             $table->string('keyword')->nullable();
             $table->string('title')->nullable();
             $table->string('type')->default('create');

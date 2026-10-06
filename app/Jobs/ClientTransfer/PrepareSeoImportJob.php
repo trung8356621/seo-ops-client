@@ -36,11 +36,7 @@ final class PrepareSeoImportJob implements ShouldQueue
             'started_at' => $run->started_at ?? now(),
         ]);
 
-        // 1. Strict empty target validation
-        $importer = new ClientTransferImporter($registry);
-        $importer->assertTargetEmpty();
-
-        // 2. Extract and validate package
+        // 1. Extract and validate package
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
         if (is_dir($stagingDir)) {
             self::deleteDir($stagingDir);
@@ -48,6 +44,17 @@ final class PrepareSeoImportJob implements ShouldQueue
 
         $res = ZipArchiveManager::extractAndValidate($this->uploadedZipPath, $stagingDir);
         $manifest = $res['manifest'];
+
+        // 2. Strict connection, schema, and empty-target validation
+        $importer = new ClientTransferImporter($registry);
+        try {
+            $importer->assertTargetReadyForImport($manifest);
+        } catch (\Throwable $e) {
+            $run->markFailed($e->getMessage());
+            self::deleteDir($stagingDir);
+
+            throw $e;
+        }
 
         // 3. Initialize fresh ReferenceMap SQLite
         $refMapPath = storage_path("app/client-transfer/refmap_{$this->runId}.sqlite");
