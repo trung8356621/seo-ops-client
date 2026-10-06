@@ -148,6 +148,7 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->string('review_state')->nullable();
             $table->string('source')->nullable();
             $table->timestamps();
+            $table->unique(['site_id', 'keyword_id']);
         });
 
         Schema::dropIfExists('seo_topics');
@@ -182,6 +183,7 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->boolean('is_locked')->default(false);
             $table->decimal('confidence', 5, 2)->nullable();
             $table->timestamps();
+            $table->unique(['site_id', 'keyword_id']);
         });
 
         Schema::dropIfExists('seo_topic_tag_assignments');
@@ -335,7 +337,7 @@ abstract class TransferDatabaseTestCase extends TestCase
         Schema::dropIfExists('seo_projects');
         Schema::create('seo_projects', function (Blueprint $table): void {
             $table->id();
-            $table->unsignedBigInteger('site_id');
+            $table->unsignedBigInteger('site_id')->nullable();
             $table->unsignedBigInteger('user_id')->nullable();
             $table->unsignedBigInteger('source_draft_project_id')->nullable();
             $table->string('name');
@@ -369,6 +371,15 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->unsignedBigInteger('planning_reviewed_by')->nullable();
             $table->dateTime('publishing_queued_at')->nullable();
             $table->unsignedBigInteger('publishing_queued_by')->nullable();
+            $table->string('tone_override', 100)->nullable();
+            $table->string('content_length_override', 32)->nullable();
+            $table->unsignedInteger('content_length_target_words')->nullable();
+            $table->string('generation_mode_override', 32)->nullable();
+            $table->unsignedBigInteger('model_override_id')->nullable();
+            $table->string('model_override_mode', 16)->nullable();
+            $table->string('title_protection', 16)->nullable();
+            $table->boolean('review_checkpoint_enabled')->default(false);
+            $table->dateTime('archived_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });

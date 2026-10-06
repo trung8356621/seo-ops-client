@@ -8,6 +8,7 @@ use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\SeoArticle;
+use Omnichannel\Addons\ContentProjects\Models\SeoProject;
 use Omnichannel\Addons\ContentProjects\Models\SeoProjectTask;
 
 final class ContentProjectTasksDataset extends BaseDataset
@@ -56,6 +57,14 @@ final class ContentProjectTasksDataset extends BaseDataset
             'planning_reviewed_by_ref' => $row->planning_reviewed_by ? ('user:'.$row->planning_reviewed_by) : null,
             'publishing_queued_at' => $row->publishing_queued_at?->toIso8601String(),
             'publishing_queued_by_ref' => $row->publishing_queued_by ? ('user:'.$row->publishing_queued_by) : null,
+            'tone_override' => $row->tone_override !== null && trim((string) $row->tone_override) !== '' ? trim((string) $row->tone_override) : null,
+            'content_length_override' => $row->content_length_override !== null && trim((string) $row->content_length_override) !== '' ? trim((string) $row->content_length_override) : null,
+            'content_length_target_words' => isset($row->content_length_target_words) && is_numeric($row->content_length_target_words) ? (int) $row->content_length_target_words : null,
+            'generation_mode_override' => $row->generation_mode_override !== null && trim((string) $row->generation_mode_override) !== '' ? trim((string) $row->generation_mode_override) : null,
+            'model_override_id' => isset($row->model_override_id) && is_numeric($row->model_override_id) && (int) $row->model_override_id > 0 ? (int) $row->model_override_id : null,
+            'model_override_mode' => $row->model_override_mode !== null && trim((string) $row->model_override_mode) !== '' ? trim((string) $row->model_override_mode) : null,
+            'title_protection' => $row->title_protection !== null && trim((string) $row->title_protection) !== '' ? trim((string) $row->title_protection) : null,
+            'review_checkpoint_enabled' => (bool) ($row->review_checkpoint_enabled ?? false),
             'created_at' => $row->created_at?->toIso8601String(),
             'updated_at' => $row->updated_at?->toIso8601String(),
             'deleted_at' => $row->deleted_at?->toIso8601String(),
@@ -114,6 +123,33 @@ final class ContentProjectTasksDataset extends BaseDataset
                 $task->publishing_queued_at = $record['publishing_queued_at'];
             }
             $task->publishing_queued_by = $pubQueuedBy;
+
+            // Durable task generation / AI policy
+            if (array_key_exists('tone_override', $record)) {
+                $task->tone_override = $record['tone_override'] !== null && trim((string) $record['tone_override']) !== '' ? trim((string) $record['tone_override']) : null;
+            }
+            if (array_key_exists('content_length_override', $record)) {
+                $task->content_length_override = $record['content_length_override'] !== null && trim((string) $record['content_length_override']) !== '' ? trim((string) $record['content_length_override']) : null;
+            }
+            if (array_key_exists('content_length_target_words', $record)) {
+                $task->content_length_target_words = isset($record['content_length_target_words']) && is_numeric($record['content_length_target_words']) ? (int) $record['content_length_target_words'] : null;
+            }
+            if (array_key_exists('generation_mode_override', $record)) {
+                $task->generation_mode_override = $record['generation_mode_override'] !== null && trim((string) $record['generation_mode_override']) !== '' ? trim((string) $record['generation_mode_override']) : null;
+            }
+            if (array_key_exists('model_override_id', $record)) {
+                $task->model_override_id = isset($record['model_override_id']) && is_numeric($record['model_override_id']) && (int) $record['model_override_id'] > 0 ? (int) $record['model_override_id'] : null;
+            }
+            if (array_key_exists('model_override_mode', $record)) {
+                $task->model_override_mode = $record['model_override_mode'] !== null && trim((string) $record['model_override_mode']) !== '' ? trim((string) $record['model_override_mode']) : null;
+            }
+            if (array_key_exists('title_protection', $record)) {
+                $task->title_protection = $record['title_protection'] !== null && trim((string) $record['title_protection']) !== '' ? trim((string) $record['title_protection']) : null;
+            }
+            if (array_key_exists('review_checkpoint_enabled', $record)) {
+                $task->review_checkpoint_enabled = (bool) $record['review_checkpoint_enabled'];
+            }
+
             if (! empty($record['created_at'])) {
                 $task->created_at = $record['created_at'];
             }
@@ -131,6 +167,12 @@ final class ContentProjectTasksDataset extends BaseDataset
 
             if (! empty($record['archived_from_project_ref'])) {
                 $refMap->addDeferred('seo_project_tasks', $targetTaskId, 'archived_from_project_id', (string) $record['archived_from_project_ref']);
+            }
+
+            // Keep parent project total_tasks counter synchronized with planned tasks
+            $project = SeoProject::query()->find($projectId);
+            if ($project instanceof SeoProject && method_exists($project, 'syncTotalTasksCounter')) {
+                $project->syncTotalTasksCounter();
             }
 
             $run->recordImported('content_project_tasks', $ref, $partFile, $recordIndex);

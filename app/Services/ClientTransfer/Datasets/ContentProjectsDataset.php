@@ -35,7 +35,7 @@ final class ContentProjectsDataset extends BaseDataset
     {
         return [
             'ref' => 'project:'.$row->id,
-            'site_ref' => 'site:'.$row->site_id,
+            'site_ref' => $row->site_id ? ('site:'.$row->site_id) : null,
             'user_ref' => $row->user_id ? ('user:'.$row->user_id) : null,
             'source_draft_project_ref' => $row->source_draft_project_id ? ('project:'.$row->source_draft_project_id) : null,
             'name' => (string) $row->name,
@@ -60,14 +60,17 @@ final class ContentProjectsDataset extends BaseDataset
         int $recordIndex,
     ): void {
         $ref = (string) ($record['ref'] ?? '');
-        $siteRef = (string) ($record['site_ref'] ?? '');
+        $siteRef = isset($record['site_ref']) && $record['site_ref'] !== null ? trim((string) $record['site_ref']) : '';
         $userRef = (string) ($record['user_ref'] ?? '');
 
-        $siteId = $refMap->get($siteRef);
-        if ($siteId === null) {
-            $run->recordWarning('content_projects', $ref, "Missing dependency site [{$siteRef}]", $partFile, $recordIndex, isMissingRef: true);
+        $siteId = null;
+        if ($siteRef !== '') {
+            $siteId = $refMap->get($siteRef);
+            if ($siteId === null) {
+                $run->recordWarning('content_projects', $ref, "Missing dependency site [{$siteRef}]", $partFile, $recordIndex, isMissingRef: true);
 
-            return;
+                return;
+            }
         }
 
         $userId = $userRef !== '' ? $refMap->get($userRef) : null;

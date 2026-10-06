@@ -73,6 +73,25 @@ final class SiteKeywordsDataset extends BaseDataset
         }
 
         try {
+            $existing = SeoSiteKeyword::query()
+                ->where('site_id', $targetSiteId)
+                ->where('keyword_id', $targetKwId)
+                ->first();
+
+            if ($existing instanceof SeoSiteKeyword) {
+                $refMap->set($ref, 'site_keyword', (int) $existing->id);
+                $run->recordWarning(
+                    'site_keywords',
+                    $ref,
+                    "Reused existing canonical site_keyword [{$existing->id}] for site [{$targetSiteId}] and keyword [{$targetKwId}].",
+                    $partFile,
+                    $recordIndex,
+                );
+                $run->recordImported('site_keywords', $ref, $partFile, $recordIndex);
+
+                return;
+            }
+
             $row = new SeoSiteKeyword;
             $row->site_id = $targetSiteId;
             $row->keyword_id = $targetKwId;

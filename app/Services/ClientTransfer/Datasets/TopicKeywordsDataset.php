@@ -71,6 +71,40 @@ final class TopicKeywordsDataset extends BaseDataset
         }
 
         try {
+            $existing = SeoTopicKeyword::query()
+                ->where('site_id', $siteId)
+                ->where('keyword_id', $kwId)
+                ->first();
+
+            if ($existing instanceof SeoTopicKeyword) {
+                if ((int) $existing->topic_id === (int) $topicId) {
+                    $refMap->set($ref, 'topic_keyword', (int) $existing->id);
+                    $run->recordWarning(
+                        'topic_keywords',
+                        $ref,
+                        "Reused existing canonical topic_keyword [{$existing->id}] for site [{$siteId}], topic [{$topicId}], and keyword [{$kwId}].",
+                        $partFile,
+                        $recordIndex,
+                    );
+                    $run->recordImported('topic_keywords', $ref, $partFile, $recordIndex);
+
+                    return;
+                }
+
+                // Semantic conflict: same site and canonical keyword mapped to different topic
+                $run->recordFailed(
+                    'topic_keywords',
+                    $ref,
+                    'CONFLICT',
+                    "Canonical keyword [{$kwId}] on site [{$siteId}] already belongs to topic [{$existing->topic_id}], cannot reassign to topic [{$topicId}].",
+                    $partFile,
+                    $recordIndex,
+                    rawRecord: $record,
+                );
+
+                return;
+            }
+
             $tk = new SeoTopicKeyword;
             $tk->site_id = $siteId;
             $tk->topic_id = $topicId;
