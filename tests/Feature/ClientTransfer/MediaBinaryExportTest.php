@@ -536,42 +536,40 @@ final class MediaBinaryExportTest extends TransferDatabaseTestCase
         self::assertSame('compat', $importedMedia->slug);
         self::assertSame('Compat Alt', $importedMedia->alt_text);
         self::assertSame('uploads/seo_media/'.$fileName, $importedMedia->path);
+        self::assertFileExists($this->mediaRoot.DIRECTORY_SEPARATOR.$fileName);
+        self::assertSame($content, file_get_contents($this->mediaRoot.DIRECTORY_SEPARATOR.$fileName));
     }
 
-    public function test_no_media_binary_import_or_restore_behavior_was_added(): void
+    public function test_import_restores_laravel_media_binary_byte_for_byte(): void
     {
-        // Prove that during import, no file is written to target storage
-        $content = 'no-restore-binary-check';
-        $sha = hash('sha256', $content);
-        $fileName = 'no-restore.png';
+        $content = 'restore-binary-check';
+        $fileName = 'restored.png';
         $targetFile = $this->mediaRoot.DIRECTORY_SEPARATOR.$fileName;
         file_put_contents($targetFile, $content);
 
         SeoMedia::query()->create([
             'site_id' => $this->site->id,
             'filename' => $fileName,
-            'slug' => 'no-restore',
+            'slug' => 'restored',
             'path' => 'uploads/seo_media/'.$fileName,
             'url' => '/storage/uploads/seo_media/'.$fileName,
             'source' => 'upload',
         ]);
 
-        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'export_no_restore.zip';
-        $exporter = new ClientTransferExporter;
-        $exporter->export($zipPath);
+        $zipPath = $this->tempDir.DIRECTORY_SEPARATOR.'export_restore.zip';
+        (new ClientTransferExporter)->export($zipPath);
 
-        // Delete the physical file from disk and DB
         @unlink($targetFile);
         self::assertFileDoesNotExist($targetFile);
         $this->wipeBusinessTables();
 
-        // Run import
         $importer = new ClientTransferImporter;
-        $importer->import($zipPath);
+        $importResult = $importer->import($zipPath);
 
-        // DB record is created, BUT physical file MUST NOT be restored by import (export-only scope)
+        self::assertSame(0, $importResult['total_failed']);
         self::assertSame(1, SeoMedia::query()->count());
-        self::assertFileDoesNotExist($targetFile, 'Import MUST NOT restore or write media binaries in this scope.');
+        self::assertFileExists($targetFile);
+        self::assertSame($content, file_get_contents($targetFile));
     }
 
     public function test_client_transfer_export_artifacts_are_outside_media_discovery(): void

@@ -11,6 +11,7 @@ use App\Jobs\ClientTransfer\ExportDatasetSliceJob;
 use App\Jobs\ClientTransfer\FinalizeSeoExportJob;
 use App\Jobs\ClientTransfer\FinalizeSeoImportJob;
 use App\Jobs\ClientTransfer\ImportDatasetSliceJob;
+use App\Jobs\ClientTransfer\ImportMediaOrphansSliceJob;
 use App\Jobs\ClientTransfer\PrepareSeoExportJob;
 use App\Jobs\ClientTransfer\PrepareSeoImportJob;
 use App\Jobs\ClientTransfer\ResolveDeferredSliceJob;
@@ -184,6 +185,7 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
             new FinalizeSeoExportJob('test-run'),
             new PrepareSeoImportJob('test-run', 'test.zip'),
             new ImportDatasetSliceJob('test-run', 'articles', 0),
+            new ImportMediaOrphansSliceJob('test-run', 0),
             new ResolveDeferredSliceJob('test-run'),
             new ValidateSeoImportJob('test-run'),
             new BuildRetryPackageJob('test-run'),
@@ -805,6 +807,9 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
 
         // FinalizeSeoImportJob
         (new FinalizeSeoImportJob($run->run_id))->handle();
+        Queue::assertNothingPushed();
+
+        (new ImportMediaOrphansSliceJob($run->run_id, 0))->handle();
         Queue::assertNothingPushed();
 
         $run->refresh();

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ClientTransfer\Support;
 
+use App\Services\ClientTransfer\Logging\ImportRun;
 use Illuminate\Support\Facades\Storage;
 use Omnichannel\Addons\Media\Models\SeoMedia;
 use Omnichannel\Addons\Media\Services\SeoMediaPathAllocator;
@@ -30,6 +31,19 @@ final class MediaBinaryManager
 
     /** @var array<string, bool> */
     private array $seenHashes = [];
+
+    /** @var array<string, string> sha256 => managed relative path restored this run */
+    private array $restoredHashes = [];
+
+    /** @var array{media_binaries_restored: int, media_binaries_reused: int, orphan_files_restored: int, missing_binaries: int, checksum_failures: int, restored_bytes: int} */
+    private array $importStats = [
+        'media_binaries_restored' => 0,
+        'media_binaries_reused' => 0,
+        'orphan_files_restored' => 0,
+        'missing_binaries' => 0,
+        'checksum_failures' => 0,
+        'restored_bytes' => 0,
+    ];
 
     private bool $orphanExported = false;
 
@@ -293,6 +307,550 @@ final class MediaBinaryManager
         return $orphanCount;
     }
 
+    /**
+     * @return array{ok: bool, code: ?string, message: ?string, relative_path: ?string, reused: bool, created: bool, bytes: int, sha256: ?string}
+     */
+    public function restoreFileRef(string $fileRef, string $preferredSlug, string $fallbackExtension, ReferenceMap $refMap): array
+    {
+        $hash = $this->parseFileRef($fileRef);
+        if ($hash === null) {
+            $this->importStats['missing_binaries']++;
+
+            return $this->importFailure('MEDIA_BINARY_MISSING', "Invalid or missing file_ref [{$fileRef}].");
+        }
+
+        if (isset($this->restoredHashes[$hash])) {
+            $this->importStats['media_binaries_reused']++;
+
+            return $this->importSuccess($this->restoredHashes[$hash], $hash, reused: true, created: false, bytes: 0);
+        }
+
+        $packageFile = $this->resolvePackageBinaryPath($hash);
+        if ($packageFile === null) {
+            $this->importStats['missing_binaries']++;
+
+            return $this->importFailure('MEDIA_BINARY_MISSING', "Package binary missing for file_ref [sha256:{$hash}].");
+        }
+
+        $ext = $this->resolveExtension($packageFile);
+        if ($ext === 'bin' && $fallbackExtension !== '') {
+            $ext = $this->resolveExtension('x.'.$fallbackExtension);
+        }
+
+        $existing = $this->findExistingManagedFileWithHash($hash, $preferredSlug, $ext);
+        if ($existing !== null) {
+            $this->restoredHashes[$hash] = $existing;
+            $this->importStats['media_binaries_reused']++;
+            $this->saveState();
+
+            return $this->importSuccess($existing, $hash, reused: true, created: false, bytes: 0);
+        }
+
+        $allocated = (new SeoMediaPathAllocator)->allocate($preferredSlug, $ext);
+        $relative = $allocated['relative_path'];
+        $written = $this->streamCopyPackageToManagedPath($packageFile, $relative, $hash);
+        if (! $written['ok']) {
+            return $written;
+        }
+
+        $this->restoredHashes[$hash] = $relative;
+        if ($written['created']) {
+            $this->journalCreatedFile($refMap, $relative);
+            $this->importStats['media_binaries_restored']++;
+            $this->importStats['restored_bytes'] += $written['bytes'];
+        } else {
+            $this->importStats['media_binaries_reused']++;
+        }
+        $this->saveState();
+
+        return $this->importSuccess($relative, $hash, reused: ! $written['created'], created: $written['created'], bytes: $written['bytes']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $orphan
+     * @return array{ok: bool, code: ?string, message: ?string, relative_path: ?string, reused: bool, created: bool, bytes: int, sha256: ?string}
+     */
+    public function restoreOrphanRecord(array $orphan, ReferenceMap $refMap): array
+    {
+        $fileRef = (string) ($orphan['file_ref'] ?? '');
+        $hash = $this->parseFileRef($fileRef);
+        if ($hash === null) {
+            $this->importStats['missing_binaries']++;
+
+            return $this->importFailure('MEDIA_BINARY_MISSING', 'Orphan file_ref is missing or invalid.');
+        }
+
+        if (isset($this->restoredHashes[$hash])) {
+            $this->importStats['media_binaries_reused']++;
+
+            return $this->importSuccess($this->restoredHashes[$hash], $hash, reused: true, created: false, bytes: 0);
+        }
+
+        $packageFile = $this->resolvePackageBinaryPath($hash);
+        if ($packageFile === null) {
+            $this->importStats['missing_binaries']++;
+
+            return $this->importFailure('MEDIA_BINARY_MISSING', "Package binary missing for orphan [sha256:{$hash}].");
+        }
+
+        $ext = (string) ($orphan['extension'] ?? $this->resolveExtension($packageFile));
+        $filename = (string) ($orphan['filename'] ?? basename($packageFile));
+        $preferredSlug = pathinfo($filename, PATHINFO_FILENAME);
+        if ($preferredSlug === '') {
+            $preferredSlug = 'orphan-'.$hash;
+        }
+
+        $rawManagedPath = (string) ($orphan['managed_relative_path'] ?? '');
+        if ($rawManagedPath !== '' && (
+            str_contains(str_replace('\\', '/', $rawManagedPath), '../')
+            || str_starts_with($rawManagedPath, '/')
+            || preg_match('/^[a-zA-Z]:/', str_replace('\\', '/', $rawManagedPath)) === 1
+        )) {
+            return $this->importFailure('MEDIA_PATH_TRAVERSAL', 'Orphan managed_relative_path is not a safe managed path.');
+        }
+
+        $candidate = $this->safeOrphanRelativePath($rawManagedPath);
+        if ($candidate !== null) {
+            $existingHash = $this->hashManagedRelativePath($candidate);
+            if ($existingHash === $hash) {
+                $this->restoredHashes[$hash] = $candidate;
+                $this->importStats['media_binaries_reused']++;
+                $this->saveState();
+
+                return $this->importSuccess($candidate, $hash, reused: true, created: false, bytes: 0);
+            }
+            if ($existingHash === null) {
+                $written = $this->streamCopyPackageToManagedPath($packageFile, $candidate, $hash);
+                if (! $written['ok']) {
+                    return $written;
+                }
+                $this->restoredHashes[$hash] = $candidate;
+                if ($written['created']) {
+                    $this->journalCreatedFile($refMap, $candidate);
+                    $this->importStats['orphan_files_restored']++;
+                    $this->importStats['restored_bytes'] += $written['bytes'];
+                } else {
+                    $this->importStats['media_binaries_reused']++;
+                }
+                $this->saveState();
+
+                return $this->importSuccess($candidate, $hash, reused: ! $written['created'], created: $written['created'], bytes: $written['bytes']);
+            }
+        }
+
+        $existing = $this->findExistingManagedFileWithHash($hash, $preferredSlug, $ext);
+        if ($existing !== null) {
+            $this->restoredHashes[$hash] = $existing;
+            $this->importStats['media_binaries_reused']++;
+            $this->saveState();
+
+            return $this->importSuccess($existing, $hash, reused: true, created: false, bytes: 0);
+        }
+
+        $allocated = (new SeoMediaPathAllocator)->allocate($preferredSlug, $ext);
+        $relative = $allocated['relative_path'];
+        $written = $this->streamCopyPackageToManagedPath($packageFile, $relative, $hash);
+        if (! $written['ok']) {
+            return $written;
+        }
+
+        $this->restoredHashes[$hash] = $relative;
+        if ($written['created']) {
+            $this->journalCreatedFile($refMap, $relative);
+            $this->importStats['orphan_files_restored']++;
+            $this->importStats['restored_bytes'] += $written['bytes'];
+        } else {
+            $this->importStats['media_binaries_reused']++;
+        }
+        $this->saveState();
+
+        return $this->importSuccess($relative, $hash, reused: ! $written['created'], created: $written['created'], bytes: $written['bytes']);
+    }
+
+    /**
+     * @return array{processed: int, has_more: bool, next_offset: int}
+     */
+    public function importOrphanSlice(ReferenceMap $refMap, ImportRun $run, int $byteOffset = 0, int $limit = 1): array
+    {
+        $ndjsonPath = $this->stagingDir.DIRECTORY_SEPARATOR.'media'.DIRECTORY_SEPARATOR.'orphan_files.ndjson';
+        if (! is_file($ndjsonPath)) {
+            return ['processed' => 0, 'has_more' => false, 'next_offset' => 0];
+        }
+
+        $handle = fopen($ndjsonPath, 'rb');
+        if ($handle === false) {
+            return ['processed' => 0, 'has_more' => false, 'next_offset' => $byteOffset];
+        }
+
+        if ($byteOffset > 0) {
+            fseek($handle, $byteOffset);
+        }
+
+        $processed = 0;
+        $nextOffset = $byteOffset;
+        $reachedEof = false;
+
+        try {
+            while ($processed < $limit && ($line = fgets($handle)) !== false) {
+                $nextOffset = (int) ftell($handle);
+                $trimmed = trim($line);
+                if ($trimmed === '') {
+                    continue;
+                }
+
+                $record = json_decode($trimmed, true);
+                if (! is_array($record)) {
+                    continue;
+                }
+
+                $result = $this->restoreOrphanRecord($record, $refMap);
+                if (! $result['ok']) {
+                    $run->recordFailed(
+                        'media',
+                        'orphan:'.(string) ($record['filename'] ?? ($record['file_ref'] ?? 'unknown')),
+                        (string) $result['code'],
+                        (string) $result['message'],
+                        'media/orphan_files.ndjson',
+                        $processed,
+                        rawRecord: $record,
+                    );
+                }
+                $processed++;
+            }
+
+            $reachedEof = feof($handle);
+        } finally {
+            fclose($handle);
+        }
+
+        $this->saveState();
+
+        return [
+            'processed' => $processed,
+            'has_more' => ! $reachedEof,
+            'next_offset' => $nextOffset,
+        ];
+    }
+
+    public function parseFileRef(string $fileRef): ?string
+    {
+        $fileRef = trim($fileRef);
+        if (! str_starts_with($fileRef, 'sha256:')) {
+            return null;
+        }
+
+        $hash = strtolower(substr($fileRef, 7));
+        if (preg_match('/^[a-f0-9]{64}$/', $hash) !== 1) {
+            return null;
+        }
+
+        return $hash;
+    }
+
+    public function resolvePackageBinaryPath(string $sha256): ?string
+    {
+        $filesDir = $this->filesDirectory;
+        if (! is_dir($filesDir)) {
+            return null;
+        }
+
+        $realDir = realpath($filesDir);
+        if ($realDir === false) {
+            return null;
+        }
+
+        $entries = scandir($filesDir);
+        if ($entries === false) {
+            return null;
+        }
+
+        foreach ($entries as $entry) {
+            if ($entry === '.' || $entry === '..') {
+                continue;
+            }
+            if (preg_match('/^'.preg_quote($sha256, '/').'\.[A-Za-z0-9]+$/', $entry) !== 1) {
+                continue;
+            }
+
+            $absolute = $filesDir.DIRECTORY_SEPARATOR.$entry;
+            $realFile = realpath($absolute);
+            if ($realFile === false || is_link($absolute) || is_link($realFile)) {
+                continue;
+            }
+
+            $prefix = rtrim($realDir, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
+            if ($realFile !== $realDir && ! str_starts_with($realFile, $prefix)) {
+                continue;
+            }
+
+            if (! is_file($realFile) || ! is_readable($realFile)) {
+                continue;
+            }
+
+            return $realFile;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array{ok: bool, code: ?string, message: ?string, relative_path: ?string, reused: bool, created: bool, bytes: int, sha256: ?string}
+     */
+    public function streamCopyPackageToManagedPath(string $packageFile, string $relativePath, string $expectedHash): array
+    {
+        $relativePath = str_replace('\\', '/', ltrim($relativePath, '/'));
+        if (! $this->isSafeManagedRelativePath($relativePath)) {
+            return $this->importFailure('MEDIA_PATH_TRAVERSAL', "Refusing to write media binary outside managed root [{$relativePath}].");
+        }
+
+        $disk = Storage::disk($this->diskName);
+        $absolute = $disk->path($relativePath);
+        $parent = dirname($absolute);
+        if (! is_dir($parent)) {
+            mkdir($parent, 0755, true);
+        }
+
+        if (is_file($absolute) && ! is_link($absolute)) {
+            $existingHash = @hash_file('sha256', $absolute);
+            if (is_string($existingHash) && $existingHash === $expectedHash && $this->isContainedWithinManagedRoot($absolute)) {
+                return $this->importSuccess($relativePath, $expectedHash, reused: true, created: false, bytes: 0);
+            }
+        }
+
+        $partPath = $absolute.'.ctimport.part';
+        $hash = $this->streamCopyAndHash($packageFile, $partPath);
+        if ($hash === null) {
+            @unlink($partPath);
+
+            return $this->importFailure('MEDIA_FILE_UNREADABLE', 'Failed to stream copy media binary from package.');
+        }
+
+        if ($hash !== $expectedHash) {
+            @unlink($partPath);
+            $this->importStats['checksum_failures']++;
+
+            return $this->importFailure('MEDIA_CHECKSUM_MISMATCH', "SHA-256 mismatch for file_ref [sha256:{$expectedHash}].");
+        }
+
+        if (file_exists($absolute)) {
+            @unlink($absolute);
+        }
+
+        if (! @rename($partPath, $absolute)) {
+            @unlink($partPath);
+
+            return $this->importFailure('MEDIA_FILE_COPY_FAILED', 'Failed to move restored media binary into managed storage.');
+        }
+
+        $realDest = realpath($absolute);
+        if ($realDest === false || is_link($absolute) || ! $this->isContainedWithinManagedRoot($realDest)) {
+            @unlink($absolute);
+
+            return $this->importFailure('MEDIA_FILE_CONTAINMENT_VIOLATION', 'Restored media binary escaped the managed media root.');
+        }
+
+        return $this->importSuccess($relativePath, $expectedHash, reused: false, created: true, bytes: (int) filesize($absolute));
+    }
+
+    public function streamCopyAndHash(string $sourceFile, string $targetFile): ?string
+    {
+        $src = @fopen($sourceFile, 'rb');
+        if ($src === false) {
+            return null;
+        }
+
+        $dst = @fopen($targetFile, 'wb');
+        if ($dst === false) {
+            fclose($src);
+
+            return null;
+        }
+
+        $ctx = hash_init('sha256');
+        try {
+            while (! feof($src)) {
+                $chunk = fread($src, 1048576);
+                if ($chunk === false) {
+                    return null;
+                }
+                if ($chunk === '') {
+                    break;
+                }
+                hash_update($ctx, $chunk);
+                if (fwrite($dst, $chunk) === false) {
+                    return null;
+                }
+            }
+        } finally {
+            fclose($src);
+            fclose($dst);
+        }
+
+        return hash_final($ctx);
+    }
+
+    public function rollbackCreatedFile(string $relativePath): void
+    {
+        $relativePath = str_replace('\\', '/', ltrim($relativePath, '/'));
+        if (! $this->isSafeManagedRelativePath($relativePath)) {
+            return;
+        }
+
+        $absolute = Storage::disk($this->diskName)->path($relativePath);
+        $realFile = realpath($absolute);
+        if ($realFile === false || is_link($absolute) || ! is_file($realFile)) {
+            return;
+        }
+
+        if (! $this->isContainedWithinManagedRoot($realFile)) {
+            return;
+        }
+
+        @unlink($realFile);
+    }
+
+    public function isSafeManagedRelativePath(string $relativePath): bool
+    {
+        $normalized = str_replace('\\', '/', ltrim(trim($relativePath), '/'));
+        if ($normalized === '' || str_contains($normalized, '../') || str_contains($normalized, '..\\')) {
+            return false;
+        }
+
+        if (str_starts_with($normalized, '/') || preg_match('/^[a-zA-Z]:/', $normalized) === 1) {
+            return false;
+        }
+
+        return self::isApprovedManagedRoot($normalized) || self::isApprovedManagedRoot(dirname($normalized));
+    }
+
+    /**
+     * @return array{media_binaries_restored: int, media_binaries_reused: int, orphan_files_restored: int, missing_binaries: int, checksum_failures: int, restored_bytes: int}
+     */
+    public function getImportStats(): array
+    {
+        return $this->importStats;
+    }
+
+    public function persistImportStatsToRun(string $runId): void
+    {
+        $run = \App\Models\ClientTransferRun::query()->where('run_id', $runId)->first();
+        if ($run === null) {
+            return;
+        }
+
+        $metadata = $run->metadata ?? [];
+        $metadata['media_import'] = $this->importStats;
+        $run->update(['metadata' => $metadata]);
+    }
+
+    public function deleteCreatedFilesFromJournal(ReferenceMap $refMap): void
+    {
+        do {
+            $records = $refMap->getCreatedRecordsChunk('media', limit: 500);
+            $fileIds = [];
+            foreach ($records as $record) {
+                if (($record['context']['kind'] ?? '') !== 'created_file') {
+                    continue;
+                }
+                $this->rollbackCreatedFile((string) ($record['context']['relative_path'] ?? $record['target_key']));
+                $fileIds[] = $record['id'];
+            }
+            $refMap->removeCreatedRecords($fileIds);
+            if ($fileIds === []) {
+                break;
+            }
+        } while (count($records) === 500);
+    }
+
+    /**
+     * @return array{ok: bool, code: ?string, message: ?string, relative_path: ?string, reused: bool, created: bool, bytes: int, sha256: ?string}
+     */
+    private function importFailure(string $code, string $message): array
+    {
+        return [
+            'ok' => false,
+            'code' => $code,
+            'message' => $message,
+            'relative_path' => null,
+            'reused' => false,
+            'created' => false,
+            'bytes' => 0,
+            'sha256' => null,
+        ];
+    }
+
+    /**
+     * @return array{ok: bool, code: ?string, message: ?string, relative_path: ?string, reused: bool, created: bool, bytes: int, sha256: ?string}
+     */
+    private function importSuccess(string $relativePath, string $hash, bool $reused, bool $created, int $bytes): array
+    {
+        return [
+            'ok' => true,
+            'code' => null,
+            'message' => null,
+            'relative_path' => $relativePath,
+            'reused' => $reused,
+            'created' => $created,
+            'bytes' => $bytes,
+            'sha256' => $hash,
+        ];
+    }
+
+    private function journalCreatedFile(ReferenceMap $refMap, string $relativePath): void
+    {
+        $refMap->trackCreated('media', 'bin:'.$relativePath, [
+            'kind' => 'created_file',
+            'relative_path' => $relativePath,
+        ]);
+    }
+
+    private function findExistingManagedFileWithHash(string $hash, string $preferredSlug, string $extension): ?string
+    {
+        $slug = \Illuminate\Support\Str::slug($preferredSlug);
+        if ($slug === '') {
+            return null;
+        }
+
+        $candidate = SeoMediaPathAllocator::BASE_DIR.'/'.$slug.'.'.ltrim($extension, '.');
+        $existingHash = $this->hashManagedRelativePath($candidate);
+        if ($existingHash === $hash) {
+            return $candidate;
+        }
+
+        return null;
+    }
+
+    private function hashManagedRelativePath(string $relativePath): ?string
+    {
+        if (! $this->isSafeManagedRelativePath($relativePath)) {
+            return null;
+        }
+
+        $absolute = Storage::disk($this->diskName)->path($relativePath);
+        if (! is_file($absolute) || is_link($absolute)) {
+            return null;
+        }
+
+        $realFile = realpath($absolute);
+        if ($realFile === false || ! $this->isContainedWithinManagedRoot($realFile)) {
+            return null;
+        }
+
+        $hash = @hash_file('sha256', $realFile);
+
+        return is_string($hash) ? $hash : null;
+    }
+
+    private function safeOrphanRelativePath(string $rawPath): ?string
+    {
+        $normalized = $this->normalizeCandidatePath($rawPath);
+        if ($normalized === null || ! $this->isSafeManagedRelativePath($normalized)) {
+            return null;
+        }
+
+        return $normalized;
+    }
+
     public function streamCopyFile(string $sourceFile, string $targetFile): bool
     {
         $src = @fopen($sourceFile, 'rb');
@@ -468,8 +1026,15 @@ final class MediaBinaryManager
             $data = json_decode((string) file_get_contents($stateFile), true);
             if (is_array($data)) {
                 $this->stats = array_merge($this->stats, (array) ($data['stats'] ?? []));
+                $this->importStats = array_merge($this->importStats, (array) ($data['import_stats'] ?? []));
                 $this->warnings = array_merge($this->warnings, (array) ($data['warnings'] ?? []));
                 $this->seenHashes = array_fill_keys((array) ($data['seen_hashes'] ?? []), true);
+                $this->restoredHashes = [];
+                foreach ((array) ($data['restored_hashes'] ?? []) as $hash => $path) {
+                    if (is_string($hash) && is_string($path) && $path !== '') {
+                        $this->restoredHashes[$hash] = $path;
+                    }
+                }
                 $this->orphanExported = (bool) ($data['orphan_exported'] ?? false);
             }
         }
@@ -485,8 +1050,10 @@ final class MediaBinaryManager
         $stateFile = $mediaDir.DIRECTORY_SEPARATOR.'_state.json';
         file_put_contents($stateFile, json_encode([
             'stats' => $this->stats,
+            'import_stats' => $this->importStats,
             'warnings' => $this->warnings,
             'seen_hashes' => array_keys($this->seenHashes),
+            'restored_hashes' => $this->restoredHashes,
             'orphan_exported' => $this->orphanExported,
         ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }

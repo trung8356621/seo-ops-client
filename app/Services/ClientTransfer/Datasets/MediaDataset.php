@@ -160,6 +160,72 @@ final class MediaDataset extends BaseDataset
         return $url;
     }
 
+    public function importOrphanFiles(ReferenceMap $refMap, ImportRun $run, BlobManager $blobs): void
+    {
+        $manager = $this->getMediaBinaryManager($blobs);
+        $manager->loadState();
+        $offset = 0;
+        do {
+            $slice = $manager->importOrphanSlice($refMap, $run, $offset, 50);
+            $offset = $slice['next_offset'];
+            $manager->persistImportStatsToRun($run->runId);
+        } while ($slice['has_more']);
+        $manager->saveState();
+    }
+
+    public function validateImportedBinaries(ReferenceMap $refMap, ImportRun $run): void
+    {
+        $manager = $this->getMediaBinaryManager();
+        $disk = \Illuminate\Support\Facades\Storage::disk('public');
+        $beforeId = 0;
+
+        do {
+            $chunk = $refMap->getCreatedRecordsChunk($this->key(), $beforeId, 500);
+            foreach ($chunk as $record) {
+                if (($record['context']['kind'] ?? '') === 'created_file') {
+                    $relative = (string) ($record['context']['relative_path'] ?? '');
+                    if ($relative === '' || ! $manager->isSafeManagedRelativePath($relative) || ! $disk->exists($relative)) {
+                        $run->recordFailed('media', (string) $record['target_key'], 'MEDIA_VALIDATION_FAILED', 'Created media binary is missing after import.', null, 0);
+                    }
+
+                    continue;
+                }
+
+                $sha = (string) ($record['context']['sha256'] ?? '');
+                $relative = (string) ($record['context']['relative_path'] ?? '');
+                if ($sha === '' || $relative === '') {
+                    continue;
+                }
+
+                if (! $manager->isSafeManagedRelativePath($relative)) {
+                    $run->recordFailed('media', 'media:'.$record['target_key'], 'MEDIA_FILE_CONTAINMENT_VIOLATION', 'Imported media path escaped managed root.', null, 0);
+
+                    continue;
+                }
+
+                $absolute = $disk->path($relative);
+                if (! is_file($absolute)) {
+                    $run->recordFailed('media', 'media:'.$record['target_key'], 'MEDIA_BINARY_MISSING', 'Imported media record has no accessible target binary.', null, 0);
+
+                    continue;
+                }
+
+                $actual = hash_file('sha256', $absolute);
+                if ($actual !== $sha) {
+                    $run->recordFailed('media', 'media:'.$record['target_key'], 'MEDIA_CHECKSUM_MISMATCH', 'Restored media SHA-256 does not match file_ref.', null, 0);
+                }
+
+                $media = SeoMedia::query()->find($record['target_key']);
+                if ($media !== null && str_replace('\\', '/', (string) $media->path) !== $relative) {
+                    $run->recordFailed('media', 'media:'.$record['target_key'], 'MEDIA_VALIDATION_FAILED', 'Media DB path does not match restored target path.', null, 0);
+                }
+            }
+            if ($chunk !== []) {
+                $beforeId = (int) $chunk[array_key_last($chunk)]['id'];
+            }
+        } while (count($chunk) === 500);
+    }
+
     public function importRecord(
         array $record,
         ReferenceMap $refMap,
@@ -180,13 +246,39 @@ final class MediaDataset extends BaseDataset
             }
         }
 
+        $manager = $this->getMediaBinaryManager($blobs);
+        $manager->loadState();
+
+        $fileRef = trim((string) ($record['file_ref'] ?? ''));
+        $binary = null;
+        if ($fileRef !== '') {
+            $preferredSlug = (string) ($record['slug'] ?? '');
+            if ($preferredSlug === '') {
+                $preferredSlug = pathinfo((string) ($record['filename'] ?? 'media'), PATHINFO_FILENAME);
+            }
+            $fallbackExt = pathinfo((string) ($record['filename'] ?? ($record['original_filename'] ?? '')), PATHINFO_EXTENSION);
+            $binary = $manager->restoreFileRef($fileRef, $preferredSlug, (string) $fallbackExt, $refMap);
+            $manager->persistImportStatsToRun($run->runId);
+            if (! $binary['ok']) {
+                $run->recordFailed('media', $ref, (string) $binary['code'], (string) $binary['message'], $partFile, $recordIndex, rawRecord: $record);
+
+                return;
+            }
+        }
+
         try {
             $media = new SeoMedia;
             $media->site_id = $siteId;
             $media->filename = (string) ($record['filename'] ?? 'media');
             $media->slug = (string) ($record['slug'] ?? 'media');
-            $media->path = (string) ($record['path'] ?? '');
-            $media->url = (string) ($record['url'] ?? '');
+            if ($binary !== null) {
+                $media->path = (string) $binary['relative_path'];
+                $media->url = '/storage/'.$binary['relative_path'];
+            } else {
+                $safePath = $this->portablePathWithoutAbsolute((string) ($record['path'] ?? ''));
+                $media->path = $safePath;
+                $media->url = $this->sanitizeUrl((string) ($record['url'] ?? ''), $safePath);
+            }
             $media->source = (string) ($record['source'] ?? 'upload');
             $media->alt_text = (string) ($record['alt_text'] ?? '');
             $media->status = (string) ($record['status'] ?? 'ready');
@@ -206,12 +298,42 @@ final class MediaDataset extends BaseDataset
             }
 
             $media->save();
-            $refMap->trackCreated($this->key(), (int) $media->id);
+            $context = [];
+            if ($binary !== null) {
+                $context['relative_path'] = $binary['relative_path'];
+                $context['sha256'] = $binary['sha256'];
+            }
+            $refMap->trackCreated($this->key(), (int) $media->id, $context);
 
             $refMap->set($ref, 'media', (int) $media->id);
             $run->recordImported('media', $ref, $partFile, $recordIndex);
         } catch (\Throwable $e) {
             $run->recordFailed('media', $ref, 'DB_ERROR', $e->getMessage(), $partFile, $recordIndex, rawRecord: $record);
         }
+    }
+
+    public function rollbackImportedRecord(string $targetKey, array $context = []): void
+    {
+        if (($context['kind'] ?? '') === 'created_file') {
+            $this->getMediaBinaryManager()->rollbackCreatedFile((string) ($context['relative_path'] ?? $targetKey));
+
+            return;
+        }
+
+        parent::rollbackImportedRecord($targetKey, $context);
+    }
+
+    private function portablePathWithoutAbsolute(string $path): string
+    {
+        $normalized = str_replace('\\', '/', trim($path));
+        $normalized = ltrim($normalized, '/');
+        if (preg_match('/^[a-zA-Z]:/', $normalized) === 1 || str_starts_with($normalized, 'file:')) {
+            return '';
+        }
+        if (str_contains($normalized, '../')) {
+            return '';
+        }
+
+        return $normalized;
     }
 }

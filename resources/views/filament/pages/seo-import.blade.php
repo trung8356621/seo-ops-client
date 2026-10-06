@@ -143,6 +143,35 @@
                         </div>
                     </div>
 
+                    @if (!empty($this->run->metadata['media_import']))
+                        <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 text-xs">
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Media restored:</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ number_format($this->run->metadata['media_import']['media_binaries_restored'] ?? 0) }}</span>
+                            </div>
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Media reused:</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ number_format($this->run->metadata['media_import']['media_binaries_reused'] ?? 0) }}</span>
+                            </div>
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Orphan files:</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ number_format($this->run->metadata['media_import']['orphan_files_restored'] ?? 0) }}</span>
+                            </div>
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Missing binaries:</span>
+                                <span class="font-bold text-rose-600">{{ number_format($this->run->metadata['media_import']['missing_binaries'] ?? 0) }}</span>
+                            </div>
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Checksum failures:</span>
+                                <span class="font-bold text-rose-600">{{ number_format($this->run->metadata['media_import']['checksum_failures'] ?? 0) }}</span>
+                            </div>
+                            <div class="rounded bg-white p-2.5 shadow-xs dark:bg-gray-900">
+                                <span class="text-gray-500">Restored bytes:</span>
+                                <span class="font-bold text-gray-900 dark:text-white">{{ number_format($this->run->metadata['media_import']['restored_bytes'] ?? 0) }}</span>
+                            </div>
+                        </div>
+                    @endif
+
                     @if ($this->run->canCancel())
                         <div class="mt-6">
                             <x-filament::button
@@ -183,6 +212,17 @@
                             <span class="text-lg font-bold text-purple-700 dark:text-purple-300">{{ number_format($this->run->missing_refs_count) }}</span>
                         </div>
                     </div>
+
+                    @if (!empty($this->run->metadata['media_import']))
+                        <div class="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3 text-xs">
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Media restored: <strong>{{ number_format($this->run->metadata['media_import']['media_binaries_restored'] ?? 0) }}</strong></div>
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Media reused: <strong>{{ number_format($this->run->metadata['media_import']['media_binaries_reused'] ?? 0) }}</strong></div>
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Orphan files: <strong>{{ number_format($this->run->metadata['media_import']['orphan_files_restored'] ?? 0) }}</strong></div>
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Missing binaries: <strong>{{ number_format($this->run->metadata['media_import']['missing_binaries'] ?? 0) }}</strong></div>
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Checksum failures: <strong>{{ number_format($this->run->metadata['media_import']['checksum_failures'] ?? 0) }}</strong></div>
+                            <div class="rounded bg-gray-50 p-2.5 dark:bg-gray-800">Restored bytes: <strong>{{ number_format($this->run->metadata['media_import']['restored_bytes'] ?? 0) }}</strong></div>
+                        </div>
+                    @endif
 
                     @if ($this->run->retry_package_path)
                         <div class="mt-6 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900 dark:bg-amber-950/20">

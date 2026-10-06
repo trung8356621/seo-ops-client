@@ -46,6 +46,15 @@ final class ValidateSeoImportJob implements ShouldQueue
             'missing_refs_count' => $missingRefsCount,
         ]);
 
+        $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
+        $mediaDataset = (new \App\Services\ClientTransfer\DatasetRegistry)->get('media');
+        if ($mediaDataset instanceof \App\Services\ClientTransfer\Datasets\MediaDataset) {
+            $mediaDataset->setMediaBinaryManager(new \App\Services\ClientTransfer\Support\MediaBinaryManager($stagingDir));
+            $mediaDataset->validateImportedBinaries($refMap, new \App\Services\ClientTransfer\Logging\ImportRun($this->runId, $refMap));
+            $failedCount = $refMap->countByStatus('failed');
+            $run->update(['failed_count' => $failedCount]);
+        }
+
         $run->refresh();
         if ($run->shouldStopTransfer()) {
             return;

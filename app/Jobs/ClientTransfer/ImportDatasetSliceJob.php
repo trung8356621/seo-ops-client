@@ -76,7 +76,11 @@ final class ImportDatasetSliceJob implements ShouldQueue
             fseek($handle, $this->byteOffset);
         }
 
-        $sliceLimit = $this->datasetKey === 'articles' ? 50 : 500;
+        $sliceLimit = match ($this->datasetKey) {
+            'articles' => 50,
+            'media' => 1,
+            default => 500,
+        };
         $recordsInSlice = 0;
         $currentRecordIndex = $this->recordIndex;
         $nextByteOffset = $this->byteOffset;
@@ -177,19 +181,19 @@ final class ImportDatasetSliceJob implements ShouldQueue
         $this->advanceToNextDataset($run);
     }
 
-    private function advanceToNextDataset(ClientTransferRun $run): void
+    public static function dispatchAfterDataset(string $runId, int $completedQueueIndex): void
     {
-        $run->refresh();
-        if ($run->shouldStopTransfer()) {
+        $run = ClientTransferRun::query()->where('run_id', $runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
             return;
         }
 
         $queue = (array) ($run->metadata['datasets_queue'] ?? []);
-        $nextIndex = $this->datasetQueueIndex + 1;
+        $nextIndex = $completedQueueIndex + 1;
 
         if (isset($queue[$nextIndex])) {
-            ImportDatasetSliceJob::dispatch(
-                runId: $this->runId,
+            self::dispatch(
+                runId: $runId,
                 datasetKey: (string) $queue[$nextIndex],
                 datasetQueueIndex: $nextIndex,
                 partIndex: 0,
@@ -197,8 +201,24 @@ final class ImportDatasetSliceJob implements ShouldQueue
                 recordIndex: 0,
             )->onQueue('client-transfer');
         } else {
-            ResolveDeferredSliceJob::dispatch($this->runId, 0)->onQueue('client-transfer');
+            ResolveDeferredSliceJob::dispatch($runId, 0)->onQueue('client-transfer');
         }
+    }
+
+    private function advanceToNextDataset(ClientTransferRun $run): void
+    {
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
+        }
+
+        if ($this->datasetKey === 'media') {
+            ImportMediaOrphansSliceJob::dispatch($this->runId, $this->datasetQueueIndex, 0)->onQueue('client-transfer');
+
+            return;
+        }
+
+        self::dispatchAfterDataset($this->runId, $this->datasetQueueIndex);
     }
 
     public function failed(\Throwable $e): void

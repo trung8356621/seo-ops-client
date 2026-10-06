@@ -135,11 +135,21 @@ final class ClientTransferImporter
                         );
                     }
                 }
+
+                if ($datasetKey === 'media' && $dataset instanceof \App\Services\ClientTransfer\Datasets\MediaDataset) {
+                    $dataset->importOrphanFiles($refMap, $run, $blobs);
+                }
             }
 
             // PHASE 7: Resolve deferred references
             foreach ($datasets as $dataset) {
                 $dataset->resolveDeferred($refMap, $run);
+            }
+
+            $mediaDataset = $this->registry->get('media');
+            if ($mediaDataset instanceof \App\Services\ClientTransfer\Datasets\MediaDataset) {
+                $mediaDataset->setMediaBinaryManager(new \App\Services\ClientTransfer\Support\MediaBinaryManager($extractDir));
+                $mediaDataset->validateImportedBinaries($refMap, $run);
             }
 
             // PHASE 8: Build retry quarantine package if there are failures
