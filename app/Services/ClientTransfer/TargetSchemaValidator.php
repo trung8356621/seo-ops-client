@@ -19,6 +19,7 @@ final class TargetSchemaValidator
         ],
         'sites' => [
             ['connection' => 'default', 'table' => 'sites', 'columns' => ['id', 'user_id', 'domain', 'status', 'ssl', 'created_at', 'updated_at']],
+            ['connection' => 'default', 'table' => 'site_meta', 'columns' => ['id', 'site_id', 'meta_key', 'meta_value', 'created_at', 'updated_at']],
         ],
         'site_services' => [
             ['connection' => 'default', 'table' => 'services', 'columns' => ['id', 'slug']],

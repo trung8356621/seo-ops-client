@@ -81,6 +81,15 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->softDeletes();
         });
 
+        Schema::dropIfExists('site_meta');
+        Schema::create('site_meta', function (Blueprint $table): void {
+            $table->id();
+            $table->unsignedBigInteger('site_id');
+            $table->string('meta_key')->index();
+            $table->longText('meta_value')->nullable();
+            $table->timestamps();
+        });
+
         Schema::dropIfExists('site_services');
         Schema::create('site_services', function (Blueprint $table): void {
             $table->id();
