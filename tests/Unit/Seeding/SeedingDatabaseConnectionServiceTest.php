@@ -112,4 +112,28 @@ final class SeedingDatabaseConnectionServiceTest extends TestCase
         self::assertFalse(Schema::hasTable('seeding_database_connections'));
         self::assertNotSame('legacy_seeding', $health['source'] ?? '');
     }
+
+    public function test_resolve_from_model_honors_driver_and_defaults_mysql(): void
+    {
+        $mysqlModel = new \App\Models\SeedingDatabaseConnection([
+            'host' => '127.0.0.1',
+            'database' => 'omi_seeding',
+            'username' => 'root',
+        ]);
+        $mysql = app(SeedingDatabaseConnectionService::class)->resolveConnectionArrayFromModel($mysqlModel);
+        self::assertSame('mysql', $mysql['driver']);
+        self::assertSame('3306', $mysql['port']);
+        self::assertSame('utf8mb4_unicode_ci', $mysql['collation']);
+
+        $pgModel = new \App\Models\SeedingDatabaseConnection([
+            'host' => 'pg.local',
+            'database' => 'omi_seeding',
+            'username' => 'pg',
+        ]);
+        $pgModel->setAttribute('driver', 'pgsql');
+        $pg = app(SeedingDatabaseConnectionService::class)->resolveConnectionArrayFromModel($pgModel);
+        self::assertSame('pgsql', $pg['driver']);
+        self::assertSame('5432', $pg['port']);
+        self::assertArrayNotHasKey('collation', $pg);
+    }
 }

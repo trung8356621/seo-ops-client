@@ -316,33 +316,6 @@ class MisplacedTableCleanupService
      */
     private function listTables(string $connection): array
     {
-        $conn = DB::connection($connection);
-        $driver = $conn->getDriverName();
-
-        if ($driver === 'sqlite') {
-            $rows = $conn->select(
-                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
-            );
-
-            return array_values(array_map(
-                static fn (object $row): string => (string) $row->name,
-                $rows,
-            ));
-        }
-
-        if (in_array($driver, ['mysql', 'mariadb'], true)) {
-            $database = (string) $conn->getDatabaseName();
-            $rows = $conn->select(
-                'SELECT TABLE_NAME AS name FROM information_schema.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_TYPE = ? ORDER BY TABLE_NAME',
-                [$database, 'BASE TABLE'],
-            );
-
-            return array_values(array_map(
-                static fn (object $row): string => (string) $row->name,
-                $rows,
-            ));
-        }
-
         $schema = Schema::connection($connection);
         if (method_exists($schema, 'getTableListing')) {
             $tables = $schema->getTableListing();
@@ -359,6 +332,20 @@ class MisplacedTableCleanupService
                     return $name;
                 },
                 $tables,
+            ));
+        }
+
+        $conn = DB::connection($connection);
+        $driver = $conn->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $rows = $conn->select(
+                "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+            );
+
+            return array_values(array_map(
+                static fn (object $row): string => (string) $row->name,
+                $rows,
             ));
         }
 
@@ -477,38 +464,15 @@ class MisplacedTableCleanupService
 
     private function disableForeignKeyChecks(string $connection): bool
     {
-        $conn = DB::connection($connection);
-        $driver = $conn->getDriverName();
+        $schema = Schema::connection($connection);
+        $schema->disableForeignKeyConstraints();
 
-        if (in_array($driver, ['mysql', 'mariadb'], true)) {
-            $conn->statement('SET FOREIGN_KEY_CHECKS=0');
-
-            return true;
-        }
-
-        if ($driver === 'sqlite') {
-            $conn->statement('PRAGMA foreign_keys = OFF');
-
-            return true;
-        }
-
-        return false;
+        return true;
     }
 
     private function enableForeignKeyChecks(string $connection): void
     {
-        $conn = DB::connection($connection);
-        $driver = $conn->getDriverName();
-
-        if (in_array($driver, ['mysql', 'mariadb'], true)) {
-            $conn->statement('SET FOREIGN_KEY_CHECKS=1');
-
-            return;
-        }
-
-        if ($driver === 'sqlite') {
-            $conn->statement('PRAGMA foreign_keys = ON');
-        }
+        Schema::connection($connection)->enableForeignKeyConstraints();
     }
 
     /**

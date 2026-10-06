@@ -191,6 +191,60 @@ final class ServiceDatabaseConnectionResolverTest extends TestCase
         self::assertSame('omi_seeding', config('database.connections.omi_seeding.database'));
     }
 
+    public function test_build_config_mysql_keeps_charset_and_default_port(): void
+    {
+        $row = new ServiceDatabaseConnection([
+            'driver' => 'mysql',
+            'host' => 'db.example',
+            'database' => 'omi_seo_ai',
+            'username' => 'seo',
+        ]);
+        $row->password = 'pw';
+
+        $config = app(ServiceDatabaseConnectionResolver::class)->buildConfig($row);
+
+        self::assertSame('mysql', $config['driver']);
+        self::assertSame('3306', $config['port']);
+        self::assertSame('utf8mb4', $config['charset']);
+        self::assertSame('utf8mb4_unicode_ci', $config['collation']);
+        self::assertTrue($config['strict']);
+        self::assertSame('pw', $config['password']);
+    }
+
+    public function test_build_config_empty_driver_defaults_mysql(): void
+    {
+        $row = new ServiceDatabaseConnection([
+            'database' => 'omi_seeding',
+            'username' => 'root',
+        ]);
+
+        $config = app(ServiceDatabaseConnectionResolver::class)->buildConfig($row);
+
+        self::assertSame('mysql', $config['driver']);
+        self::assertSame('3306', $config['port']);
+    }
+
+    public function test_build_config_pgsql_does_not_copy_mysql_only_keys(): void
+    {
+        $row = new ServiceDatabaseConnection([
+            'driver' => 'pgsql',
+            'host' => 'pg.example',
+            'database' => 'omi_seo_ai',
+            'username' => 'pg',
+        ]);
+        $row->password = 'pg-secret';
+
+        $config = app(ServiceDatabaseConnectionResolver::class)->buildConfig($row);
+
+        self::assertSame('pgsql', $config['driver']);
+        self::assertSame('5432', $config['port']);
+        self::assertSame('pg-secret', $config['password']);
+        self::assertArrayNotHasKey('collation', $config);
+        self::assertArrayNotHasKey('strict', $config);
+        self::assertArrayNotHasKey('engine', $config);
+        self::assertArrayNotHasKey('unix_socket', $config);
+    }
+
     /**
      * @return array<string, mixed>
      */

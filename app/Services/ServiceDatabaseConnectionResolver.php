@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Service;
 use App\Models\ServiceDatabaseConnection;
+use App\Support\Database\DriverAwareConnectionConfig;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -283,24 +284,13 @@ final class ServiceDatabaseConnectionResolver
             throw new RuntimeException('Thiếu database hoặc username.');
         }
 
-        $mysql = Config::get('database.connections.mysql', []);
-        if (! is_array($mysql)) {
-            $mysql = [];
-        }
-
-        return array_merge($mysql, [
-            'driver' => (string) ($connection->driver ?: 'mysql'),
-            'host' => filled($connection->host) ? (string) $connection->host : '127.0.0.1',
-            'port' => filled($connection->port) ? (string) $connection->port : '3306',
+        return DriverAwareConnectionConfig::fromCredentials([
+            'driver' => $connection->driver,
+            'host' => $connection->host,
+            'port' => $connection->port,
             'database' => $database,
             'username' => $username,
-            // null / empty both mean no MySQL password.
             'password' => (string) ($connection->password ?? ''),
-            'charset' => $mysql['charset'] ?? 'utf8mb4',
-            'collation' => $mysql['collation'] ?? 'utf8mb4_unicode_ci',
-            'prefix' => $mysql['prefix'] ?? '',
-            'strict' => $mysql['strict'] ?? true,
-            'engine' => $mysql['engine'] ?? null,
         ]);
     }
 
