@@ -27,6 +27,9 @@ final class FinalizeSeoExportJob implements ShouldQueue
     {
         $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
         $stagingDir = storage_path("app/client-transfer/staging_export_{$this->runId}");
+        if (! is_dir($stagingDir)) {
+            throw new \RuntimeException("Staging directory not found for export [{$this->runId}].");
+        }
         $stateFile = $stagingDir.DIRECTORY_SEPARATOR.'export_state.json';
 
         $state = file_exists($stateFile) ? json_decode((string) file_get_contents($stateFile), true) : [];
@@ -41,6 +44,10 @@ final class FinalizeSeoExportJob implements ShouldQueue
             }
         }
 
+        $mediaBinaryManager = new \App\Services\ClientTransfer\Support\MediaBinaryManager($stagingDir);
+        $mediaBinaryManager->loadState();
+        $mediaManifestData = $mediaBinaryManager->toManifestArray();
+
         $manifest = new TransferManifest(
             format: TransferManifest::FORMAT,
             formatVersion: TransferManifest::CURRENT_VERSION,
@@ -48,8 +55,10 @@ final class FinalizeSeoExportJob implements ShouldQueue
             source: [
                 'app_version' => '1.0.0',
                 'database_driver' => config('database.default', 'mysql'),
+                'media_stats' => $mediaManifestData['stats'] ?? null,
             ],
             datasets: $datasetManifests,
+            media: $mediaManifestData,
         );
 
         file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());

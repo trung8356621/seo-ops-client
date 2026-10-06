@@ -52,6 +52,10 @@ final class RetryDataPackageExporter
                 }
             }
 
+            $mediaBinaryManager = new \App\Services\ClientTransfer\Support\MediaBinaryManager($staging);
+            $mediaBinaryManager->loadState();
+            $mediaManifestData = $mediaBinaryManager->toManifestArray();
+
             $manifest = new TransferManifest(
                 TransferManifest::FORMAT,
                 TransferManifest::CURRENT_VERSION,
@@ -65,8 +69,10 @@ final class RetryDataPackageExporter
                     'original_import_run_id' => $request['original_import_run_id'],
                     'source_failure_package_sha256' => hash_file('sha256', $failureZipPath),
                     'unresolvable_refs' => $unresolved,
+                    'media_stats' => $mediaManifestData['stats'] ?? null,
                 ],
                 $manifests,
+                media: $mediaManifestData,
             );
             file_put_contents($staging.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
             ZipArchiveManager::create($staging, $destinationZipPath);

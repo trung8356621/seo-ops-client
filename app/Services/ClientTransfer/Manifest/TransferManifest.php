@@ -17,6 +17,7 @@ final class TransferManifest
     /**
      * @param  array<string, mixed>  $source
      * @param  array<string, DatasetManifest>  $datasets
+     * @param  array<string, mixed>|null  $media
      */
     public function __construct(
         public readonly string $format,
@@ -24,6 +25,7 @@ final class TransferManifest
         public readonly string $exportedAt,
         public readonly array $source,
         public readonly array $datasets,
+        public readonly ?array $media = null,
     ) {}
 
     public function validate(): void
@@ -76,13 +78,19 @@ final class TransferManifest
             $datasetArray[$key] = $manifest->toArray();
         }
 
-        return [
+        $data = [
             'format' => $this->format,
             'format_version' => $this->formatVersion,
             'exported_at' => $this->exportedAt,
             'source' => $this->source,
             'datasets' => $datasetArray,
         ];
+
+        if ($this->media !== null) {
+            $data['media'] = $this->media;
+        }
+
+        return $data;
     }
 
     public function toJson(): string
@@ -108,6 +116,7 @@ final class TransferManifest
             exportedAt: (string) ($data['exported_at'] ?? ''),
             source: (array) ($data['source'] ?? []),
             datasets: $datasets,
+            media: isset($data['media']) && is_array($data['media']) ? $data['media'] : null,
         );
 
         $manifest->validate();

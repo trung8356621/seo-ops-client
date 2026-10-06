@@ -32,11 +32,17 @@ abstract class TransferDatabaseTestCase extends TestCase
         DB::purge('sqlite');
         DB::purge('omi_seo_ai');
 
+        $publicRoot = $this->tempDir.DIRECTORY_SEPARATOR.'storage_public';
+        mkdir($publicRoot, 0755, true);
+        config()->set('filesystems.disks.public.root', $publicRoot);
+        \Illuminate\Support\Facades\Storage::forgetDisk('public');
+
         $this->createSchema();
     }
 
     protected function tearDown(): void
     {
+        \Illuminate\Support\Facades\Storage::forgetDisk('public');
         $this->deleteDirectory($this->tempDir);
         parent::tearDown();
     }

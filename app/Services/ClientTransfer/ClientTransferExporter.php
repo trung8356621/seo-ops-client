@@ -73,6 +73,10 @@ final class ClientTransferExporter
                 );
             }
 
+            $mediaBinaryManager = new \App\Services\ClientTransfer\Support\MediaBinaryManager($stagingDir);
+            $mediaBinaryManager->loadState();
+            $mediaManifestData = $mediaBinaryManager->toManifestArray();
+
             $manifest = new TransferManifest(
                 format: TransferManifest::FORMAT,
                 formatVersion: TransferManifest::CURRENT_VERSION,
@@ -80,8 +84,10 @@ final class ClientTransferExporter
                 source: [
                     'app_version' => '1.0.0',
                     'database_driver' => config('database.default', 'mysql'),
+                    'media_stats' => $mediaManifestData['stats'] ?? null,
                 ],
                 datasets: $datasetManifests,
+                media: $mediaManifestData,
             );
 
             file_put_contents($stagingDir.DIRECTORY_SEPARATOR.'manifest.json', $manifest->toJson());
@@ -94,6 +100,7 @@ final class ClientTransferExporter
                 'exported_at' => $manifest->exportedAt,
                 'counts' => $counts,
                 'manifest' => $manifest,
+                'media_stats' => $mediaManifestData['stats'] ?? null,
             ];
         } finally {
             $this->deleteDir($stagingDir);
