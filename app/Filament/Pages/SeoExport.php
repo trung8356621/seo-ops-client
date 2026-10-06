@@ -70,7 +70,13 @@ final class SeoExport extends Page implements HasForms
         }
         $this->failurePackagePath = Storage::disk('local')->path($relative);
         try {
-            $this->failureInspection = (new FailureRequestInspector)->inspect($this->failurePackagePath);
+            $inspection = (new FailureRequestInspector)->inspect($this->failurePackagePath);
+            $this->failureInspection = [
+                'original_import_run_id' => $inspection['original_import_run_id'],
+                'failed_roots' => $inspection['failed_roots'],
+                'blocked' => $inspection['blocked'],
+                'datasets' => $inspection['datasets'],
+            ];
             Notification::make()->title('Failure package inspected.')->success()->send();
         } catch (\Throwable $e) {
             $this->failureInspection = null;
