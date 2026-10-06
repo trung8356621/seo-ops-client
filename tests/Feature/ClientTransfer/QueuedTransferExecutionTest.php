@@ -567,6 +567,7 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         $task->site_id = (int) $site->id;
         $task->keyword = 'test keyword phrase';
         $task->title = 'Task Title';
+        $task->source_content = 'test keyword phrase';
         $task->save();
 
         // 3. Keyword & Article

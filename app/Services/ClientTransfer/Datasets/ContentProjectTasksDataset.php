@@ -7,10 +7,14 @@ namespace App\Services\ClientTransfer\Datasets;
 use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\ReferenceMap;
+use Omnichannel\Addons\Content\Models\SeoArticle;
 use Omnichannel\Addons\ContentProjects\Models\SeoProjectTask;
 
 final class ContentProjectTasksDataset extends BaseDataset
 {
+    /** seo_project_tasks.source_content is VARCHAR(500) NOT NULL. */
+    private const SOURCE_CONTENT_MAX_LENGTH = 500;
+
     public function key(): string
     {
         return 'content_project_tasks';
@@ -41,6 +45,7 @@ final class ContentProjectTasksDataset extends BaseDataset
             'archived_from_project_ref' => $row->archived_from_project_id ? ('project:'.$row->archived_from_project_id) : null,
             'keyword' => (string) ($row->keyword ?? ''),
             'title' => (string) ($row->title ?? ''),
+            'source_content' => (string) ($row->source_content ?? ''),
             'type' => (string) ($row->type ?? SeoProjectTask::TYPE_CREATE),
             'status' => (string) ($row->status ?? SeoProjectTask::STATUS_PENDING),
             'target_date' => $row->target_date ? (is_string($row->target_date) ? $row->target_date : $row->target_date->format('Y-m-d')) : null,
@@ -92,6 +97,7 @@ final class ContentProjectTasksDataset extends BaseDataset
             $task->title = (string) ($record['title'] ?? '');
             $task->type = (string) ($record['type'] ?? SeoProjectTask::TYPE_CREATE);
             $task->status = (string) ($record['status'] ?? SeoProjectTask::STATUS_PENDING);
+            $task->source_content = $this->resolveSourceContent($record, $articleId);
             $task->target_date = $record['target_date'] ?? null;
             if (! empty($record['scheduled_publish_at'])) {
                 $task->scheduled_publish_at = $record['scheduled_publish_at'];
@@ -131,6 +137,34 @@ final class ContentProjectTasksDataset extends BaseDataset
         } catch (\Throwable $e) {
             $run->recordFailed('content_project_tasks', $ref, 'DB_ERROR', $e->getMessage(), $partFile, $recordIndex, rawRecord: $record);
         }
+    }
+
+    /**
+     * Current packages carry source_content verbatim. Older packages lack it, so derive it
+     * with the canonical domain rule (rewrite/improve → linked Existing Article title).
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function resolveSourceContent(array $record, ?int $targetArticleId): string
+    {
+        if (array_key_exists('source_content', $record) && $record['source_content'] !== null) {
+            return (string) $record['source_content'];
+        }
+
+        $existingArticleTitle = null;
+        if ($targetArticleId !== null && $targetArticleId > 0) {
+            $title = SeoArticle::query()->withoutGlobalScopes()->whereKey($targetArticleId)->value('title');
+            $existingArticleTitle = is_string($title) ? $title : null;
+        }
+
+        $derived = SeoProjectTask::deriveSourceContent(
+            (string) ($record['type'] ?? SeoProjectTask::TYPE_CREATE),
+            isset($record['keyword']) ? (string) $record['keyword'] : null,
+            isset($record['title']) ? (string) $record['title'] : null,
+            $existingArticleTitle,
+        );
+
+        return mb_substr($derived, 0, self::SOURCE_CONTENT_MAX_LENGTH);
     }
 
     public function resolveDeferred(ReferenceMap $refMap, ImportRun $run): void

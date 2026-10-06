@@ -269,6 +269,22 @@ final class ReferenceMap
         ]);
     }
 
+    public function hasDeferred(string $entityType, int $targetId, string $fieldName): bool
+    {
+        $stmt = $this->pdo->prepare('
+            SELECT 1 FROM deferred_references
+            WHERE entity_type = :entity_type AND target_id = :target_id AND field_name = :field_name
+            LIMIT 1
+        ');
+        $stmt->execute([
+            ':entity_type' => $entityType,
+            ':target_id' => $targetId,
+            ':field_name' => $fieldName,
+        ]);
+
+        return $stmt->fetchColumn() !== false;
+    }
+
     /**
      * @return list<array{id: int, entity_type: string, target_id: int, field_name: string, target_ref: string}>
      */

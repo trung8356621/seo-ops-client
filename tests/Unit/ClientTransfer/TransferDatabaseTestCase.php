@@ -96,7 +96,7 @@ abstract class TransferDatabaseTestCase extends TestCase
         Schema::dropIfExists('keywords');
         Schema::create('keywords', function (Blueprint $table): void {
             $table->id();
-            $table->string('phrase');
+            $table->string('phrase')->unique('keywords_phrase_unique');
             $table->string('type')->default('normal');
             $table->string('source')->nullable();
             $table->boolean('source_locked')->default(false);
@@ -341,7 +341,7 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->unsignedBigInteger('site_id');
             $table->unsignedBigInteger('article_id')->nullable();
             $table->unsignedBigInteger('archived_from_project_id')->nullable();
-            $table->string('source_content')->nullable();
+            $table->string('source_content', 500);
             $table->string('keyword')->nullable();
             $table->string('title')->nullable();
             $table->string('type')->default('create');

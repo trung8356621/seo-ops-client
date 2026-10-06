@@ -258,6 +258,7 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
             'article_id' => $article1->id,
             'keyword' => 'chăm sóc da mùa hè',
             'title' => 'Viết bài chăm sóc da mùa hè',
+            'source_content' => 'chăm sóc da mùa hè',
             'type' => 'create',
             'status' => 'completed',
         ]);
