@@ -38,8 +38,8 @@ final class ArticleHeadingsDataset extends BaseDataset
             'article_ref' => 'article:'.$row->article_id,
             'parent_heading_ref' => $row->parent_id ? ('heading:'.$row->parent_id) : null,
             'level' => (int) $row->level,
-            'text' => (string) $row->text,
-            'slug' => (string) ($row->slug ?? ''),
+            'text' => (string) $row->heading_text,
+            'slug' => (string) ($row->heading_slug ?? ''),
             'sort_order' => (int) ($row->sort_order ?? 0),
             'created_at' => $row->created_at?->toIso8601String(),
             'updated_at' => $row->updated_at?->toIso8601String(),
@@ -74,8 +74,8 @@ final class ArticleHeadingsDataset extends BaseDataset
             $heading = new SeoArticleHeading;
             $heading->article_id = $targetArticleId;
             $heading->level = (int) ($record['level'] ?? 1);
-            $heading->text = (string) ($record['text'] ?? '');
-            $heading->slug = (string) ($record['slug'] ?? '');
+            $heading->heading_text = (string) ($record['text'] ?? '');
+            $heading->heading_slug = (string) ($record['slug'] ?? '');
             $heading->sort_order = (int) ($record['sort_order'] ?? 0);
             if (! empty($record['created_at'])) {
                 $heading->created_at = $record['created_at'];

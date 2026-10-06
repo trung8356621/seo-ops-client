@@ -107,4 +107,48 @@ abstract class BaseDataset implements DatasetInterface
 
         return $total;
     }
+
+    public function exportSelectedRefs(iterable $refs, NdjsonPartWriter $writer, BlobManager $blobs): array
+    {
+        $idsToRefs = [];
+        $compositeRefs = [];
+        foreach ($refs as $ref) {
+            if (preg_match('/^[a-z_]+:(\d+)$/', $ref, $matches) === 1) {
+                $idsToRefs[(int) $matches[1]] = $ref;
+            } elseif (preg_match('/^topic:(\d+)_topic_tag:(\d+)$/', $ref, $matches) === 1) {
+                $compositeRefs[] = ['topic_id' => (int) $matches[1], 'tag_id' => (int) $matches[2], 'ref' => $ref];
+            } else {
+                $idsToRefs[-count($idsToRefs) - 1] = $ref;
+            }
+        }
+
+        $count = 0;
+        foreach (array_chunk(array_filter(array_keys($idsToRefs), static fn (int $id): bool => $id > 0), 500) as $ids) {
+            foreach ($this->queryForExport()->whereKey($ids)->get() as $row) {
+                $record = $this->mapRecordForExport($row, $blobs);
+                if ($record !== null) {
+                    $writer->writeRecord($record);
+                    $count++;
+                }
+                unset($idsToRefs[(int) $row->getKey()]);
+            }
+        }
+
+        $unresolvedComposite = [];
+        foreach ($compositeRefs as $comp) {
+            $row = $this->queryForExport()->where('topic_id', $comp['topic_id'])->where('tag_id', $comp['tag_id'])->first();
+            if ($row !== null) {
+                $record = $this->mapRecordForExport($row, $blobs);
+                if ($record !== null) {
+                    $writer->writeRecord($record);
+                    $count++;
+
+                    continue;
+                }
+            }
+            $unresolvedComposite[] = $comp['ref'];
+        }
+
+        return ['count' => $count, 'unresolved' => array_values(array_merge($idsToRefs, $unresolvedComposite))];
+    }
 }

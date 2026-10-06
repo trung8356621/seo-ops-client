@@ -30,6 +30,7 @@ use Omnichannel\Addons\SearchIntelligence\Models\SeoTopicKeyword;
 use Omnichannel\Addons\SearchIntelligence\Models\SeoTopicKeywordDna;
 use Omnichannel\Addons\SearchIntelligence\Models\SeoTopicTag;
 use Omnichannel\Addons\SearchIntelligence\Models\SeoTopicTagAssignment;
+use Omnichannel\Addons\Seo\Models\SeoArticleProfile;
 use Omnichannel\Addons\SiteSync\Models\SeoSiteLinkExclusion;
 use Omnichannel\Addons\SiteSync\Models\SeoSiteManualLink;
 use Omnichannel\Addons\WordPress\Models\WordpressArticleLink;
@@ -79,17 +80,22 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         // 3. Create Articles first so relations can link
         $article1 = new SeoArticle;
         $article1->site_id = (int) $site->id;
-        $article1->author_id = (int) $staff->id;
+        $article1->user_id = (int) $staff->id;
         $article1->title = 'Hướng dẫn chăm sóc da mùa hè';
         $article1->slug = 'cham-soc-da-mua-he';
         $article1->language = 'vi';
         $article1->status = 'published';
         $article1->body = '<h1>Chăm sóc da</h1><p>Nội dung chi tiết...</p>';
         $article1->saveQuietly();
+        SeoArticleProfile::query()->create([
+            'article_id' => $article1->id,
+            'focus_keyword' => 'chăm sóc da',
+            'canonical_url' => 'https://client-shop.test/cham-soc-da-mua-he',
+        ]);
 
         $article2 = new SeoArticle;
         $article2->site_id = (int) $site->id;
-        $article2->author_id = (int) $staff->id;
+        $article2->user_id = (int) $staff->id;
         $article2->title = 'Kem chống nắng tốt nhất';
         $article2->slug = 'kem-chong-nang-tot-nhat';
         $article2->language = 'vi';
@@ -107,8 +113,8 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         $h1 = SeoArticleHeading::query()->create([
             'article_id' => $article1->id,
             'level' => 1,
-            'text' => 'Phần 1: Khởi đầu',
-            'slug' => 'phan-1',
+            'heading_text' => 'Phần 1: Khởi đầu',
+            'heading_slug' => 'phan-1',
             'sort_order' => 1,
         ]);
 
@@ -116,8 +122,8 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
             'article_id' => $article1->id,
             'parent_id' => $h1->id,
             'level' => 2,
-            'text' => 'Phần 1.1: Chi tiết',
-            'slug' => 'phan-1-1',
+            'heading_text' => 'Phần 1.1: Chi tiết',
+            'heading_slug' => 'phan-1-1',
             'sort_order' => 2,
         ]);
 
@@ -131,8 +137,11 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         SeoArticleReview::query()->create([
             'article_id' => $article1->id,
             'reviewer_id' => $owner->id,
-            'action' => 'approved',
-            'notes' => 'Bài viết rất tốt.',
+            'action_type' => 'approve',
+            'from_status' => 'in_review',
+            'to_status' => 'approved',
+            'reviewer_role' => 'owner',
+            'note' => 'Bài viết rất tốt.',
         ]);
 
         // 5. Create Keywords with Semantic site states
@@ -270,10 +279,14 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         // 10. Media
         $media = new SeoMedia;
         $media->site_id = (int) $site->id;
-        $media->primary_article_id = (int) $article1->id;
-        $media->name = 'kem-chong-nang.jpg';
+        $media->filename = 'kem-chong-nang.jpg';
+        $media->slug = 'kem-chong-nang';
+        $media->path = 'uploads/seo_media/kem-chong-nang.jpg';
         $media->url = 'https://client-shop.test/media/kem-chong-nang.jpg';
         $media->source = 'upload';
+        $media->alt_text = 'Kem chống nắng';
+        $media->status = 'ready';
+        $media->wp_attachment_id = 4321;
         $media->setAttribute('article_id', [(int) $article1->id, (int) $article2->id]);
         $media->save();
 
@@ -312,11 +325,23 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         $newArt2 = SeoArticle::query()->where('slug', 'kem-chong-nang-tot-nhat')->firstOrFail();
         self::assertNotSame($article1->id, $newArt1->id, 'Target IDs are fresh and remapped.');
         self::assertGreaterThan(500, $newArt1->id);
+        self::assertSame($staff->id, $newArt1->user_id);
+        self::assertSame('chăm sóc da', $newArt1->seoProfile?->focus_keyword);
+        self::assertSame('https://client-shop.test/cham-soc-da-mua-he', $newArt1->seoProfile?->canonical_url);
 
         // 2. Article Headings parent resolved
         $newH1 = SeoArticleHeading::query()->where('article_id', $newArt1->id)->where('level', 1)->firstOrFail();
         $newH2 = SeoArticleHeading::query()->where('article_id', $newArt1->id)->where('level', 2)->firstOrFail();
         self::assertSame($newH1->id, $newH2->parent_id, 'Heading parent_id resolved via deferred ref.');
+        self::assertSame('Phần 1: Khởi đầu', $newH1->heading_text);
+        self::assertSame('phan-1', $newH1->heading_slug);
+
+        $newReview = SeoArticleReview::query()->where('article_id', $newArt1->id)->firstOrFail();
+        self::assertSame('approve', $newReview->action_type);
+        self::assertSame('in_review', $newReview->from_status);
+        self::assertSame('approved', $newReview->to_status);
+        self::assertSame('owner', $newReview->reviewer_role);
+        self::assertSame('Bài viết rất tốt.', $newReview->note);
 
         // 3. Keywords & Semantic Metas
         $newKw = Keyword::query()->where('phrase', 'chăm sóc da mùa hè')->firstOrFail();
@@ -354,11 +379,14 @@ final class FullRoundTripTest extends TransferDatabaseTestCase
         self::assertSame(9999, $newWpLink->wp_post_id);
 
         // 9. Media auxiliary article IDs
-        $newMedia = SeoMedia::query()->where('name', 'kem-chong-nang.jpg')->firstOrFail();
+        $newMedia = SeoMedia::query()->where('filename', 'kem-chong-nang.jpg')->firstOrFail();
         self::assertSame($newArt1->id, $newMedia->primary_article_id);
         $loadedAux = $newMedia->getAttribute('article_id');
         self::assertIsArray($loadedAux);
         self::assertContains($newArt1->id, $loadedAux);
         self::assertContains($newArt2->id, $loadedAux);
+        self::assertSame('Kem chống nắng', $newMedia->alt_text);
+        self::assertSame('ready', $newMedia->status);
+        self::assertSame(4321, $newMedia->wp_attachment_id);
     }
 }

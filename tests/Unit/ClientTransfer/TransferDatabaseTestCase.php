@@ -17,10 +17,10 @@ abstract class TransferDatabaseTestCase extends TestCase
     {
         parent::setUp();
 
-        $this->tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'transfer_db_test_' . bin2hex(random_bytes(6));
+        $this->tempDir = sys_get_temp_dir().DIRECTORY_SEPARATOR.'transfer_db_test_'.bin2hex(random_bytes(6));
         mkdir($this->tempDir, 0755, true);
 
-        $dbFile = $this->tempDir . DIRECTORY_SEPARATOR . 'test.sqlite';
+        $dbFile = $this->tempDir.DIRECTORY_SEPARATOR.'test.sqlite';
         touch($dbFile);
 
         config()->set('database.connections.sqlite.database', $dbFile);
@@ -196,14 +196,12 @@ abstract class TransferDatabaseTestCase extends TestCase
         Schema::create('articles', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('site_id');
-            $table->unsignedBigInteger('author_id')->nullable();
+            $table->unsignedBigInteger('user_id')->nullable();
             $table->string('title');
             $table->string('slug')->nullable();
             $table->string('language', 10)->nullable();
             $table->string('status', 32)->default('draft');
             $table->text('excerpt')->nullable();
-            $table->string('focus_keyword')->nullable();
-            $table->string('canonical_url')->nullable();
             $table->longText('body')->nullable();
             $table->json('blocks')->nullable();
             $table->json('editor_document')->nullable();
@@ -212,12 +210,25 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->dateTime('editor_document_updated_at')->nullable();
             $table->string('review_status', 32)->nullable();
             $table->dateTime('reviewed_at')->nullable();
-            $table->unsignedBigInteger('reviewed_by')->nullable();
-            $table->text('review_notes')->nullable();
             $table->dateTime('last_manual_saved_at')->nullable();
             $table->dateTime('last_ai_content_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
+        });
+
+        Schema::dropIfExists('seo_article_profiles');
+        Schema::create('seo_article_profiles', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('article_id')->unique()->constrained('articles')->cascadeOnDelete();
+            $table->decimal('seo_score', 5, 2)->nullable();
+            $table->boolean('skip_seo_score')->default(false);
+            $table->unsignedInteger('internal_link_count')->default(0);
+            $table->unsignedInteger('external_link_count')->default(0);
+            $table->dateTime('indexed_at')->nullable();
+            $table->dateTime('previous_indexed_at')->nullable();
+            $table->string('focus_keyword')->nullable();
+            $table->string('canonical_url', 500)->nullable();
+            $table->timestamps();
         });
 
         Schema::dropIfExists('article_meta');
@@ -235,8 +246,8 @@ abstract class TransferDatabaseTestCase extends TestCase
             $table->unsignedBigInteger('article_id');
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->integer('level')->default(1);
-            $table->text('text');
-            $table->string('slug')->nullable();
+            $table->text('heading_text');
+            $table->string('heading_slug');
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
@@ -255,10 +266,12 @@ abstract class TransferDatabaseTestCase extends TestCase
         Schema::create('seo_article_reviews', function (Blueprint $table): void {
             $table->id();
             $table->unsignedBigInteger('article_id');
-            $table->unsignedBigInteger('reviewer_id')->nullable();
-            $table->string('action');
-            $table->text('notes')->nullable();
-            $table->json('metadata')->nullable();
+            $table->string('action_type');
+            $table->string('from_status')->nullable();
+            $table->string('to_status');
+            $table->unsignedBigInteger('reviewer_id');
+            $table->string('reviewer_role')->nullable();
+            $table->text('note')->nullable();
             $table->timestamps();
         });
 
@@ -374,22 +387,11 @@ abstract class TransferDatabaseTestCase extends TestCase
         Schema::dropIfExists('seo_media');
         Schema::create('seo_media', function (Blueprint $table): void {
             $table->id();
-            $table->unsignedBigInteger('site_id')->nullable();
-            $table->unsignedBigInteger('primary_article_id')->nullable();
-            $table->string('name')->default('media');
-            $table->string('path')->nullable();
-            $table->string('url')->nullable();
-            $table->string('source')->default('upload');
-            $table->string('mime_type')->nullable();
-            $table->integer('file_size')->nullable();
-            $table->integer('width')->nullable();
-            $table->integer('height')->nullable();
-            $table->string('alt_text')->nullable();
-            $table->string('status')->default('ready');
-            $table->unsignedBigInteger('wp_attachment_id')->nullable();
-            $table->dateTime('wp_synced_at')->nullable();
-            $table->unsignedBigInteger('prompt_id')->nullable();
-            $table->json('prompt_variables')->nullable();
+            $table->string('filename');
+            $table->string('slug');
+            $table->string('path');
+            $table->string('url');
+            $table->string('source')->default('clipboard');
             $table->timestamps();
         });
 
@@ -433,7 +435,7 @@ abstract class TransferDatabaseTestCase extends TestCase
     protected function wipeBusinessTables(): void
     {
         $tables = [
-            'articles', 'article_meta', 'seo_article_headings', 'seo_faqs', 'seo_article_reviews',
+            'articles', 'seo_article_profiles', 'article_meta', 'seo_article_headings', 'seo_faqs', 'seo_article_reviews',
             'keywords', 'keyword_meta', 'seo_site_keywords', 'seo_topics', 'seo_topic_tags',
             'seo_topic_keywords', 'seo_topic_tag_assignments', 'seo_topic_keyword_dna',
             'seo_site_manual_links', 'seo_site_link_exclusions', 'seo_link_maps',
@@ -459,7 +461,7 @@ abstract class TransferDatabaseTestCase extends TestCase
             if ($file === '.' || $file === '..') {
                 continue;
             }
-            $p = $dir . DIRECTORY_SEPARATOR . $file;
+            $p = $dir.DIRECTORY_SEPARATOR.$file;
             is_dir($p) ? $this->deleteDirectory($p) : @unlink($p);
         }
         @rmdir($dir);

@@ -47,11 +47,24 @@
                         </dd>
                     </div>
                     <div>
-                        <dt class="text-xs text-gray-500">Database business target trống:</dt>
-                        <dd class="font-medium {{ ! $schemaReady ? 'text-gray-500' : ($targetEmpty ? 'text-emerald-600' : 'text-amber-600') }}">
-                            {{ ! $schemaReady ? 'Chưa kiểm tra' : ($targetEmpty ? 'Có' : 'Không') }}
+                        <dt class="text-xs text-gray-500">Chế độ gói dữ liệu:</dt>
+                        <dd class="font-medium {{ $isRetryData ? 'text-amber-600' : 'text-gray-900 dark:text-white' }}">
+                            {{ $isRetryData ? 'Thử lại (Retry Data - Run ID: '.$originalImportRunId.')' : 'Toàn phần (Full Export)' }}
                         </dd>
                     </div>
+                    @if (! $isRetryData)
+                        <div>
+                            <dt class="text-xs text-gray-500">Database business target trống:</dt>
+                            <dd class="font-medium {{ ! $schemaReady ? 'text-gray-500' : ($targetEmpty ? 'text-emerald-600' : 'text-amber-600') }}">
+                                {{ ! $schemaReady ? 'Chưa kiểm tra' : ($targetEmpty ? 'Có' : 'Không') }}
+                            </dd>
+                        </div>
+                    @else
+                        <div>
+                            <dt class="text-xs text-gray-500">Kiểm tra database target:</dt>
+                            <dd class="font-medium text-emerald-600">Cho phép dữ liệu hiện có (Retry Mode)</dd>
+                        </div>
+                    @endif
                     <div>
                         <dt class="text-xs text-gray-500">Số tập dữ liệu (Datasets):</dt>
                         <dd class="font-medium text-gray-900 dark:text-white">{{ $inspectedDatasetCount }}</dd>
@@ -73,16 +86,16 @@
                     </div>
                 @endif
 
-                @if ($schemaReady && ! $targetEmpty)
+                @if (! $isRetryData && $schemaReady && ! $targetEmpty)
                     <div class="mt-4 rounded-lg bg-amber-100 p-3 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
                         <strong>Lưu ý:</strong> Database SEO đích không trống. V1 chỉ hỗ trợ import vào database trống. Vui lòng làm trống database SEO trước khi import.
                     </div>
                 @endif
 
-                @if ($connectionReady && $schemaReady && $targetEmpty)
+                @if ($connectionReady && $schemaReady && ($isRetryData || $targetEmpty))
                     <div class="mt-6">
                         <x-filament::button wire:click="runImport" wire:loading.attr="disabled" color="success" icon="heroicon-o-play">
-                            <span wire:loading.remove wire:target="runImport">Bắt đầu Import dữ liệu ngay</span>
+                            <span wire:loading.remove wire:target="runImport">{{ $isRetryData ? 'Bắt đầu Retry Import ngay' : 'Bắt đầu Import dữ liệu ngay' }}</span>
                             <span wire:loading wire:target="runImport">Đang đưa vào hàng đợi client-transfer...</span>
                         </x-filament::button>
                     </div>

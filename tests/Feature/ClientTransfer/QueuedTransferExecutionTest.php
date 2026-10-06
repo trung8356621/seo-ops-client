@@ -391,7 +391,7 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         for ($i = 1; $i <= 5; $i++) {
             $article = new SeoArticle;
             $article->site_id = (int) $site->id;
-            $article->author_id = (int) $user->id;
+            $article->user_id = (int) $user->id;
             $article->title = "Queued Article {$i}";
             $article->slug = "queued-article-{$i}";
             $article->body = "<p>Queued article body {$i}</p>";

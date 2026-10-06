@@ -55,6 +55,8 @@ final class ClientTransferImporter
                 'target_empty' => $schemaReady && empty($nonEmpty),
                 'non_empty_tables' => $nonEmpty,
                 'service_ready' => $connectionReady && $schemaReady,
+                'is_retry_data' => $manifest->isRetryData(),
+                'original_import_run_id' => $manifest->originalImportRunId(),
             ];
         } finally {
             $this->deleteDir($extractDir);
@@ -88,6 +90,10 @@ final class ClientTransferImporter
 
         $res = ZipArchiveManager::extractAndValidate($zipPath, $extractDir);
         $manifest = $res['manifest'];
+
+        if ($manifest->isRetryData() && $manifest->originalImportRunId() !== null) {
+            $refMap->importReferencesFrom(storage_path('app/client-transfer/refmap_'.$manifest->originalImportRunId().'.sqlite'));
+        }
 
         try {
             $this->assertTargetReadyForImport($manifest, $force);
@@ -177,6 +183,14 @@ final class ClientTransferImporter
         $schemaErrors = $this->schemaValidator->validate($manifest);
         if ($schemaErrors !== []) {
             throw new FatalImportException('Target SEO schema is not ready: '.implode('; ', $schemaErrors));
+        }
+
+        if ($manifest->isRetryData()) {
+            if ($manifest->originalImportRunId() === null) {
+                throw new FatalImportException('Retry-data package is missing original import run id.');
+            }
+
+            return;
         }
 
         if ($force) {

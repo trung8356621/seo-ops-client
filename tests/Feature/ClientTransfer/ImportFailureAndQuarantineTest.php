@@ -101,7 +101,8 @@ final class ImportFailureAndQuarantineTest extends TransferDatabaseTestCase
         SeoArticleHeading::query()->create([
             'article_id' => $badArticle->id,
             'level' => 2,
-            'text' => 'Bad Article Heading',
+            'heading_text' => 'Bad Article Heading',
+            'heading_slug' => 'bad-article-heading',
         ]);
 
         SeoFaq::query()->create([

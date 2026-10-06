@@ -62,6 +62,9 @@ final class PrepareSeoImportJob implements ShouldQueue
             @unlink($refMapPath);
         }
         $refMap = new ReferenceMap($this->runId);
+        if ($manifest->isRetryData() && $manifest->originalImportRunId() !== null) {
+            $refMap->importReferencesFrom(storage_path('app/client-transfer/refmap_'.$manifest->originalImportRunId().'.sqlite'));
+        }
         $importRun = new ImportRun($this->runId, $refMap);
 
         // Calculate total records

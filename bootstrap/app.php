@@ -39,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
         \App\Console\Commands\CleanupMisplacedTablesCommand::class,
         \App\Console\Commands\MigrateAutomationToCoreCommand::class,
         \App\Console\Commands\SimulateServiceCommand::class,
+        \App\Console\Commands\ResetClientImportLabCommand::class,
         \App\Console\Commands\TestDoctorCommand::class,
         \App\Console\Commands\CheckAiProviderBalancesCommand::class,
     ])

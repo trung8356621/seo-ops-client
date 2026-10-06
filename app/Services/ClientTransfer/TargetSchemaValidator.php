@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\ClientTransfer;
 
 use App\Services\ClientTransfer\Manifest\TransferManifest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 final class TargetSchemaValidator
@@ -46,19 +47,20 @@ final class TargetSchemaValidator
             ['connection' => 'omi_seo_ai', 'table' => 'seo_topic_keyword_dna', 'columns' => ['id', 'site_id', 'topic_id', 'keyword_id', 'value', 'facet_type', 'placement', 'confidence', 'source', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'articles' => [
-            ['connection' => 'omi_seo_ai', 'table' => 'articles', 'columns' => ['id', 'site_id', 'author_id', 'title', 'slug', 'language', 'status', 'excerpt', 'focus_keyword', 'canonical_url', 'body', 'editor_document', 'blocks', 'document_version', 'editor_document_schema_version', 'editor_document_updated_at', 'review_status', 'reviewed_at', 'reviewed_by', 'review_notes', 'last_manual_saved_at', 'last_ai_content_at', 'created_at', 'updated_at', 'deleted_at'], 'portable' => true],
+            ['connection' => 'omi_seo_ai', 'table' => 'articles', 'columns' => ['id', 'site_id', 'user_id', 'title', 'slug', 'language', 'status', 'excerpt', 'body', 'editor_document', 'blocks', 'document_version', 'editor_document_schema_version', 'editor_document_updated_at', 'review_status', 'reviewed_at', 'last_manual_saved_at', 'last_ai_content_at', 'created_at', 'updated_at', 'deleted_at'], 'portable' => true],
+            ['connection' => 'omi_seo_ai', 'table' => 'seo_article_profiles', 'columns' => ['id', 'article_id', 'focus_keyword', 'canonical_url', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'article_meta' => [
             ['connection' => 'omi_seo_ai', 'table' => 'article_meta', 'columns' => ['id', 'article_id', 'meta_key', 'meta_value', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'article_headings' => [
-            ['connection' => 'omi_seo_ai', 'table' => 'seo_article_headings', 'columns' => ['id', 'article_id', 'parent_id', 'level', 'text', 'slug', 'sort_order', 'created_at', 'updated_at'], 'portable' => true],
+            ['connection' => 'omi_seo_ai', 'table' => 'seo_article_headings', 'columns' => ['id', 'article_id', 'parent_id', 'level', 'heading_text', 'heading_slug', 'sort_order', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'article_faqs' => [
             ['connection' => 'omi_seo_ai', 'table' => 'seo_faqs', 'columns' => ['id', 'article_id', 'question', 'answer', 'sort_order', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'article_reviews' => [
-            ['connection' => 'omi_seo_ai', 'table' => 'seo_article_reviews', 'columns' => ['id', 'article_id', 'reviewer_id', 'action', 'notes', 'metadata', 'created_at', 'updated_at'], 'portable' => true],
+            ['connection' => 'omi_seo_ai', 'table' => 'seo_article_reviews', 'columns' => ['id', 'article_id', 'action_type', 'from_status', 'to_status', 'reviewer_id', 'reviewer_role', 'note', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'manual_links' => [
             ['connection' => 'omi_seo_ai', 'table' => 'seo_site_manual_links', 'columns' => ['id', 'site_id', 'keyword', 'url', 'url_hash', 'is_locked', 'created_at', 'updated_at'], 'portable' => true],
@@ -82,7 +84,7 @@ final class TargetSchemaValidator
             ['connection' => 'omi_seo_ai', 'table' => 'publishing_article_states', 'columns' => ['id', 'article_id', 'platform', 'publication_status', 'published_at', 'created_at', 'updated_at'], 'portable' => true],
         ],
         'media' => [
-            ['connection' => 'omi_seo_ai', 'table' => 'seo_media', 'columns' => ['id', 'site_id', 'primary_article_id', 'name', 'path', 'url', 'source', 'mime_type', 'file_size', 'width', 'height', 'alt_text', 'status', 'wp_attachment_id', 'wp_synced_at', 'created_at', 'updated_at'], 'portable' => true],
+            ['connection' => 'omi_seo_ai', 'table' => 'seo_media', 'columns' => ['id', 'filename', 'slug', 'path', 'url', 'source', 'created_at', 'updated_at'], 'portable' => true],
             ['connection' => 'omi_seo_ai', 'table' => 'seo_media_meta', 'columns' => ['id', 'media_id', 'meta_key', 'meta_value', 'created_at', 'updated_at'], 'portable' => true],
         ],
     ];
@@ -146,6 +148,63 @@ final class TargetSchemaValidator
         }
 
         return array_values($tables);
+    }
+
+    /** @return list<string> */
+    public function validatePortableSchema(): array
+    {
+        $errors = [];
+        foreach ($this->allPortableTargets() as $target) {
+            $schema = Schema::connection($target['connection']);
+            if (! $schema->hasTable($target['table'])) {
+                $errors[] = 'Missing table: '.$target['table'];
+
+                continue;
+            }
+            $available = array_fill_keys($schema->getColumnListing($target['table']), true);
+            foreach ($target['columns'] as $column) {
+                if (! isset($available[$column])) {
+                    $errors[] = 'Missing column: '.$target['table'].'.'.$column;
+                }
+            }
+        }
+
+        return array_values(array_unique($errors));
+    }
+
+    /** @return array<string, int> */
+    public function nonEmptyPortableTables(): array
+    {
+        $nonEmpty = [];
+        foreach ($this->allPortableTargets() as $target) {
+            $count = DB::connection($target['connection'])->table($target['table'])->count();
+            if ($count > 0) {
+                $nonEmpty[$target['table']] = $count;
+            }
+        }
+
+        return $nonEmpty;
+    }
+
+    /** @return list<array{connection: string, table: string, columns: list<string>}> */
+    private function allPortableTargets(): array
+    {
+        $targets = [];
+        foreach (self::CONTRACTS as $contracts) {
+            foreach ($contracts as $contract) {
+                if (! ($contract['portable'] ?? false)) {
+                    continue;
+                }
+                $key = $contract['connection'].':'.$contract['table'];
+                $targets[$key] = [
+                    'connection' => $this->resolveConnection($contract['connection']),
+                    'table' => $contract['table'],
+                    'columns' => $contract['columns'],
+                ];
+            }
+        }
+
+        return array_values($targets);
     }
 
     private function resolveConnection(string $connection): string

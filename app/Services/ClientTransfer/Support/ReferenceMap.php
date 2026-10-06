@@ -148,6 +148,28 @@ final class ReferenceMap
         return $this->has($sourceRef);
     }
 
+    public function importReferencesFrom(string $sourceDbPath): void
+    {
+        if (! is_file($sourceDbPath)) {
+            return;
+        }
+
+        $source = new PDO("sqlite:{$sourceDbPath}");
+        $offset = 0;
+        do {
+            $stmt = $source->prepare('SELECT source_ref, entity_type, target_id FROM references_map ORDER BY source_ref LIMIT 500 OFFSET :offset');
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+            $this->setMany(array_map(static fn (array $row): array => [
+                'source_ref' => (string) $row['source_ref'],
+                'entity_type' => (string) $row['entity_type'],
+                'target_id' => (int) $row['target_id'],
+            ], $rows));
+            $offset += count($rows);
+        } while (count($rows) === 500);
+    }
+
     /**
      * @param  array<string, mixed>  $context
      */

@@ -70,5 +70,70 @@
             </div>
         @endif
 
+        {{-- Retry Failed Import Section --}}
+        <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <h2 class="text-lg font-medium text-gray-900 dark:text-white">Thử lại import lỗi (Retry Failed Import Flow)</h2>
+            <p class="mt-2 text-sm text-gray-500">
+                Tải lên file Failure Request ZIP nhận được từ hệ thống đích để kiểm tra các bản ghi thất bại/bị chặn và xuất gói dữ liệu tươi (Retry Data ZIP) tương ứng.
+            </p>
+
+            <form wire:submit.prevent="inspectFailurePackage" class="mt-6 space-y-4">
+                {{ $this->form }}
+
+                <div class="flex items-center gap-3">
+                    <x-filament::button type="submit" color="primary" icon="heroicon-o-magnifying-glass">
+                        Kiểm tra gói lỗi (Inspect Failure Package)
+                    </x-filament::button>
+                </div>
+            </form>
+
+            @if ($this->failureInspection)
+                <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                    <h3 class="text-sm font-semibold text-amber-900 dark:text-amber-100">Thông tin gói thất bại:</h3>
+                    <dl class="mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-3 text-amber-800 dark:text-amber-200">
+                        <div>
+                            <dt class="font-medium">Original Run ID:</dt>
+                            <dd class="font-mono">{{ $this->failureInspection['original_import_run_id'] }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium">Bản ghi lỗi gốc (Failed):</dt>
+                            <dd class="font-bold">{{ number_format($this->failureInspection['failed_roots']) }}</dd>
+                        </div>
+                        <div>
+                            <dt class="font-medium">Bản ghi bị chặn (Blocked):</dt>
+                            <dd class="font-bold">{{ number_format($this->failureInspection['blocked']) }}</dd>
+                        </div>
+                    </dl>
+
+                    <div class="mt-4">
+                        <x-filament::button wire:click="runRetryExport" wire:loading.attr="disabled" color="warning" icon="heroicon-o-arrow-path">
+                            <span wire:loading.remove wire:target="runRetryExport">Xuất dữ liệu thử lại (Export Retry Data ZIP)</span>
+                            <span wire:loading wire:target="runRetryExport">Đang đưa vào hàng đợi client-transfer...</span>
+                        </x-filament::button>
+                    </div>
+                </div>
+            @endif
+
+            @php($retryRun = $this->latestRetryRun)
+            @if ($retryRun)
+                <div class="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-gray-700 dark:bg-gray-800">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">Gói Retry Data gần nhất</h4>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Trạng thái: <span class="font-semibold">{{ ucfirst($retryRun->status) }}</span>
+                                | Bản ghi: {{ number_format($retryRun->processed_records) }}
+                            </p>
+                        </div>
+                        @if ($retryRun->isCompleted() && $retryRun->artifact_path && is_file($retryRun->artifact_path))
+                            <x-filament::button wire:click="downloadRetryDataPackage" color="success" icon="heroicon-o-arrow-down-tray">
+                                Tải gói Retry Data ZIP
+                            </x-filament::button>
+                        @endif
+                    </div>
+                </div>
+            @endif
+        </div>
+
     </div>
 </x-filament-panels::page>

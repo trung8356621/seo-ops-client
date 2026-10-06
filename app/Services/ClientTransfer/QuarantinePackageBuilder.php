@@ -160,6 +160,8 @@ final class QuarantinePackageBuilder
                     'database_driver' => config('database.default', 'mysql'),
                     'is_quarantine_retry' => true,
                     'original_run_id' => $runId,
+                    'original_import_run_id' => $runId,
+                    'package_semantics' => 'import_failure_request',
                 ],
                 datasets: $datasetManifests,
             );

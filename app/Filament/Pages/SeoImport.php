@@ -60,6 +60,10 @@ final class SeoImport extends Page implements HasForms
 
     public ?int $inspectedDatasetCount = null;
 
+    public bool $isRetryData = false;
+
+    public ?string $originalImportRunId = null;
+
     public function getTitle(): string
     {
         return 'SEO Portable Data Import';
@@ -129,6 +133,8 @@ final class SeoImport extends Page implements HasForms
             $this->serviceReady = (bool) $inspection['service_ready'];
             $this->inspectedDatasetCount = count($inspection['manifest']->datasets);
             $this->inspectedTotalRecords = array_sum(array_map(fn ($d) => $d->count, $inspection['manifest']->datasets));
+            $this->isRetryData = (bool) $inspection['is_retry_data'];
+            $this->originalImportRunId = $inspection['original_import_run_id'];
 
             Notification::make()->title('Kiểm tra gói thành công')->success()->send();
         } catch (\Throwable $e) {
@@ -152,7 +158,7 @@ final class SeoImport extends Page implements HasForms
             return;
         }
 
-        if (! $this->connectionReady || ! $this->schemaReady || ! $this->targetEmpty) {
+        if (! $this->connectionReady || ! $this->schemaReady || (! $this->isRetryData && ! $this->targetEmpty)) {
             Notification::make()->title('Target import chưa sẵn sàng. Vui lòng kiểm tra kết nối, schema và dữ liệu hiện có.')->danger()->send();
 
             return;

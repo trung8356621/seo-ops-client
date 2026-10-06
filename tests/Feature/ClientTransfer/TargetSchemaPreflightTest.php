@@ -45,7 +45,7 @@ final class TargetSchemaPreflightTest extends TransferDatabaseTestCase
         $importer->assertTargetReadyForImport($inspection['manifest']);
     }
 
-    public function test_compatible_empty_schema_is_ready_and_importable(): void
+    public function test_fresh_current_canonical_schema_is_ready_and_importable(): void
     {
         $inspection = (new ClientTransferImporter)->inspect($this->emptyPackage());
 
@@ -72,14 +72,14 @@ final class TargetSchemaPreflightTest extends TransferDatabaseTestCase
     {
         $package = $this->emptyPackage();
         Schema::connection('omi_seo_ai')->table('articles', function (Blueprint $table): void {
-            $table->dropColumn('author_id');
+            $table->dropColumn('user_id');
         });
 
         $inspection = (new ClientTransferImporter)->inspect($package);
 
         self::assertFalse($inspection['schema_ready']);
         self::assertFalse($inspection['target_empty']);
-        self::assertContains('Missing column: articles.author_id', $inspection['schema_errors']);
+        self::assertContains('Missing column: articles.user_id', $inspection['schema_errors']);
     }
 
     public function test_compatible_schema_with_business_data_is_not_empty_and_import_is_blocked(): void
@@ -107,8 +107,8 @@ final class TargetSchemaPreflightTest extends TransferDatabaseTestCase
     {
         Queue::fake();
         $package = $this->emptyPackage();
-        Schema::connection('omi_seo_ai')->table('seo_media', function (Blueprint $table): void {
-            $table->dropColumn('primary_article_id');
+        Schema::connection('omi_seo_ai')->table('seo_media_meta', function (Blueprint $table): void {
+            $table->dropColumn('meta_value');
         });
         $run = ClientTransferRun::query()->create([
             'run_id' => 'invalid-schema-run',
@@ -121,11 +121,11 @@ final class TargetSchemaPreflightTest extends TransferDatabaseTestCase
             (new PrepareSeoImportJob($run->run_id, $package))->handle(new DatasetRegistry);
             self::fail('Schema preflight should stop the prepare job.');
         } catch (FatalImportException $e) {
-            self::assertStringContainsString('Missing column: seo_media.primary_article_id', $e->getMessage());
+            self::assertStringContainsString('Missing column: seo_media_meta.meta_value', $e->getMessage());
         }
 
         self::assertSame('failed', $run->refresh()->status);
-        self::assertStringContainsString('Missing column: seo_media.primary_article_id', (string) $run->error_message);
+        self::assertStringContainsString('Missing column: seo_media_meta.meta_value', (string) $run->error_message);
         Queue::assertNotPushed(ImportDatasetSliceJob::class);
     }
 

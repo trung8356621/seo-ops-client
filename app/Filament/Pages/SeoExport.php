@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace App\Filament\Pages;
 
+use App\Jobs\ClientTransfer\BuildRetryDataPackageJob;
 use App\Jobs\ClientTransfer\PrepareSeoExportJob;
 use App\Models\ClientTransferRun;
 use App\Models\User;
+use App\Services\ClientTransfer\FailureRequestInspector;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
-final class SeoExport extends Page
+final class SeoExport extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static ?string $navigationIcon = 'heroicon-o-arrow-up-tray';
 
     protected static ?string $slug = 'services/seo/export';
@@ -24,6 +33,76 @@ final class SeoExport extends Page
     protected static bool $shouldRegisterNavigation = false;
 
     public ?string $runId = null;
+
+    /** @var array<string, mixed>|null */
+    public ?array $retryData = [];
+
+    public ?string $failurePackagePath = null;
+
+    /** @var array<string, mixed>|null */
+    public ?array $failureInspection = null;
+
+    public function mount(): void
+    {
+        $this->form->fill();
+    }
+
+    public function form(Form $form): Form
+    {
+        return $form->schema([
+            FileUpload::make('failure_package')
+                ->label('Upload Failure ZIP')
+                ->disk('local')
+                ->directory('client-transfer/uploads')
+                ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
+                ->maxSize(204800)
+                ->required(),
+        ])->statePath('retryData');
+    }
+
+    public function inspectFailurePackage(): void
+    {
+        $relative = $this->form->getState()['failure_package'] ?? null;
+        if (! is_string($relative) || ! Storage::disk('local')->exists($relative)) {
+            Notification::make()->title('Failure ZIP not found.')->danger()->send();
+
+            return;
+        }
+        $this->failurePackagePath = Storage::disk('local')->path($relative);
+        try {
+            $this->failureInspection = (new FailureRequestInspector)->inspect($this->failurePackagePath);
+            Notification::make()->title('Failure package inspected.')->success()->send();
+        } catch (\Throwable $e) {
+            $this->failureInspection = null;
+            Notification::make()->title($e->getMessage())->danger()->send();
+        }
+    }
+
+    public function runRetryExport(): void
+    {
+        if ($this->failureInspection === null || ! is_file((string) $this->failurePackagePath)) {
+            return;
+        }
+        $runId = Str::random(12);
+        ClientTransferRun::query()->create([
+            'run_id' => $runId, 'type' => 'retry_export', 'status' => 'pending', 'phase' => 'queued', 'started_at' => now(),
+            'metadata' => ['original_import_run_id' => $this->failureInspection['original_import_run_id']],
+        ]);
+        BuildRetryDataPackageJob::dispatch($runId, (string) $this->failurePackagePath)->onQueue('client-transfer');
+        Notification::make()->title('Retry data re-export queued.')->info()->send();
+    }
+
+    public function getLatestRetryRunProperty(): ?ClientTransferRun
+    {
+        return ClientTransferRun::query()->where('type', 'retry_export')->latest('id')->first();
+    }
+
+    public function downloadRetryDataPackage(): ?BinaryFileResponse
+    {
+        $run = $this->latestRetryRun;
+
+        return $run?->artifact_path && is_file($run->artifact_path) ? response()->download($run->artifact_path) : null;
+    }
 
     public function getTitle(): string
     {

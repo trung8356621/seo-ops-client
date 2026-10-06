@@ -37,6 +37,23 @@ final class TransferManifest
         }
     }
 
+    public function isFailureRequest(): bool
+    {
+        return ($this->source['is_quarantine_retry'] ?? false) === true;
+    }
+
+    public function isRetryData(): bool
+    {
+        return ($this->source['is_retry_data'] ?? false) === true;
+    }
+
+    public function originalImportRunId(): ?string
+    {
+        $value = $this->source['original_import_run_id'] ?? $this->source['original_run_id'] ?? null;
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
     /**
      * @return array<string, mixed>
      */

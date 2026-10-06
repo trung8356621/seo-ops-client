@@ -37,9 +37,11 @@ final class ArticleReviewsDataset extends BaseDataset
             'ref' => 'review:'.$row->id,
             'article_ref' => 'article:'.$row->article_id,
             'reviewer_ref' => $row->reviewer_id ? ('user:'.$row->reviewer_id) : null,
-            'action' => (string) ($row->action ?? ''),
-            'notes' => $row->notes,
-            'metadata' => $row->metadata,
+            'action_type' => (string) ($row->action_type ?? ''),
+            'from_status' => $row->from_status,
+            'to_status' => (string) ($row->to_status ?? ''),
+            'reviewer_role' => $row->reviewer_role,
+            'note' => $row->note,
             'created_at' => $row->created_at?->toIso8601String(),
             'updated_at' => $row->updated_at?->toIso8601String(),
         ];
@@ -78,9 +80,11 @@ final class ArticleReviewsDataset extends BaseDataset
             $review = new SeoArticleReview;
             $review->article_id = $targetArticleId;
             $review->reviewer_id = $reviewerId;
-            $review->action = (string) ($record['action'] ?? '');
-            $review->notes = $record['notes'] ?? null;
-            $review->metadata = $record['metadata'] ?? null;
+            $review->action_type = (string) ($record['action_type'] ?? '');
+            $review->from_status = $record['from_status'] ?? null;
+            $review->to_status = (string) ($record['to_status'] ?? '');
+            $review->reviewer_role = $record['reviewer_role'] ?? null;
+            $review->note = $record['note'] ?? null;
             if (! empty($record['created_at'])) {
                 $review->created_at = $record['created_at'];
             }

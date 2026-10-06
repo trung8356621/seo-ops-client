@@ -38,6 +38,14 @@ interface DatasetInterface
     public function export(NdjsonPartWriter $writer, BlobManager $blobs): int;
 
     /**
+     * Export current canonical records for the supplied logical references.
+     *
+     * @param  iterable<string>  $refs
+     * @return array{count: int, unresolved: list<string>}
+     */
+    public function exportSelectedRefs(iterable $refs, NdjsonPartWriter $writer, BlobManager $blobs): array;
+
+    /**
      * Exports a slice of dataset records.
      *
      * @return array{count: int, last_id: int, has_more: bool}

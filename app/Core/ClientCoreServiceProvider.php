@@ -75,6 +75,18 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Core\Database\LegacySchemaMigrationReconciler::class);
         $this->app->singleton(\App\Core\Database\LegacyTolerantMigrationRunner::class);
         $this->app->singleton(\App\Core\Database\SeoCliConnectionFixer::class);
+        $this->app->bind(
+            \App\Services\ImportLab\ImportLabDatabaseAdmin::class,
+            \App\Services\ImportLab\PdoImportLabDatabaseAdmin::class,
+        );
+        $this->app->bind(
+            \App\Services\ImportLab\ImportLabResetWorkflow::class,
+            \App\Services\ImportLab\LaravelImportLabResetWorkflow::class,
+        );
+        $this->app->bind(
+            \App\Services\ImportLab\ImportLabRuntime::class,
+            \App\Services\ImportLab\ArtisanImportLabRuntime::class,
+        );
     }
 
     public function boot(): void

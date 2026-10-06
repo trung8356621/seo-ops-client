@@ -9,6 +9,7 @@ use App\Services\ClientTransfer\Logging\ImportRun;
 use App\Services\ClientTransfer\Support\BlobManager;
 use App\Services\ClientTransfer\Support\ReferenceMap;
 use Omnichannel\Addons\Content\Models\SeoArticle;
+use Omnichannel\Addons\Seo\Models\SeoArticleProfile;
 
 final class ArticlesDataset extends BaseDataset
 {
@@ -39,7 +40,7 @@ final class ArticlesDataset extends BaseDataset
 
     protected function queryForExport(): \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
     {
-        return SeoArticle::withTrashed();
+        return SeoArticle::withTrashed()->with('seoProfile');
     }
 
     protected function mapRecordForExport(mixed $row, BlobManager $blobs): ?array
@@ -50,21 +51,19 @@ final class ArticlesDataset extends BaseDataset
         return [
             'ref' => 'article:'.$row->id,
             'site_ref' => 'site:'.$row->site_id,
-            'author_ref' => $row->author_id ? ('user:'.$row->author_id) : null,
+            'author_ref' => $row->user_id ? ('user:'.$row->user_id) : null,
             'title' => (string) $row->title,
             'slug' => (string) ($row->slug ?? ''),
             'language' => $row->language,
             'status' => (string) ($row->status ?? 'draft'),
             'excerpt' => $row->excerpt,
-            'focus_keyword' => $row->focus_keyword,
-            'canonical_url' => $row->canonical_url,
+            'focus_keyword' => $row->seoProfile?->focus_keyword,
+            'canonical_url' => $row->seoProfile?->canonical_url,
             'document_version' => $row->document_version !== null ? (int) $row->document_version : 1,
             'editor_document_schema_version' => $row->editor_document_schema_version !== null ? (int) $row->editor_document_schema_version : null,
             'editor_document_updated_at' => $row->editor_document_updated_at?->toIso8601String(),
             'review_status' => $row->review_status,
             'reviewed_at' => $row->reviewed_at?->toIso8601String(),
-            'reviewed_by_ref' => $row->reviewed_by ? ('user:'.$row->reviewed_by) : null,
-            'review_notes' => $row->review_notes,
             'last_manual_saved_at' => $row->last_manual_saved_at?->toIso8601String(),
             'last_ai_content_at' => $row->last_ai_content_at?->toIso8601String(),
             'editor_document' => $row->editor_document,
@@ -110,11 +109,6 @@ final class ArticlesDataset extends BaseDataset
             $authorId = $refMap->get($authorRef);
         }
 
-        $reviewedBy = null;
-        if (! empty($record['reviewed_by_ref'])) {
-            $reviewedBy = $refMap->get((string) $record['reviewed_by_ref']);
-        }
-
         // Read and verify body blob
         $body = '';
         if (! empty($record['body_blob']) && ! empty($record['body_sha256'])) {
@@ -146,7 +140,7 @@ final class ArticlesDataset extends BaseDataset
         try {
             $article = new SeoArticle;
             $article->site_id = $siteId;
-            $article->author_id = $authorId;
+            $article->user_id = $authorId;
             $article->title = $title;
             $article->slug = (string) ($record['slug'] ?? '');
             if (isset($record['language'])) {
@@ -154,8 +148,6 @@ final class ArticlesDataset extends BaseDataset
             }
             $article->status = (string) ($record['status'] ?? 'draft');
             $article->excerpt = $record['excerpt'] ?? null;
-            $article->focus_keyword = $record['focus_keyword'] ?? null;
-            $article->canonical_url = $record['canonical_url'] ?? null;
             $article->body = $body;
             $article->editor_document = $record['editor_document'] ?? null;
             $article->blocks = $record['blocks'] ?? null;
@@ -172,8 +164,6 @@ final class ArticlesDataset extends BaseDataset
             if (! empty($record['reviewed_at'])) {
                 $article->reviewed_at = $record['reviewed_at'];
             }
-            $article->reviewed_by = $reviewedBy;
-            $article->review_notes = $record['review_notes'] ?? null;
             if (! empty($record['last_manual_saved_at'])) {
                 $article->last_manual_saved_at = $record['last_manual_saved_at'];
             }
@@ -191,6 +181,15 @@ final class ArticlesDataset extends BaseDataset
             }
 
             $article->saveQuietly();
+            if (array_key_exists('focus_keyword', $record) || array_key_exists('canonical_url', $record)) {
+                SeoArticleProfile::query()->updateOrCreate(
+                    ['article_id' => $article->id],
+                    [
+                        'focus_keyword' => $record['focus_keyword'] ?? null,
+                        'canonical_url' => $record['canonical_url'] ?? null,
+                    ],
+                );
+            }
             $refMap->trackCreated($this->key(), (int) $article->id);
 
             $refMap->set($ref, 'article', (int) $article->id);

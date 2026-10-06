@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferExporter;
 use App\Services\ClientTransfer\ClientTransferImporter;
 use Omnichannel\Addons\Content\Models\SeoArticle;
+use Omnichannel\Addons\Seo\Models\SeoArticleProfile;
 use Tests\Unit\ClientTransfer\TransferDatabaseTestCase;
 
 final class ArticleFidelityTest extends TransferDatabaseTestCase
@@ -83,13 +84,12 @@ EOT;
         // 3. Create the article in the source database
         $article = new SeoArticle;
         $article->site_id = (int) $site->id;
-        $article->author_id = (int) $user->id;
+        $article->user_id = (int) $user->id;
         $article->title = 'Bài viết kiểm tra độ toàn vẹn: Tiếng Việt 🚀 "Quotes" & \\Backslashes\\';
         $article->slug = 'bai-viet-kiem-tra-do-toan-ven';
         $article->language = 'vi';
         $article->status = 'published';
         $article->excerpt = 'Tóm tắt bài viết với emoji 🎉 và dấu ngoặc.';
-        $article->focus_keyword = 'kiểm tra độ toàn vẹn';
         $article->body = $tortureBody;
         $article->editor_document = [
             'type' => 'doc',
@@ -101,6 +101,11 @@ EOT;
             ['name' => 'core/paragraph', 'attributes' => ['content' => 'Gutenberg blocks structure']],
         ];
         $article->saveQuietly();
+        SeoArticleProfile::query()->create([
+            'article_id' => $article->id,
+            'focus_keyword' => 'kiểm tra độ toàn vẹn',
+            'canonical_url' => 'https://fidelity.test/bai-viet-kiem-tra-do-toan-ven',
+        ]);
 
         $originalArticleId = (int) $article->id;
 
@@ -139,5 +144,8 @@ EOT;
         // Metadata check
         self::assertSame('vi', $importedArticle->language);
         self::assertSame('published', $importedArticle->status);
+        self::assertSame($user->id, $importedArticle->user_id);
+        self::assertSame('kiểm tra độ toàn vẹn', $importedArticle->seoProfile?->focus_keyword);
+        self::assertSame('https://fidelity.test/bai-viet-kiem-tra-do-toan-ven', $importedArticle->seoProfile?->canonical_url);
     }
 }
