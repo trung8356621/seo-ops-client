@@ -224,7 +224,7 @@ final class SeoImport extends Page implements HasForms
     {
         return ClientTransferRun::query()
             ->where('type', 'import')
-            ->whereIn('status', ['completed', 'failed', 'rolled_back', 'rollback_failed'])
+            ->whereIn('status', ['completed', 'failed', 'cancelled', 'rolled_back', 'rollback_failed'])
             ->latest('id')
             ->first();
     }
@@ -235,6 +235,20 @@ final class SeoImport extends Page implements HasForms
         if ($activeRun !== null) {
             $this->runId = $activeRun->run_id;
         }
+    }
+
+    public function stopImport(): void
+    {
+        $run = $this->run;
+        if ($run === null || ! $run->canCancel()) {
+            Notification::make()->title('Run import này không thể dừng lại.')->warning()->send();
+
+            return;
+        }
+
+        $run->cancel();
+
+        Notification::make()->title('Đã dừng tiến trình import SEO.')->success()->send();
     }
 
     public function downloadRetryPackage(): ?BinaryFileResponse

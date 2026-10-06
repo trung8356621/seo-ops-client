@@ -37,6 +37,16 @@ final class ClientTransferRun extends Model
         return in_array($this->status, ['failed', 'rollback_failed'], true);
     }
 
+    public function isCancelled(): bool
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function shouldStopTransfer(): bool
+    {
+        return $this->isCancelled();
+    }
+
     public function isRunning(): bool
     {
         return in_array($this->status, ['pending', 'running', 'rolling_back'], true);
@@ -47,9 +57,23 @@ final class ClientTransferRun extends Model
         return $this->status === 'rolled_back';
     }
 
+    public function canCancel(): bool
+    {
+        return $this->type === 'import' && in_array($this->status, ['pending', 'running'], true);
+    }
+
     public function canRollback(): bool
     {
-        return $this->type === 'import' && in_array($this->status, ['completed', 'failed'], true);
+        return $this->type === 'import' && in_array($this->status, ['completed', 'failed', 'cancelled'], true);
+    }
+
+    public function cancel(): void
+    {
+        $this->update([
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
     }
 
     public function markFailed(string $errorMessage): void

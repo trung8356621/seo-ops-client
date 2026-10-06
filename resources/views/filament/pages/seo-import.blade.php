@@ -142,6 +142,20 @@
                             <span class="font-bold text-amber-600">{{ number_format($this->run->blocked_count) }}</span>
                         </div>
                     </div>
+
+                    @if ($this->run->canCancel())
+                        <div class="mt-6">
+                            <x-filament::button
+                                wire:click="stopImport"
+                                wire:confirm="Stop this import? Records already imported will be kept. You can rollback this run afterward if needed."
+                                wire:loading.attr="disabled"
+                                color="danger"
+                                icon="heroicon-o-stop"
+                            >
+                                Stop Import
+                            </x-filament::button>
+                        </div>
+                    @endif
                 </div>
             @elseif ($this->run->isCompleted())
                 <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
@@ -194,6 +208,55 @@
                             Rollback Import
                         </x-filament::button>
                     </div>
+                </div>
+            @elseif ($this->run->isCancelled())
+                <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Import đã dừng (Cancelled)</h3>
+                            <p class="mt-1 text-xs text-gray-500">
+                                Run ID: <span class="font-mono">{{ $this->run->run_id }}</span> | Dữ liệu đã import được giữ nguyên. Bạn có thể Rollback bên dưới nếu cần.
+                            </p>
+                        </div>
+                        <div>
+                            <span class="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                Cancelled
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 text-xs">
+                        <div class="rounded bg-gray-50 p-2.5 shadow-xs dark:bg-gray-800">
+                            <span class="text-gray-500">Đã xử lý:</span>
+                            <span class="font-bold text-gray-900 dark:text-white">{{ number_format($this->run->processed_records) }} / {{ number_format($this->run->total_records) }}</span>
+                        </div>
+                        <div class="rounded bg-gray-50 p-2.5 shadow-xs dark:bg-gray-800">
+                            <span class="text-gray-500">Đã Import:</span>
+                            <span class="font-bold text-emerald-600">{{ number_format($this->run->imported_count) }}</span>
+                        </div>
+                        <div class="rounded bg-gray-50 p-2.5 shadow-xs dark:bg-gray-800">
+                            <span class="text-gray-500">Lỗi:</span>
+                            <span class="font-bold text-rose-600">{{ number_format($this->run->failed_count) }}</span>
+                        </div>
+                        <div class="rounded bg-gray-50 p-2.5 shadow-xs dark:bg-gray-800">
+                            <span class="text-gray-500">Bị chặn:</span>
+                            <span class="font-bold text-amber-600">{{ number_format($this->run->blocked_count) }}</span>
+                        </div>
+                    </div>
+
+                    @if ($this->run->canRollback())
+                        <div class="mt-6">
+                            <x-filament::button
+                                wire:click="rollbackImport"
+                                wire:confirm="Rollback dữ liệu đã import bởi run này?"
+                                wire:loading.attr="disabled"
+                                color="danger"
+                                icon="heroicon-o-arrow-uturn-left"
+                            >
+                                Rollback Import
+                            </x-filament::button>
+                        </div>
+                    @endif
                 </div>
             @elseif ($this->run->isFailed())
                 <div class="rounded-xl border border-rose-200 bg-rose-50/50 p-6 shadow-sm dark:border-rose-900 dark:bg-rose-950/20">

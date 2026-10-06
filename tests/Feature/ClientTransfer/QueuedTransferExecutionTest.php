@@ -619,4 +619,317 @@ final class QueuedTransferExecutionTest extends TransferDatabaseTestCase
         $resolvedArticleId = $repo->get((int) $keyword->id, KeywordMetaKey::MainArticleId->value);
         self::assertSame((string) $article->id, $resolvedArticleId);
     }
+
+    public function test_pending_import_can_be_cancelled_with_worker_off(): void
+    {
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancel-pending-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'pending',
+            'phase' => 'queued',
+        ]);
+
+        $page = new SeoImport;
+        $page->runId = $run->run_id;
+        $page->stopImport();
+
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+        self::assertSame('cancelled', $run->phase);
+        self::assertNotNull($run->finished_at);
+        self::assertTrue($run->isCancelled());
+    }
+
+    public function test_running_import_can_be_cancelled(): void
+    {
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancel-running-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'running',
+            'phase' => 'import:articles',
+        ]);
+
+        $page = new SeoImport;
+        $page->runId = $run->run_id;
+        $page->stopImport();
+
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+        self::assertSame('cancelled', $run->phase);
+        self::assertNotNull($run->finished_at);
+        self::assertTrue($run->isCancelled());
+    }
+
+    public function test_cancelled_run_is_no_longer_returned_by_active_import_run(): void
+    {
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancel-active-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        $page = new SeoImport;
+        self::assertNull($page->activeImportRun());
+        self::assertSame($run->id, $page->latestImportRun()?->id);
+    }
+
+    public function test_new_import_may_start_after_cancellation(): void
+    {
+        Queue::fake();
+
+        ClientTransferRun::query()->create([
+            'run_id' => 'stuck-cancelled-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        $packagePath = $this->tempDir.DIRECTORY_SEPARATOR.'new-import.zip';
+        file_put_contents($packagePath, 'dummy zip content');
+
+        $page = new SeoImport;
+        $page->uploadedFilePath = $packagePath;
+        $page->connectionReady = true;
+        $page->schemaReady = true;
+        $page->targetEmpty = true;
+        $page->runImport();
+
+        self::assertNotNull($page->runId);
+        $newRun = ClientTransferRun::query()->where('run_id', $page->runId)->firstOrFail();
+        self::assertSame('pending', $newRun->status);
+        Queue::assertPushed(PrepareSeoImportJob::class, fn (PrepareSeoImportJob $job) => $job->runId === $newRun->run_id);
+    }
+
+    public function test_queued_prepare_seo_import_job_becomes_noop_for_cancelled_run(): void
+    {
+        Queue::fake();
+
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancelled-prep-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        (new PrepareSeoImportJob($run->run_id, 'dummy-path.zip'))->handle(new DatasetRegistry);
+
+        Queue::assertNothingPushed();
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+    }
+
+    public function test_queued_import_dataset_slice_job_becomes_noop_for_cancelled_run(): void
+    {
+        Queue::fake();
+
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancelled-slice-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        (new ImportDatasetSliceJob($run->run_id, 'articles', 0))->handle(new DatasetRegistry);
+
+        Queue::assertNothingPushed();
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+    }
+
+    public function test_if_cancellation_happens_during_a_slice_job_does_not_dispatch_next_slice(): void
+    {
+        Queue::fake();
+
+        // 1. Export package with users
+        $user = User::query()->create(['name' => 'Slice User', 'email' => 'sliceuser@test.test']);
+        $sourceZip = $this->tempDir.DIRECTORY_SEPARATOR.'slice_export.zip';
+        (new ClientTransferExporter)->export($sourceZip);
+
+        $runId = 'slice-cancel-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'running',
+            'phase' => 'import:users',
+        ]);
+
+        // Staging extraction
+        $stagingDir = storage_path("app/client-transfer/staging_import_{$runId}");
+        ZipArchiveManager::extractAndValidate($sourceZip, $stagingDir);
+
+        // Cancel the run in DB before slice finishes
+        $run->cancel();
+
+        (new ImportDatasetSliceJob(
+            runId: $runId,
+            datasetKey: 'users',
+            datasetQueueIndex: 0,
+            partIndex: 0,
+            byteOffset: 0,
+            recordIndex: 0,
+        ))->handle(new DatasetRegistry);
+
+        Queue::assertNothingPushed();
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+    }
+
+    public function test_resolve_deferred_validate_retry_package_and_finalize_jobs_do_not_continue_cancelled_run(): void
+    {
+        Queue::fake();
+
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancelled-cont-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        // ResolveDeferredSliceJob
+        (new ResolveDeferredSliceJob($run->run_id))->handle();
+        Queue::assertNothingPushed();
+
+        // ValidateSeoImportJob
+        (new ValidateSeoImportJob($run->run_id))->handle();
+        Queue::assertNothingPushed();
+
+        // BuildRetryPackageJob
+        (new BuildRetryPackageJob($run->run_id))->handle(new DatasetRegistry);
+        Queue::assertNothingPushed();
+
+        // FinalizeSeoImportJob
+        (new FinalizeSeoImportJob($run->run_id))->handle();
+        Queue::assertNothingPushed();
+
+        $run->refresh();
+        self::assertSame('cancelled', $run->status);
+    }
+
+    public function test_cancelled_run_can_still_be_rolled_back(): void
+    {
+        $run = ClientTransferRun::query()->create([
+            'run_id' => 'cancelled-can-rollback-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'cancelled',
+            'phase' => 'cancelled',
+            'finished_at' => now(),
+        ]);
+
+        self::assertTrue($run->canRollback());
+    }
+
+    public function test_rollback_pipeline_still_works_from_cancelled_state(): void
+    {
+        $user = User::query()->create(['name' => 'Rollback User', 'email' => 'rbuser@test.test']);
+        $site = Site::query()->create(['domain' => 'rollback.test', 'user_id' => $user->id, 'status' => 'active']);
+
+        $article = new SeoArticle;
+        $article->site_id = (int) $site->id;
+        $article->title = 'Article to Rollback';
+        $article->saveQuietly();
+
+        $exportZip = $this->tempDir.DIRECTORY_SEPARATOR.'rb_export.zip';
+        (new ClientTransferExporter)->export($exportZip);
+
+        $this->wipeBusinessTables();
+        self::assertSame(0, SeoArticle::query()->count());
+
+        $runId = 'rb-cancel-'.\Illuminate\Support\Str::random(8);
+        $run = ClientTransferRun::query()->create([
+            'run_id' => $runId,
+            'type' => 'import',
+            'status' => 'running',
+            'phase' => 'import:articles',
+        ]);
+
+        $stagingDir = storage_path("app/client-transfer/staging_import_{$runId}");
+        ZipArchiveManager::extractAndValidate($exportZip, $stagingDir);
+
+        $refMap = new ReferenceMap($runId);
+        $refMap->set('site:1', 'sites', (int) $site->id);
+        $importRun = new ImportRun($runId, $refMap);
+        $blobs = new BlobManager($stagingDir.'/content/blobs');
+        $registry = new DatasetRegistry;
+
+        // Import article
+        $articleDataset = $registry->get('articles');
+        $articleDataset->importRecord(
+            record: ['ref' => 'article:1', 'site_ref' => 'site:1', 'site_id' => (int) $site->id, 'title' => 'Imported Article', 'slug' => 'imp-art'],
+            refMap: $refMap,
+            run: $importRun,
+            blobs: $blobs,
+            partFile: 'articles.ndjson',
+            recordIndex: 0,
+        );
+
+        self::assertSame(1, SeoArticle::query()->count());
+
+        // Cancel the run
+        $run->cancel();
+        self::assertSame('cancelled', $run->status);
+        self::assertTrue($run->canRollback());
+
+        // Rollback from cancelled state
+        (new RollbackSeoImportJob($runId))->handle($registry);
+
+        $run->refresh();
+        self::assertTrue($run->isRolledBack());
+        self::assertSame(0, SeoArticle::query()->count());
+    }
+
+    public function test_cancelling_one_run_does_not_affect_another_run_or_other_queues(): void
+    {
+        $run1 = ClientTransferRun::query()->create([
+            'run_id' => 'run-1-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'running',
+            'phase' => 'import:articles',
+        ]);
+
+        $run2 = ClientTransferRun::query()->create([
+            'run_id' => 'run-2-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'running',
+            'phase' => 'import:articles',
+        ]);
+
+        $page = new SeoImport;
+        $page->runId = $run1->run_id;
+        $page->stopImport();
+
+        $run1->refresh();
+        $run2->refresh();
+
+        self::assertSame('cancelled', $run1->status);
+        self::assertSame('running', $run2->status);
+    }
+
+    public function test_completed_failed_and_rolled_back_runs_cannot_be_cancelled(): void
+    {
+        foreach (['completed', 'failed', 'rolled_back', 'rollback_failed', 'cancelled'] as $status) {
+            $run = ClientTransferRun::query()->create([
+                'run_id' => "can-cancel-{$status}-".\Illuminate\Support\Str::random(8),
+                'type' => 'import',
+                'status' => $status,
+                'phase' => $status,
+            ]);
+
+            self::assertFalse($run->canCancel(), "Run in status {$status} must not be cancellable.");
+        }
+
+        // Rolling back runs cannot be cancelled
+        $rollingBackRun = ClientTransferRun::query()->create([
+            'run_id' => 'rolling-back-cancel-'.\Illuminate\Support\Str::random(8),
+            'type' => 'import',
+            'status' => 'rolling_back',
+            'phase' => 'rollback',
+        ]);
+        self::assertFalse($rollingBackRun->canCancel(), 'Run rolling back must not be cancellable.');
+    }
 }

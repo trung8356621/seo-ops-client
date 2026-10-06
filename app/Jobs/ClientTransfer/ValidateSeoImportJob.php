@@ -23,7 +23,11 @@ final class ValidateSeoImportJob implements ShouldQueue
 
     public function handle(): void
     {
-        $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
+            return;
+        }
+
         $run->update([
             'phase' => 'validate',
         ]);
@@ -42,11 +46,19 @@ final class ValidateSeoImportJob implements ShouldQueue
             'missing_refs_count' => $missingRefsCount,
         ]);
 
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
+        }
+
         BuildRetryPackageJob::dispatch($this->runId)->onQueue('client-transfer');
     }
 
     public function failed(\Throwable $e): void
     {
-        ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run !== null && ! $run->isCancelled()) {
+            $run->markFailed($e->getMessage());
+        }
     }
 }

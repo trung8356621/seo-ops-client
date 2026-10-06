@@ -32,7 +32,11 @@ final class ResolveDeferredSliceJob implements ShouldQueue
 
     public function handle(): void
     {
-        $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
+            return;
+        }
+
         $run->update([
             'phase' => 'resolve_deferred',
         ]);
@@ -43,6 +47,11 @@ final class ResolveDeferredSliceJob implements ShouldQueue
         $chunk = $refMap->getDeferredReferencesChunk($this->afterId, limit: 500);
 
         if (empty($chunk)) {
+            $run->refresh();
+            if ($run->shouldStopTransfer()) {
+                return;
+            }
+
             ValidateSeoImportJob::dispatch($this->runId)->onQueue('client-transfer');
 
             return;
@@ -69,6 +78,11 @@ final class ResolveDeferredSliceJob implements ShouldQueue
                     isMissingRef: true,
                 );
             }
+        }
+
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
         }
 
         if (count($chunk) === 500) {
@@ -128,6 +142,9 @@ final class ResolveDeferredSliceJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run !== null && ! $run->isCancelled()) {
+            $run->markFailed($e->getMessage());
+        }
     }
 }

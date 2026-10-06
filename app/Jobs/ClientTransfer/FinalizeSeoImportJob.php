@@ -22,7 +22,11 @@ final class FinalizeSeoImportJob implements ShouldQueue
 
     public function handle(): void
     {
-        $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
+            return;
+        }
+
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
 
         self::deleteDir($stagingDir);
@@ -32,7 +36,10 @@ final class FinalizeSeoImportJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run !== null && ! $run->isCancelled()) {
+            $run->markFailed($e->getMessage());
+        }
     }
 
     private static function deleteDir(string $dir): void

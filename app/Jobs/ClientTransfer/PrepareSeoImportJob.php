@@ -29,7 +29,11 @@ final class PrepareSeoImportJob implements ShouldQueue
 
     public function handle(DatasetRegistry $registry): void
     {
-        $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
+            return;
+        }
+
         $run->update([
             'status' => 'running',
             'phase' => 'prepare',
@@ -103,6 +107,11 @@ final class PrepareSeoImportJob implements ShouldQueue
             ]),
         ]);
 
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
+        }
+
         if (empty($datasetsQueue)) {
             FinalizeSeoImportJob::dispatch($this->runId)->onQueue('client-transfer');
 
@@ -121,7 +130,10 @@ final class PrepareSeoImportJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run !== null && ! $run->isCancelled()) {
+            $run->markFailed($e->getMessage());
+        }
     }
 
     private static function deleteDir(string $dir): void

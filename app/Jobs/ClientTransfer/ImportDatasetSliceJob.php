@@ -34,7 +34,11 @@ final class ImportDatasetSliceJob implements ShouldQueue
 
     public function handle(DatasetRegistry $registry): void
     {
-        $run = ClientTransferRun::query()->where('run_id', $this->runId)->firstOrFail();
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run === null || $run->shouldStopTransfer()) {
+            return;
+        }
+
         $stagingDir = storage_path("app/client-transfer/staging_import_{$this->runId}");
         $manifestPath = $stagingDir.DIRECTORY_SEPARATOR.'manifest.json';
 
@@ -137,6 +141,11 @@ final class ImportDatasetSliceJob implements ShouldQueue
             'missing_refs_count' => $run->missing_refs_count + ($stats['missing_refs'] ?? 0),
         ]);
 
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
+        }
+
         if (! $reachedEof) {
             ImportDatasetSliceJob::dispatch(
                 runId: $this->runId,
@@ -170,6 +179,11 @@ final class ImportDatasetSliceJob implements ShouldQueue
 
     private function advanceToNextDataset(ClientTransferRun $run): void
     {
+        $run->refresh();
+        if ($run->shouldStopTransfer()) {
+            return;
+        }
+
         $queue = (array) ($run->metadata['datasets_queue'] ?? []);
         $nextIndex = $this->datasetQueueIndex + 1;
 
@@ -189,6 +203,9 @@ final class ImportDatasetSliceJob implements ShouldQueue
 
     public function failed(\Throwable $e): void
     {
-        ClientTransferRun::query()->where('run_id', $this->runId)->first()?->markFailed($e->getMessage());
+        $run = ClientTransferRun::query()->where('run_id', $this->runId)->first();
+        if ($run !== null && ! $run->isCancelled()) {
+            $run->markFailed($e->getMessage());
+        }
     }
 }
