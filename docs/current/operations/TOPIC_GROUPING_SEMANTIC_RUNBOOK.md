@@ -113,13 +113,22 @@ Legacy Analyze/Recluster remains available. Fallback ≠ automatic rollback of a
 ## Live acceptance (dev only)
 
 ```bash
-# READ-ONLY readiness + snapshot
+# READ-ONLY readiness + before snapshot (no mutation)
 php scripts/dev/topic-grouping-final-acceptance.php 4
 
 # Controlled live Apply (operator must set flag)
 set TOPIC_GROUPING_LIVE_ACCEPTANCE=1
 php scripts/dev/topic-grouping-final-acceptance.php 4
+
+# Optional: prove Apply with semantic offline
+docker compose -f D:/work/seo-ops-semantic/compose.yaml stop semantic-api
+set TOPIC_GROUPING_LIVE_ACCEPTANCE=1
+set TOPIC_GROUPING_ACCEPTANCE_EXPECT_SEMANTIC_OFFLINE=1
+php scripts/dev/topic-grouping-final-acceptance.php 4
+docker compose -f D:/work/seo-ops-semantic/compose.yaml start semantic-api
 ```
+
+Live mode: before/after snapshots, integrity checks, Preview-vs-actual, then fresh second Analyze+Preview (never second Apply). Convergence classification uses move/create/dissolve ratios (STABLE ≤0.25, NOT_CONVERGING ≥0.5 on all three).
 
 Snapshots land under `storage/app/tmp/topic-grouping-acceptance/` (ignored).
 
