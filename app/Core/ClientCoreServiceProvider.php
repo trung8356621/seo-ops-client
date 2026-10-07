@@ -95,7 +95,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
         $this->registerSupportTicketHeaderHook();
-        $this->registerGlobalSiteHealthHook();
+        $this->registerOperationalAlertHook();
         $this->registerGlobalHelpHeaderHook();
         $this->registerGlobalHelpAssetsHook();
         $this->registerGlobalHelpDrawerHook();
@@ -160,8 +160,11 @@ final class ClientCoreServiceProvider extends ServiceProvider
         );
     }
 
-    /** Global business-alert host; the Site Sync addon owns its component and data. */
-    private function registerGlobalSiteHealthHook(): void
+    /**
+     * Operational Alert Hook host — one shared high-visibility surface.
+     * SEO addon owns the Livewire component + read-side query; Core only mounts the shell.
+     */
+    private function registerOperationalAlertHook(): void
     {
         FilamentView::registerRenderHook(
             PanelsRenderHook::CONTENT_BEFORE,
@@ -180,7 +183,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
                     return new HtmlString('');
                 }
 
-                return new HtmlString(view('filament.hooks.global-site-health')->render());
+                return new HtmlString(view('filament.hooks.operational-alert-hook')->render());
             },
         );
     }
