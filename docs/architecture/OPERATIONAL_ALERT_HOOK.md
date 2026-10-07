@@ -40,10 +40,10 @@ Examples:
 
 - website / domain down
 - website degraded
-- required microservice unavailable (future)
-- blocking worker / service failure (future)
-- critical integration unavailable (future)
-- important data stale/blocking (future)
+- Semantic API (seo-ops-semantic) unavailable / not ready
+- blocking worker / service failure
+- critical integration unavailable
+- important data stale/blocking
 
 ## When NOT to use
 
@@ -131,13 +131,41 @@ Local UI dismissal must never resolve the operational incident. Prefer keeping t
 
 Site Health state machine, two-failure incident behavior, DNS/TLS/WP diagnosis, and recovery logic remain unchanged. The publisher only exposes existing operational notifications onto this shared surface.
 
-## Future publishers
+## Semantic Service — official consumer
 
-Example: Semantic Service Down
+When `SEMANTIC_ENABLED=true`, seo-ops-semantic is a **required** runtime dependency for semantic SEO features.
 
-1. Detect failure in the owning monitor
-2. Call `OperationalNotificationService::notify(...)` with `displaySurfaces: NotificationDisplaySurface::withOperationalAlertHook()`
-3. Do **not** add another Blade banner
+```
+SemanticServiceHealthMonitor / SemanticAnalyticsClient transport
+      ↓
+SemanticServiceHealthReporter
+      ↓
+SemanticServiceNotificationCapability
+      ↓
+SemanticServiceNotificationPublisher (SEO)
+      ↓
+OperationalNotificationService
+      ├─ Notification Center
+      └─ Operational Alert Hook
+```
+
+| Event | Code | Severity | Hook |
+|---|---|---|---|
+| Unavailable (connection / timeout / 502–504) | `semantic.service_unavailable` | Critical | yes |
+| Degraded (`/health/ready` ready≠true) | `semantic.service_degraded` | Danger | yes |
+| Recovered | `semantic.service_recovered` | Info (recovery) | resolved off hook |
+
+Stable dedup key: `semantic-service:availability` (one active incident for the outage).
+
+Rules:
+
+- When semantic integration is **enabled**, failure **MUST** be surfaced — consumers must not silently invent Laravel fuzzy/heuristic fallbacks.
+- When semantic is **explicitly disabled**, the monitor must not emit a false “service down” incident.
+- Application 4xx (e.g. 422 validation) proves the service answered and is **not** classified as down.
+- Schedule: `php artisan semantic:monitor` every five minutes (`seo-content-ai:semantic-service-monitor`).
+- Manual diagnose remains `php artisan semantic:doctor` (inspect only).
+
+Publisher: `SemanticServiceNotificationPublisher` uses `NotificationDisplaySurface::withOperationalAlertHook()`.
 
 No second alert database. No page-specific banner.
 
