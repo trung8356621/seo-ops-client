@@ -43,8 +43,18 @@ Thresholds are centralized constants on `TopicGroupingIdentityMatcher` (calibrat
 ## Stale protection
 
 - `input_hash` — semantic input (keywords/seeds/locks inventory used at analyze time)
-- `plan_hash` — hash of effective Apply Plan (includes business snapshot of topics/membership/locks/manual)
+- `plan_hash` — hash of effective Apply Plan (includes business snapshot of topics/membership/locks/manual/`mcp_excluded`/tag assignments + identity + business-state migrations)
 - On Apply: reload run → `lockForUpdate` → rebuild plan → compare previewed `plan_hash` → else `stale`
+- Invariant: **previewed effective plan == transaction-time effective plan**
+
+## Business-state preservation (TASK 5.2 / 5.2a)
+
+- Manual tags: migrate on clear merge successor; otherwise hard-block
+- MCP exclusion: protect inventory; merge/split propagate via `topic_id` or `group_key` (never by Topic name)
+- Focus Article: keyword-owned (`keyword_meta`); Topic dissolve does not delete Focus
+- Persistence returns `topic_ids_by_group_key` for new-group policy correlation
+
+Operational runbook: `docs/current/operations/TOPIC_GROUPING_SEMANTIC_RUNBOOK.md`.
 
 ## Run statuses
 
