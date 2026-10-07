@@ -28,21 +28,104 @@ final class TopicGroupingAcceptanceSupportTest extends TestCase
         self::assertFalse(\TopicGroupingAcceptanceSupport::articleIdSetsIdentical([1, 2], [1]));
     }
 
-    public function test_locked_membership_comparison(): void
+    public function test_locked_membership_same_topic_pass(): void
     {
         $before = [
             ['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => true],
             ['keyword_id' => 2, 'topic_id' => 9, 'is_locked' => false],
         ];
-        $afterOk = [
-            ['keyword_id' => 1, 'topic_id' => 12, 'is_locked' => true],
+        $after = [
+            ['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => true],
             ['keyword_id' => 2, 'topic_id' => 12, 'is_locked' => false],
         ];
-        $afterBad = [
-            ['keyword_id' => 1, 'topic_id' => 12, 'is_locked' => false],
+        self::assertSame([], \TopicGroupingAcceptanceSupport::lockedMembershipFailures($before, $after));
+    }
+
+    public function test_locked_membership_moved_topic_fail(): void
+    {
+        $before = [['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => true]];
+        $after = [['keyword_id' => 1, 'topic_id' => 12, 'is_locked' => true]];
+        $fails = \TopicGroupingAcceptanceSupport::lockedMembershipFailures($before, $after);
+        self::assertNotSame([], $fails);
+        self::assertStringContainsString('locked_membership_moved', $fails[0]);
+        self::assertStringContainsString('from_topic_id=9', $fails[0]);
+        self::assertStringContainsString('to_topic_id=12', $fails[0]);
+    }
+
+    public function test_locked_membership_unlocked_fail(): void
+    {
+        $before = [['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => true]];
+        $after = [['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => false]];
+        $fails = \TopicGroupingAcceptanceSupport::lockedMembershipFailures($before, $after);
+        self::assertNotSame([], $fails);
+        self::assertStringContainsString('locked_membership_unlocked', $fails[0]);
+    }
+
+    public function test_locked_membership_missing_fail(): void
+    {
+        $before = [['keyword_id' => 1, 'topic_id' => 9, 'is_locked' => true]];
+        $fails = \TopicGroupingAcceptanceSupport::lockedMembershipFailures($before, []);
+        self::assertNotSame([], $fails);
+        self::assertStringContainsString('locked_membership_missing', $fails[0]);
+    }
+
+    public function test_mcp_group_key_maps_to_excluded_topic_pass(): void
+    {
+        $before = [['id' => 5, 'mcp_excluded' => true]];
+        $after = [['id' => 88, 'mcp_excluded' => true]];
+        $policy = [[
+            'type' => 'mcp_exclude_group',
+            'group_key' => 'g-x',
+            'from_topic_id' => 5,
+        ]];
+        $map = ['g-x' => 88];
+        self::assertSame([], \TopicGroupingAcceptanceSupport::mcpExclusionFailures($before, $after, $policy, $map));
+    }
+
+    public function test_mcp_group_key_maps_to_non_excluded_topic_fail(): void
+    {
+        $before = [['id' => 5, 'mcp_excluded' => true]];
+        $after = [
+            ['id' => 88, 'mcp_excluded' => false],
+            ['id' => 99, 'mcp_excluded' => true], // unrelated excluded must not satisfy
         ];
-        self::assertSame([], \TopicGroupingAcceptanceSupport::missingLockedMembershipKeywordIds($before, $afterOk));
-        self::assertSame([1], \TopicGroupingAcceptanceSupport::missingLockedMembershipKeywordIds($before, $afterBad));
+        $policy = [[
+            'type' => 'mcp_exclude_group',
+            'group_key' => 'g-x',
+            'from_topic_id' => 5,
+        ]];
+        $fails = \TopicGroupingAcceptanceSupport::mcpExclusionFailures($before, $after, $policy, ['g-x' => 88]);
+        self::assertTrue(count(array_filter($fails, static fn (string $m): bool => str_contains($m, 'mcp_exclude_group_not_excluded'))) >= 1);
+    }
+
+    public function test_mcp_group_key_missing_from_map_fail(): void
+    {
+        $before = [['id' => 5, 'mcp_excluded' => true]];
+        $after = [['id' => 88, 'mcp_excluded' => true]];
+        $policy = [[
+            'type' => 'mcp_exclude_group',
+            'group_key' => 'g-x',
+            'from_topic_id' => 5,
+        ]];
+        $fails = \TopicGroupingAcceptanceSupport::mcpExclusionFailures($before, $after, $policy, []);
+        self::assertTrue(count(array_filter($fails, static fn (string $m): bool => str_contains($m, 'mcp_exclude_group_unmapped'))) >= 1);
+    }
+
+    public function test_mcp_unrelated_excluded_does_not_satisfy_target(): void
+    {
+        $before = [['id' => 5, 'mcp_excluded' => true]];
+        $after = [
+            ['id' => 88, 'mcp_excluded' => false],
+            ['id' => 99, 'mcp_excluded' => true],
+        ];
+        $policy = [[
+            'type' => 'mcp_exclude_group',
+            'group_key' => 'g-x',
+            'from_topic_id' => 5,
+        ]];
+        $fails = \TopicGroupingAcceptanceSupport::mcpExclusionFailures($before, $after, $policy, ['g-x' => 88]);
+        self::assertNotSame([], $fails);
+        self::assertStringContainsString('topic_id=88', implode(' ', $fails));
     }
 
     public function test_manual_tag_migrations(): void

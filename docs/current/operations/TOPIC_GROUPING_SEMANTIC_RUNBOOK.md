@@ -120,15 +120,29 @@ php scripts/dev/topic-grouping-final-acceptance.php 4
 set TOPIC_GROUPING_LIVE_ACCEPTANCE=1
 php scripts/dev/topic-grouping-final-acceptance.php 4
 
-# Optional: prove Apply with semantic offline
-docker compose -f D:/work/seo-ops-semantic/compose.yaml stop semantic-api
+# Optional offline Apply proof — use TWO terminals
+
+# Terminal A (harness; waits for Enter before Apply if offline flag set, then again after Apply for restart)
+cd /d D:\work\omnichannel-client
 set TOPIC_GROUPING_LIVE_ACCEPTANCE=1
 set TOPIC_GROUPING_ACCEPTANCE_EXPECT_SEMANTIC_OFFLINE=1
 php scripts/dev/topic-grouping-final-acceptance.php 4
-docker compose -f D:/work/seo-ops-semantic/compose.yaml start semantic-api
+
+# Terminal B — BEFORE Apply confirm on Terminal A:
+cd /d D:\work\seo-ops-semantic
+docker compose stop semantic-api
+
+# Terminal B — AFTER harness prints:
+#   OFFLINE APPLY VERIFIED — restart semantic-api now for convergence
+docker compose start semantic-api
+# Then press Enter on Terminal A (interactive) so second Analyze/convergence can run.
+
+# Non-interactive offline + convergence wait (still does NOT start Docker):
+set TOPIC_GROUPING_ACCEPTANCE_AUTO_CONFIRM=1
+# After Apply, harness polls /health/ready up to 120s while you start semantic-api in another terminal.
 ```
 
-Live mode: before/after snapshots, integrity checks, Preview-vs-actual, then fresh second Analyze+Preview (never second Apply). Convergence classification uses move/create/dissolve ratios (STABLE ≤0.25, NOT_CONVERGING ≥0.5 on all three).
+Live mode: before/after snapshots, integrity checks (locked membership = same keyword_id+topic_id; MCP group_key via `topic_ids_by_group_key` only), Preview-vs-actual, then fresh second Analyze+Preview (never second Apply). Convergence classification uses move/create/dissolve ratios (STABLE ≤0.25, NOT_CONVERGING ≥0.5 on all three).
 
 Snapshots land under `storage/app/tmp/topic-grouping-acceptance/` (ignored).
 

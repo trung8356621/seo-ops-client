@@ -178,9 +178,10 @@ $captureSnapshot = static function (int $siteId, string $label) use ($snapDir): 
  * @param  array<string, mixed>  $before
  * @param  array<string, mixed>  $after
  * @param  TopicGroupingApplyPlan  $plan
+ * @param  array<string|int, mixed>  $topicIdsByGroupKey
  * @return array<string, string>
  */
-$runIntegrity = static function (array $before, array $after, TopicGroupingApplyPlan $plan, int $siteId): array {
+$runIntegrity = static function (array $before, array $after, TopicGroupingApplyPlan $plan, int $siteId, array $topicIdsByGroupKey = []): array {
     $checks = [];
 
     $dupKw = DB::connection('omi_seo_ai')->table('seo_topic_keywords')
@@ -229,11 +230,11 @@ $runIntegrity = static function (array $before, array $after, TopicGroupingApply
         $before['topics'] ?? [],
         $after['topics'] ?? [],
     );
-    $missingKwLocks = TopicGroupingAcceptanceSupport::missingLockedMembershipKeywordIds(
+    $lockedMembershipFails = TopicGroupingAcceptanceSupport::lockedMembershipFailures(
         $before['memberships'] ?? [],
         $after['memberships'] ?? [],
     );
-    $checks['locks'] = ($missingLocks === [] && $missingKwLocks === []) ? 'PASS' : 'FAIL';
+    $checks['locks'] = ($missingLocks === [] && $lockedMembershipFails === []) ? 'PASS' : 'FAIL';
 
     $tagFails = TopicGroupingAcceptanceSupport::manualTagFailures(
         $before['topic_tag_assignments'] ?? [],
@@ -246,6 +247,7 @@ $runIntegrity = static function (array $before, array $after, TopicGroupingApply
         $before['topics'] ?? [],
         $after['topics'] ?? [],
         $plan->businessState['policy_migrations'] ?? [],
+        $topicIdsByGroupKey,
     );
     $checks['mcp'] = $mcpFails === [] ? 'PASS' : 'FAIL';
 
@@ -262,8 +264,11 @@ $runIntegrity = static function (array $before, array $after, TopicGroupingApply
     if ($missingManual !== []) {
         fwrite(STDERR, 'FAIL manual_state missing_ids='.json_encode($missingManual).PHP_EOL);
     }
-    if ($missingLocks !== [] || $missingKwLocks !== []) {
-        fwrite(STDERR, 'FAIL locks topics='.json_encode($missingLocks).' keywords='.json_encode($missingKwLocks).PHP_EOL);
+    if ($missingLocks !== []) {
+        fwrite(STDERR, 'FAIL locks topics='.json_encode($missingLocks).PHP_EOL);
+    }
+    foreach ($lockedMembershipFails as $msg) {
+        fwrite(STDERR, 'FAIL '.$msg.PHP_EOL);
     }
     foreach ($tagFails as $msg) {
         fwrite(STDERR, 'FAIL '.$msg.PHP_EOL);
@@ -375,7 +380,14 @@ $after = $captureSnapshot($siteId, 'after');
 echo 'after_snapshot='.$after['snapshot_path'].PHP_EOL;
 echo 'after_topics='.$after['topic_count'].' memberships='.$after['membership_count'].PHP_EOL;
 
-$integrity = $runIntegrity($before, $after, $plan, $siteId);
+$topicIdsByGroupKey = TopicGroupingAcceptanceSupport::normalizeTopicIdsByGroupKey(
+    is_array($applied->metrics['topic_ids_by_group_key'] ?? null)
+        ? $applied->metrics['topic_ids_by_group_key']
+        : [],
+);
+echo 'topic_ids_by_group_key='.json_encode($topicIdsByGroupKey).PHP_EOL;
+
+$integrity = $runIntegrity($before, $after, $plan, $siteId, $topicIdsByGroupKey);
 $previewVsActual = TopicGroupingAcceptanceSupport::previewVsActual($plan->counts, $applied->metrics);
 
 $integrityFail = in_array('FAIL', $integrity, true);
@@ -409,6 +421,24 @@ if ($integrityFail || $previewFail) {
 
 // --- Convergence: fresh Analyze + Preview only ---
 echo PHP_EOL.'CONVERGENCE'.PHP_EOL;
+
+if ($expectOffline && ! $semanticReady()) {
+    echo 'OFFLINE APPLY VERIFIED — restart semantic-api now for convergence'.PHP_EOL;
+    if (! $autoConfirm) {
+        echo 'Press Enter after semantic-api is ready (Ctrl+C to abort)...'.PHP_EOL;
+        fgets(STDIN);
+    } else {
+        echo 'AUTO_CONFIRM: polling /health/ready up to 120s (does not start Docker)...'.PHP_EOL;
+        $deadline = time() + 120;
+        while (time() < $deadline) {
+            if ($semanticReady()) {
+                break;
+            }
+            sleep(2);
+        }
+    }
+}
+
 if (! $semanticReady()) {
     echo 'second_run_id='.PHP_EOL;
     echo 'first='.json_encode($firstChurn).PHP_EOL;

@@ -35,32 +35,73 @@ final class TopicGroupingAcceptanceSupport
     }
 
     /**
-     * Locked memberships: each before (keyword_id) with is_locked must still have a locked membership after.
+     * Locked memberships must preserve keyword_id + topic_id + is_locked=true.
+     * Moving a locked keyword to another Topic is a FAIL even if still locked.
      *
      * @param  list<array{keyword_id: int, topic_id: int, is_locked: bool}>  $before
      * @param  list<array{keyword_id: int, topic_id: int, is_locked: bool}>  $after
-     * @return list<int> keyword_ids that lost lock
+     * @return list<string> failure messages
      */
-    public static function missingLockedMembershipKeywordIds(array $before, array $after): array
+    public static function lockedMembershipFailures(array $before, array $after): array
     {
-        $afterLocked = [];
+        /** @var array<string, bool> $afterLockedByPair keyword:topic => is_locked */
+        $afterLockedByPair = [];
+        /** @var array<int, array{topic_id: int, is_locked: bool}> $afterByKeyword */
+        $afterByKeyword = [];
         foreach ($after as $row) {
-            if (! empty($row['is_locked'])) {
-                $afterLocked[(int) $row['keyword_id']] = true;
+            $kw = (int) ($row['keyword_id'] ?? 0);
+            $topicId = (int) ($row['topic_id'] ?? 0);
+            if ($kw <= 0 || $topicId <= 0) {
+                continue;
             }
+            $locked = ! empty($row['is_locked']);
+            $afterLockedByPair[$kw.':'.$topicId] = $locked;
+            $afterByKeyword[$kw] = ['topic_id' => $topicId, 'is_locked' => $locked];
         }
-        $missing = [];
+
+        $failures = [];
         foreach ($before as $row) {
             if (empty($row['is_locked'])) {
                 continue;
             }
-            $kw = (int) $row['keyword_id'];
-            if ($kw > 0 && ! isset($afterLocked[$kw])) {
-                $missing[] = $kw;
+            $kw = (int) ($row['keyword_id'] ?? 0);
+            $topicId = (int) ($row['topic_id'] ?? 0);
+            if ($kw <= 0 || $topicId <= 0) {
+                continue;
+            }
+            $pair = $kw.':'.$topicId;
+            if (($afterLockedByPair[$pair] ?? false) === true) {
+                continue;
+            }
+            if (! isset($afterByKeyword[$kw])) {
+                $failures[] = "locked_membership_missing keyword_id={$kw} topic_id={$topicId}";
+            } elseif ((int) $afterByKeyword[$kw]['topic_id'] !== $topicId) {
+                $to = (int) $afterByKeyword[$kw]['topic_id'];
+                $failures[] = "locked_membership_moved keyword_id={$kw} from_topic_id={$topicId} to_topic_id={$to}";
+            } else {
+                $failures[] = "locked_membership_unlocked keyword_id={$kw} topic_id={$topicId}";
             }
         }
 
-        return $missing;
+        return $failures;
+    }
+
+    /**
+     * @param  array<string|int, mixed>  $raw
+     * @return array<string, int> group_key => topic_id
+     */
+    public static function normalizeTopicIdsByGroupKey(array $raw): array
+    {
+        $out = [];
+        foreach ($raw as $key => $value) {
+            $gk = trim((string) $key);
+            $tid = (int) $value;
+            if ($gk !== '' && $tid > 0) {
+                $out[$gk] = $tid;
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -183,73 +224,92 @@ final class TopicGroupingAcceptanceSupport
     }
 
     /**
-     * MCP-excluded topics before must remain excluded on same id or planned policy successor.
+     * MCP exclusion integrity.
+     *
+     * - mcp_exclude: exact topic_id must be mcp_excluded after Apply
+     * - mcp_exclude_group: resolve topic_id ONLY via topic_ids_by_group_key[group_key]
+     *   (never by Topic name); that Topic must exist and be mcp_excluded
+     * - pre-existing excluded Topics that remain must stay excluded
+     * - dissolved excluded Topics must be covered by a verified policy migration
      *
      * @param  list<array{id: int, mcp_excluded: bool}>  $beforeTopics
      * @param  list<array{id: int, mcp_excluded: bool}>  $afterTopics
      * @param  list<array{type?: string, topic_id?: int, from_topic_id?: int, group_key?: string}>  $policyMigrations
+     * @param  array<string|int, mixed>  $topicIdsByGroupKey  Apply metrics persistence map
      * @return list<string>
      */
-    public static function mcpExclusionFailures(array $beforeTopics, array $afterTopics, array $policyMigrations): array
-    {
-        $afterExcluded = [];
+    public static function mcpExclusionFailures(
+        array $beforeTopics,
+        array $afterTopics,
+        array $policyMigrations,
+        array $topicIdsByGroupKey = [],
+    ): array {
+        /** @var array<int, bool> $afterById topic_id => mcp_excluded */
+        $afterById = [];
         foreach ($afterTopics as $t) {
-            if (! empty($t['mcp_excluded'])) {
-                $afterExcluded[(int) $t['id']] = true;
+            $id = (int) ($t['id'] ?? 0);
+            if ($id > 0) {
+                $afterById[$id] = ! empty($t['mcp_excluded']);
             }
         }
 
-        $successorByFrom = [];
+        $map = self::normalizeTopicIdsByGroupKey($topicIdsByGroupKey);
+        $failures = [];
+
         foreach ($policyMigrations as $m) {
-            $type = (string) ($m['type'] ?? '');
-            $from = (int) ($m['from_topic_id'] ?? 0);
-            if ($from <= 0) {
+            if (! is_array($m)) {
                 continue;
             }
+            $type = (string) ($m['type'] ?? '');
             if ($type === 'mcp_exclude') {
                 $to = (int) ($m['topic_id'] ?? 0);
-                if ($to > 0) {
-                    $successorByFrom[$from][] = $to;
+                if ($to <= 0 || ! ($afterById[$to] ?? false)) {
+                    $failures[] = "mcp_exclude_target_not_excluded topic_id={$to}";
+                }
+            } elseif ($type === 'mcp_exclude_group') {
+                $gk = trim((string) ($m['group_key'] ?? ''));
+                if ($gk === '' || ! isset($map[$gk])) {
+                    $failures[] = 'mcp_exclude_group_unmapped group_key='.($gk !== '' ? $gk : '(empty)');
+                    continue;
+                }
+                $tid = $map[$gk];
+                if (! array_key_exists($tid, $afterById)) {
+                    $failures[] = "mcp_exclude_group_topic_missing group_key={$gk} topic_id={$tid}";
+                } elseif (! $afterById[$tid]) {
+                    $failures[] = "mcp_exclude_group_not_excluded group_key={$gk} topic_id={$tid}";
                 }
             }
-            // mcp_exclude_group applied at apply-time by group_key — verified via afterExcluded presence
-            // on newly created topics is covered by plan metrics; here we require from still excluded
-            // OR an mcp_exclude successor exists and is excluded.
         }
 
-        $failures = [];
         foreach ($beforeTopics as $t) {
             if (empty($t['mcp_excluded'])) {
                 continue;
             }
-            $id = (int) $t['id'];
+            $id = (int) ($t['id'] ?? 0);
             if ($id <= 0) {
                 continue;
             }
-            if (isset($afterExcluded[$id])) {
+            if (array_key_exists($id, $afterById)) {
+                if (! $afterById[$id]) {
+                    $failures[] = "mcp_exclusion_cleared topic_id={$id}";
+                }
                 continue;
             }
-            $ok = false;
-            foreach ($successorByFrom[$id] ?? [] as $to) {
-                if (isset($afterExcluded[$to])) {
-                    $ok = true;
+            $covered = false;
+            foreach ($policyMigrations as $m) {
+                if (! is_array($m)) {
+                    continue;
+                }
+                if ((int) ($m['from_topic_id'] ?? 0) !== $id) {
+                    continue;
+                }
+                $type = (string) ($m['type'] ?? '');
+                if ($type === 'mcp_exclude' || $type === 'mcp_exclude_group') {
+                    $covered = true;
                     break;
                 }
             }
-            if (! $ok) {
-                // Dissolved + group_key propagation: from may be gone; require at least one migration entry.
-                $hasGroupMig = false;
-                foreach ($policyMigrations as $m) {
-                    if (($m['type'] ?? '') === 'mcp_exclude_group' && (int) ($m['from_topic_id'] ?? 0) === $id) {
-                        $hasGroupMig = true;
-                        break;
-                    }
-                }
-                if ($hasGroupMig) {
-                    // Successor topic_id is runtime; acceptance confirms no silent loss via migration presence
-                    // plus after mcp_excluded count >= planned propagations is checked separately.
-                    continue;
-                }
+            if (! $covered) {
                 $failures[] = "mcp_exclusion_lost topic_id={$id}";
             }
         }
