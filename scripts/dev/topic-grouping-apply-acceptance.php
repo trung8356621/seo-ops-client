@@ -104,17 +104,53 @@ if (! $preview->ok() || $preview->plan === null) {
 }
 
 $c = $preview->plan->counts;
+$id = $preview->plan->identityMigration;
 echo "PREVIEW plan_hash=".substr($preview->plan->planHash, 0, 12)."\n";
 echo 'PREVIEW counts='.json_encode($c)."\n";
-echo 'PREVIEW warnings='.count($preview->plan->warnings)." sample=".json_encode(array_slice($preview->plan->warnings, 0, 8))."\n";
+echo 'IDENTITY existing='.($id['existing_topics'] ?? '?')
+    .' groups='.($id['semantic_groups'] ?? '?')
+    .' reused='.($id['reused_ids'] ?? '?')
+    .' new='.($id['new_ids'] ?? '?')
+    .' dissolved='.($id['dissolved_ids'] ?? '?')
+    .' 1:1='.count($id['one_to_one'] ?? [])
+    .' splits='.count($id['splits'] ?? [])
+    .' merges='.count($id['merges'] ?? [])
+    .' ambiguous='.count($id['ambiguous'] ?? [])
+    .' no_successor='.count($id['no_successor'] ?? [])
+    .' focus_dissolved='.($id['topics_with_focus_dissolved'] ?? 0)
+    ."\n";
+echo 'PREVIEW warnings='.count($preview->plan->warnings).' '.json_encode(array_slice($preview->plan->warnings, 0, 10))."\n";
 
-$risky = ((int) ($c['topics_dissolved'] ?? 0) > 20)
-    || ((int) ($c['keywords_unassigned'] ?? 0) > 200)
-    || ((int) ($c['topics_created'] ?? 0) > 80);
+echo "EXAMPLES splits:\n";
+foreach (array_slice($id['splits'] ?? [], 0, 3) as $s) {
+    echo '  '.$s['topic_name'].' => retained '.$s['retained_group'].' ec='.$s['retained_existing_coverage']
+        .' others='.count($s['other_groups'] ?? [])."\n";
+}
+echo "EXAMPLES merges:\n";
+foreach (array_slice($id['merges'] ?? [], 0, 3) as $m) {
+    echo '  survive '.$m['surviving_topic_name'].' => '.$m['group_name']
+        .' from='.count($m['merged_from'] ?? [])."\n";
+}
+echo "EXAMPLES no_successor:\n";
+foreach (array_slice($id['no_successor'] ?? [], 0, 5) as $n) {
+    echo '  '.$n['topic_name'].' reason='.$n['reason']."\n";
+}
 
-if ($risky) {
-    echo "RISK GATE: plan looks destructive — NOT applying (dissolved/unassigned/created thresholds).\n";
-    exit(4);
+// Soft readiness signal only — never auto-apply from risk heuristics alone.
+$focusDissolved = (int) ($id['topics_with_focus_dissolved'] ?? 0);
+$ambiguous = count($id['ambiguous'] ?? []);
+$ready = $focusDissolved === 0 && $ambiguous <= 5;
+echo 'LIVE_APPLY_READY='.($ready ? 'YES' : 'NO')
+    ." (focus_dissolved={$focusDissolved} ambiguous={$ambiguous})\n";
+
+if (! $doApply) {
+    echo "Dry-run only. Pass --apply only after explicit human confirmation.\n";
+    exit($ready ? 0 : 4);
+}
+
+if (! $ready) {
+    echo "REFUSING --apply: LIVE_APPLY_READY=NO\n";
+    exit(5);
 }
 
 if (! $doApply) {

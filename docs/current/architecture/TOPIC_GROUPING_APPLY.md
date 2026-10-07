@@ -25,8 +25,20 @@ APPLY    → freshness (input_hash + plan_hash) → transaction → persistResol
 ## Services
 
 - `TopicGroupingApplyPlanBuilder` — deterministic plan from proposal + current business state
+- `TopicGroupingIdentityMatcher` — membership-overlap identity (1:1 / split / merge) after seed anchors
 - `TopicGroupingApplyService` — preview / apply / discard
 - `TopicReclusterService::persistResolvedClusters` — **single** mutation engine (legacy recluster + semantic apply)
+
+## Identity reconciliation (TASK 5.1)
+
+Apply-path order:
+
+1. `TopicSeedIdentityResolver` (seed keyword → topic_id)
+2. `TopicGroupingIdentityMatcher` (Jaccard / existing_coverage / proposed_coverage; continuity-first)
+
+Manual / locked Topics are excluded from the matcher inventory. Preview surfaces `identity_migration` (reused / new / dissolved / splits / merges / no_successor / focus_dissolved) separately from membership move counts.
+
+Thresholds are centralized constants on `TopicGroupingIdentityMatcher` (calibrated from site_id=4 overlap distribution).
 
 ## Stale protection
 
