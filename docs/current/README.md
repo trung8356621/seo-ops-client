@@ -12,3 +12,4 @@ Do not rewrite the rest of `docs/` from this tree. A dedicated documentation aud
 ## Index
 
 - [architecture/DB_DIALECT_EXCEPTIONS.md](architecture/DB_DIALECT_EXCEPTIONS.md) — remaining active-runtime database-specific SQL after the pre-host portability pass.
+- [architecture/TOPIC_GROUPING_BOUNDARY.md](architecture/TOPIC_GROUPING_BOUNDARY.md) — Topic grouping analysis contract versus Laravel Topic business ownership.

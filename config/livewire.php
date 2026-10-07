@@ -68,7 +68,10 @@ return [
         'rules' => [
             'required',
             'file',
-            'max:'.(int) env('SEO_CONTENT_AI_DB_IMPORT_MAX_UPLOAD_KB', 512000),
+            'max:'.max(
+                (int) env('SEO_CONTENT_AI_DB_IMPORT_MAX_UPLOAD_KB', 512000),
+                max(1, (int) env('CLIENT_TRANSFER_MAX_UPLOAD_MB', 2048)) * 1024,
+            ),
         ],
         'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
         'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'

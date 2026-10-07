@@ -9,6 +9,7 @@ use App\Jobs\ClientTransfer\RollbackSeoImportJob;
 use App\Models\ClientTransferRun;
 use App\Models\User;
 use App\Services\ClientTransfer\ClientTransferImporter;
+use App\Services\ClientTransfer\Support\ClientTransferUploadLimits;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -92,7 +93,7 @@ final class SeoImport extends Page implements HasForms
                     ->disk('local')
                     ->directory('client-transfer/uploads')
                     ->acceptedFileTypes(['application/zip', 'application/x-zip-compressed'])
-                    ->maxSize(204800) // 200MB
+                    ->maxSize(ClientTransferUploadLimits::maxUploadKilobytes())
                     ->required()
                     ->live(),
             ])
@@ -113,6 +114,16 @@ final class SeoImport extends Page implements HasForms
         $fullPath = $this->resolveUploadedPackagePath((string) $relativeFile);
         if ($fullPath === null) {
             Notification::make()->title('File tải lên không tồn tại')->danger()->send();
+
+            return;
+        }
+
+        if (ClientTransferUploadLimits::fileExceedsLimit($fullPath)) {
+            $maxMb = ClientTransferUploadLimits::maxUploadMegabytes();
+            Notification::make()
+                ->title("Gói import vượt giới hạn ClientTransfer ({$maxMb} MB).")
+                ->danger()
+                ->send();
 
             return;
         }
@@ -158,6 +169,16 @@ final class SeoImport extends Page implements HasForms
             return;
         }
 
+        if (ClientTransferUploadLimits::fileExceedsLimit($this->uploadedFilePath)) {
+            $maxMb = ClientTransferUploadLimits::maxUploadMegabytes();
+            Notification::make()
+                ->title("Gói import vượt giới hạn ClientTransfer ({$maxMb} MB).")
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if (! $this->connectionReady || ! $this->schemaReady || (! $this->isRetryData && ! $this->targetEmpty)) {
             Notification::make()->title('Target import chưa sẵn sàng. Vui lòng kiểm tra kết nối, schema và dữ liệu hiện có.')->danger()->send();
 
@@ -186,6 +207,16 @@ final class SeoImport extends Page implements HasForms
             ->title('Đã đưa tác vụ nhập dữ liệu vào hàng đợi (client-transfer)')
             ->info()
             ->send();
+    }
+
+    public function phpUploadLimitWarning(): ?string
+    {
+        return ClientTransferUploadLimits::phpIniBottleneckWarning();
+    }
+
+    public function configuredMaxUploadMegabytes(): int
+    {
+        return ClientTransferUploadLimits::maxUploadMegabytes();
     }
 
     private function resolveUploadedPackagePath(string $relativeFile): ?string

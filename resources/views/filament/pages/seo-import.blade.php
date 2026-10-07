@@ -7,6 +7,12 @@
                 Tác vụ chạy ngầm trên hàng đợi <code>client-transfer</code>. Toàn bộ tiến trình được theo dõi qua các lát cắt tiếp diễn độc lập và lưu vết trực tiếp vào cơ sở dữ liệu.
             </p>
 
+            @if ($this->phpUploadLimitWarning())
+                <div class="mt-4 rounded-lg bg-amber-100 p-3 text-xs text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
+                    {{ $this->phpUploadLimitWarning() }}
+                </div>
+            @endif
+
             <form wire:submit.prevent="inspectPackage" class="mt-6 space-y-4">
                 {{ $this->form }}
 
