@@ -71,10 +71,12 @@ The same reconcile orchestrator is used by Topic detail rescan and by content-pr
 
 ## Current provider
 
-Binding, in `SearchIntelligenceServiceProvider::register`:
+Binding, in `SearchIntelligenceServiceProvider::register` (config-selected):
 
 ```php
-TopicGroupingProvider::class → LegacyTopicGroupingProvider::class
+TopicGroupingProvider::class
+  → LegacyTopicGroupingProvider           when TOPIC_GROUPING_PROVIDER=legacy (default)
+  → SemanticHttpTopicGroupingProvider     when TOPIC_GROUPING_PROVIDER=semantic_http
 ```
 
 `LegacyTopicGroupingProvider`:
@@ -82,35 +84,26 @@ TopicGroupingProvider::class → LegacyTopicGroupingProvider::class
 - `site_recluster` → `TopicClusterEngine::cluster`
 - `topic_membership_scan` → `TopicMembershipMatcher::matches`
 
+`SemanticHttpTopicGroupingProvider`:
+
+- `site_recluster` → HTTP `POST /v1/topic/analyses` (proposal only)
+- `topic_membership_scan` → delegates to legacy lexical matcher
+
+See [`SEMANTIC_ANALYTICS_INTEGRATION.md`](./SEMANTIC_ANALYTICS_INTEGRATION.md).
+
 `TopicClusterEngine` remains the working lexical grouper. It is no longer a constructor dependency of `TopicReclusterService`.
 
 Protected Topic refs and locked keyword refs are input context so the legacy engine can keep excluding frozen members. They are correlation data. The provider does not write them. Persist still enforces manual freeze and locks even if a later provider suggests something else.
 
 `language` on the input is null today. Site recluster is not language-split.
 
-`TopicGroupingProposal::$analysisRef` is null for the legacy provider. It is reserved so a later out-of-process run can identify a finished analysis without changing the return type. Proposals are not stored.
+`TopicGroupingProposal::$analysisRef` is null for the legacy provider. Semantic HTTP fills it with the remote `analysis_id`. Proposal runs persist in `seo_topic_grouping_runs` (analyze-only; Apply is Prompt 5).
 
-## Future provider
+## Semantic analyze vs legacy apply
 
-Not implemented.
+When `TOPIC_GROUPING_PROVIDER=semantic_http`, `ReclusterSiteTopicsJob` / sync UI call `TopicGroupingAnalysisService::analyzeSite` and **stop** at `proposal_ready`. They do **not** call `TopicReclusterService::persistClusters`.
 
-Prompt that replaces the analyzer should rebind this interface and leave the consumers above unchanged:
-
-```text
-Interface: Omnichannel\Addons\SearchIntelligence\Services\Topic\Grouping\Contracts\TopicGroupingProvider
-Binding: SearchIntelligenceServiceProvider::register
-         singleton(TopicGroupingProvider::class, LegacyTopicGroupingProvider::class)
-Replace: LegacyTopicGroupingProvider
-```
-
-Consumers that must keep working against that same interface:
-
-- `TopicReclusterService`
-- `TopicMembershipReconcileService`
-
-The replacement must implement `analyze(TopicGroupingInput): TopicGroupingProposal` for both `TopicGroupingScope::SITE_RECLUSTER` and `TopicGroupingScope::TOPIC_MEMBERSHIP_SCAN`. It must not persist Topics.
-
-Do not put HTTP, Python, PostgreSQL, pgvector, embedding size, or a model vendor on this contract.
+Legacy mode still analyzes then applies via `TopicReclusterService::recluster`.
 
 ## Manual operations
 
