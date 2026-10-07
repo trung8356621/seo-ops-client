@@ -13,7 +13,7 @@ Laravel Topic business code owns:
 - manual move, split, and rename
 - Focus Article relations
 - permissions
-- review and apply (not built in this cut)
+- review and apply (`TopicGroupingApplyService` / Preview → Apply)
 - persistence
 - DNA rebuild and workspace metric cache
 
@@ -97,13 +97,13 @@ Protected Topic refs and locked keyword refs are input context so the legacy eng
 
 `language` on the input is null today. Site recluster is not language-split.
 
-`TopicGroupingProposal::$analysisRef` is null for the legacy provider. Semantic HTTP fills it with the remote `analysis_id`. Proposal runs persist in `seo_topic_grouping_runs` (analyze-only; Apply is Prompt 5).
+`TopicGroupingProposal::$analysisRef` is null for the legacy provider. Semantic HTTP fills it with the remote `analysis_id`. Proposal runs persist in `seo_topic_grouping_runs`. Apply is `TopicGroupingApplyService` (see `TOPIC_GROUPING_APPLY.md`).
 
 ## Semantic analyze vs legacy apply
 
-When `TOPIC_GROUPING_PROVIDER=semantic_http`, `ReclusterSiteTopicsJob` / sync UI call `TopicGroupingAnalysisService::analyzeSite` and **stop** at `proposal_ready`. They do **not** call `TopicReclusterService::persistClusters`.
+When `TOPIC_GROUPING_PROVIDER=semantic_http`, `ReclusterSiteTopicsJob` / sync UI call `TopicGroupingAnalysisService::analyzeSite` and **stop** at `proposal_ready`. Explicit Preview → Apply uses `TopicGroupingApplyService` → `TopicReclusterService::persistResolvedClusters` (no semantic HTTP).
 
-Legacy mode still analyzes then applies via `TopicReclusterService::recluster`.
+Legacy mode still analyzes then applies via `TopicReclusterService::recluster` (same `persistResolvedClusters`).
 
 ## Manual operations
 

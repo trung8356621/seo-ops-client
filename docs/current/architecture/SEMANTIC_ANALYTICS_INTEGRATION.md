@@ -41,8 +41,8 @@ Table `seo_topic_grouping_runs` (connection `omi_seo_ai`):
 - proposal / job state only (JSON payload + diagnostics)
 - **not** vectors, **not** business membership
 
-Statuses: `queued` → `analyzing` → `proposal_ready` | `failed` | `stale` | `discarded`  
-(`applying` / `applied` reserved for Prompt 5 — unused here)
+Statuses: `queued` → `analyzing` → `proposal_ready` → `applying` → `applied`  
+Also: `failed` (analysis) · `apply_failed` · `stale` · `discarded`
 
 ## Orchestration
 
@@ -50,22 +50,22 @@ Statuses: `queued` → `analyzing` → `proposal_ready` | `failed` | `stale` | `
 semantic_http:
   Job/UI → TopicGroupingAnalysisService::analyzeSite
         → TopicGroupingProvider::analyze
-        → persist seo_topic_grouping_runs
-        → STOP (no Topic mutation)
+        → persist seo_topic_grouping_runs (proposal_ready)
+        → STOP
+  UI Preview → TopicGroupingApplyService::preview (Laravel plan only)
+  UI Apply   → TopicGroupingApplyService::apply
+            → TopicReclusterService::persistResolvedClusters
+            → applied
 
 legacy:
   Job/UI → TopicReclusterService::recluster
-        → analyze + identity + persistClusters (unchanged)
+        → analyze + identity + persistResolvedClusters (same mutation engine)
 ```
+
+See `TOPIC_GROUPING_APPLY.md` for Preview/Apply invariants (`input_hash` + `plan_hash`, Docker-off after proposal_ready).
 
 ## Failure rule
 
 `semantic unavailable` ≠ `Topic unavailable`.
 
-Manual create / rename / move / split / locks / list / detail remain available when Docker is down. Analyze fails safely with `status=failed` and diagnostics — zero Topic writes.
-
-## Apply
-
-**NOT IMPLEMENTED IN TASK 4.**
-
-Prompt 5 may build Proposal → Preview Diff → Apply using persisted runs + `input_hash` freshness (`TopicGroupingAnalysisService::markStaleIfHashChanged` / `currentInputHash`).
+Manual create / rename / move / split / locks / list / detail remain available when Docker is down. Analyze fails safely with `status=failed` and diagnostics — zero Topic writes. Preview/Apply after `proposal_ready` also do not require semantic UP.
