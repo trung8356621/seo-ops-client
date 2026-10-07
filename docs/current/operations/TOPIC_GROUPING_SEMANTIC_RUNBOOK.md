@@ -22,7 +22,8 @@ Laravel Topic Core = **business truth**.
 | --- | --- | --- |
 | `SEMANTIC_ENABLED` | `false` | Feature flag for semantic HTTP health/doctor |
 | `SEMANTIC_URL` | `http://127.0.0.1:8088` | Localhost only |
-| `SEMANTIC_TIMEOUT` | `30` | Seconds |
+| `SEMANTIC_CONNECT_TIMEOUT` | `5` | TCP connect fail-fast (seconds) |
+| `SEMANTIC_TIMEOUT` | `120` | Total HTTP request timeout (cold model + analysis) |
 | `TOPIC_GROUPING_PROVIDER` | `legacy` | `legacy` \| `semantic_http` |
 | `SEMANTIC_TOPIC_PROVIDER` | `legacy` | Legacy alias for provider |
 | `TOPIC_GROUPING_LIVE_ACCEPTANCE` | unset | Dev-only gate for live Apply script |

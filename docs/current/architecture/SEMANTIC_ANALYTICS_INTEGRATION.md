@@ -17,7 +17,8 @@ Config file: `search-intelligence/config/semantic.php` (merged as `config('seman
 | --- | --- | --- |
 | `SEMANTIC_ENABLED` | `false` | Feature flag (informational / future gates) |
 | `SEMANTIC_URL` | `http://127.0.0.1:8088` | Base URL of semantic API |
-| `SEMANTIC_TIMEOUT` | `30` | HTTP timeout seconds |
+| `SEMANTIC_CONNECT_TIMEOUT` | `5` | Connect timeout seconds (fail fast if unreachable) |
+| `SEMANTIC_TIMEOUT` | `120` | Total request timeout seconds (cold start / analysis) |
 | `TOPIC_GROUPING_PROVIDER` | `legacy` | `legacy` \| `semantic_http` |
 | `SEMANTIC_TOPIC_PROVIDER` | (fallback) | Alias if `TOPIC_GROUPING_PROVIDER` unset |
 
