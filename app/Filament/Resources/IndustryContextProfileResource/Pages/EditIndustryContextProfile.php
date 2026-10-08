@@ -6,6 +6,7 @@ namespace App\Filament\Resources\IndustryContextProfileResource\Pages;
 
 use App\Filament\Resources\IndustryContextProfileResource;
 use App\Filament\Support\ValidatesIndustryContextJson;
+use App\IndustryContext\ActiveIndustryMatchRuleProvider;
 use App\IndustryContext\IndustryAuxiliarySchema;
 use App\IndustryContext\IndustryContextExpiry;
 use App\IndustryContext\IndustryContextProfileManager;
@@ -21,6 +22,9 @@ use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Collection;
 use JsonException;
 use Omnichannel\Addons\AiPrompt\Services\PromptOwnership\IndustryContextGenerationService;
+use Omnichannel\Addons\SearchFoundation\Enums\IndustryGroupType;
+use Omnichannel\Addons\SearchFoundation\Services\MatchResearch\IndustryMatchResearchProjector;
+use Omnichannel\Addons\SearchIntelligence\Filament\Pages\SeoSettingsKeywords;
 use Throwable;
 
 final class EditIndustryContextProfile extends EditRecord
@@ -359,6 +363,106 @@ final class EditIndustryContextProfile extends EditRecord
         $this->record = $this->manager()->activate($profile);
         $this->fillFormForBranch($this->record);
         Notification::make()->title('Đã dùng bản này')->success()->send();
+    }
+
+    public function activeMatchRevision(): ?IndustryContextProfile
+    {
+        return $this->manager()->active($this->workspaceCore()->key, IndustryContextProfile::TYPE_MATCH);
+    }
+
+    public function editorIsDirty(): bool
+    {
+        $state = $this->form->getRawState();
+        $raw = $state['context_json'] ?? '';
+        $current = is_array($raw)
+            ? json_encode($raw, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            : trim((string) $raw);
+        $branch = $this->branch();
+        $saved = $branch === null
+            ? json_encode($this->canonicalTemplate($this->selectedType), JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+            : (is_array($branch->context_json)
+                ? json_encode($branch->context_json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
+                : (string) $branch->context_json);
+
+        return trim((string) $current) !== trim((string) $saved);
+    }
+
+    public function selectRevision(int $id): void
+    {
+        if ($this->editorIsDirty()) {
+            Notification::make()->title('JSON chưa lưu. Lưu revision trước khi đổi bản xem.')->warning()->send();
+
+            return;
+        }
+
+        $this->redirect($this->revisionUrl($this->selectedType, $id));
+    }
+
+    public function selectType(string $type): void
+    {
+        if (! in_array($type, self::ALLOWED_TYPES, true)) {
+            return;
+        }
+        if ($this->editorIsDirty()) {
+            Notification::make()->title('JSON chưa lưu. Lưu revision trước khi đổi tab.')->warning()->send();
+
+            return;
+        }
+
+        $this->redirect($this->tabUrl($type));
+    }
+
+    public function liveIndustryMatchUrl(): string
+    {
+        return SeoSettingsKeywords::getUrl();
+    }
+
+    /**
+     * Read-only projection of the selected Match revision. Runtime stays on the active revision.
+     *
+     * @return array{groups: array<string, list<array<string, mixed>>>, secondary: array<string, list<array<string, mixed>>>}
+     */
+    public function matchResearchView(): array
+    {
+        $empty = ['groups' => [], 'secondary' => []];
+        if ($this->selectedType !== IndustryContextProfile::TYPE_MATCH) {
+            return $empty;
+        }
+        $branch = $this->branch();
+        if ($branch === null) {
+            return $empty;
+        }
+
+        $resources = app(IndustryMatchResearchProjector::class)->projectRules(
+            ActiveIndustryMatchRuleProvider::rulesFromContext((array) $branch->context_json),
+            [
+                'industry_context_key' => $branch->key,
+                'match_revision_id' => (int) $branch->getKey(),
+            ],
+            $this->language(),
+        );
+
+        $groups = [];
+        $secondary = [];
+        foreach ($resources as $resource) {
+            $group = (string) ($resource->payload['group'] ?? '');
+            $row = [
+                'canonical' => $resource->label,
+                'aliases' => array_values(array_map('strval', (array) ($resource->payload['aliases'] ?? []))),
+                'match_mode' => $resource->matchMode,
+                'group_type' => $group,
+                'enabled' => $resource->payload['enabled'] ?? null,
+                'kind' => $resource->kind->value,
+                'do_not_confuse_with' => array_values(array_map('strval', (array) ($resource->payload['do_not_confuse_with'] ?? []))),
+            ];
+            if (in_array($group, IndustryGroupType::values(), true)) {
+                $groups[$group][] = $row;
+            } else {
+                $secondary[$group][] = $row;
+            }
+        }
+
+        return ['groups' => $groups, 'secondary' => $secondary];
     }
 
     public function workspaceCore(): IndustryContextProfile

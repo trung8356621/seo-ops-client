@@ -29,8 +29,13 @@ final class ActiveIndustryMatchRuleProvider implements IndustryMatchRuleProvider
         if ($profile === null) {
             return [];
         }
-        $context = (array) $profile->context_json;
 
+        return self::rulesFromContext((array) $profile->context_json);
+    }
+
+    /** @param  array<string, mixed>  $context @return array<string, mixed> */
+    public static function rulesFromContext(array $context): array
+    {
         return [...(array) ($context['taxonomy'] ?? []), ...(array) ($context['topic_rules'] ?? []),
             'aliases' => (array) ($context['aliases'] ?? []), 'ambiguities' => (array) ($context['ambiguities'] ?? [])];
     }
