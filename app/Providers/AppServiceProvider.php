@@ -35,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
             \Omnichannel\Addons\SearchFoundation\Contracts\IndustryMatchRuleProvider::class,
             \App\IndustryContext\ActiveIndustryMatchRuleProvider::class,
         );
+        $this->app->singleton(
+            \Omnichannel\Addons\SearchFoundation\Contracts\IndustryContextKeyResolver::class,
+            \App\IndustryContext\SiteIndustryContextKeyResolver::class,
+        );
         $this->registerInterventionImageManager();
         $this->app->bind(FilamentLogoutResponse::class, CanonicalLogoutResponse::class);
 

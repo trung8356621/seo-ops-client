@@ -79,6 +79,7 @@ final class ActiveIndustryMatchB2bBackpackTest extends TestCase
         self::assertSame([], $this->provider->rulesForSite((int) $site->id));
         self::assertSame([], $this->resources());
         self::assertSame([], $this->industryGroups((int) $site->id));
+        self::assertSame('b2b-backpack', app(\App\IndustryContext\SiteIndustryContextKeyResolver::class)->keyForSite((int) $site->id));
 
         $activated = $this->manager->activate($match->fresh());
 
@@ -94,6 +95,25 @@ final class ActiveIndustryMatchB2bBackpackTest extends TestCase
         self::assertNotSame([], $groups);
         self::assertSame('b2b-backpack', $groups[0]->industryContextKey);
         self::assertFalse($groups[0]->stale);
+    }
+
+    public function test_site_four_resolves_b2b_backpack_industry_key(): void
+    {
+        $site = new Site;
+        $site->forceFill([
+            'id' => 4,
+            'domain' => 'bags.example',
+            'status' => 'active',
+            'ssl' => true,
+        ]);
+        $site->save();
+        SiteMeta::query()->create([
+            'site_id' => 4,
+            'meta_key' => 'seo_industry_context_key',
+            'meta_value' => 'b2b-backpack',
+        ]);
+
+        self::assertSame('b2b-backpack', app(\App\IndustryContext\SiteIndustryContextKeyResolver::class)->keyForSite(4));
     }
 
     public function test_missing_match_revision_is_distinct_from_inactive(): void
