@@ -7,6 +7,7 @@ namespace App\IndustryContext;
 use App\Models\IndustryContextProfile;
 use App\Models\Site;
 use Omnichannel\Addons\SearchFoundation\Contracts\IndustryMatchRuleProvider;
+use Omnichannel\Addons\SearchFoundation\Enums\IndustryGroupType;
 
 final class ActiveIndustryMatchRuleProvider implements IndustryMatchRuleProvider
 {
@@ -44,5 +45,38 @@ final class ActiveIndustryMatchRuleProvider implements IndustryMatchRuleProvider
         return ['industry_context_key' => $profile->key, 'match_revision_id' => $profile->getKey(),
             'source_core_id' => $profile->source_core_id, 'source_core_hash' => $profile->source_core_hash,
             'stale' => $this->manager->isStale($profile)];
+    }
+
+    public function statusForKey(?string $industryContextKey): string
+    {
+        $key = trim((string) $industryContextKey);
+        if ($key === '') {
+            return 'no_match_revision';
+        }
+
+        $active = $this->manager->active($key, IndustryContextProfile::TYPE_MATCH);
+        if ($active === null) {
+            $exists = IndustryContextProfile::query()
+                ->where('key', $key)
+                ->where('type', IndustryContextProfile::TYPE_MATCH)
+                ->exists();
+
+            return $exists ? 'match_revision_inactive' : 'no_match_revision';
+        }
+
+        if ($this->manager->isStale($active)) {
+            return 'match_revision_stale';
+        }
+
+        $rules = $this->rulesForKey($key);
+        foreach (IndustryGroupType::values() as $group) {
+            foreach ((array) ($rules[$group] ?? []) as $entry) {
+                if (is_array($entry) && trim((string) ($entry['canonical'] ?? '')) !== '') {
+                    return 'active';
+                }
+            }
+        }
+
+        return 'no_taxonomy_groups';
     }
 }
