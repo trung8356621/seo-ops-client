@@ -34,6 +34,7 @@ final class CoreSettingsSurfacesContractTest extends TestCase
             'SeoSettingsScoring',
             'SeoSettingsConfigurationTransfer',
             'SeoSettingsAiCenter',
+            'SemanticRoutingPage',
             'AiConnectionResource',
             'PromptResource',
         ] as $needle) {
@@ -49,9 +50,10 @@ final class CoreSettingsSurfacesContractTest extends TestCase
 
         $ids = array_map(static fn ($s) => $s->id, $registry->all());
 
-        foreach (['general', 'workflows', 'ai-center', 'editor', 'keywords', 'api', 'scoring', 'import-export', 'members'] as $id) {
+        foreach (['general', 'workflows', 'ai-center', 'editor', 'keywords', 'api', 'scoring', 'import-export'] as $id) {
             self::assertContains($id, $ids, "missing settings section {$id}");
         }
+        self::assertNotContains('members', $ids);
     }
 
     public function test_seo_menu_reads_from_settings_registry(): void

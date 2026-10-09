@@ -55,19 +55,6 @@ final class CoreSettingsBootstrap
             sort: 60,
             coreShared: true,
         ));
-
-        $registry->registerCore(new SettingsSection(
-            id: 'members',
-            label: 'Members',
-            icon: 'heroicon-o-users',
-            url: $this->resourceUrl(
-                'App\\Filament\\Resources\\UserResource',
-                '/admin/users',
-            ),
-            owner: 'core',
-            sort: 90,
-            coreShared: true,
-        ));
     }
 
     /**

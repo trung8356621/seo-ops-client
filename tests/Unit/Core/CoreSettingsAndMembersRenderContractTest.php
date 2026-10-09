@@ -60,9 +60,10 @@ final class CoreSettingsAndMembersRenderContractTest extends TestCase
         $registry->register(new SeoSettingsSectionContributor());
 
         $ids = array_map(static fn ($s) => $s->id, $registry->all());
-        foreach (['general', 'ai-center', 'api', 'members', 'workflows', 'editor', 'keywords', 'scoring', 'import-export'] as $id) {
+        foreach (['general', 'ai-center', 'api', 'workflows', 'editor', 'keywords', 'scoring', 'import-export'] as $id) {
             self::assertContains($id, $ids, "missing {$id}");
         }
+        self::assertNotContains('members', $ids);
         unset($addons);
     }
 

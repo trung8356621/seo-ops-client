@@ -98,6 +98,7 @@ class AdminPanelProvider extends PanelProvider
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsScoring::class,
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsConfigurationTransfer::class,
             \Omnichannel\Addons\AiPrompt\Filament\Pages\SeoSettingsAiCenter::class,
+            \Omnichannel\Addons\AgentRuntime\Filament\Pages\SemanticRoutingPage::class,
         ] as $pageClass) {
             if (class_exists($pageClass)) {
                 $pages[] = $pageClass;
