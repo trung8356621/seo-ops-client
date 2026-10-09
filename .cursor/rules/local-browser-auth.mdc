@@ -1,0 +1,51 @@
+---
+description: Local SEO-OPS browser authentication and UI testing
+alwaysApply: true
+---
+
+# LOCAL BROWSER AUTHENTICATION
+
+## Environment
+
+- Base URL: http://seo-ops.test/
+- Do NOT start `php artisan serve`.
+- Do NOT use `127.0.0.1:8000`.
+- Use the existing local development environment.
+
+## Test Credentials
+
+- Username: info.mayhopphat@gmail.com
+- Password: LnwijrPgOs7DVeMH
+
+These credentials are authorized for local SEO-OPS browser testing.
+
+## Browser Automation
+
+When browser UI testing is required:
+
+1. Open http://seo-ops.test/.
+2. Check whether the current browser session is authenticated.
+3. If redirected to login, automatically sign in using the credentials above.
+4. Reuse the authenticated session for subsequent tests.
+5. Navigate directly to the requested feature or article.
+6. Execute the required UI tests.
+7. Report actual test results and errors.
+
+Do not stop testing merely because authentication is required.
+
+## Restrictions
+
+- Never print credentials in logs, terminal output, screenshots, or test reports.
+- Never send credentials to external websites.
+- Never modify application authentication logic.
+- Never create additional development servers.
+- Do not change user permissions or account configuration.
+- Do not publish articles or perform destructive actions unless explicitly requested.
+
+## Testing Principle
+
+Use the existing local browser environment and authenticated session.
+
+Do not ask the user to log in manually when the supplied test credentials work.
+
+Do not claim UI tests passed unless the actual feature was tested.
