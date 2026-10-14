@@ -1,0 +1,103 @@
+---
+description: Disable autonomous E2E/browser testing and unnecessary verification to reduce agent execution time and token consumption.
+alwaysApply: true
+---
+
+# NO AUTOMATIC E2E / BROWSER TESTING
+
+## 1. STRICT RULE
+
+NEVER autonomously perform End-to-End (E2E), browser-based, or UI interaction testing.
+
+This rule applies to ALL tasks in this workspace, including frontend, backend, Laravel, Filament, Livewire, WordPress, and Python services.
+
+E2E testing is **OPT-IN ONLY**.
+
+Only perform E2E/browser testing when the user explicitly requests it in the current task.
+
+Do not interpret instructions such as "verify", "test", "make sure it works", "complete implementation", or "check functionality" as permission to run E2E tests.
+
+## 2. PROHIBITED WITHOUT EXPLICIT PERMISSION
+
+Do not automatically:
+
+- Open or control browsers to verify changes.
+- Use Cursor Browser, Playwright, Puppeteer, Selenium, or browser automation.
+- Navigate to localhost, `.test` domains, or staging websites for testing.
+- Log into applications or manipulate browser sessions.
+- Click buttons, fill forms, submit data, or simulate user workflows.
+- Capture screenshots or inspect UI through browser automation.
+- Run full E2E suites.
+- Install browser testing dependencies.
+- Start Docker containers, web servers, or browser infrastructure solely for E2E testing.
+- Perform repeated trial-and-error UI verification loops.
+- Invoke browser/computer-use tools for implementation verification.
+
+Do not circumvent this rule by calling browser tools through terminals, MCP servers, scripts, or subagents.
+
+## 3. ALLOWED LIGHTWEIGHT VERIFICATION
+
+The agent MAY perform focused, low-cost checks when relevant:
+
+- PHP syntax checks (`php -l`).
+- Targeted PHPUnit tests.
+- Targeted Pest tests.
+- Focused Python unit tests.
+- Type checking for changed code.
+- Static analysis on changed files.
+- Lint checks for changed files.
+- Inspection of local code and references.
+
+Prefer the smallest relevant test scope.
+
+Do not run the entire test suite unless explicitly requested.
+
+Avoid repeating tests that have already passed unless subsequent code changes affect them.
+
+## 4. TOKEN & TIME EFFICIENCY
+
+Prioritize:
+
+1. Read relevant source.
+2. Implement the requested change.
+3. Run minimal static/syntax verification.
+4. Run focused unit tests only when genuinely useful.
+5. Report changes and remaining verification needs.
+
+Do not spend excessive execution time attempting to reproduce a browser environment.
+
+Do not start unrelated infrastructure for testing.
+
+Do not repeatedly inspect screenshots, console logs, browser network requests, or UI state.
+
+Never create additional test infrastructure just to verify a small UI change.
+
+## 5. TASK COMPLETION
+
+Do not block task completion because E2E testing was skipped.
+
+When implementation is complete, report:
+
+- Files changed.
+- Implementation summary.
+- Lightweight tests performed.
+- Tests not performed.
+
+Use this exact statement when applicable:
+
+"E2E/browser testing skipped per workspace rule."
+
+Do not claim that browser behavior was verified when no browser test was performed.
+
+## 6. EXPLICIT OVERRIDE
+
+The user can override this rule for an individual task by explicitly instructing:
+
+- "Run E2E tests."
+- "Test this in the browser."
+- "Use Playwright to verify."
+- "Open the application and test the UI."
+
+Permission applies only to that task, not to future tasks.
+
+**Default behavior: NO E2E. NO BROWSER AUTOMATION. NO UI TESTING.**
