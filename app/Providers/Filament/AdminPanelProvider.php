@@ -95,6 +95,7 @@ class AdminPanelProvider extends PanelProvider
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsWorkflows::class,
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsEditor::class,
             \Omnichannel\Addons\SearchIntelligence\Filament\Pages\SeoSettingsKeywords::class,
+            \Omnichannel\Addons\SearchIntelligence\Filament\Pages\KeywordQualitySourceSettings::class,
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsScoring::class,
             \Omnichannel\Addons\Seo\Filament\Pages\SeoSettingsConfigurationTransfer::class,
             \Omnichannel\Addons\AiPrompt\Filament\Pages\SeoSettingsAiCenter::class,
