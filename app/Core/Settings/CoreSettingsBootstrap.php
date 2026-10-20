@@ -31,6 +31,19 @@ final class CoreSettingsBootstrap
         ));
 
         $registry->registerCore(new SettingsSection(
+            id: 'performance',
+            label: 'performance.nav',
+            icon: 'heroicon-o-bolt',
+            url: $this->pageUrl(
+                'App\\Filament\\Pages\\SystemPerformanceSettings',
+                '/admin/settings/performance',
+            ),
+            owner: 'core',
+            sort: 15,
+            coreShared: true,
+        ));
+
+        $registry->registerCore(new SettingsSection(
             id: 'ai-center',
             label: 'AI Center',
             icon: 'heroicon-o-cpu-chip',

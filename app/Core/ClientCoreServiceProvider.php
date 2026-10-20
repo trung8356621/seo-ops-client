@@ -69,6 +69,10 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->app->singleton(SeoRoleAssignment::class);
         $this->app->singleton(SettingsSectionRegistry::class);
         $this->app->singleton(CoreSettingsBootstrap::class);
+        $this->app->singleton(\App\Core\Performance\PerformanceSettings::class);
+        $this->app->singleton(\App\Core\Performance\ActiveUserPresence::class);
+        $this->app->singleton(\App\Core\Performance\HeavyWorkloadGate::class);
+        $this->app->singleton(\App\Core\Performance\BackgroundHeavyPolicy::class);
         $this->app->singleton(\App\Core\Database\AddonMigrationRegistrar::class);
         $this->app->singleton(\App\Core\Database\DestructiveMigrationGuard::class);
         $this->app->singleton(\App\Core\Database\RefactorMigrationRunner::class);
@@ -99,6 +103,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerGlobalHelpHeaderHook();
         $this->registerGlobalHelpAssetsHook();
         $this->registerGlobalHelpDrawerHook();
+        $this->registerPerformancePresenceHook();
 
         if ($this->app->bound(SettingsSectionRegistry::class)) {
             $this->app->make(CoreSettingsBootstrap::class)
@@ -241,6 +246,29 @@ final class ClientCoreServiceProvider extends ServiceProvider
                 return new HtmlString(
                     view('filament.hooks.global-help-drawer')->render()
                 );
+            },
+        );
+    }
+
+    /**
+     * Page Visibility → presence ping + Livewire X-Document-Hidden hint for heavy dispatch.
+     */
+    private function registerPerformancePresenceHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                try {
+                    return new HtmlString(
+                        view('filament.hooks.performance-presence')->render()
+                    );
+                } catch (\Throwable) {
+                    return new HtmlString('');
+                }
             },
         );
     }

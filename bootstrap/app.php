@@ -66,6 +66,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->statefulApi(); // Đảm bảo session được giữ cho các request API/Livewire
 
         $middleware->append(\App\Http\Middleware\LogLocalSlowHttpMiddleware::class);
+        $middleware->web(append: [
+            \App\Http\Middleware\TouchActiveUserPresence::class,
+        ]);
     })
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->validateCsrfTokens(except: [

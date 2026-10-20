@@ -22,6 +22,9 @@ Route::get('/seo/{connection_hash}/login', static function (): \Illuminate\Http\
 })->where(['connection_hash' => '[a-zA-Z0-9]{32,64}']);
 
 Route::middleware(['web', 'auth'])->group(function (): void {
+    Route::post('/performance/presence', \App\Http\Controllers\PerformancePresenceController::class)
+        ->name('performance.presence');
+
     Route::get('/admin/industry-context-prompts/create', [IndustryContextPromptDownloadController::class, 'create'])
         ->name('admin.industry-context.prompt.create');
     Route::get('/admin/industry-context-profiles/{key}/prompt/{type}', [IndustryContextPromptDownloadController::class, 'existing'])

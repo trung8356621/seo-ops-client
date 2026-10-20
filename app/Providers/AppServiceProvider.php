@@ -31,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function register(): void
     {
+        // Before any DB connection resolves — memoize Schema::hasTable/hasColumn per request.
+        \App\Core\Database\RequestScopedSchemaBuilder::register();
+
         $this->app->singleton(
             \Omnichannel\Addons\SearchFoundation\Contracts\IndustryMatchRuleProvider::class,
             \App\IndustryContext\ActiveIndustryMatchRuleProvider::class,

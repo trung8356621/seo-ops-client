@@ -87,6 +87,7 @@ class AdminPanelProvider extends PanelProvider
             HelpTopicsAdmin::class,
             HelpTopicEdit::class,
             HelpTopicCreate::class,
+            \App\Filament\Pages\SystemPerformanceSettings::class,
         ];
         $resources = [];
 
