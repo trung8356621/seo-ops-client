@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\ServiceApiCredentialKind;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
- * External/service API credential (many per Service).
- * Independent of {@see Service::$service_key} provisioning secret.
+ * API credential (many per Service).
+ * kind=user → API Access Gate (Root-managed).
+ * kind=managed → Service Gate (auto-provisioned; never shown in user key UI).
+ * Independent of {@see Service::$service_key} Control/ops secret.
  */
 class ServiceApiCredential extends Model
 {
     protected $fillable = [
         'service_id',
+        'kind',
         'name',
         'key_prefix',
         'key_hash',
@@ -33,11 +38,39 @@ class ServiceApiCredential extends Model
     protected function casts(): array
     {
         return [
+            'kind' => ServiceApiCredentialKind::class,
             'scopes' => 'array',
             'expires_at' => 'datetime',
             'revoked_at' => 'datetime',
             'last_used_at' => 'datetime',
         ];
+    }
+
+    public function isManaged(): bool
+    {
+        $kind = $this->kind;
+        if ($kind instanceof ServiceApiCredentialKind) {
+            return $kind === ServiceApiCredentialKind::Managed;
+        }
+
+        return (string) $kind === ServiceApiCredentialKind::Managed->value;
+    }
+
+    public function isUserKey(): bool
+    {
+        return ! $this->isManaged();
+    }
+
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeUserKeys(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q): void {
+            $q->where('kind', ServiceApiCredentialKind::User->value)
+                ->orWhereNull('kind');
+        });
     }
 
     public function service(): BelongsTo

@@ -10,16 +10,20 @@ use App\Api\Services\ServiceApiContext;
 use App\Api\Services\ServiceApiError;
 use App\Models\Service;
 use App\Models\ServiceApiCredential;
+use App\Models\ServiceGatewayProvision;
 use App\Services\ServiceIdentity;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Canonical Service API authentication.
- * Authorization: Bearer <svc_live_…>
+ * Authorization: Bearer <svc_live_…|svc_gate_…>
  * Uses service_api_credentials only — never the ops-server provisioned Service secret
  * and never legacy per-site service settings keys.
+ *
+ * Managed (Service Gate) keys additionally require execution_allowed on the provision row.
  */
 final class AuthenticateServiceApi
 {
@@ -56,6 +60,10 @@ final class AuthenticateServiceApi
             return ServiceApiError::serviceInactive();
         }
 
+        if ($credential->isManaged() && ! $this->managedExecutionAllowed($credential)) {
+            return ServiceApiError::forbidden('Service Gate execution is not allowed for current entitlement.');
+        }
+
         $routeServiceParam = (string) $request->route('service', '');
         if ($routeServiceParam !== '') {
             $routeService = ServiceIdentity::findService($routeServiceParam);
@@ -90,5 +98,20 @@ final class AuthenticateServiceApi
         $token = trim((string) $m[1]);
 
         return $token !== '' ? $token : null;
+    }
+
+    private function managedExecutionAllowed(ServiceApiCredential $credential): bool
+    {
+        if (! Schema::hasTable('service_gateway_provisions')) {
+            return false;
+        }
+
+        $provision = ServiceGatewayProvision::query()
+            ->where('service_id', $credential->service_id)
+            ->first();
+
+        return $provision instanceof ServiceGatewayProvision
+            && $provision->execution_allowed === true
+            && $provision->entitled === true;
     }
 }

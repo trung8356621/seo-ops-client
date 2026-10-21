@@ -118,7 +118,11 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
         self::assertStringNotContainsString('key_hash', $view);
         self::assertStringNotContainsString('$svc->service_key', $view);
         self::assertStringNotContainsString('$cred->key_hash', $view);
+        self::assertStringNotContainsString('svc_gate_', $view);
+        self::assertStringNotContainsString('installation_secret', $view);
         self::assertStringContainsString('canManageApiKeys', $page);
-        self::assertStringContainsString('h1_local_implementation', $page);
+        self::assertStringContainsString('controlGateStatus', $page);
+        self::assertStringContainsString('pending_integration', $page);
+        self::assertStringContainsString('ServiceApiCredentialKind::User', $page);
     }
 }

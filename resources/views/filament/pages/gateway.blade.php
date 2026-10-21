@@ -6,17 +6,6 @@
     <div class="mb-4 flex flex-wrap gap-2 border-b border-gray-200 pb-3 dark:border-gray-700">
         <button
             type="button"
-            wire:click="setTab('api_access')"
-            @class([
-                'rounded-lg px-3 py-1.5 text-sm font-medium',
-                'bg-primary-600 text-white' => $activeTab === 'api_access',
-                'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200' => $activeTab !== 'api_access',
-            ])
-        >
-            {{ __('gateway.tab_api_access') }}
-        </button>
-        <button
-            type="button"
             wire:click="setTab('control')"
             @class([
                 'rounded-lg px-3 py-1.5 text-sm font-medium',
@@ -26,6 +15,17 @@
         >
             {{ __('gateway.tab_control') }}
         </button>
+        <button
+            type="button"
+            wire:click="setTab('api_access')"
+            @class([
+                'rounded-lg px-3 py-1.5 text-sm font-medium',
+                'bg-primary-600 text-white' => $activeTab === 'api_access',
+                'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200' => $activeTab !== 'api_access',
+            ])
+        >
+            {{ __('gateway.tab_api_access') }}
+        </button>
     </div>
 
     @if ($activeTab === 'control')
@@ -33,38 +33,55 @@
             <h3 class="text-base font-semibold text-gray-950 dark:text-white">{{ __('gateway.control_title') }}</h3>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('gateway.control_description') }}</p>
 
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
-                    <div class="text-xs text-gray-500">{{ __('gateway.control_h1_label') }}</div>
-                    <div class="font-semibold">{{ __('gateway.control_h1_'.$control['h1_local_implementation']) }}</div>
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_product') }}</div>
+                    <div class="font-semibold">{{ $control['product_name'] ?: __('gateway.control_no_info') }}</div>
                 </div>
                 <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
-                    <div class="text-xs text-gray-500">{{ __('gateway.control_entitlement_label') }}</div>
-                    <div class="font-semibold">
-                        {{ $control['entitlement_enforcement'] ? __('gateway.control_entitlement_on') : __('gateway.control_entitlement_off') }}
-                    </div>
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_plan') }}</div>
+                    <div class="font-semibold">{{ $control['plan_name'] ?: __('gateway.control_no_info') }}</div>
+                </div>
+                <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_license_status') }}</div>
+                    <div class="font-semibold">{{ __('gateway.license_status_'.$control['license_status']) }}</div>
+                </div>
+                <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_starts_at') }}</div>
+                    <div class="font-semibold">{{ $control['starts_at'] ?: __('gateway.control_no_info') }}</div>
+                </div>
+                <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_ends_at') }}</div>
+                    <div class="font-semibold">{{ $control['ends_at'] ?: __('gateway.control_no_info') }}</div>
+                </div>
+                <div class="rounded-lg border border-gray-100 p-3 dark:border-gray-800">
+                    <div class="text-xs text-gray-500">{{ __('gateway.control_h1_label') }}</div>
+                    <div class="font-semibold">{{ __('gateway.control_h1_'.$control['h1_receiver']) }}</div>
                 </div>
             </div>
 
-            <div class="mt-4 overflow-x-auto">
+            <h4 class="mt-6 text-sm font-semibold text-gray-950 dark:text-white">{{ __('gateway.control_services_title') }}</h4>
+            <div class="mt-2 overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200 text-sm dark:divide-gray-700">
                     <thead>
                         <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
                             <th class="py-2 pr-3">{{ __('gateway.control_service') }}</th>
-                            <th class="py-2 pr-3">{{ __('gateway.control_active') }}</th>
-                            <th class="py-2">{{ __('gateway.control_key_provisioned') }}</th>
+                            <th class="py-2 pr-3">{{ __('gateway.control_entitled') }}</th>
+                            <th class="py-2 pr-3">{{ __('gateway.control_activated') }}</th>
+                            <th class="py-2">{{ __('gateway.control_readiness') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse ($control['services'] as $svc)
                             <tr>
-                                <td class="py-2 pr-3 font-medium">{{ $svc['name'] }} ({{ $svc['slug'] }})</td>
-                                <td class="py-2 pr-3">{{ $svc['active'] ? __('gateway.yes') : __('gateway.no') }}</td>
-                                <td class="py-2">{{ $svc['key_provisioned'] ? __('gateway.yes') : __('gateway.no') }}</td>
+                                <td class="py-2 pr-3 font-medium">{{ $svc['name'] }}</td>
+                                <td class="py-2 pr-3">{{ $svc['entitled'] ? __('gateway.yes') : __('gateway.no') }}</td>
+                                <td class="py-2 pr-3">{{ $svc['activated'] ? __('gateway.yes') : __('gateway.no') }}</td>
+                                <td class="py-2">{{ $svc['readiness_label'] }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="3" class="py-3 text-gray-500">{{ __('gateway.control_no_services') }}</td>
+                                <td colspan="4" class="py-3 text-gray-500">{{ __('gateway.control_no_services') }}</td>
                             </tr>
                         @endforelse
                     </tbody>

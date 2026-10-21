@@ -155,9 +155,15 @@ final class ServiceConfigure extends Page implements HasForms
             return collect();
         }
 
-        return $service->apiCredentials()
-            ->orderByDesc('id')
-            ->get();
+        $query = $service->apiCredentials()->orderByDesc('id');
+        if (\Illuminate\Support\Facades\Schema::hasColumn('service_api_credentials', 'kind')) {
+            $query->where(function ($q): void {
+                $q->where('kind', \App\Enums\ServiceApiCredentialKind::User->value)
+                    ->orWhereNull('kind');
+            });
+        }
+
+        return $query->get();
     }
 
     public function dismissRevealedApiKey(): void
@@ -360,10 +366,16 @@ final class ServiceConfigure extends Page implements HasForms
             return null;
         }
 
-        $credential = ServiceApiCredential::query()
+        $query = ServiceApiCredential::query()
             ->whereKey($credentialId)
-            ->where('service_id', $service->id)
-            ->first();
+            ->where('service_id', $service->id);
+        if (\Illuminate\Support\Facades\Schema::hasColumn('service_api_credentials', 'kind')) {
+            $query->where(function ($q): void {
+                $q->where('kind', \App\Enums\ServiceApiCredentialKind::User->value)
+                    ->orWhereNull('kind');
+            });
+        }
+        $credential = $query->first();
 
         if (! $credential instanceof ServiceApiCredential) {
             Notification::make()->title(__('site-service.api_access_not_found'))->danger()->send();

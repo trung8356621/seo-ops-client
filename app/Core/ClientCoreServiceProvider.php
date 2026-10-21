@@ -42,9 +42,17 @@ final class ClientCoreServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../../config/addons.php', 'addons');
         $this->mergeConfigFrom(__DIR__.'/../../config/addon_migration_ownership.php', 'addon_migration_ownership');
+        if (is_file(__DIR__.'/../../config/service_gateway.php')) {
+            $this->mergeConfigFrom(__DIR__.'/../../config/service_gateway.php', 'service_gateway');
+        }
         if (is_file(__DIR__.'/../../config/refactor_migrate.php')) {
             $this->mergeConfigFrom(__DIR__.'/../../config/refactor_migrate.php', 'refactor_migrate');
         }
+
+        $this->app->singleton(\App\Services\Gateway\ServiceCapabilityManifest::class);
+        $this->app->singleton(\App\Services\Gateway\EntitlementPresentationStore::class);
+        $this->app->singleton(\App\Services\Gateway\ServiceGatewayProvisioner::class);
+        $this->app->singleton(\App\Services\Gateway\EntitlementAppliedHook::class);
 
         $this->app->singleton(AddonDiscovery::class);
         $this->app->singleton(AddonRegistry::class);

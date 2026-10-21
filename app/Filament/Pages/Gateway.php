@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Api\Auth\ServiceApiCredentialManager;
-use App\Core\Addon\AddonEntitlementGate;
+use App\Enums\ServiceApiCredentialKind;
+use App\Enums\ServiceGatewayProvisionStatus;
 use App\Models\Service;
 use App\Models\ServiceApiCredential;
+use App\Models\ServiceGatewayProvision;
 use App\Models\User;
+use App\Services\Gateway\EntitlementPresentationStore;
+use App\Services\Gateway\ServiceCapabilityManifest;
 use App\Services\ServiceIdentity;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -26,8 +30,8 @@ use Throwable;
 
 /**
  * Unified Gateway Admin area:
- * - Control Gate: safe status only (H1 / OPS-SERVER — not implemented here)
- * - API Access Gate: Root (Owner)-managed local API keys
+ * - Control Gate: license & entitled Services (safe presentation only)
+ * - API Access Gate: Root-managed user API keys (never managed Service Gate secrets)
  */
 final class Gateway extends Page
 {
@@ -40,7 +44,7 @@ final class Gateway extends Page
     protected static string $view = 'filament.pages.gateway';
 
     /** @var 'control'|'api_access' */
-    public string $activeTab = 'api_access';
+    public string $activeTab = 'control';
 
     public ?string $revealedApiKey = null;
 
@@ -92,37 +96,82 @@ final class Gateway extends Page
     }
 
     /**
-     * Safe Control Gate indicators only — never secrets / machine credentials.
+     * Safe Control Gate presentation — never secrets / machine credentials / managed keys.
      *
      * @return array{
-     *     entitlement_enforcement: bool,
-     *     h1_local_implementation: string,
-     *     services: list<array{slug: string, name: string, active: bool, key_provisioned: bool}>
+     *     connected: bool,
+     *     license_status: string,
+     *     product_name: ?string,
+     *     plan_name: ?string,
+     *     starts_at: ?string,
+     *     ends_at: ?string,
+     *     h1_receiver: string,
+     *     services: list<array{
+     *         slug: string,
+     *         name: string,
+     *         entitled: bool,
+     *         activated: bool,
+     *         readiness: string,
+     *         readiness_label: string
+     *     }>
      * }
      */
     public function controlGateStatus(): array
     {
+        $snapshot = app(EntitlementPresentationStore::class)->current();
+        $manifest = app(ServiceCapabilityManifest::class);
         $services = [];
-        if (Schema::hasTable('services')) {
-            foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
-                $row = ServiceIdentity::findService($publicSlug);
-                $services[] = [
-                    'slug' => $publicSlug,
-                    'name' => ServiceIdentity::displayName($publicSlug),
-                    'active' => $row instanceof Service && (bool) $row->is_active,
-                    'key_provisioned' => $row instanceof Service && filled($row->service_key),
-                ];
+
+        foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
+            $row = Schema::hasTable('services') ? ServiceIdentity::findService($publicSlug) : null;
+            $entitled = $snapshot->connected && $snapshot->isServiceEntitled($publicSlug);
+            $activated = $row instanceof Service && (bool) $row->is_active;
+
+            $readiness = 'unknown';
+            if (! $snapshot->connected) {
+                $readiness = 'disconnected';
+            } elseif (! $entitled) {
+                $readiness = 'not_entitled';
+            } elseif (Schema::hasTable('service_gateway_provisions') && $row instanceof Service) {
+                $provision = ServiceGatewayProvision::query()->where('service_id', $row->id)->first();
+                if ($provision?->status instanceof ServiceGatewayProvisionStatus) {
+                    $readiness = $provision->status->value;
+                } elseif (is_string($provision?->status)) {
+                    $readiness = $provision->status;
+                } else {
+                    $readiness = $manifest->requiresManagedCredential($publicSlug) ? 'pending' : 'not_required';
+                }
             }
+
+            $services[] = [
+                'slug' => $publicSlug,
+                'name' => ServiceIdentity::displayName($publicSlug),
+                'entitled' => $entitled,
+                'activated' => $activated,
+                'readiness' => $readiness,
+                'readiness_label' => __('gateway.readiness_'.$readiness),
+            ];
         }
 
         return [
-            'entitlement_enforcement' => (bool) config('addons.entitlement.enabled', false),
-            'h1_local_implementation' => 'not_implemented',
+            'connected' => $snapshot->connected,
+            'license_status' => $snapshot->connected ? $snapshot->licenseStatus : 'disconnected',
+            'product_name' => $snapshot->connected ? $snapshot->productName : null,
+            'plan_name' => $snapshot->connected ? $snapshot->planName : null,
+            'starts_at' => $snapshot->connected && $snapshot->startsAt
+                ? $snapshot->startsAt->toDateString()
+                : null,
+            'ends_at' => $snapshot->connected && $snapshot->endsAt
+                ? $snapshot->endsAt->toDateString()
+                : null,
+            'h1_receiver' => 'pending_integration',
             'services' => $services,
         ];
     }
 
     /**
+     * User API Access keys only — never Service Gate managed credentials.
+     *
      * @return Collection<int, ServiceApiCredential>
      */
     public function apiCredentials(): Collection
@@ -131,10 +180,15 @@ final class Gateway extends Page
             return collect();
         }
 
-        return ServiceApiCredential::query()
-            ->with('service')
-            ->orderByDesc('id')
-            ->get();
+        $query = ServiceApiCredential::query()->with('service')->orderByDesc('id');
+        if (Schema::hasColumn('service_api_credentials', 'kind')) {
+            $query->where(function ($q): void {
+                $q->where('kind', ServiceApiCredentialKind::User->value)
+                    ->orWhereNull('kind');
+            });
+        }
+
+        return $query->get();
     }
 
     public function activeKeyCount(): int
@@ -257,10 +311,8 @@ final class Gateway extends Page
             return;
         }
 
-        $credential = ServiceApiCredential::query()->whereKey($credentialId)->first();
+        $credential = $this->findUserCredential($credentialId);
         if (! $credential instanceof ServiceApiCredential) {
-            Notification::make()->title(__('site-service.api_access_not_found'))->danger()->send();
-
             return;
         }
 
@@ -277,10 +329,8 @@ final class Gateway extends Page
             return;
         }
 
-        $credential = ServiceApiCredential::query()->whereKey($credentialId)->first();
+        $credential = $this->findUserCredential($credentialId);
         if (! $credential instanceof ServiceApiCredential) {
-            Notification::make()->title(__('site-service.api_access_not_found'))->danger()->send();
-
             return;
         }
 
@@ -300,8 +350,23 @@ final class Gateway extends Page
         Notification::make()->title(__('site-service.api_access_rotated'))->success()->send();
     }
 
-    public function entitlementGateAvailable(): bool
+    private function findUserCredential(int $credentialId): ?ServiceApiCredential
     {
-        return app()->bound(AddonEntitlementGate::class);
+        $query = ServiceApiCredential::query()->whereKey($credentialId);
+        if (Schema::hasColumn('service_api_credentials', 'kind')) {
+            $query->where(function ($q): void {
+                $q->where('kind', ServiceApiCredentialKind::User->value)
+                    ->orWhereNull('kind');
+            });
+        }
+
+        $credential = $query->first();
+        if (! $credential instanceof ServiceApiCredential) {
+            Notification::make()->title(__('site-service.api_access_not_found'))->danger()->send();
+
+            return null;
+        }
+
+        return $credential;
     }
 }

@@ -64,6 +64,8 @@ return [
                 'site_services',
                 'client_control_state',
                 'client_control_commands',
+                'service_gateway_provisions',
+                'local_entitlement_presentations',
                 'client_transfer_runs',
                 'site_meta',
                 'task_jobs',

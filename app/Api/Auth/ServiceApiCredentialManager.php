@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Api\Auth;
 
+use App\Enums\ServiceApiCredentialKind;
 use App\Models\Service;
 use App\Models\ServiceApiCredential;
 use Illuminate\Support\Carbon;
@@ -12,8 +13,8 @@ use InvalidArgumentException;
 use RuntimeException;
 
 /**
- * Credential lifecycle: create / revoke / rotate.
- * Does not touch services.service_key or ops-server provisioning.
+ * User API Access Gate credential lifecycle: create / revoke / rotate.
+ * Does not touch services.service_key, Control Gate, or Service Gate managed keys.
  */
 final class ServiceApiCredentialManager
 {
@@ -43,6 +44,7 @@ final class ServiceApiCredentialManager
 
         $credential = new ServiceApiCredential([
             'service_id' => $service->id,
+            'kind' => ServiceApiCredentialKind::User,
             'name' => $name,
             'key_prefix' => $material['key_prefix'],
             'key_hash' => $material['key_hash'],
@@ -59,6 +61,10 @@ final class ServiceApiCredentialManager
 
     public function revoke(ServiceApiCredential $credential): ServiceApiCredential
     {
+        if ($credential->isManaged()) {
+            throw new InvalidArgumentException('Managed Service Gate credentials cannot be revoked via API Access Gate.');
+        }
+
         if ($credential->revoked_at === null) {
             $credential->forceFill(['revoked_at' => now()])->save();
         }
@@ -82,6 +88,10 @@ final class ServiceApiCredentialManager
         ?int $createdBy = null,
         bool $keepExpiresAt = true,
     ): ApiCredentialResult {
+        if ($credential->isManaged()) {
+            throw new InvalidArgumentException('Managed Service Gate credentials cannot be rotated via API Access Gate.');
+        }
+
         $service = $credential->service;
         if (! $service instanceof Service) {
             throw new RuntimeException('Credential has no Service.');
