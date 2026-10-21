@@ -42,8 +42,9 @@ final class AuthenticateServiceApi
             return ServiceApiError::unauthorized();
         }
 
+        // Revoked / expired keys fail closed as unauthenticated (401), not scope-denied.
         if ($credential->isRevoked() || $credential->isExpired()) {
-            return ServiceApiError::forbidden();
+            return ServiceApiError::unauthorized();
         }
 
         $credentialService = $credential->service;

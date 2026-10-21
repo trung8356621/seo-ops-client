@@ -49,14 +49,36 @@ final class ServiceApiAuthHttpTest extends TestCase
             ->assertJsonPath('data.api_version', 'v1');
     }
 
-    public function test_wildcard_scope_allows_status(): void
+    public function test_wildcard_scope_is_rejected_on_create(): void
     {
         $seo = $this->makeService('SEO', 'seo');
-        $star = app(ServiceApiCredentialManager::class)->create($seo, 'Star', ['*']);
 
-        $this->getJson('/api/v1/services/seo/status', [
-            'Authorization' => 'Bearer '.$star->rawKey,
-        ])->assertOk();
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Wildcard scope');
+        app(ServiceApiCredentialManager::class)->create($seo, 'Star', ['*']);
+    }
+
+    public function test_capabilities_pilot_requires_bearer_and_scope(): void
+    {
+        $seo = $this->makeService('SEO', 'seo');
+        $ok = app(ServiceApiCredentialManager::class)->create($seo, 'Ok', ['service:read']);
+        $no = app(ServiceApiCredentialManager::class)->create($seo, 'No', ['seo:read']);
+
+        $this->getJson('/api/v1/me/capabilities')->assertStatus(401);
+
+        $this->getJson('/api/v1/me/capabilities', [
+            'Authorization' => 'Bearer '.$no->rawKey,
+        ])
+            ->assertStatus(403)
+            ->assertJsonPath('error.code', 'service_api_scope_denied');
+
+        $this->getJson('/api/v1/me/capabilities', [
+            'Authorization' => 'Bearer '.$ok->rawKey,
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.gate', 'api_access')
+            ->assertJsonPath('data.api_version', 'v1')
+            ->assertJsonPath('data.scopes.0', 'service:read');
     }
 
     public function test_revoked_expired_inactive_fail(): void
@@ -76,11 +98,11 @@ final class ServiceApiAuthHttpTest extends TestCase
 
         $this->getJson('/api/v1/services/seo/status', [
             'Authorization' => 'Bearer '.$revoked->rawKey,
-        ])->assertStatus(403);
+        ])->assertStatus(401);
 
         $this->getJson('/api/v1/services/seo/status', [
             'Authorization' => 'Bearer '.$expired->rawKey,
-        ])->assertStatus(403);
+        ])->assertStatus(401);
 
         $inactive = $this->makeService('Seeding', 'seeding', false);
         $key = $manager->create($inactive, 'I', ['service:read']);
@@ -127,7 +149,7 @@ final class ServiceApiAuthHttpTest extends TestCase
 
         $this->getJson('/api/v1/services/seo/status', [
             'Authorization' => 'Bearer '.$old,
-        ])->assertStatus(403);
+        ])->assertStatus(401);
 
         $this->getJson('/api/v1/services/seo/status', [
             'Authorization' => 'Bearer '.$rotated->rawKey,

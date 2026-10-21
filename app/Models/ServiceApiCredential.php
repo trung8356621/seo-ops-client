@@ -81,6 +81,7 @@ class ServiceApiCredential extends Model
                 continue;
             }
             $item = trim($item);
+            // Legacy rows may still contain '*'; new creates reject wildcards.
             if ($item === '*' || $item === $scope) {
                 return true;
             }

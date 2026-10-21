@@ -20,6 +20,7 @@ final class ServiceApiCredentialManager
     public function __construct(
         private readonly ApiKeyGenerator $generator,
         private readonly ScopeNormalizer $scopeNormalizer,
+        private readonly ApiAccessAuditLogger $auditLogger,
     ) {}
 
     /**
@@ -50,8 +51,10 @@ final class ServiceApiCredentialManager
             'created_by' => $createdBy,
         ]);
         $credential->save();
+        $fresh = $credential->fresh() ?? $credential;
+        $this->auditLogger->log('created', $fresh);
 
-        return new ApiCredentialResult($credential->fresh() ?? $credential, $material['raw_key']);
+        return new ApiCredentialResult($fresh, $material['raw_key']);
     }
 
     public function revoke(ServiceApiCredential $credential): ServiceApiCredential
@@ -60,7 +63,10 @@ final class ServiceApiCredentialManager
             $credential->forceFill(['revoked_at' => now()])->save();
         }
 
-        return $credential->fresh() ?? $credential;
+        $fresh = $credential->fresh() ?? $credential;
+        $this->auditLogger->log('revoked', $fresh);
+
+        return $fresh;
     }
 
     /**
@@ -97,6 +103,9 @@ final class ServiceApiCredentialManager
             );
 
             $this->revoke($credential);
+            $this->auditLogger->log('rotated', $result->credential, [
+                'predecessor_id' => (int) $credential->id,
+            ]);
 
             return $result;
         });

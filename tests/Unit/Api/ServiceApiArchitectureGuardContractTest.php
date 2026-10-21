@@ -96,11 +96,29 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
     {
         $routes = (string) file_get_contents(base_path('routes/api-services.php'));
         $boot = (string) file_get_contents(base_path('bootstrap/app.php'));
+        $access = (string) file_get_contents(base_path('routes/api-access.php'));
 
         self::assertStringContainsString('service.api.scope:service:read', $routes);
         self::assertStringContainsString('{service}/status', $routes);
         self::assertStringContainsString('api-services.php', $boot);
         self::assertStringContainsString('api/v1/services', $boot);
         self::assertStringContainsString('AuthenticateServiceApi', $boot);
+        self::assertStringContainsString('api-access.php', $boot);
+        self::assertStringContainsString('me/capabilities', $access);
+        self::assertStringContainsString('service.api.scope:service:read', $access);
+    }
+
+    public function test_gateway_view_never_renders_secrets(): void
+    {
+        $view = (string) file_get_contents(resource_path('views/filament/pages/gateway.blade.php'));
+        $page = (string) file_get_contents(app_path('Filament/Pages/Gateway.php'));
+
+        self::assertStringContainsString('tab_api_access', $view);
+        self::assertStringContainsString('tab_control', $view);
+        self::assertStringNotContainsString('key_hash', $view);
+        self::assertStringNotContainsString('$svc->service_key', $view);
+        self::assertStringNotContainsString('$cred->key_hash', $view);
+        self::assertStringContainsString('canManageApiKeys', $page);
+        self::assertStringContainsString('h1_local_implementation', $page);
     }
 }

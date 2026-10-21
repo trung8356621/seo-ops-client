@@ -47,10 +47,13 @@ final class ScopeNormalizer
             if ($value === '') {
                 continue;
             }
-            if ($value !== '*' && preg_match(self::SCOPE_PATTERN, $value) !== 1) {
+            if ($value === '*') {
+                throw new InvalidArgumentException('Wildcard scope (*) is not allowed.');
+            }
+            if (preg_match(self::SCOPE_PATTERN, $value) !== 1) {
                 throw new InvalidArgumentException('Malformed scope: '.$value);
             }
-            $out[] = $value === '*' ? '*' : strtolower($value);
+            $out[] = strtolower($value);
         }
 
         $out = array_values(array_unique($out));

@@ -84,16 +84,16 @@ final class ServiceApiCredentialFoundationTest extends TestCase
         ));
     }
 
-    public function test_has_scope_and_wildcard(): void
+    public function test_has_scope_exact_match_and_rejects_wildcard_create(): void
     {
         $service = $this->makeService('seo', 'seo');
         $withRead = app(ServiceApiCredentialManager::class)->create($service, 'A', ['service:read']);
-        $withStar = app(ServiceApiCredentialManager::class)->create($service, 'B', ['*']);
 
         self::assertTrue($withRead->credential->hasScope('service:read'));
         self::assertFalse($withRead->credential->hasScope('domains:read'));
-        self::assertTrue($withStar->credential->hasScope('domains:read'));
-        self::assertTrue($withStar->credential->hasScope('service:read'));
+
+        $this->expectException(\InvalidArgumentException::class);
+        app(ServiceApiCredentialManager::class)->create($service, 'B', ['*']);
     }
 
     private function makeService(string $name, string $slug, bool $active = true): Service

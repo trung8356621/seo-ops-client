@@ -59,13 +59,13 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $this->wildcardKey = $manager->create(
             $this->seo,
             'All Scopes Key',
-            ['*']
+            ['seo:read', 'content-projects:draft:write', 'topics:write', 'service:read']
         )->rawKey;
 
         $this->mediaKey = $manager->create(
             $this->media,
             'Media Service Key',
-            ['*']
+            ['service:read']
         )->rawKey;
 
         Site::query()->forceCreate([
@@ -122,7 +122,7 @@ final class SeoToolApiServiceApiHttpTest extends TestCase
         $this->assertNotContains('draft.intake', $topicKeys);
         $this->assertNotContains('seo_audit.list', $topicKeys);
 
-        // 3. Caller with wildcard * sees all 3 tools
+        // 3. Caller with combined explicit scopes sees all 3 tools
         $resAdmin = $this->withHeader('Authorization', 'Bearer ' . $this->wildcardKey)
             ->getJson('/api/v1/services/seo/tools');
 

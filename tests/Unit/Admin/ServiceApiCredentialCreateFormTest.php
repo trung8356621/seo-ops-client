@@ -243,7 +243,7 @@ final class ServiceApiCredentialCreateFormTest extends TestCase
         );
     }
 
-    public function test_seo_suggestions_include_known_scopes_and_wildcard_as_option_only(): void
+    public function test_seo_suggestions_include_known_scopes_without_wildcard(): void
     {
         $this->actingAs($this->owner);
 
@@ -253,7 +253,7 @@ final class ServiceApiCredentialCreateFormTest extends TestCase
         self::assertContains('service:read', $suggestions);
         self::assertContains('seo:read', $suggestions);
         self::assertContains('content-projects:draft:write', $suggestions);
-        self::assertContains('*', $suggestions);
+        self::assertNotContains('*', $suggestions);
         self::assertNotContains('*', $component->instance()->defaultApiCredentialScopes());
     }
 

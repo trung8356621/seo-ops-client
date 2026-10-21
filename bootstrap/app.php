@@ -25,6 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
             Route::prefix('api/v1/services')
                 ->group(base_path('routes/api-services.php'));
 
+            Route::prefix('api/v1')
+                ->group(base_path('routes/api-access.php'));
+
             $temporaryAccessRoutes = base_path('addons/seo/routes/api-access-temporary.php');
             if (is_file($temporaryAccessRoutes)) {
                 Route::prefix('api/v1/access')

@@ -183,7 +183,7 @@ final class ServiceConfigure extends Page implements HasForms
             Action::make('createApiKey')
                 ->label(__('site-service.api_access_create'))
                 ->color('primary')
-                ->visible(fn (): bool => $this->catalogService() instanceof Service)
+                ->visible(fn (): bool => $this->catalogService() instanceof Service && $this->canManageApiKeys())
                 ->form([
                     TextInput::make('name')
                         ->label(__('site-service.api_access_name'))
@@ -208,6 +208,13 @@ final class ServiceConfigure extends Page implements HasForms
                     $this->createApiCredential($data);
                 }),
         ];
+    }
+
+    public function canManageApiKeys(): bool
+    {
+        $user = Auth::user();
+
+        return $user instanceof User && $user->isOwner();
     }
 
     /**
@@ -240,11 +247,10 @@ final class ServiceConfigure extends Page implements HasForms
                 'service:read',
                 'seo:read',
                 'content-projects:draft:write',
-                '*',
             ];
         }
 
-        return ['service:read', '*'];
+        return ['service:read'];
     }
 
     public function apiCredentialScopesHelper(): string
@@ -259,6 +265,12 @@ final class ServiceConfigure extends Page implements HasForms
      */
     public function createApiCredential(array $data): void
     {
+        if (! $this->canManageApiKeys()) {
+            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+
+            return;
+        }
+
         $service = $this->catalogService();
         if (! $service instanceof Service) {
             Notification::make()->title(__('site-service.service_not_provisioned'))->danger()->send();
@@ -294,6 +306,12 @@ final class ServiceConfigure extends Page implements HasForms
 
     public function revokeApiCredential(int $credentialId): void
     {
+        if (! $this->canManageApiKeys()) {
+            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+
+            return;
+        }
+
         $credential = $this->findOwnedCredential($credentialId);
         if (! $credential instanceof ServiceApiCredential) {
             return;
@@ -306,6 +324,12 @@ final class ServiceConfigure extends Page implements HasForms
 
     public function rotateApiCredential(int $credentialId): void
     {
+        if (! $this->canManageApiKeys()) {
+            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+
+            return;
+        }
+
         $credential = $this->findOwnedCredential($credentialId);
         if (! $credential instanceof ServiceApiCredential) {
             return;

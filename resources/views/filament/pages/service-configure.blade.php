@@ -108,7 +108,7 @@
                                 <td class="py-2 pr-3">{{ __('site-service.api_access_status_'.$cred->statusLabel()) }}</td>
                                 <td class="py-2">
                                     <div class="flex flex-wrap gap-2">
-                                        @if ($cred->revoked_at === null)
+                                        @if ($this->canManageApiKeys() && $cred->revoked_at === null)
                                             <button
                                                 type="button"
                                                 wire:click="rotateApiCredential({{ $cred->id }})"

@@ -82,7 +82,7 @@ final class ContentProjectDraftIntakeServiceApiHttpTest extends TestCase
             ->assertJsonPath('error.code', 'service_api_scope_denied');
 
         $seed = $this->makeService('Seeding', 'seeding');
-        $seedKey = app(ServiceApiCredentialManager::class)->create($seed, 'S', ['content-projects:draft:write', '*']);
+        $seedKey = app(ServiceApiCredentialManager::class)->create($seed, 'S', ['content-projects:draft:write']);
         $this->postJson('/api/v1/services/seo/content-projects/draft/intake', $body, [
             'Authorization' => 'Bearer '.$seedKey->rawKey,
         ])->assertStatus(403);
@@ -93,16 +93,16 @@ final class ContentProjectDraftIntakeServiceApiHttpTest extends TestCase
             ->assertJsonPath('error.code', 'service_api_service_inactive');
     }
 
-    public function test_wildcard_allowed_and_validation(): void
+    public function test_draft_scope_allowed_and_validation(): void
     {
         $this->bindValidatingFakeIntake();
 
-        $wildcard = app(ServiceApiCredentialManager::class)->create($this->seo, 'W', ['*']);
+        $scoped = app(ServiceApiCredentialManager::class)->create($this->seo, 'W', ['content-projects:draft:write']);
         $this->postJson('/api/v1/services/seo/content-projects/draft/intake', [
             'site_id' => 123,
             'items' => [['keyword' => 'k', 'title' => 't', 'type' => 'new']],
         ], [
-            'Authorization' => 'Bearer '.$wildcard->rawKey,
+            'Authorization' => 'Bearer '.$scoped->rawKey,
         ])
             ->assertCreated()
             ->assertJsonPath('data.site_ref', 'site:123')
