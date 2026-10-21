@@ -1,0 +1,978 @@
+{
+    "package_type": "prompt_pack",
+    "schema_version": "1.0",
+    "meta": {
+        "app": "seo-ops",
+        "exported_at": "2026-10-21T04:19:16Z"
+    },
+    "prompts": [
+        {
+            "portable_uuid": "40acacef-f837-4f79-b430-52f3e65f8663",
+            "name": "Product review",
+            "description": "Tạo review sản phẩm",
+            "content": "Viết {{comment_count}} bình luận seeding tự nhiên bằng Tiếng Việt để tăng tương tác và hỗ trợ SEO cho bài viết: \"{{post_title}}\". \n\n**Yêu cầu:** \n- Đóng vai độc giả thực, bình luận mang tính đóng góp hoặc đặt câu hỏi mở rộng.\n- Email phải khớp với Tên.\n- Không có câu chào, không giải thích. Chỉ xuất đúng 3 dòng theo định dạng phân tách dưới đây:\n\nHọ và tên | Email | Nội dung bình luận",
+            "hook": "article.comment.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "comment_count",
+                    "description": "Số bình luận/review cần gen (mặc định 3; không liên quan Limits.max_previous_outputs_items)"
+                },
+                {
+                    "name": "post_title",
+                    "description": "Tiêu đề bài viết"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "ce7647b9-a39c-4fb8-94f4-cddec03ba0e5",
+            "name": "Product gallery",
+            "description": "Tạo hình ảnh product theo bộ sưu tập",
+            "content": "Generate ONE photorealistic 8K contact sheet.\n\nProduct: {{loai_san_pham}}\nDesign: {{gallery_description}}\n\n========================\nHIGHEST PRIORITY — LAYOUT\n========================\n\nCreate EXACTLY ONE image containing EXACTLY 9 equal square panels arranged as ONE perfect 3×3 contact sheet.\n\nThe contact sheet MUST fill 100% of the canvas edge-to-edge, like a seamless texture atlas or sprite sheet.\n\nMANDATORY REQUIREMENTS:\n\n- EXACTLY 3 rows × EXACTLY 3 columns.\n- EXACTLY 9 square panels.\n- Every panel has IDENTICAL size.\n- Perfect alignment.\n- Gap between panels: 0 px.\n- Horizontal gap: 0 px.\n- Vertical gap: 0 px.\n- Outer margin: 0 px.\n- Canvas padding: 0 px.\n- The grid touches all four canvas edges.\n- No whitespace.\n- No empty borders.\n- No large gutters.\n- No collage.\n- No masonry.\n- No irregular layout.\n- No merged, stretched or missing panels.\n\nThe ONLY visible separation allowed is an ultra-thin white divider (≈1 px).\n\nIf the output is not a perfect edge-to-edge 3×3 grid with 9 equal panels, regenerate it.\n\n========================\nPRODUCT CONSISTENCY\n========================\n\nThe product MUST remain 100% identical in every panel, including:\n- shape\n- proportions\n- dimensions\n- color\n- material\n- texture\n- stitching\n- zipper\n- logo position\n- hardware\n- every design detail\n\n========================\nPANELS\n========================\n\n1. Front studio\n2. 45° front\n3. Side\n4. Back\n5. Opened top view with matching everyday items\n6. Material/detail close-up\n7. Outdoor lifestyle with a Vietnamese model\n8. First-person POV opening the product\n9. Cafe/workspace lifestyle\n\n========================\nQUALITY\n========================\n\nPhotorealistic product photography.\nCommercial lighting.\nNatural shadows.\nAccurate perspective.\nSharp focus.\nConsistent color.\n\nSTRICTLY NO:\n- text\n- letters\n- numbers\n- logos\n- labels\n- watermarks\n- UI\n- duplicate products\n- inconsistent design\n- anatomy errors\n- bad hands\n- extra fingers\n- distorted perspective\n- uneven panel sizes\n\nPriority:\n1. Perfect edge-to-edge zero-gap 3×3 contact sheet.\n2. Exactly 9 equal square panels.\n3. Product consistency.\n4. Photorealism.",
+            "hook": "product.gallery.generate",
+            "hook_version": "0.1.0",
+            "tool": "image",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "gallery_description",
+                    "description": "Mô tả thiết kế gallery sản phẩm"
+                },
+                {
+                    "name": "input",
+                    "description": "Kết quả edge nối vào (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "cd10b04e-73cc-474d-bdcc-15ce1baf8335",
+            "name": "Infographic Blueprint to image",
+            "description": "",
+            "content": "Render ONE premium infographic from the blueprint below.\n\n{{input}}\n\nThe blueprint is the only source of truth.\n\nRules:\n\n- Never invent information.\n- Never replace any visible word.\n- Never translate.\n- Never paraphrase.\n- Never abbreviate.\n- Never generate placeholder text.\n\nRender all quoted text exactly.\n\nVisible text must remain identical to the blueprint.\n\nUse large bold sans-serif typography.\n\nUse icons and graphics to explain concepts instead of additional text.\n\nKeep every section visually separated.\n\nUse generous whitespace.\n\nAvoid:\n\n- tiny fonts\n- decorative fonts\n- distorted characters\n- duplicated text\n- mixed languages\n- unnecessary labels\n\nFocus on visual communication.\n\nOutput one image only.",
+            "hook": "",
+            "hook_version": "",
+            "tool": "image_typography",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Kết quả edge nối vào (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "3addbdae-d042-46a2-875a-a2bf3965931f",
+            "name": "Viết bài theo dàn ý",
+            "description": "",
+            "content": "# SEO + GEO ARTICLE GENERATION (OPTIMIZED FOR GEMINI — DYNAMIC LENGTH & RICH VISUAL)\n\n## ROLE & GOAL\n\nYou are a Senior SEO Content Strategist and GEO Writer.\n\nWrite a comprehensive article in `{{language}}` based on the supplied outline and instructions.\n\n**STRICT LENGTH REQUIREMENT:**\n\nThe **ARTICLE BODY ONLY** (excluding Meta description & SEO title) must strictly stay within **95% to 105% of `{{article_length}}`** words in `{{language}}`.\n\nDo NOT artificially inflate or pad content beyond the target length.\n\n---\n\n## INPUT DATA\n\n- Language: `{{language}}`\n- Outline & Instructions: `{{input}}`\n- Website Context: `{{site_short_description}}`\n- Tone: `{{tone}}`\n- Target Article Body Length: `{{article_length}}` words (**STRICT TARGET**)\n- Keyword Density Reference: `{{keyword_density}}`\n\n**Website Context Usage:**\n\nUse `{{site_short_description}}` only to understand the website's business context, industry, and relevant expertise.\n\nDo NOT interpret website context as permission to insert promotional content, contact information, or calls to action.\n\n---\n\n## DYNAMIC WORD ALLOCATION FOR ARTICLE BODY\n\nAllocate the total target budget of `{{article_length}}` words purely for the **ARTICLE BODY**:\n\n1. **Introduction:** ~8–10% of `{{article_length}}`.\n\n2. **Main Content (`##` / `###`):** ~80% of `{{article_length}}`.\n\n   - Divide this word budget proportionally across the main sections (`##`) in `{{input}}`.\n   - Calculation reference: Word target per main section = `(0.80 * {{article_length}}) / [Total number of main content sections]`.\n   - Adjust section lengths when needed based on topic complexity and search intent.\n   - Write concisely without unnecessary repetition or word-count inflation.\n\n3. **Conclusion & FAQ (if present):** ~10% of `{{article_length}}`.\n\n---\n\n## MANDATORY RICH VISUAL FORMATTING & SCANNABILITY (CRITICAL)\n\nAvoid plain text blocks. Every main section MUST incorporate rich Markdown formatting and visual anchors for high scannability.\n\n### 1. Dynamic Paragraph Breaks\n\n- Keep paragraphs short and punchy: 1 to 3 sentences maximum (preferably under 4 rendered lines).\n- Mix single-sentence impact statements with standard short paragraphs.\n- Use double line breaks between paragraphs.\n\n### 2. Required Visual Anchors (Bold, Italics & Emojis)\n\n**Bold Core Concepts (`**text**`):**\n\n- EVERY paragraph or bullet point MUST contain at least one bolded phrase highlighting a key takeaway or relevant concept.\n- Do NOT leave plain paragraphs without emphasis.\n- Avoid bolding entire sentences unnecessarily.\n\n**Italics (`*text*`):**\n\n- Use for technical terms, English/loan words, or specific brand/product names when appropriate.\n- Examples: *capsule wardrobe*, *canvas*.\n\n**Emojis:**\n\n- Place relevant, tasteful emojis (e.g., 💡, 📌, 🚀, 🔍, ⚠️, ✅) at the start of suitable subheadings or key list callouts.\n- Avoid excessive or repetitive emoji usage.\n\n### 3. Break Up Prose with Lists\n\n- Use bullet points (`-`) or numbered lists (`1.`) whenever explaining features, criteria, steps, or tips.\n- Prefer 3–4 concise bullet points when a list is appropriate.\n- Use bold text at the beginning of each bullet item for clarity.\n\n---\n\n## SEO, GEO & FACTUAL INTEGRITY\n\n### GEO Readiness\n\n- Ensure main sections begin with a direct, clear answer or key takeaway before expanding into details.\n- Make explanations informative, self-contained, and easy for AI search engines to interpret.\n- Avoid unnecessary introductory filler.\n\n### Factual Integrity\n\n- Do NOT invent statistics, fake reviews, testimonials, or unverified claims.\n- Integrate keywords naturally based on `{{keyword_density}}`.\n- Maintain the requested tone: `{{tone}}`.\n- Prioritize helpful, accurate, search-intent-aligned information.\n- Avoid repetitive content across headings.\n\n### Outline Adherence\n\n- Follow the supplied outline and its heading hierarchy.\n- Do NOT introduce unrelated topics.\n- Do NOT convert writing guidance into visible article headings.\n- Write the introduction directly without an H1 or introduction heading.\n- Maintain logical continuity between sections.\n\n---\n\n## STRICT CTA EXCLUSION (CRITICAL)\n\nThis article is generated as **CONTENT ONLY**.\n\nA separate CTA generation process will handle all promotional calls to action after the article has been completed.\n\nTherefore:\n\n1. Do NOT generate calls to action anywhere in the article.\n2. Do NOT insert promotional paragraphs at the end of H2 or H3 sections.\n3. Do NOT insert invitations to contact the company, request quotations, purchase products, or visit the business.\n4. Do NOT insert Zalo, Facebook, WhatsApp, hotline, email, address, or promotional website information as a CTA.\n5. Do NOT create isolated promotional blockquotes, CTA placeholders, or CTA-specific headings.\n6. Do NOT repeat company contact information throughout the article.\n7. Do NOT turn the conclusion into a sales message.\n8. Do NOT generate promotional calls to action in the Meta description or SEO title.\n\n**Important distinction:**\n\nInstructional steps, educational recommendations, and practical advice directly relevant to the topic are allowed.\n\nOnly promotional or conversion-oriented calls to action are prohibited.\n\nThe generated article must remain natural, coherent, and complete without CTA content.\n\n---\n\n## CONCLUSION\n\n- Write 1–2 fully developed paragraphs summarizing the main points.\n- Reinforce the article's primary takeaway and search intent.\n- Use `{{site_short_description}}` only when genuinely relevant to the conclusion.\n- Avoid promotional language and sales-oriented statements.\n- Do NOT add a CTA, contact invitation, or promotional blockquote.\n- End the article naturally with an informative concluding statement.\n\n---\n\n## OUTPUT FORMAT\n\nReturn ONLY the requested output in `{{language}}`:\n\nMeta description: [120–150 characters, natural summary in `{{language}}`]\n\nSEO title: [Catchy, intent-focused title including the primary topic in `{{language}}`]\n\n[Complete Article Body starting directly from Introduction — Do not output an H1 title or \"Introduction\" heading]\n\n**FINAL VALIDATION BEFORE OUTPUT:**\n\n- Article body length stays within 95%–105% of `{{article_length}}`.\n- Required Markdown formatting is present.\n- All major outline sections are covered.\n- No promotional CTA text appears anywhere.\n- No CTA placeholder or CTA blockquote is generated.\n- The conclusion ends naturally without promotion.\n\nDo NOT include explanations, generation notes, or additional commentary.",
+            "hook": "article.content.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "09ba05c4-d217-40e7-befb-344b054ad653",
+            "name": "Tạo FAQ",
+            "description": "",
+            "content": "# Inputs\n{{input}}\n\n# Role\nSenior SEO Content Expert (10+ years experience).\n\n# Task\nAnalyze the questions provided within the structured data of the #input variable, select the 3 most relevant questions, and write a comprehensive, helpful, and SEO-optimized FAQ (Frequently Asked Questions) section.\n\n# Context\n- Target Audience: {{site_short_description}}\n- Approach: Strictly align with Search Intent and maintain high E-E-A-T principles, establishing strong trust and authority.\n\n# Constraints\n1. **Question Limit:** Strictly limit the output to exactly 3 questions. Choose the most valuable and frequently asked questions from the #input.\n2. **Expert Answers:** Provide professional, expert-level answers for the 3 selected questions. Format each answer to include an author/expert attribution to boost E-E-A-T (e.g., \"*Answered by Mr. A - Production Manager with 10 years of experience*\").\n3. **Formatting:** Use Markdown. Structure with clear `###` headings for each question. Insert relevant emojis appropriately and use bolding (**text**) for emphasis on key points.\n4. **Keywords:** Naturally and strategically weave the extracted keywords/entities into the answers without keyword stuffing.\n5. **Tone:** Write in a {{tone}} tone, ensuring the answers are concise, direct, and highly valuable to the reader.",
+            "hook": "article.faq.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "3aa1f8ae-e202-4358-9252-176cd5f92325",
+            "name": "Featured Snippet",
+            "description": "",
+            "content": "Từ khóa chính: {{input}}\n\nNhiệm vụ: Tạo một bảng dữ liệu chuẩn SEO để chiếm Featured Snippet dựa trên từ khóa trên. \n\nYêu cầu định dạng:\n- Dòng 1: Tiêu đề H2 chứa từ khóa chính.\n- Dòng 2 trở đi: Một bảng Markdown (tối thiểu 3 cột x 5 hàng) hệ thống hóa thông tin chi tiết, rõ ràng.\n- Phản hồi bằng Tiếng Việt, chỉ trả về đúng H2 và Bảng, tuyệt đối không có lời mở đầu hay giải thích dư thừa.",
+            "hook": "article.featured_snippet.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "ecda404a-0fd4-47ed-b659-e5ece799efb4",
+            "name": "Dịch bài viết",
+            "description": "",
+            "content": "# Input\n\n{{input}}\n\n# Task\n\nTranslate the Markdown into **{{language}}**.\n\n# Rules\n\n* Output **Markdown only**.\n* Preserve the original structure exactly (headings, lists, tables, blockquotes, code blocks, links, images, HTML, formatting).\n* Translate only human-readable text.\n* Keep all Markdown tables unchanged in structure to preserve **Featured Snippet** optimization.\n* Preserve E-E-A-T by maintaining factual accuracy, expertise, authority, trustworthiness, terminology, and intent without adding, removing, or altering information.\n* Do not summarize, rewrite, explain, or add comments.\n* Ensure the result reads naturally as if originally written in **{{language}}**.\n",
+            "hook": "article.content.translate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                },
+                {
+                    "name": "language",
+                    "description": null
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "ad4b75d4-f0fe-41d3-9656-558d03590281",
+            "name": "Text to Infographic Blueprint",
+            "description": "",
+            "content": "You are an Infographic Blueprint Designer specialized in creating AI-friendly layouts for image generation.\n\nInput:\n{{input}}\n\nTarget language:\n{{language}}\n\nYour task is to convert the content into an infographic blueprint.\n\nThe blueprint is the ONLY source of truth for the image generator.\n\n========================================\nCONTENT RULES\n========================================\n\n- Use only information from the input.\n- Do not invent facts.\n- Do not translate.\n- Do not change numbers.\n- Do not change units.\n- Do not change technical names.\n- Do not replace keywords with synonyms.\n\nYou MAY shorten long descriptions.\n\nYou MUST keep every:\n\n- title\n- keyword\n- metric\n- product name\n- certification\n- technical term\n\nexactly unchanged.\n\n========================================\nBLUEPRINT RULES\n========================================\n\nProduce a clean blueprint using only these fields:\n\nSECTION\n\nTitle:\n\"\"\n\nSubtitle:\n\"\"\n\nValue:\n\"\"\n\nIcon:\n\nLayout:\n\nVisual Notes:\n\n----------------------------------------\n\nUse short sections.\n\nMaximum 3 visible text lines per section.\n\nPrefer icons instead of explanations.\n\nIf a sentence is too long,\nmove it into Visual Notes instead of Visible Text.\n\nVisible Text should contain only:\n\n- titles\n- keywords\n- numbers\n- certifications\n\nEverything else should become illustrations.\n\n========================================\nSTYLE\n========================================\n\nModern.\n\nMinimal.\n\nProfessional.\n\nPremium infographic.\n\nLarge whitespace.\n\nStrong hierarchy.\n\nEasy to understand within 10 seconds.\n\nOutput ONLY the blueprint.",
+            "hook": "",
+            "hook_version": "",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "888ab229-e84d-4993-b184-68f78413d0b5",
+            "name": "Gen title",
+            "description": "",
+            "content": "Tạo 1 tiêu đề SEO tự nhiên từ dữ liệu sau:\n\n{{input}}\n\nYêu cầu:\n- Ưu tiên chứa từ khóa chính tự nhiên.\n- Nếu có tiêu đề cũ, hãy cải thiện nhưng giữ đúng ý.\n- Tối đa {{max_length}} ký tự.\n- Không giật tít quá mức.\n- Chỉ trả về đúng 1 tiêu đề, không giải thích, không markdown.",
+            "hook": "article.title_suggestion",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                },
+                {
+                    "name": "max_length",
+                    "description": null
+                }
+            ],
+            "hook_settings": {
+                "max_length": 65,
+                "preserve_meaning": true
+            }
+        },
+        {
+            "portable_uuid": "455a7e17-e900-4c3c-a3b4-6b4ea0110278",
+            "name": "Gen description",
+            "description": "",
+            "content": "Viết 1 thẻ mô tả SEO dựa trên dữ liệu sau:\n\n{{input}}\n\nYêu cầu:\n- Bám sát tiêu đề.\n- Nếu có mô tả cũ, hãy cải thiện và giữ đúng thông tin.\n- Độ dài từ {{min_length}} đến {{max_length}} ký tự.\n- Tự nhiên, rõ lợi ích, không bịa thêm dữ kiện.\n- Chỉ trả về đúng 1 đoạn mô tả, không giải thích, không markdown.",
+            "hook": "article.meta_description_suggestion",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                },
+                {
+                    "name": "max_length",
+                    "description": "160"
+                },
+                {
+                    "name": "min_length",
+                    "description": "100"
+                }
+            ],
+            "hook_settings": {
+                "max_length": 160,
+                "min_length": 120
+            }
+        },
+        {
+            "portable_uuid": "dbbcc157-997f-4e98-bbc7-1ffd47261625",
+            "name": "Improve article content (default)",
+            "description": "",
+            "content": "Cải thiện nội dung tiếng Việt được cung cấp theo đúng yêu cầu chỉnh sửa.\n\nYêu cầu chỉnh sửa:\n{{instruction}}\n\nNội dung hiện tại:\n{{input}}\n\nNguyên tắc:\n- Chỉ sửa những phần cần thiết để đáp ứng yêu cầu.\n- Giữ lại thông tin đúng và hữu ích.\n- Không tự viết lại toàn bộ bài nếu yêu cầu chỉ giới hạn ở một đoạn hoặc một vấn đề.\n- Không thêm dữ kiện, số liệu hoặc tuyên bố chưa được cung cấp.\n- Trả về nội dung đã chỉnh sửa, không giải thích quá trình.\n\nTone (nếu có): {{tone}}",
+            "hook": "article.content.improve",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Current article body"
+                },
+                {
+                    "name": "instruction",
+                    "description": "Improve instruction"
+                },
+                {
+                    "name": "tone",
+                    "description": "Site tone"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "930476aa-7f26-4bfe-8ecc-e8490363b1f9",
+            "name": "Product Gallery Planner",
+            "description": "",
+            "content": "Bạn là hệ thống lập kế hoạch album ảnh sản phẩm.\n\nNhiệm vụ:\nTạo danh sách {{ requested_image_count }} ảnh cần sinh cho sản phẩm.\n\nThông tin sản phẩm:\n\nTên:\n{{ product_title }}\n\nTừ khóa:\n{{ keyword }}\n\nMô tả:\n{{ product_description }}\n\nThuộc tính:\n{{ product_attributes }}\n\nĐặc điểm nhận diện:\n{{ product_identity }}\n\nRàng buộc không được thay đổi:\n{{ negative_constraints }}\n\nNgôn ngữ nhãn:\n{{ language }}\n\nYêu cầu:\n- Mỗi phần tử mô tả đúng một ảnh riêng biệt.\n- Không tạo collage.\n- Không tạo sprite sheet.\n- Không tạo grid.\n- Không yêu cầu chữ, nhãn, logo quảng cáo hoặc typography nằm trong ảnh.\n- Các góc chụp phải khác nhau nhưng vẫn giữ nguyên cùng một sản phẩm.\n- Ưu tiên ảnh hữu ích trong bài giới thiệu sản phẩm.\n- Không tự thêm tính năng, phụ kiện hoặc chi tiết không có trong dữ liệu.\n- Không yêu cầu thay đổi màu sắc, chất liệu, hình dáng hoặc cấu trúc nhận diện.\n- `instruction` phải là chỉ dẫn tạo ảnh cụ thể, không phải nội dung marketing.\n- Số lượng shots không vượt quá {{ requested_image_count }}.\n\nChỉ trả về JSON đúng contract sau:\n\n{\n  \"shots\": [\n    {\n      \"slot\": 1,\n      \"shot_key\": \"front\",\n      \"label\": \"Mặt trước\",\n      \"priority\": \"required\",\n      \"aspect_ratio\": \"1:1\",\n      \"instruction\": \"...\"\n    }\n  ]\n}\n\nKhông trả markdown.\nKhông trả giải thích.\nKhông thêm key ngoài contract.",
+            "hook": "product.gallery.plan",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "product_title",
+                    "description": "Product title"
+                },
+                {
+                    "name": "keyword",
+                    "description": "Focus keyword"
+                },
+                {
+                    "name": "product_description",
+                    "description": "Product description"
+                },
+                {
+                    "name": "product_attributes",
+                    "description": "Product attributes"
+                },
+                {
+                    "name": "product_identity",
+                    "description": "Identity features"
+                },
+                {
+                    "name": "negative_constraints",
+                    "description": "Negative constraints"
+                },
+                {
+                    "name": "requested_image_count",
+                    "description": "Requested shot count"
+                },
+                {
+                    "name": "language",
+                    "description": "Label language"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "1bf61f0b-705a-446b-9e62-fd2b06f98cd5",
+            "name": "Product Gallery Parent Image",
+            "description": "",
+            "content": "Tạo đúng một ảnh tham chiếu chính cho sản phẩm sau.\n\nThông tin nhận diện sản phẩm:\n\nTên:\n{{ product_title }}\n\nDanh mục:\n{{ product_category }}\n\nThương hiệu:\n{{ product_brand }}\n\nMàu chính:\n{{ primary_color }}\n\nMàu phụ:\n{{ secondary_color }}\n\nChất liệu:\n{{ material }}\n\nHình dáng:\n{{ product_shape }}\n\nChi tiết nhận diện:\n{{ distinctive_features }}\n\nRàng buộc không được thay đổi:\n{{ negative_constraints }}\n\nYêu cầu ảnh:\n- Chỉ một sản phẩm chính.\n- Chỉ một khung hình.\n- Không collage.\n- Không grid.\n- Không sprite sheet.\n- Không chia nhiều panel.\n- Không chữ.\n- Không caption.\n- Không nhãn quảng cáo.\n- Không watermark.\n- Không thêm phụ kiện không có trong dữ liệu hoặc ảnh tham chiếu.\n- Giữ chính xác màu sắc, chất liệu, hình dáng và chi tiết nhận diện.\n- Sản phẩm phải hiện rõ, dễ dùng làm ảnh tham chiếu cho các ảnh tiếp theo.\n- Góc nhìn trung tính, thể hiện đầy đủ nhận dạng sản phẩm.\n- Nền sạch, đơn giản, không gây nhiễu.\n- Không tạo nhiều phiên bản sản phẩm trong cùng ảnh.\n- Không tự thiết kế lại sản phẩm.\n\nKết quả phải là đúng một ảnh.\n\nReference image attachment:\n- supplied at provider runtime via Gemini inlineData\n- not embedded in this text prompt",
+            "hook": "product.gallery.parent.generate",
+            "hook_version": "0.1.0",
+            "tool": "image",
+            "enabled": true,
+            "is_flow_prompt": true,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "product_title",
+                    "description": "Product title"
+                },
+                {
+                    "name": "product_category",
+                    "description": "Category"
+                },
+                {
+                    "name": "product_brand",
+                    "description": "Brand"
+                },
+                {
+                    "name": "primary_color",
+                    "description": "Primary color"
+                },
+                {
+                    "name": "secondary_color",
+                    "description": "Secondary color"
+                },
+                {
+                    "name": "material",
+                    "description": "Material"
+                },
+                {
+                    "name": "product_shape",
+                    "description": "Shape"
+                },
+                {
+                    "name": "distinctive_features",
+                    "description": "Distinctive features"
+                },
+                {
+                    "name": "negative_constraints",
+                    "description": "Negative constraints"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "a0489a3f-a3c1-47af-a5db-ad69e3cf5731",
+            "name": "Product Gallery Child Image",
+            "description": "",
+            "content": "Tạo đúng một ảnh mới của cùng sản phẩm trong ảnh tham chiếu.\n\nẢnh cha là nguồn nhận dạng chính của sản phẩm.\n\nThông tin sản phẩm:\n\nTên:\n{{ product_title }}\n\nĐặc điểm nhận diện:\n{{ product_identity }}\n\nMàu sắc:\n{{ primary_color }}\n{{ secondary_color }}\n\nChất liệu:\n{{ material }}\n\nHình dáng:\n{{ product_shape }}\n\nChi tiết đặc biệt:\n{{ distinctive_features }}\n\nRàng buộc không được thay đổi:\n{{ negative_constraints }}\n\nGóc ảnh cần tạo:\n\nMã:\n{{ shot_key }}\n\nNhãn:\n{{ shot_label }}\n\nTỷ lệ:\n{{ aspect_ratio }}\n\nChỉ dẫn:\n{{ shot_instruction }}\n\nYêu cầu bắt buộc:\n- Tạo đúng một ảnh.\n- Chỉ thể hiện cùng một sản phẩm từ ảnh cha.\n- Giữ nguyên nhận dạng sản phẩm.\n- Giữ nguyên màu sắc.\n- Giữ nguyên chất liệu.\n- Giữ nguyên hình dáng.\n- Giữ nguyên logo, khóa, quai, túi, đường may và các chi tiết đặc biệt.\n- Thực hiện đúng góc ảnh đã chỉ định.\n- Không tự thêm hoặc xóa chi tiết sản phẩm.\n- Không thay đổi thiết kế sản phẩm.\n- Không tạo sản phẩm khác.\n- Không collage.\n- Không grid.\n- Không sprite sheet.\n- Không nhiều panel.\n- Không chữ.\n- Không caption.\n- Không watermark.\n- Không typography.\n- Không thêm vật thể che khuất sản phẩm.\n- Không lặp nhiều bản sao của sản phẩm trừ khi shot instruction yêu cầu rõ và policy cho phép.\n\nẢnh cha quan trọng hơn mọi suy đoán từ mô tả chữ.\n\nKết quả phải là đúng một ảnh.\n\nReference image attachment:\n- parent image supplied at provider runtime via Gemini inlineData\n- not embedded in this text prompt",
+            "hook": "product.gallery.child.generate",
+            "hook_version": "0.1.0",
+            "tool": "image",
+            "enabled": true,
+            "is_flow_prompt": true,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "product_title",
+                    "description": "Product title"
+                },
+                {
+                    "name": "product_identity",
+                    "description": "Identity"
+                },
+                {
+                    "name": "primary_color",
+                    "description": "Primary color"
+                },
+                {
+                    "name": "secondary_color",
+                    "description": "Secondary color"
+                },
+                {
+                    "name": "material",
+                    "description": "Material"
+                },
+                {
+                    "name": "product_shape",
+                    "description": "Shape"
+                },
+                {
+                    "name": "distinctive_features",
+                    "description": "Distinctive features"
+                },
+                {
+                    "name": "negative_constraints",
+                    "description": "Negative constraints"
+                },
+                {
+                    "name": "shot_key",
+                    "description": "Shot key"
+                },
+                {
+                    "name": "shot_label",
+                    "description": "Shot label"
+                },
+                {
+                    "name": "aspect_ratio",
+                    "description": "Aspect ratio"
+                },
+                {
+                    "name": "shot_instruction",
+                    "description": "Shot instruction"
+                },
+                {
+                    "name": "parent_media_id",
+                    "description": "Parent media id (debug)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "03f79c03-bd6d-4875-9959-8338554154df",
+            "name": "Create news thumbnail",
+            "description": "",
+            "content": "Tôi cần thumbnail cho bài viết {{title}}",
+            "hook": "article.featured_image.generate",
+            "hook_version": "0.1.0",
+            "tool": "image",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "title",
+                    "description": "Article title"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "25f4bd78-c6dc-4957-a013-a6559eff2cba",
+            "name": "Dàn ý bài viết — Outline",
+            "description": "",
+            "content": "# SEO OUTLINE GENERATION — SEARCH INTENT & DYNAMIC LENGTH\n\n## ROLE\nYou are a Senior SEO Content Strategist specializing in search intent analysis and structured content planning.\n\n## INPUT DATA\n- Topic, Keywords & Instructions: `{{input}}`\n- Target Article Length: `{{article_length}}` words\n\n## OBJECTIVE\nCreate a comprehensive Markdown article outline aligned with the search intent and target article length.\n\nGenerate **ONLY the article structure and brief writing guidance**.\n\nDo NOT write the complete article.\n\n## OUTLINE STRUCTURE RULES\n\n1. **H1**\n   - Include exactly one H1.\n   - The H1 must clearly represent the primary topic and search intent.\n\n2. **Introduction**\n   - Immediately after the H1, include:\n\n   `[MỞ BÀI — KHÔNG HEADING]`\n\n   `Gợi ý triển khai: ...`\n\n   - Do NOT create an H2 titled \"Giới thiệu\" or \"Mở bài\".\n   - The introduction must not have a heading.\n\n3. **H2 Headings**\n   - Each H2 represents a major topic, key concept, or primary step.\n   - Organize H2 headings in a logical order that supports the search intent.\n   - Avoid unnecessary or repetitive sections.\n\n4. **H3 Headings**\n   - Use H3 only when a subtopic is substantial enough to require a separate section.\n   - Not every H2 requires an H3.\n   - Avoid excessive fragmentation into small subsections.\n\n5. **Dynamic Heading Density**\n   - Shorter articles must have fewer headings.\n   - Use the following ranges as references, not rigid requirements:\n\n   | Target Length | H2 Count | H3 Count |\n   |---|---|---|\n   | 800–1200 words | 4–6 | 3–8 |\n   | 1200–1800 words | 5–7 | 6–12 |\n   | 1800–2500 words | 5–8 | 9–16 |\n\n   - If the outline contains too many headings relative to `{{article_length}}`, merge closely related topics.\n\n## WRITING GUIDANCE\n\nOptionally include brief implementation guidance below relevant headings using:\n\n`Gợi ý triển khai: ...`\n\nKeep the guidance concise and focused on:\n\n- Key ideas that should be covered.\n- Important evaluation or comparison criteria.\n- Suitable presentation formats.\n- Relevant information needed to satisfy search intent.\n\nDo NOT write fully developed paragraphs.\n\n## FEATURED SNIPPETS, TABLES & LISTS\n\n- Suggest suitable headings and brief writing guidance only.\n- Do NOT provide complete answers.\n- Do NOT generate tables containing actual data.\n- Do NOT generate fully developed lists.\n- Suggest structured formats only when they genuinely improve the content.\n\n## FAQ\n\n- Include FAQ questions only when relevant to the search intent.\n- Do NOT answer FAQ questions.\n- Avoid questions already fully covered by existing sections.\n\n## CONCLUSION\n\n- Include an H2 titled \"Kết luận\".\n- Provide brief implementation guidance only.\n- Do NOT write the actual conclusion.\n\n## CTA SEPARATION\n\n- Do NOT generate promotional calls to action.\n- Do NOT suggest CTA placement within the outline.\n- Do NOT add CTA-specific headings, placeholders, or instructions.\n- CTA planning and generation are handled by a separate process after article generation.\n\n## FINAL VALIDATION\n\nBefore returning the outline, verify that:\n\n- There is exactly one H1.\n- The introduction has no heading.\n- The heading hierarchy is valid.\n- H2 and H3 counts are appropriate for `{{article_length}}`.\n- The outline follows a coherent search-intent-driven structure.\n- No complete article content or CTA instructions are included.\n\n## OUTPUT FORMAT\n\n- Output Language: Vietnamese.\n- Format: Markdown.\n- Return ONLY the article outline.\n- Do NOT include explanations, commentary, or additional text.",
+            "hook": "article.outline.structure.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Input from connected edge (SEO Flow)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "f308df8a-f9b4-4d98-9965-e79d2c1082ff",
+            "name": "Từ vựng bài viết — Vocabulary",
+            "description": "",
+            "content": "## Vai trò\nChuyên gia tối ưu hóa công cụ tìm kiếm (SEO Specialist) và Chuyên gia Data/Ngôn ngữ học máy tính.\n\n## Đầu vào\n{{input}}\n\n## Nhiệm vụ: Từ vựng\nNghiên cứu từ vựng/ngữ nghĩa chuyên sâu dựa trên đầu vào phía trên.\nTạo các danh sách (mỗi loại đúng 5 mục): Holonymy, Synonyms, Antonyms, Long-tail keywords, Semantic keywords, Salient keywords, Salient LSI keywords, Semantic LSI entities, Relational entities, Relevant entities, Semantic entities, Close entities, Salient entities, Related topics, và N-grams (Unigrams, Bigrams, Trigrams, Quadgrams, Quinquigrams).\n\nQuy tắc:\nBắt buộc trả về định dạng Markdown thuần túy (không bọc trong block code JSON). Sử dụng thẻ Heading 3 (###) cho tên của mỗi nhóm từ khóa/thực thể (ví dụ: ### Holonymy, ### Synonyms). Bên dưới mỗi Heading, liệt kê chính xác 5 mục bằng dấu gạch đầu dòng (-). Không viết thêm bất kỳ văn bản giải thích nào khác.\n\n## Định dạng đầu ra\n- Markdown\n- Toàn bộ đầu ra sử dụng ngôn ngữ {{language}} (mặc định Tiếng Việt nếu trống).\n- Trả về trực tiếp nội dung từ vựng. Không bọc START/END marker.",
+            "hook": "article.vocabulary.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "input",
+                    "description": "Canonical task subject (keyword / planning context)"
+                },
+                {
+                    "name": "outline",
+                    "description": "Outline markdown from structure step (optional context)"
+                },
+                {
+                    "name": "language",
+                    "description": "Output language"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "7cf8c416-d91f-407f-b30d-7aa57fd761f7",
+            "name": "Keyword Discovery",
+            "description": "Generate structured Draft planning suggestions for Content Planning (Post article ideas or Product page candidates).",
+            "content": "You are generating planning suggestions for new content (Draft planning items), not writing full articles/products and not publishing.\n\nUse the supplied Planning Intelligence brief to identify useful uncovered directions rather than duplicating existing published content. If existing coverage is weak or falling, treat that as improvement territory — do not propose an obvious duplicate.\n\nPrefer uncovered / missing directions over topics already in Draft or previously rejected. Server-side dedup remains authoritative; still avoid those topics when listed.\n\nThe user may provide no notes at all. In that case, independently select the most useful new directions from the supplied evidence (site context, principal keywords, clusters, MCP, GSC, coverage gaps).\n\nDo all evaluation internally. Do not explain reasoning, analyze keywords in prose, or describe how you selected items.\n\nRespect content_type / post_type ({{content_type}}):\n\nPOST mode (content_type=post):\n- Ordinary content article planning ideas that later become blog/article pages.\n- suggested_title = article/page title, not a product name.\n- description = concise 1–3 sentence article planning brief that disambiguates short/ambiguous SEO keywords for later writing — not a full outline, not the same as suggestion_reason.\n- Do NOT request or invent product_type or gallery_description.\n- Preferred item shape: {\"keyword\":\"...\",\"suggested_title\":\"...\",\"description\":\"...\",\"suggestion_reason\":\"...\",\"source_signal\":\"...\"}\n- Do not invent articles; propose planning suggestions only.\n\nPRODUCT mode (content_type=product):\n- Product-page Draft planning candidates for a future WooCommerce/product flow — NOT blog posts about products and NOT product-oriented article topics.\n- Do NOT create or publish a WordPress Product at planning stage.\n- suggested_title must suit a product / product-page title (commercial), not a blog headline.\n- Prefer commercial/product intent when supported by supplied evidence.\n- Do not fabricate prices, SKU, inventory, dimensions, technical specifications, availability, certifications, or other factual product data not present in context.\n- Do not create taxonomy terms.\n- description = concise 1–3 sentence PRODUCT CONTENT BRIEF explaining what the future product page should cover/position (NOT an article brief).\n- product_type = concise product type/category description for planning (maps to loai_san_pham). Do not invent WordPress taxonomy IDs.\n- gallery_description = concise gallery/image direction for the future Product without fabricating factual attributes.\n- Required item shape: {\"keyword\":\"...\",\"suggested_title\":\"...\",\"description\":\"...\",\"product_type\":\"...\",\"gallery_description\":\"...\",\"suggestion_reason\":\"...\",\"source_signal\":\"...\"}\n- Propose Product planning items only. Do not mix Post/article items into a Product-only request.\n\nFor every suggestion also return:\n- suggestion_reason (short user-facing why, e.g. \"Weak cluster coverage\" — content field, not chain-of-thought)\n- source_signal (one of: keyword_gap|cluster_gap|mcp_signal|gsc_signal|related_topic|manual_note|manual_focus)\n\nWrite keyword, suggested_title, description, and (when Product) product_type/gallery_description in the requested primary language when provided. Do not auto-detect language.\nAim for approximately the requested count.\n\nTopic: {{seed_topic}}\nCount: {{count}}\nContent type: {{content_type}}\nPrimary language: {{primary_language}}\nPlanning brief / notes:\n{{brief}}\n\nOUTPUT CONTRACT — STRICT\nReturn ONLY valid JSON matching the importer schema.\nDo not output: explanations, reasoning, analysis, commentary, introductions, conclusions, markdown, ```json fences, XML, YAML, bullet lists, text before JSON, or text after JSON.\nYour response is consumed directly by a JSON parser.\nThe FIRST non-whitespace character of your response MUST be: [\nThe LAST non-whitespace character of your response MUST be: ]\nReturn valid UTF-8 JSON with double quotes for keys/strings. No trailing commas, comments, single quotes, NaN, or undefined.\nDo not describe how you selected suggestions. Perform selection/deduplication internally; return only the final JSON array.\nRoot shape: a JSON array of objects (envelope {\"suggestions\":[...]} is also accepted by the importer, but prefer a raw array).\nPOST object: {\"keyword\":\"...\",\"suggested_title\":\"...\",\"description\":\"...\",\"suggestion_reason\":\"...\",\"source_signal\":\"keyword_gap\"}\nPRODUCT object: {\"keyword\":\"...\",\"suggested_title\":\"...\",\"description\":\"...\",\"product_type\":\"...\",\"gallery_description\":\"...\",\"suggestion_reason\":\"...\",\"source_signal\":\"keyword_gap\"}",
+            "hook": "keyword.discovery.structured",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "seed_topic",
+                    "description": "Seed topic"
+                },
+                {
+                    "name": "count",
+                    "description": "Requested quantity"
+                },
+                {
+                    "name": "brief",
+                    "description": "Planning brief / notes"
+                },
+                {
+                    "name": "primary_language",
+                    "description": "Effective primary language"
+                },
+                {
+                    "name": "content_type",
+                    "description": "Content type (post|product)"
+                },
+                {
+                    "name": "post_type",
+                    "description": "Post type (post|product)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "a78fb240-0875-4790-8e59-fcef088872cc",
+            "name": "Generate seeding social comments (default)",
+            "description": "",
+            "content": "You generate short, natural Vietnamese social comments based only on the supplied text context.\r\n\r\nRequirements:\r\n- Write in Vietnamese.\r\n- Match the supplied context.\r\n- Adapt naturally to the supplied social platform.\r\n- Do not invent unsupported facts.\r\n- Use varied wording and sentence structure.\r\n- Avoid obvious repeated patterns.\r\n- Avoid sounding like spam or forced advertising.\r\n- Keep each comment concise.\r\n- Each comment must be under 300 words.\r\n\r\n{{mcp_context}}",
+            "hook": "seeding.comment.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "override",
+                "profile": "text.fast",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "mcp_context",
+                    "description": "Seeding MCP / domain context text"
+                },
+                {
+                    "name": "quantity",
+                    "description": "Requested comment count (1–12)"
+                },
+                {
+                    "name": "social",
+                    "description": "Social platform id (threads, facebook, …)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "3d060ae2-31f1-4038-8b04-9f180e942a2b",
+            "name": "Discover New Topics",
+            "description": "Propose entirely new Topic candidates with Target DNA using company context, Keyword Landscape, optional discovery guidance, and avoid_topics (temporary SEO Audit candidates).",
+            "content": "You propose NEW Topic candidates for SEO Audit planning.\n\nYou do NOT write articles.\nYou do NOT invent Topic database ids.\nYou do NOT copy or lightly rename existing Topics or avoid_topics.\n\nUse ALL of the following context together:\n1. Company Short Identity — what the business/company is.\n2. Short Description — core products/services/capabilities.\n3. Keyword Landscape JSON — Topics that already exist (names, MCP share, DNA coverage).\n4. Discovery Guidance — optional user steering for this generation (may be empty).\n5. avoid_topics — temporary Topic names from a previous generated batch that must not be repeated (may be empty JSON array).\n\nCore goal: find materially NEW Topic directions that fit the business but are not already represented as existing Topics in the landscape, and are not near-equivalents of avoid_topics.\n\nDo NOT merely produce:\n- existing product + adjective\n- existing Topic + small modifier\n- existing Topic + audience variant\nunless it is genuinely a distinct content cluster.\n\nDo not invent business capabilities that contradict company_short_identity or short_description.\nDo not repeat, lightly rename, or create near-equivalent versions of names listed in avoid_topics.\n\nFor each NEW Topic return:\n- candidate_key: unique string within this response (e.g. generated-1). NEVER a DB id.\n- name: non-empty Topic name in the requested primary language when provided.\n- target_dna_count: integer >= 1 (suggested DNA slot count for planning).\n- dna: array of distinct short DNA phrases (normalized strings). Prefer target_dna_count phrases when reasonable; never duplicate DNA inside one Topic.\n\nAvoid:\n- Topics that match existing landscape names (case/whitespace insensitive).\n- Mere expansions of an existing Topic already listed.\n- Article titles, keyword dumps, prose explanations.\n\nSite domain: {{site_domain}}\nPrimary language: {{primary_language}}\nCompany Short Identity: {{company_short_identity}}\nShort Description: {{short_description}}\nDiscovery Guidance: {{discovery_guidance}}\nAvoid Topics JSON: {{avoid_topics}}\nRequested count: {{count}}\n\nKeyword Landscape JSON:\n{{landscape_json}}\n\nOUTPUT CONTRACT — STRICT\nReturn ONLY valid JSON object:\n{\"topics\":[{\"candidate_key\":\"generated-1\",\"name\":\"...\",\"target_dna_count\":10,\"dna\":[\"...\",\"...\"]}]}\nNo markdown fences, no commentary, no text before/after JSON.\nFirst non-whitespace character MUST be { and last MUST be }.",
+            "hook": "seo_audit.discover_new_topics",
+            "hook_version": "0.2.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "landscape_json",
+                    "description": "Keyword Landscape JSON"
+                },
+                {
+                    "name": "count",
+                    "description": "Requested new topic count"
+                },
+                {
+                    "name": "primary_language",
+                    "description": "Effective primary language"
+                },
+                {
+                    "name": "site_domain",
+                    "description": "Site domain"
+                },
+                {
+                    "name": "company_short_identity",
+                    "description": "Company Short Identity"
+                },
+                {
+                    "name": "short_description",
+                    "description": "Short Description"
+                },
+                {
+                    "name": "discovery_guidance",
+                    "description": "Discovery Guidance"
+                },
+                {
+                    "name": "avoid_topics",
+                    "description": "Avoid Topics (JSON array of names)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "92dde80a-7639-42f8-a517-c70262d5f78f",
+            "name": "Topical Map Audit",
+            "description": "Site-level Topical Map audit + Topic Tag suggestions from Domain/Keyword/GSC MCP + structural Topical Map + existing Tags.",
+            "content": "You audit the ENTIRE site Topical Map for SEO planning AND build a compact, reusable Topic Tag taxonomy with assignments.\n\nThis is a FULL-SITE audit.\n\nYou MUST review EVERY canonical Topic supplied in topical_map_json.\n\nThere is NO Topic eligibility gate based on:\n- MCP %\n- article_count\n- keyword_count\n- coverage status\n- whether the Topic appears in MCP prose\n- whether the Topic is large or small\n- whether the Topic looks commercially important\n\nMCP is an evaluation signal — NOT a filter for which Topics deserve analysis.\n\nYour responsibilities are:\n\nA) Review the COMPLETE canonical Topic set.\nB) Identify meaningful SEO findings across that complete set.\nC) Identify opportunities and recommended actions.\nD) Build/reuse a compact site-wide Tag taxonomy.\nE) Review EVERY canonical Topic for Tag assignment.\n\nYou do NOT create Topics.\nYou do NOT create articles.\nYou do NOT invent metrics, volume, rankings, GSC numbers, business capabilities, or relationship edges that are not in the supplied evidence.\nYou do NOT invent an SEO score.\nYou do NOT invent Topic IDs.\nYou do NOT return database Tag IDs — return Tag names only.\nYou do NOT recluster Topics.\nYou do NOT rename Topics.\n\n==================================================\nBUSINESS CONTEXT\n==================================================\n\nUnderstand the business before evaluating the Topic structure.\n\n- Company Short Identity: {{company_short_identity}}\n- Short Description: {{short_description}}\n- Site domain: {{site_domain}}\n- Primary language: {{primary_language}}\n- MCP period: {{period_key}}\n\nUse Company Short Identity and Short Description to understand:\n- what the business actually does\n- which Topic directions are commercially relevant\n- which apparent opportunities may be irrelevant to the business\n\nDo not invent capabilities that are not supported by this business context.\n\n==================================================\nEVIDENCE SOURCES\n==================================================\n\nUse ONLY these evidence sources:\n\n1) Combined MCP markdown\n- Domain/site metrics\n- Keyword Intelligence\n- GSC when present\n- Internal-link evidence when present\n- Other supplied site-level intelligence\n\n2) Structural Topical Map overview JSON\n- CANONICAL current Topic list\n- Canonical topic_ref values\n- Current Topic names\n- MCP\n- DNA count\n- article_count\n- keyword_count\n- coverage\n- status\n\n3) Existing Topic Tags JSON\n- Existing Tag vocabulary\n- Existing Tag usage counts\n- Reuse suitable existing names whenever possible\n\n==================================================\nSOURCE PRECEDENCE\n==================================================\n\nStructural Topical Map JSON is AUTHORITATIVE for the current Topic structure.\n\nIt is canonical for:\n\n- which Topics currently exist\n- topic_ref\n- Topic name\n- MCP\n- DNA count\n- article_count\n- keyword_count\n- coverage/status when supplied\n\nThe MCP markdown may represent a different snapshot or historical period.\n\nIf MCP prose and topical_map_json disagree about:\n\n- Topic count\n- Topic existence\n- Topic name\n- Topic-level counts\n- current Topic coverage\n\nprefer topical_map_json.\n\nUse MCP markdown as supporting evidence and broader site intelligence.\n\nDo NOT create a current Topic finding for a Topic name that exists only in MCP prose but is absent from topical_map_json.\n\nEvery topic_ref returned in output MUST exist exactly in topical_map_json.\n\n==================================================\nFULL TOPIC REVIEW — MANDATORY\n==================================================\n\nYou MUST examine EVERY canonical Topic in topical_map_json.\n\nFor EACH Topic, evaluate all evidence that is actually available:\n\n- Topic name\n- MCP share\n- coverage\n- keyword_count\n- article_count\n- DNA depth\n- Topic specificity\n- Topic breadth\n- business relevance\n- probable search-intent role\n- distinction from neighboring Topics\n- possible structural overlap\n- possible under-development\n- possible over-concentration\n- whether the Topic appears structurally coherent\n- available GSC evidence\n- available internal-link evidence\n- relationship to the site's broader Topic structure\n\nDo NOT skip a Topic because its MCP is low.\n\nDo NOT skip a Topic because it has few keywords.\n\nDo NOT skip a Topic because it has few Focus Articles.\n\nDo NOT skip a Topic because it looks secondary.\n\nDo NOT analyze only representative/high-MCP Topics.\n\nThe entire canonical Topic list is the audit workload.\n\n==================================================\nIMPORTANT METRIC INTERPRETATION\n==================================================\n\nMCP is one structural signal only.\n\nDo NOT interpret:\n\nhigh MCP\n= automatically good\n\nlow MCP\n= automatically bad\n\nlow article_count\n= automatically needs more content\n\nhigh article_count\n= automatically healthy\n\nhigh keyword_count\n= automatically strong\n\nlow keyword_count\n= automatically useless\n\nEvaluate metrics together with:\n- coverage\n- DNA depth\n- business role\n- Topic specificity\n- structural position\n- other available evidence\n\narticle_count represents the canonical Focus Article count supplied by the current Topical Map.\n\nDo not reinterpret it as:\n- linked articles\n- internal links\n- generic article count from another snapshot\n\n==================================================\nSEO REASONING\n==================================================\n\nUse practical SEO reasoning around:\n\n- topical authority\n- semantic coverage\n- search intent separation\n- Topic depth\n- Topic breadth\n- business relevance\n- coverage gaps\n- over-concentration\n- structural imbalance\n- Topic fragmentation\n- potential Topic consolidation\n- potential overlap\n- missing semantic directions\n- internal-link support when evidence exists\n- search opportunities when GSC evidence exists\n- data-quality limitations\n\nDo not apply generic SEO advice disconnected from the supplied evidence.\n\n==================================================\nOVERLAP / CANNIBALIZATION\n==================================================\n\nSimilar Topic names alone do NOT prove cannibalization.\n\nYou may identify:\n\npotential_overlap\n\nwhen the Topic structure suggests similar or competing intent.\n\nPhrase it as:\n- overlap risk\n- structural overlap\n- possible intent duplication\n- something that should be reviewed\n\nDo NOT claim confirmed cannibalization unless direct evidence proves it.\n\n==================================================\nGSC RULES\n==================================================\n\nUse GSC findings ONLY when actual GSC evidence exists.\n\nIf GSC is:\n- unavailable\n- empty\n- stale\n- has no property\n- has zero usable query/page evidence\n\nthen:\n\n- do NOT invent search-performance conclusions\n- do NOT invent keyword demand\n- do NOT infer rankings\n- do NOT infer CTR problems\n- do NOT infer query opportunities from nonexistent GSC evidence\n\nYou may emit a data_quality finding explaining the limitation.\n\n==================================================\nINTERNAL LINK RULES\n==================================================\n\nInternal-link observations are allowed ONLY when actual link evidence exists.\n\nDo NOT infer internal links from:\n- Topic similarity\n- shared keywords\n- similar names\n- Topic hierarchy\n\nIf supplied evidence shows a site-wide internal-link deficiency,\nyou may treat it as a site-level structural issue.\n\nDo not fabricate Topic-specific internal-link edges.\n\n==================================================\nFINDING TYPES\n==================================================\n\nUse ONLY these finding types:\n\nstrong_coverage\nweak_coverage\ncoverage_gap\nover_concentration\nstructural_gap\nsearch_opportunity\npotential_overlap\ninternal_link_gap\ndata_quality\n\nSeverity MUST be:\n\nlow\nmedium\nhigh\n\n==================================================\nACTION TYPES\n==================================================\n\nUse ONLY these action types:\n\nexpand_topic\nimprove_coverage\ninvestigate_new_topic\nconsolidate_overlap\nreview_gsc_opportunity\nreview_internal_links\nreview_structure\nno_action\n\nFor genuinely new territory:\n\naction_type = investigate_new_topic\n\nActual new Topic generation belongs to:\n\nseo_audit.discover_new_topics\n\nDo NOT generate new Topics here.\n\n==================================================\nAUDIT OUTPUT BEHAVIOR\n==================================================\n\nReview ALL Topics first.\n\nOnly AFTER reviewing the complete Topic set should you create:\n\n- findings\n- opportunities\n- recommended_actions\n\nDo not stop after identifying several obvious Topics.\n\nDo not make conclusions from only the largest clusters.\n\nDo not treat the first interesting Topics as representative of the entire site.\n\nComplete the full review first.\n\nThen organize the findings.\n\n==================================================\nFINDINGS\n==================================================\n\nFindings should represent the important conclusions discovered from the COMPLETE audit.\n\nIt is acceptable to merge repetitive observations.\n\nFor example:\n\nIf many small Topics share the same structural problem,\ndo not repeat exactly the same generic text dozens of times.\n\nInstead:\n- identify the pattern\n- select appropriate canonical Topic references\n- explain the evidence clearly\n\nHowever:\n\n\"merge repetitive findings\"\n\nmust NEVER mean:\n\n\"skip reviewing the remaining Topics\".\n\nReview every Topic first.\n\nThen summarize intelligently.\n\nWhen a specific Topic has a meaningful distinct issue,\nit should receive its own finding.\n\nStrong/healthy Topics may also be recognized using:\n\nstrong_coverage\n\nwhen this is genuinely useful to understanding site structure.\n\n==================================================\nOPPORTUNITIES\n==================================================\n\nOpportunities must come from the FULL Topic review.\n\nPrioritize opportunities that are:\n\n- business-relevant\n- structurally meaningful\n- supported by supplied evidence\n- capable of strengthening the existing topical architecture\n\nPossible opportunity directions include:\n\n- strengthening an existing Topic\n- improving weak semantic coverage\n- clarifying Topic intent\n- consolidating overlapping structures\n- expanding useful business facets\n- investigating genuinely missing territory\n- improving internal linking when evidence supports it\n\nDo NOT output article titles.\n\nDo NOT invent specific keywords not supported by evidence simply to make an opportunity sound detailed.\n\n==================================================\nRECOMMENDED ACTIONS\n==================================================\n\nRecommended actions should convert the complete audit into practical priorities.\n\nPriority must be integer:\n\n1 = highest priority\n\nActions should reflect:\n- impact\n- structural importance\n- business relevance\n- evidence strength\n\nDo not simply duplicate findings word-for-word.\n\n==================================================\nTOPIC TAG TAXONOMY — PURPOSE\n==================================================\n\nTopic Tags are SITE-WIDE FILTER FACETS.\n\nThey are meant to help users:\n\n- filter Topical Map\n- understand Topic families\n- compare groups of Topics\n- identify business/content dimensions across the site\n\nTags are NOT:\n\n- alternate Topic names\n- keyword labels\n- article categories\n- random descriptive words\n- SEO scores\n- one-off labels created for a single Topic without broader usefulness\n\n==================================================\nTAG FACET DIMENSIONS\n==================================================\n\nUseful Tag dimensions may include:\n\n- audience\n- customer type\n- business type\n- industry / vertical\n- use case\n- commercial intent\n- manufacturing/service model\n- purchase stage\n- gifting/campaign context\n- product/application family\n- educational/use environment\n- material/application category when broad enough to reuse\n\nExamples of potentially useful Tags:\n\nB2B\nCorporate Gifting\nEducational\nFashion\nTravel\nOEM/ODM\nSản xuất - Xưởng may\nBáo giá - MOQ\nBảo hành - Hậu mãi\n\nThese are EXAMPLES only.\n\nDo not blindly use them.\n\nDerive the actual taxonomy from this site's evidence.\n\n==================================================\nTAG TAXONOMY SIZE\n==================================================\n\nBuild ONE coherent taxonomy for the whole site.\n\nPreferred:\n\n6–12 durable Tags\n\nYou may use more when clearly justified.\n\nHard maximum:\n\n20 Tags\n\nDo NOT solve coverage by creating dozens of ultra-specific Tags.\n\nThe taxonomy should be reusable across many Topics.\n\n==================================================\nTAG NAMING\n==================================================\n\nTag names should be:\n\n- short\n- human-readable\n- stable\n- understandable as filters\n- reusable across multiple Topics\n- in the site's primary language when natural\n\nReuse names from existing_topic_tags_json when they remain appropriate.\n\nDo NOT create near-duplicates such as:\n\nB2B\nDoanh nghiệp\nKhách hàng doanh nghiệp\n\nunless they truly represent different facets.\n\n==================================================\nEXISTING TAG REUSE\n==================================================\n\nExisting Tags should be treated as established vocabulary.\n\nReuse them aggressively when their meaning fits.\n\nDo NOT create a new Tag just because another wording sounds slightly better.\n\nCreate a new Tag only when:\n\n- the existing taxonomy cannot represent an important recurring facet\n- the facet applies to multiple meaningful Topics or represents a durable business dimension\n\n==================================================\nFULL TAG ASSIGNMENT — MANDATORY\n==================================================\n\nYou MUST review EVERY canonical Topic for Tag assignment.\n\nThis is a complete assignment pass.\n\nDo NOT assign Tags only to:\n\n- high-MCP Topics\n- findings\n- opportunities\n- recommended actions\n- large clusters\n- Topics appearing in MCP prose\n\nFor EACH canonical Topic:\n\n1. Read the Topic meaning.\n2. Compare it against the site-wide taxonomy.\n3. Reuse appropriate Tags.\n4. Normally assign 1–3 Tags when justified.\n5. Use more only if several durable facets genuinely apply.\n6. Avoid redundant Tags conveying essentially the same meaning.\n\nEvery Topic must be consciously evaluated.\n\n==================================================\nTAG COVERAGE EXPECTATION\n==================================================\n\nThe taxonomy should cover the great majority of legitimate business Topics.\n\nUntagged should be the exception.\n\nDo NOT intentionally leave a Topic untagged merely because:\n- it is low MCP\n- it is small\n- it is not an audit priority\n- it was not mentioned by MCP\n- it is not commercially dominant\n\nIf a legitimate Topic remains untagged, the reason should be:\n\n\"No durable site-wide facet can be assigned without guessing.\"\n\nIf many legitimate Topics remain untagged,\nassume your taxonomy may be too narrow and reconsider it.\n\nAs a practical guideline:\n\nAim for approximately 80–95% useful Topic coverage when the site's Topic structure supports it.\n\nThis is NOT a forced quota.\n\nDo not assign nonsense Tags just to increase the percentage.\n\n==================================================\nTAG CONSISTENCY\n==================================================\n\nApply Tags consistently across semantically related Topics.\n\nExample:\n\nIf \"Educational\" is used for educational/school contexts,\nreview ALL appropriate Topics such as:\n- school\n- student\n- kindergarten\n- education-related gifting\n\nnot just one representative Topic.\n\nIf \"Corporate Gifting\" is used for business gifting,\nreview ALL appropriate:\n- corporate gifting\n- event gifting\n- customer gifting\n- employee gifting\n\nwhere evidence supports that meaning.\n\nIf \"OEM/ODM\" means custom manufacturing,\nreview ALL manufacturing Topics where that meaning clearly applies.\n\nIf \"Sản xuất - Xưởng may\" is a production/manufacturing facet,\nreview all clearly relevant manufacturing Topics.\n\nDo not assign a Tag to one Topic and randomly omit another Topic with effectively the same facet.\n\n==================================================\nAVOID SINGLETON TAGS\n==================================================\n\nAvoid Tags used by only one Topic.\n\nBefore creating a singleton Tag ask:\n\n\"Is this a durable site-wide facet, or simply another name for this Topic?\"\n\nIf it is only a description of the Topic:\ndo NOT create the Tag.\n\nA singleton Tag is allowed only if it represents an important durable business facet likely to remain useful as the site evolves.\n\n==================================================\nSECOND-PASS AUDIT\n==================================================\n\nAfter your first full Topic review:\n\nperform a SECOND PASS over the entire topical_map_json list.\n\nCheck:\n\n- Was every Topic actually reviewed?\n- Did low-MCP Topics receive the same analytical attention as large Topics?\n- Were any meaningful weak/strong structures overlooked?\n- Were similar Topics checked for overlap risk?\n- Were important business families missed?\n- Were findings overly concentrated on only a few large Topics?\n- Were opportunities derived from the whole map rather than only MCP highlights?\n\nDo not return output until this second pass is complete.\n\n==================================================\nSECOND-PASS TAG CHECK\n==================================================\n\nThen perform a second Tag pass.\n\nCheck:\n\n- Every canonical Topic was evaluated for Tags.\n- Major Topic families have appropriate reusable facets.\n- Existing Tags were reused where appropriate.\n- Semantically equivalent Topics received consistent Tags.\n- No Topic was accidentally omitted just because it was low priority.\n- Taxonomy is not unnecessarily fragmented.\n- Near-duplicate Tags are removed.\n- Singleton Tags are minimized.\n- Tags are deduplicated per Topic.\n- Every topic_ref exists in topical_map_json.\n- No Topic IDs were invented.\n\n==================================================\nDECISIVE RULES\n==================================================\n\nREVIEW ALL TOPICS.\n\nMCP IS A SIGNAL, NOT A TOPIC FILTER.\n\nDO NOT AUDIT ONLY HIGH-MCP TOPICS.\n\nDO NOT AUDIT ONLY REPRESENTATIVE TOPICS.\n\nTHE FULL topical_map_json IS THE AUDIT WORKLOAD.\n\nSUMMARIZE REPETITIVE OBSERVATIONS ONLY AFTER THE FULL REVIEW.\n\nTAG EVERY SUITABLE TOPIC.\n\nUNTAGGED SHOULD BE THE EXCEPTION, NOT THE DEFAULT.\n\n==================================================\nMCP CONTEXT\n==================================================\n\n{{mcp_markdown}}\n\n==================================================\nTOPICAL MAP STRUCTURAL JSON\n==================================================\n\n{{topical_map_json}}\n\n==================================================\nEXISTING TOPIC TAGS JSON\n==================================================\n\n{{existing_topic_tags_json}}\n\n==================================================\nOUTPUT CONTRACT — STRICT\n==================================================\n\nReturn ONLY one valid JSON object:\n\n{\n  \"summary\": \"...\",\n  \"findings\": [\n    {\n      \"type\": \"weak_coverage\",\n      \"severity\": \"high\",\n      \"topic_ref\": \"topic:123\",\n      \"topic_name\": \"...\",\n      \"title\": \"...\",\n      \"observation\": \"...\",\n      \"evidence\": [\"...\"]\n    }\n  ],\n  \"opportunities\": [\n    {\n      \"topic_ref\": \"topic:123\",\n      \"topic_name\": \"...\",\n      \"title\": \"...\",\n      \"reason\": \"...\",\n      \"suggested_direction\": \"...\"\n    }\n  ],\n  \"recommended_actions\": [\n    {\n      \"priority\": 1,\n      \"action_type\": \"expand_topic\",\n      \"topic_ref\": \"topic:123\",\n      \"title\": \"...\",\n      \"reason\": \"...\"\n    }\n  ],\n  \"tag_suggestions\": {\n    \"taxonomy\": [\n      {\n        \"name\": \"B2B\"\n      }\n    ],\n    \"assignments\": [\n      {\n        \"topic_ref\": \"topic:123\",\n        \"tags\": [\"B2B\", \"OEM/ODM\"]\n      }\n    ]\n  }\n}\n\nNo markdown fences.\nNo commentary.\nNo explanatory text before or after JSON.\n\nFirst non-whitespace character MUST be {\nLast non-whitespace character MUST be }\n\n==================================================\nFINAL SILENT VALIDATION\n==================================================\n\nBefore returning, silently verify:\n\n1. JSON is valid.\n2. Every topic_ref exists in topical_map_json.\n3. No Topic IDs were invented.\n4. Finding types use only the allowed enum.\n5. Severity uses only low | medium | high.\n6. Action types use only the allowed enum.\n7. GSC conclusions use actual GSC evidence only.\n8. Internal-link conclusions use actual internal-link evidence only.\n9. MCP was not used as an eligibility gate.\n10. The COMPLETE canonical Topic list was reviewed.\n11. Findings were derived only after reviewing the complete Topic set.\n12. Opportunities were derived only after reviewing the complete Topic set.\n13. Recommended actions reflect the complete Topic audit.\n14. Tag taxonomy is compact and reusable.\n15. Existing Tags were reused where appropriate.\n16. Every canonical Topic was reviewed for Tag assignment.\n17. Tags are semantically consistent across similar Topics.\n18. Tag names are deduplicated.\n19. tags[] values are Tag names, never database IDs.\n20. No unsupported business capabilities or metrics were invented.",
+            "hook": "seo_keywords.topical_map_audit",
+            "hook_version": "0.3.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "company_short_identity",
+                    "description": "Company Short Identity"
+                },
+                {
+                    "name": "existing_topic_tags_json",
+                    "description": "Current site Topic Tag vocabulary JSON"
+                },
+                {
+                    "name": "mcp_markdown",
+                    "description": "Combined MCP markdown (Domain + Keywords + GSC)"
+                },
+                {
+                    "name": "period_key",
+                    "description": "MCP period key"
+                },
+                {
+                    "name": "primary_language",
+                    "description": "Effective primary language"
+                },
+                {
+                    "name": "short_description",
+                    "description": "Short Description"
+                },
+                {
+                    "name": "topical_map_json",
+                    "description": "Structural Topical Map overview JSON (canonical topic_ref list)"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "94c9ecda-3b00-4404-bc67-803a4d3c6391",
+            "name": "Industry Context Generator",
+            "description": "Generate one reusable global Industry Context profile from the canonical schema.",
+            "content": "Generate one complete Industry Context profile for {{context_name}} in {{language}} for {{market}}, strictly following the canonical Industry Context JSON Schema and its embedded descriptions/rules; use null for genuinely unknown values and return JSON only.",
+            "hook": "industry.context.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "context_name",
+                    "description": "Context name"
+                },
+                {
+                    "name": "language",
+                    "description": "Language"
+                },
+                {
+                    "name": "market",
+                    "description": "Market"
+                },
+                {
+                    "name": "notes",
+                    "description": "Optional notes"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "2ec81ebf-ceb5-4d22-b5e5-63e910450b26",
+            "name": "Industry Discovery & Attention Generator",
+            "description": "Generate business-connected Discovery and Attention territories from a valid Core Industry Context.",
+            "content": "Using the supplied Core Industry Context as read-only context, generate a broad reusable pool of new Discovery & Attention topic and keyword territories for {{context_name}} in {{language}} with target market hint {{market}}; every candidate must have a reasonable machine-readable bridge to Core, candidates are not finished article titles, and the output must strictly follow the appended canonical schema and contain JSON only.\n\nCore Industry Context:\n{{core_context}}",
+            "hook": "industry.discovery.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "context_name",
+                    "description": "Context name"
+                },
+                {
+                    "name": "language",
+                    "description": "Language"
+                },
+                {
+                    "name": "market",
+                    "description": "Target market hint or explicit unspecified marker"
+                },
+                {
+                    "name": "core_context",
+                    "description": "Valid Core Industry Context JSON"
+                },
+                {
+                    "name": "notes",
+                    "description": "Optional notes"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "951b649e-e6e3-4b05-b3a0-288823ccb28b",
+            "name": "Industry Breakout Generator",
+            "description": "Generate far-reaching but useful attention territories from a valid Core Industry Context.",
+            "content": "Using the supplied Core Industry Context as read-only context, explore far beyond normal Core SEO thinking and generate a broad reusable Breakout territory pool for {{context_name}} in {{language}} with target market hint {{market}}; business bridges are preferred but not mandatory, avoid unrelated garbage and finished clickbait headlines, and return JSON strictly following the appended canonical schema.\n\nCore Industry Context:\n{{core_context}}",
+            "hook": "industry.breakout.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "context_name",
+                    "description": "Context name"
+                },
+                {
+                    "name": "language",
+                    "description": "Language"
+                },
+                {
+                    "name": "market",
+                    "description": "Target market hint or explicit unspecified marker"
+                },
+                {
+                    "name": "core_context",
+                    "description": "Valid Core Industry Context JSON"
+                },
+                {
+                    "name": "notes",
+                    "description": "Optional notes"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "852c9c2b-0638-460a-b3b1-9a84f8fca4cb",
+            "name": "Industry Match & Research Generator",
+            "description": "Derive a stable, reusable industry lexical ontology from Core Industry Context.",
+            "content": "Derive a stable reusable industry lexical ontology for {{context_name}} in {{language}} (market hint: {{market}}) from the supplied Core Industry Context. Prefer canonical industry terms; identify aliases and ambiguous terms; distinguish industry semantics from universal language grammar. Do not invent or include site data, article titles, keywords, GSC, rankings, publication state, dates, trend snapshots, generic stopwords, connectors, or executable regex. Use only the controlled match modes permitted by the appended schema and return only schema-valid JSON.\n\nCore Industry Context:\n{{core_context}}",
+            "hook": "industry.match.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "context_name",
+                    "description": "Context name"
+                },
+                {
+                    "name": "language",
+                    "description": "Language"
+                },
+                {
+                    "name": "market",
+                    "description": "Target market hint or explicit unspecified marker"
+                },
+                {
+                    "name": "core_context",
+                    "description": "Valid Core Industry Context JSON"
+                },
+                {
+                    "name": "notes",
+                    "description": "Optional notes"
+                }
+            ],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "f04512f3-37a7-43ae-82d3-a61c5ef92041",
+            "name": "Agent Routing / JEV",
+            "description": "System instruction for the Agent Runtime routing and JEV decision stage.",
+            "content": "You route requests for an internal SEO, content, and site-operations Agent, not a general assistant. Return one routing JSON object and nothing else. Never answer the user's question here or invent SEO measurements.\n\nSchema:\n{\n  \"is_in_scope\": true,\n  \"intent\": \"short description\",\n  \"primary_capability\": \"seo_audit.worst_articles\",\n  \"capabilities\": [\"seo_audit.worst_articles\", \"keywords.landscape\"],\n  \"parameters\": {},\n  \"requires_parameter_extraction\": false,\n  \"requires_user_confirmation\": false,\n  \"response_template\": \"table\",\n  \"response_language\": \"en\"\n}\n\nRules:\n- First decide is_in_scope. In scope includes SEO analysis, planning, prioritization, optimization workflows, reporting, site knowledge, keywords, links, GSC, SEO Audit, Content Projects, Industry Context, Site Network, Agent capability questions, and meta questions about this Agent conversation.\n- A plain lookup or detail request for one specific article, such as \"Thông tin article:123\", is out of scope. Do not select articles.inventory merely because article_ref exists. Article-level work is reached through SEO Audit, Content Project, or Draft workflows.\n- Unrelated general requests are out of scope. Do not force them into a capability. A translation is in scope only when it clearly concerns current SEO/content work.\n- Out of scope must use primary_capability null, capabilities [], parameters {}, both requires flags false, and response_template text.\n- In-scope capability explanations, conversation summaries, clarifications, or contextual requests needing no domain retrieval must use primary_capability null and capabilities [].\n- Select only keys present in capability_catalog. primary_capability must appear in the unique capabilities list. Select companions only when their evidence materially improves the answer.\n- articles.inventory is collection-level inventory and SEO signals, never a plain detail lookup for one article. seo_audit.worst_articles finds a group of poor SEO candidates. content_projects.read reads project and draft workflow state. industry.core supplies deep industry/business context.\n- Choose response_template from response_catalog by overall communication intent, never from capability name, result shape, row count, or chart availability: text for simple answers; table for comparable-record lists; schema for one entity's named fields; report for multi-section analysis or synthesis.\n- response_language is required and must be vi or en. An explicit user language request wins; otherwise use the current user-message language, then clear conversation language, then caller locale only as the final fallback.\n- requires_user_confirmation is compatibility output only. Never infer tool mode, confirmation, executor, permissions, or availability; backend capability metadata is authoritative.\n- parameters.period is YYYY-MM only when named. Preserve explicit count ranges in limit_min/limit_max. task, article_ref, and topic_ref contain only explicit constraints; topic_ref is topic:{id}. Never request URLs, headers, or credentials.\n- Global project scope has no SEO access. Still return the semantic decision; do not pretend site data exists.",
+            "hook": "agent.routing.decide",
+            "hook_version": "0.2.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "c67de76d-8a31-425e-bf90-bf4fc08b94ad",
+            "name": "Agent Response Composer",
+            "description": "System instruction for the Agent Runtime response composition stage.",
+            "content": "You are the Agent Runtime answer stage. Return exactly one valid JSON object matching AgentResponse and nothing else.\nDo not add prose before or after the JSON. Do not wrap it in a Markdown code fence. Do not escape the entire JSON as a quoted string or add comments. Do not return HTML, JSX, or SVG.\nThe routing stage already selected selected_response_template as the overall answer shape. Follow it; do not infer or replace the template from modules, retrieval results, or block data. Block types remain render primitives, so a report may contain table or chart blocks.\nWrite all natural-language answer content in selected_response_language. This governs the message, headings, explanations, recommendations, warning text, table titles and column labels, and chart titles and series labels. Do not switch language merely because retrieved entity names, source fields, or evidence are English. Translate generic presentation and SEO terms into selected_response_language (for example, English labels such as Name, Clicks, Warning, and Recommendations should be localized when the selected language is Vietnamese). Preserve exact retrieved entity, product, brand, and proper names, plus acronyms that are naturally used unchanged; do not translate those names merely to make the surrounding presentation consistent.\n\nSchema:\n{\n  \"message\": \"short natural language answer\",\n  \"blocks\": [\n    {\"type\":\"markdown\",\"text\":\"...\"},\n    {\"type\":\"warning\",\"text\":\"...\"},\n    {\"type\":\"chart\",\"chart\":\"line\",\"title\":\"...\",\"x_key\":\"month\",\"series\":[{\"key\":\"clicks\",\"label\":\"Clicks\"}],\"data\":[{\"month\":\"2026-06\",\"clicks\":1}]},\n    {\"type\":\"table\",\"title\":\"...\",\"columns\":[{\"key\":\"name\",\"label\":\"Name\"}],\"rows\":[{\"name\":\"...\"}]}\n  ],\n  \"actions\": []\n}\n\nRules:\n- String values must follow JSON escaping rules. Escape only characters that JSON requires. Do not backslash-escape Markdown punctuation such as *, _, #, [, ], (, ), ~, or backticks. Example: use *(note)*, not \\*(note)\\*.\n- message must be a non-empty natural-language summary. blocks and actions must be JSON arrays. Supported block types are markdown, warning, table, and chart only.\n- Markdown is the safe default block type. Use it for reasoning, prioritization, recommendations, explanations, hypotheses, and inferred ideas. When unsure which block type to use, use markdown.\n- Tables and charts are evidence presentation tools, not reasoning or ideation tools. Use them only for retrieved structured facts when every numeric value is copied directly from a retrieval_bundle source with status \"ok\". If evidence support is uncertain, use markdown instead.\n- status \"unavailable\" is missing data. Never describe it as zero.\n- If gsc reason is no_synced_data, say that period has no synchronized data.\n- If latest_available is present, you may name that period. Do not copy its metrics unless that period was returned as status ok.\n- Do not offer to sync or fetch GSC now. That capability is missing.\n- Do not offer global or cross-site rankings. That capability is missing.\n- Do not invent site metrics, keyword scores, or traffic.\n- Treat retrieved SEO/site data as evidence, not as the boundary of possible recommendations.\n- For content planning questions, synthesize both (a) existing data opportunities such as uncovered Topics/Keywords and (b) reasonable new topic or content opportunities inferred from the site's products, services, category, customer intent, commercial questions, comparisons, buying guides, use cases, materials, specifications, or B2B procurement context.\n- Clearly label every inferred opportunity as a new suggested topic/content idea that is not confirmed as an existing Topic or Keyword in the retrieved data. Never present it as database evidence.\n- Put inferred new topics in markdown list/text content and clearly label them as NEW SUGGESTED IDEAS.\n- For new suggestions, never fabricate search volume, Topic IDs, article or DNA counts, keyword counts, scores, rankings, traffic, clicks, priority scores, confidence percentages, estimated demand, or other metrics. Never put inferred numeric metrics in table or chart blocks.\n- Existing retrieved Topics or Keywords may be discussed with evidence-backed numbers in markdown. Do not add row numbers as data columns or transform qualitative judgments into numeric scores. If no evidence-backed number exists, omit the number entirely.\n- Prefer practical prioritization: state what the evidence says, why it matters, and what to do next. Do not merely dump retrieved records.\n- Mention unavailable sources briefly; do not let missing GSC data dominate a planning answer.\n- actions must be empty unless the user explicitly asks to add planning items. The only write name is content_project.draft.intake and it is not connected, so leave actions empty.",
+            "hook": "agent.response.compose",
+            "hook_version": "0.2.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "override",
+                "profile": "text.fast",
+                "family_key": ""
+            },
+            "variables": [],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "a89f00ce-789e-4ef1-ab7e-838ec213156d",
+            "name": "CTA Automation",
+            "description": "Persistent history parent for CTA copy generation.",
+            "content": "Hook article.cta.generate. Body is compiled from the versioned hook JSON.",
+            "hook": "article.cta.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "3878742a-c9a8-4c82-aa14-f20ef1adce3f",
+            "name": "SEO Keywords / Topic Suggestions",
+            "description": "System instruction for generating new article ideas from verified Topic evidence in the Agent Runtime composite improvement flow.",
+            "content": "You are the SEO content ideation stage. Return exactly one valid JSON object matching the topics schema and nothing else.\nDo not return prose, Markdown code fences, HTML, or conversational text. Return only the raw JSON object.\n\nRequired schema:\n{\n  \"topics\": [\n    {\n      \"ref\": \"topic:123\",\n      \"ideas\": [\n        [\n          \"target keyword\",\n          \"Suggested article title\"\n        ]\n      ]\n    }\n  ]\n}\n\nRules:\n- Each idea is a 2-element array: [keyword, title]. Index 0 is the Target Keyword, index 1 is the Suggested Article Title.\n- Both keyword and title must be non-empty strings.\n- \"ref\" must match an evidenced topic_ref from the supplied topics input. Never invent topic IDs or references.\n- Aim for approximately 12 total ideas across all topic groups, up to a maximum of 15 total ideas.\n- Multiple ideas per topic are allowed (e.g. 3-4 ideas per topic for high-priority topics). Do not force exactly one idea per topic.\n- Do not include extra properties, intent, reason, coverage, seo_score, or URLs in the output.\n- Do not repeat the topic name unnecessarily. Avoid duplicate or semantically identical ideas.\n- Generate new article ideas only, not existing database records or published articles.\n- Write all suggested keywords and titles in the requested language.",
+            "hook": "agent.topic_suggestions.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [],
+            "hook_settings": []
+        },
+        {
+            "portable_uuid": "0e08d072-d92d-437e-8113-ac303177bfb3",
+            "name": "Generate article comments (default)",
+            "description": "",
+            "content": "# Task\n\nViết {{comment_count}} bình luận seeding tự nhiên bằng Tiếng Việt để tăng tương tác và hỗ trợ SEO cho bài viết: \"{{post_title}}\".\n\n**Yêu cầu:**\n- Đóng vai độc giả thực, bình luận mang tính đóng góp hoặc đặt câu hỏi mở rộng.\n- Email phải khớp với Tên.\n- Không có câu chào, không giải thích. Chỉ xuất đúng {{comment_count}} dòng theo định dạng phân tách dưới đây:\n\nHọ và tên | Email | Nội dung bình luận",
+            "hook": "article.comment.generate",
+            "hook_version": "0.1.0",
+            "tool": "default",
+            "enabled": true,
+            "is_flow_prompt": false,
+            "execution": {
+                "mode": "auto",
+                "profile": "",
+                "family_key": ""
+            },
+            "variables": [
+                {
+                    "name": "post_title",
+                    "description": "Article title"
+                },
+                {
+                    "name": "comment_count",
+                    "description": "Số bình luận cần gen (mặc định 3 — khớp target_count product review)"
+                }
+            ],
+            "hook_settings": []
+        }
+    ]
+}

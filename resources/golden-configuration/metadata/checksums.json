@@ -1,0 +1,10 @@
+{
+    "manifest.json": "453eab1d67ecc91282cb49311530c381cb79b231d09d9b5f54b0b53d75b946a7",
+    "payload/full-configuration.json": "5ed57f073fc0a2fb953c204868e64914c8007bd2471ad6e5ee48d1eead215b88",
+    "payload/settings.json": "67a08f2cdc66e2eb1d9df58c0bfcaee96977ebc47dbbe4aa24b0ddbe321f0325",
+    "payload/prompts.json": "d54c429715fadac5e2144c4f3576f981041178c4412e144c53118944b3f6a5a2",
+    "payload/workflows.json": "9a174328d1a44eeeae912128b24639c1e58714428980e5a99cdecbd326a601b5",
+    "payload/provider-templates.json": "dea228ed10abe56c54775827e2d7c2725630271dd6bb0ced14c57ebcb0ac019a",
+    "metadata/prompt-index.json": "dfeca9072852b0b51ec5baaac88aa1e781bbe31085d7e5eb1bc19520f9e0a9b0",
+    "metadata/workflow-index.json": "38a5463c6f3bea32091e82bdb477ef3086c973235d6cf49d1450f4c320a9e3e8"
+}

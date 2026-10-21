@@ -108,21 +108,22 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
         self::assertStringContainsString('service.api.scope:service:read', $access);
     }
 
-    public function test_gateway_view_never_renders_secrets(): void
+    public function test_legacy_gateway_page_is_redirect_only_without_secrets(): void
     {
-        $view = (string) file_get_contents(resource_path('views/filament/pages/gateway.blade.php'));
+        $viewPath = resource_path('views/filament/pages/gateway-redirect.blade.php');
+        self::assertFileExists($viewPath);
+        self::assertFileDoesNotExist(resource_path('views/filament/pages/gateway.blade.php'));
+
+        $view = (string) file_get_contents($viewPath);
         $page = (string) file_get_contents(app_path('Filament/Pages/Gateway.php'));
 
-        self::assertStringContainsString('tab_api_access', $view);
-        self::assertStringContainsString('tab_control', $view);
+        self::assertStringContainsString('ServiceStatusOverview::getUrl', $page);
+        self::assertStringContainsString('shouldRegisterNavigation = false', $page);
+        self::assertStringNotContainsString('createApiCredential', $page);
+        self::assertStringNotContainsString('controlGateStatus', $page);
         self::assertStringNotContainsString('key_hash', $view);
-        self::assertStringNotContainsString('$svc->service_key', $view);
-        self::assertStringNotContainsString('$cred->key_hash', $view);
         self::assertStringNotContainsString('svc_gate_', $view);
         self::assertStringNotContainsString('installation_secret', $view);
-        self::assertStringContainsString('canManageApiKeys', $page);
-        self::assertStringContainsString('controlGateStatus', $page);
-        self::assertStringContainsString('pending_integration', $page);
-        self::assertStringContainsString('ServiceApiCredentialKind::User', $page);
+        self::assertStringNotContainsString('service_key', $view);
     }
 }

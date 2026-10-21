@@ -1,0 +1,359 @@
+[
+    {
+        "portable_uuid": "3a68f26a-371a-4d11-83da-407501a658cc",
+        "name": "Quy trình đăng bài viết",
+        "description": "bài viết or từ khóa -> dàn ý(gemini) -> bài viết(claude)",
+        "is_active": true,
+        "output_type": "image",
+        "flow_data": {
+            "edges": [
+                {
+                    "id": "edge_1779271601330",
+                    "sourceNode": "node_1779269573169",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1779271582792",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1779979575220",
+                    "sourceNode": "node_1779076194905",
+                    "sourcePort": "out_part_1_3",
+                    "targetNode": "node_1779269573169",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1780566962957",
+                    "sourceNode": "node_1780563019334",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1780566180738",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1780568741983",
+                    "sourceNode": "node_1779076194905",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1780563019334",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_node_1779076173273_article_filter",
+                    "sourceNode": "node_1779076173273",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1779076173273_article_filter",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1781165872018",
+                    "sourceNode": "node_1779076173273_article_filter",
+                    "sourcePort": "out_combined",
+                    "targetNode": "node_1779076194905",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1781165920927",
+                    "sourceNode": "node_1781165898398",
+                    "sourcePort": "out_gallery_description",
+                    "targetNode": "node_1781165914622",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1781165963806",
+                    "sourceNode": "node_1781165914622",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1780566180738",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1781585372402",
+                    "sourceNode": "node_1779076173273",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1781165898398",
+                    "targetPort": "in_main"
+                }
+            ],
+            "nodes": [
+                {
+                    "x": 60,
+                    "y": 36,
+                    "id": "node_1779076173273",
+                    "data": [],
+                    "type": "article",
+                    "title": "Bài viết"
+                },
+                {
+                    "x": 57,
+                    "y": 187,
+                    "id": "node_1779076173273_article_filter",
+                    "data": {
+                        "actions": [],
+                        "postTypes": [],
+                        "taxonomies": []
+                    },
+                    "type": "article_filter",
+                    "title": "Lọc bài viết"
+                },
+                {
+                    "x": 59,
+                    "y": 363.98046875,
+                    "id": "node_1779076194905",
+                    "data": {
+                        "execution_role": "article.outline.generate",
+                        "mergeOutlineToSave": false,
+                        "prompt_ref": {
+                            "portable_uuid": "25f4bd78-c6dc-4957-a013-a6559eff2cba",
+                            "name": "Dàn ý bài viết — Outline"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Dàn ý bài viết — Outline"
+                },
+                {
+                    "x": 314.96484375,
+                    "y": 361.9921875,
+                    "id": "node_1779269573169",
+                    "data": {
+                        "rule": "",
+                        "filterType": "parse_keywords"
+                    },
+                    "type": "filter",
+                    "title": "Lọc / Xử lý"
+                },
+                {
+                    "x": 429.96484375,
+                    "y": 221.9765625,
+                    "id": "node_1779271582792",
+                    "data": {
+                        "isTrigger": false,
+                        "actionType": "save_vocabulary_research"
+                    },
+                    "type": "action",
+                    "title": "Hành động"
+                },
+                {
+                    "x": 54,
+                    "y": 541.95703125,
+                    "id": "node_1780563019334",
+                    "data": {
+                        "execution_role": "",
+                        "mergeOutlineToSave": true,
+                        "prompt_ref": {
+                            "portable_uuid": "3addbdae-d042-46a2-875a-a2bf3965931f",
+                            "name": "Viết bài theo dàn ý"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Prompt block"
+                },
+                {
+                    "x": 593.98046875,
+                    "y": 511.95703125,
+                    "id": "node_1780566180738",
+                    "data": {
+                        "isTrigger": false,
+                        "actionType": "save_article"
+                    },
+                    "type": "action",
+                    "title": "Action"
+                },
+                {
+                    "x": 352,
+                    "y": 10,
+                    "id": "node_1781165898398",
+                    "data": {
+                        "actions": [
+                            "create"
+                        ],
+                        "postTypes": [
+                            "product"
+                        ],
+                        "taxonomies": []
+                    },
+                    "type": "article_filter",
+                    "title": "Lọc bài viết"
+                },
+                {
+                    "x": 735,
+                    "y": 10,
+                    "id": "node_1781165914622",
+                    "data": {
+                        "execution_role": "",
+                        "mergeOutlineToSave": false,
+                        "prompt_ref": {
+                            "portable_uuid": "ce7647b9-a39c-4fb8-94f4-cddec03ba0e5",
+                            "name": "Product gallery"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Prompt block"
+                }
+            ],
+            "portable_uuid": "3a68f26a-371a-4d11-83da-407501a658cc"
+        }
+    },
+    {
+        "portable_uuid": "0603f414-29e8-42af-8a9b-b61a4d0d1969",
+        "name": "Review product",
+        "description": null,
+        "is_active": true,
+        "output_type": "text",
+        "flow_data": {
+            "edges": [
+                {
+                    "id": "edge_1779160335274",
+                    "sourceNode": "node_1779098397141",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1779098831437",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1779160337499",
+                    "sourceNode": "node_1779098831437",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1779098792109",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1779160518426",
+                    "sourceNode": "node_1779098792109",
+                    "sourcePort": "out_part_8",
+                    "targetNode": "node_1779160510753",
+                    "targetPort": "in_main"
+                }
+            ],
+            "nodes": [
+                {
+                    "x": 14,
+                    "y": 171,
+                    "id": "node_1779098397141",
+                    "data": {
+                        "actions": [],
+                        "postTypes": [
+                            "product"
+                        ],
+                        "taxonomies": [],
+                        "commentReview": []
+                    },
+                    "type": "article",
+                    "title": "Bài viết"
+                },
+                {
+                    "x": 412,
+                    "y": 176.00001525878906,
+                    "id": "node_1779098792109",
+                    "data": {
+                        "prompt_ref": {
+                            "portable_uuid": "40acacef-f837-4f79-b430-52f3e65f8663",
+                            "name": "Product review"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Khối Prompt"
+                },
+                {
+                    "x": 106,
+                    "y": 372.00001525878906,
+                    "id": "node_1779098831437",
+                    "data": {
+                        "isTrigger": true,
+                        "actionType": "edit_article"
+                    },
+                    "type": "action",
+                    "title": "Hành động"
+                },
+                {
+                    "x": 503,
+                    "y": 443,
+                    "id": "node_1779160510753",
+                    "data": {
+                        "isTrigger": false,
+                        "actionType": "post_comment_review"
+                    },
+                    "type": "action",
+                    "title": "Hành động"
+                }
+            ],
+            "portable_uuid": "0603f414-29e8-42af-8a9b-b61a4d0d1969"
+        }
+    },
+    {
+        "portable_uuid": "2bf21373-f8c9-433a-a778-4d7c46703456",
+        "name": "Image flow",
+        "description": null,
+        "is_active": true,
+        "output_type": "image",
+        "flow_data": {
+            "edges": [
+                {
+                    "id": "edge_1783492927384",
+                    "sourceNode": "node_1783492918456",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1783492921631",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1783492929920",
+                    "sourceNode": "node_1783492918007",
+                    "sourcePort": "out_main",
+                    "targetNode": "node_1783492918456",
+                    "targetPort": "in_main"
+                },
+                {
+                    "id": "edge_1783492932896",
+                    "sourceNode": "node_1783492916103",
+                    "sourcePort": "out_input",
+                    "targetNode": "node_1783492918007",
+                    "targetPort": "in_main"
+                }
+            ],
+            "nodes": [
+                {
+                    "x": 20,
+                    "y": 141,
+                    "id": "node_1783492916103",
+                    "data": [],
+                    "type": "user_input",
+                    "title": "Input ({{input}})"
+                },
+                {
+                    "x": 339,
+                    "y": 269,
+                    "id": "node_1783492918007",
+                    "data": {
+                        "mergeOutlineToSave": false,
+                        "prompt_ref": {
+                            "portable_uuid": "ad4b75d4-f0fe-41d3-9656-558d03590281",
+                            "name": "Text to Infographic Blueprint"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Prompt block"
+                },
+                {
+                    "x": 651,
+                    "y": 390,
+                    "id": "node_1783492918456",
+                    "data": {
+                        "mergeOutlineToSave": false,
+                        "prompt_ref": {
+                            "portable_uuid": "cd10b04e-73cc-474d-bdcc-15ce1baf8335",
+                            "name": "Infographic Blueprint to image"
+                        }
+                    },
+                    "type": "prompt",
+                    "title": "Prompt block"
+                },
+                {
+                    "x": 934,
+                    "y": 500,
+                    "id": "node_1783492921631",
+                    "data": {
+                        "symbolic": true
+                    },
+                    "type": "end",
+                    "title": "End"
+                }
+            ],
+            "portable_uuid": "2bf21373-f8c9-433a-a778-4d7c46703456"
+        }
+    }
+]

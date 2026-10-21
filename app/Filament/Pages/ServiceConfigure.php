@@ -272,7 +272,7 @@ final class ServiceConfigure extends Page implements HasForms
     public function createApiCredential(array $data): void
     {
         if (! $this->canManageApiKeys()) {
-            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+            Notification::make()->title(__('site-service.api_access_root_only'))->danger()->send();
 
             return;
         }
@@ -313,7 +313,7 @@ final class ServiceConfigure extends Page implements HasForms
     public function revokeApiCredential(int $credentialId): void
     {
         if (! $this->canManageApiKeys()) {
-            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+            Notification::make()->title(__('site-service.api_access_root_only'))->danger()->send();
 
             return;
         }
@@ -331,7 +331,7 @@ final class ServiceConfigure extends Page implements HasForms
     public function rotateApiCredential(int $credentialId): void
     {
         if (! $this->canManageApiKeys()) {
-            Notification::make()->title(__('gateway.api_access_root_only'))->danger()->send();
+            Notification::make()->title(__('site-service.api_access_root_only'))->danger()->send();
 
             return;
         }

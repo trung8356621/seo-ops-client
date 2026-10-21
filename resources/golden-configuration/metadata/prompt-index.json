@@ -1,0 +1,212 @@
+[
+    {
+        "portable_uuid": "40acacef-f837-4f79-b430-52f3e65f8663",
+        "name": "Product review",
+        "hook_key": "article.comment.generate",
+        "content_fingerprint": "f8544b3ef3d2725bb604156c774b98fc6dd23a5c11e513264d70dfa9e10e44da",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "ce7647b9-a39c-4fb8-94f4-cddec03ba0e5",
+        "name": "Product gallery",
+        "hook_key": "product.gallery.generate",
+        "content_fingerprint": "cb53ec15528be1432c2ff85e15d61b2a5c93e2f25e20457efa89d1739bb02032",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "cd10b04e-73cc-474d-bdcc-15ce1baf8335",
+        "name": "Infographic Blueprint to image",
+        "hook_key": "",
+        "content_fingerprint": "d98294bae04239b6df6b0a6dda0816c14cd55db55f77f7815ebb6f0282cc9a31",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "3addbdae-d042-46a2-875a-a2bf3965931f",
+        "name": "Viết bài theo dàn ý",
+        "hook_key": "article.content.generate",
+        "content_fingerprint": "92ece18fcc27cb04efe2c40b0a3d73a8562775984464c558608df1fd564a8add",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "09ba05c4-d217-40e7-befb-344b054ad653",
+        "name": "Tạo FAQ",
+        "hook_key": "article.faq.generate",
+        "content_fingerprint": "913d4b3e1a7d2875efb4f8d06e3d0d62b1d225bd6d1ed9fb54f225104a804695",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "3aa1f8ae-e202-4358-9252-176cd5f92325",
+        "name": "Featured Snippet",
+        "hook_key": "article.featured_snippet.generate",
+        "content_fingerprint": "0671dfbec31db43febe38995fd188d519885c6611d5a854d85768e29e7a01e8a",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "ecda404a-0fd4-47ed-b659-e5ece799efb4",
+        "name": "Dịch bài viết",
+        "hook_key": "article.content.translate",
+        "content_fingerprint": "0b84a4f22769fe6ee10b2d800e8443647e241031896aa4415e608e64b2c6eec9",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "ad4b75d4-f0fe-41d3-9656-558d03590281",
+        "name": "Text to Infographic Blueprint",
+        "hook_key": "",
+        "content_fingerprint": "0734179ce74d3735530037036c287b704b13c9d923fbea86101b2452b3494c4d",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "888ab229-e84d-4993-b184-68f78413d0b5",
+        "name": "Gen title",
+        "hook_key": "article.title_suggestion",
+        "content_fingerprint": "176711d7879e5825569857e503a598e619f6cb768dd2ca5c6df7435700e2c5b9",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "455a7e17-e900-4c3c-a3b4-6b4ea0110278",
+        "name": "Gen description",
+        "hook_key": "article.meta_description_suggestion",
+        "content_fingerprint": "b5d448ac26763ffc8184dfef947fc271591a63faa2d00864e4d07f82c0af7168",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "dbbcc157-997f-4e98-bbc7-1ffd47261625",
+        "name": "Improve article content (default)",
+        "hook_key": "article.content.improve",
+        "content_fingerprint": "1ab4b56ef15d764f0bce7e1d7a704d6ee07ec7dc2eb7729f2cb361d4383da572",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "930476aa-7f26-4bfe-8ecc-e8490363b1f9",
+        "name": "Product Gallery Planner",
+        "hook_key": "product.gallery.plan",
+        "content_fingerprint": "cc53ea6fd2b2159c6dd705b5f24dcc9fe88fb6e60e9069757e2038fa4b7c99a9",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "1bf61f0b-705a-446b-9e62-fd2b06f98cd5",
+        "name": "Product Gallery Parent Image",
+        "hook_key": "product.gallery.parent.generate",
+        "content_fingerprint": "536c2bee94f0204bc066efa0c45e63e3e1aea4112342a16390d36f0a4ec4e5ae",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "a0489a3f-a3c1-47af-a5db-ad69e3cf5731",
+        "name": "Product Gallery Child Image",
+        "hook_key": "product.gallery.child.generate",
+        "content_fingerprint": "d186a5be49219ed9134afc3646bc5b591d0a8882c76742ec3016672d61c4f56f",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "03f79c03-bd6d-4875-9959-8338554154df",
+        "name": "Create news thumbnail",
+        "hook_key": "article.featured_image.generate",
+        "content_fingerprint": "739df86491f6f1eb7f77c5cc9d597e79df08a2c7dbca0dfa1fb1a2e213fbb940",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "25f4bd78-c6dc-4957-a013-a6559eff2cba",
+        "name": "Dàn ý bài viết — Outline",
+        "hook_key": "article.outline.structure.generate",
+        "content_fingerprint": "b9767ccff0f75325d6a807fa59551a23288493b0483ef7844adc7b815fcd93a8",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "f308df8a-f9b4-4d98-9965-e79d2c1082ff",
+        "name": "Từ vựng bài viết — Vocabulary",
+        "hook_key": "article.vocabulary.generate",
+        "content_fingerprint": "07bc013c56c3e1b360b267e355c9f5097a9504f6ec5eebcdfc7cc93fe869a01d",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "7cf8c416-d91f-407f-b30d-7aa57fd761f7",
+        "name": "Keyword Discovery",
+        "hook_key": "keyword.discovery.structured",
+        "content_fingerprint": "2e65604f8341a864a572d8c53f9a9bd354d854188e5a930280e404a3f186cfdc",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "a78fb240-0875-4790-8e59-fcef088872cc",
+        "name": "Generate seeding social comments (default)",
+        "hook_key": "seeding.comment.generate",
+        "content_fingerprint": "950507262d6fd77b7b32b7812cc7c84f8be37d92156413a269945de24f10fcfd",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "3d060ae2-31f1-4038-8b04-9f180e942a2b",
+        "name": "Discover New Topics",
+        "hook_key": "seo_audit.discover_new_topics",
+        "content_fingerprint": "ba2ba1066dd757f9a9b5f6f44755abbea84b89f6ba661f4df913e6d3f06dee14",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "92dde80a-7639-42f8-a517-c70262d5f78f",
+        "name": "Topical Map Audit",
+        "hook_key": "seo_keywords.topical_map_audit",
+        "content_fingerprint": "b1759242445d597a8bebcadb9e2810f6ab9981ace758b9714165c9ec172dd203",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "94c9ecda-3b00-4404-bc67-803a4d3c6391",
+        "name": "Industry Context Generator",
+        "hook_key": "industry.context.generate",
+        "content_fingerprint": "074a92f2b124d9f9f6ad65a48a372243e49148d62c489a1b9a7e60e10dc51941",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "2ec81ebf-ceb5-4d22-b5e5-63e910450b26",
+        "name": "Industry Discovery & Attention Generator",
+        "hook_key": "industry.discovery.generate",
+        "content_fingerprint": "2cd982d51a68d3052f5aaa334bb9a153bbcb7853ec7f5588b936ce159fc020c4",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "951b649e-e6e3-4b05-b3a0-288823ccb28b",
+        "name": "Industry Breakout Generator",
+        "hook_key": "industry.breakout.generate",
+        "content_fingerprint": "34a0ed84c19d52f04915c5f898422cd018b195c3c98adc996f9a317b8ada14a9",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "852c9c2b-0638-460a-b3b1-9a84f8fca4cb",
+        "name": "Industry Match & Research Generator",
+        "hook_key": "industry.match.generate",
+        "content_fingerprint": "54aec4067d3a49f333aeeb73bb78a2845d10cd0baf65bcd7c881ed1abdf1dd98",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "f04512f3-37a7-43ae-82d3-a61c5ef92041",
+        "name": "Agent Routing / JEV",
+        "hook_key": "agent.routing.decide",
+        "content_fingerprint": "fa2c5ebb4d3ff77959ca368dc48609431df292f2c831508f2ea163b2c765e29e",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "c67de76d-8a31-425e-bf90-bf4fc08b94ad",
+        "name": "Agent Response Composer",
+        "hook_key": "agent.response.compose",
+        "content_fingerprint": "50558287a3e408113a9e7e8cde30577fd2308977c096cdd289d54e03ddeaac35",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "a89f00ce-789e-4ef1-ab7e-838ec213156d",
+        "name": "CTA Automation",
+        "hook_key": "article.cta.generate",
+        "content_fingerprint": "9aa68643bea54234498ea8dbab9a6702048ecca58f07d83dbb84e0899d94e942",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "3878742a-c9a8-4c82-aa14-f20ef1adce3f",
+        "name": "SEO Keywords / Topic Suggestions",
+        "hook_key": "agent.topic_suggestions.generate",
+        "content_fingerprint": "a7c72df14ef0512f86a33bb85dd73bbf32733c227d702532aa304acdc77a133f",
+        "enabled": true
+    },
+    {
+        "portable_uuid": "0e08d072-d92d-437e-8113-ac303177bfb3",
+        "name": "Generate article comments (default)",
+        "hook_key": "article.comment.generate",
+        "content_fingerprint": "5f59ed6263c890727593d13f1f02f9d6d341a321087965a09e0d2fc9203f4e4b",
+        "enabled": true
+    }
+]

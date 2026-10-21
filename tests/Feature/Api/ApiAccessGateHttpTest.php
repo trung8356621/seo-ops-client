@@ -8,9 +8,11 @@ use App\Api\Auth\ApiKeyHasher;
 use App\Api\Auth\ServiceApiCredentialManager;
 use App\Api\Middleware\AuthenticateServiceApi;
 use App\Filament\Pages\Gateway;
+use App\Filament\Pages\ServiceConfigure;
 use App\Models\Service;
 use App\Models\ServiceApiCredential;
 use App\Models\User;
+use App\Services\ServiceIdentity;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Http\Request;
@@ -69,13 +71,12 @@ final class ApiAccessGateHttpTest extends TestCase
         ]);
     }
 
-    public function test_root_creates_hashed_key_shown_once_via_gateway(): void
+    public function test_root_creates_hashed_key_shown_once_via_service_configure(): void
     {
         $this->actingAs($this->owner);
 
-        Livewire::test(Gateway::class)
+        Livewire::test(ServiceConfigure::class, ['service' => ServiceIdentity::PUBLIC_SEO])
             ->call('createApiCredential', [
-                'service' => 'seo',
                 'name' => 'Pilot',
                 'scopes' => ['service:read'],
                 'expires_at' => null,
@@ -83,9 +84,8 @@ final class ApiAccessGateHttpTest extends TestCase
             ->assertSet('revealedApiKeyName', 'Pilot')
             ->assertNotSet('revealedApiKey', null);
 
-        $revealed = (string) Livewire::test(Gateway::class)
+        $revealed = (string) Livewire::test(ServiceConfigure::class, ['service' => ServiceIdentity::PUBLIC_SEO])
             ->call('createApiCredential', [
-                'service' => 'seo',
                 'name' => 'Pilot2',
                 'scopes' => ['service:read'],
                 'expires_at' => null,
@@ -100,7 +100,7 @@ final class ApiAccessGateHttpTest extends TestCase
         self::assertTrue(app(ApiKeyHasher::class)->verify($revealed, (string) $row->key_hash));
         self::assertStringNotContainsString($revealed, (string) json_encode($row));
 
-        Livewire::test(Gateway::class)
+        Livewire::test(ServiceConfigure::class, ['service' => ServiceIdentity::PUBLIC_SEO])
             ->assertSet('revealedApiKey', null);
     }
 
@@ -197,14 +197,13 @@ final class ApiAccessGateHttpTest extends TestCase
         self::assertInstanceOf(Limit::class, $limits[0]);
     }
 
-    public function test_non_root_cannot_manage_keys_on_gateway(): void
+    public function test_non_root_cannot_manage_keys_on_service_configure(): void
     {
         $this->actingAs($this->admin);
 
-        Livewire::test(Gateway::class)
+        Livewire::test(ServiceConfigure::class, ['service' => ServiceIdentity::PUBLIC_SEO])
             ->assertSet('revealedApiKey', null)
             ->call('createApiCredential', [
-                'service' => 'seo',
                 'name' => 'ShouldFail',
                 'scopes' => ['service:read'],
                 'expires_at' => null,
@@ -212,17 +211,19 @@ final class ApiAccessGateHttpTest extends TestCase
             ->assertSet('revealedApiKey', null);
 
         self::assertSame(0, ServiceApiCredential::query()->count());
-        self::assertFalse((new Gateway)->canManageApiKeys());
+        self::assertFalse((new ServiceConfigure)->canManageApiKeys());
     }
 
     public function test_owner_can_manage_keys(): void
     {
         $this->actingAs($this->owner);
-        self::assertTrue((new Gateway)->canManageApiKeys());
+        self::assertTrue((new ServiceConfigure)->canManageApiKeys());
     }
 
-    public function test_api_key_cannot_access_control_gate_admin_page(): void
+    public function test_legacy_gateway_route_no_longer_exposes_management_ui_to_bearer(): void
     {
+        self::assertFalse(Gateway::shouldRegisterNavigation());
+
         $key = app(ServiceApiCredentialManager::class)->create($this->seo, 'X', ['service:read', 'seo:read']);
 
         $admin = $this->getJson('/admin/gateway', [
@@ -231,7 +232,7 @@ final class ApiAccessGateHttpTest extends TestCase
         // Bearer API keys are not a Filament/session login — reject or redirect to login.
         self::assertTrue(
             in_array($admin->status(), [401, 302, 303, 307, 308], true),
-            'Expected 401 or redirect away from Control Gate admin UI, got '.$admin->status()
+            'Expected 401 or redirect away from legacy Gateway admin UI, got '.$admin->status()
         );
 
         $caps = $this->getJson('/api/v1/me/capabilities', [

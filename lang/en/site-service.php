@@ -115,6 +115,7 @@ return [
     'api_access_create_failed' => 'Could not create API key',
     'api_access_rotate_failed' => 'Could not rotate API key',
     'api_access_not_found' => 'API credential not found',
+    'api_access_root_only' => 'Only the account owner (Root) can create, revoke, or rotate API keys.',
 
     'site_resource_navigation_label' => 'Site Management',
     'site_resource_model_label' => 'Site',

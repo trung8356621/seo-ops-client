@@ -218,9 +218,10 @@ final class ServiceGatewayProvisionerTest extends TestCase
             ->value('managed_credential_id'));
     }
 
-    public function test_missing_h1_state_is_not_licensed_and_ui_hides_managed_keys(): void
+    public function test_missing_h1_state_is_not_licensed(): void
     {
-        $snapshot = app(EntitlementPresentationStore::class)->current();
+        $store = app(EntitlementPresentationStore::class);
+        $snapshot = $store->current();
         self::assertFalse($snapshot->connected);
         self::assertSame('disconnected', $snapshot->licenseStatus);
 
@@ -228,30 +229,31 @@ final class ServiceGatewayProvisionerTest extends TestCase
             $this->activeSnapshot(['seo' => true])
         );
 
-        $page = new Gateway;
-        $status = $page->controlGateStatus();
-        self::assertTrue($status['connected']);
-        self::assertSame('SEO-OPS', $status['product_name']);
-        self::assertSame('2026-01-01', $status['starts_at']);
-        self::assertNotSame($status['starts_at'], optional(
+        $applied = $store->current();
+        self::assertTrue($applied->connected);
+        self::assertSame('SEO-OPS', $applied->productName);
+        self::assertSame('2026-01-01', $applied->startsAt?->toDateString());
+        self::assertNotSame($applied->startsAt?->toDateString(), optional(
             ServiceApiCredential::query()->where('kind', ServiceApiCredentialKind::Managed->value)->first()
         )?->created_at?->toDateString());
 
-        // Reset to disconnected presentation
-        app(EntitlementPresentationStore::class)->save(VerifiedEntitlementSnapshot::disconnected());
-        $disconnected = (new Gateway)->controlGateStatus();
-        self::assertFalse($disconnected['connected']);
-        self::assertSame('disconnected', $disconnected['license_status']);
-        self::assertNull($disconnected['product_name']);
-        self::assertNull($disconnected['starts_at']);
+        $store->save(VerifiedEntitlementSnapshot::disconnected());
+        $disconnected = $store->current();
+        self::assertFalse($disconnected->connected);
+        self::assertSame('disconnected', $disconnected->licenseStatus);
+        self::assertNull($disconnected->productName);
+        self::assertNull($disconnected->startsAt);
 
         $user = app(ServiceApiCredentialManager::class)->create($this->seo, 'Visible', ['service:read']);
-        $keys = (new Gateway)->apiCredentials();
-        self::assertTrue($keys->contains(static fn ($c) => (int) $c->id === (int) $user->credential->id));
-        self::assertFalse($keys->contains(static fn ($c) => $c->isManaged()));
+        self::assertTrue($user->credential->isUserKey());
+        self::assertFalse($user->credential->isManaged());
+        self::assertGreaterThan(
+            0,
+            ServiceApiCredential::query()->where('kind', ServiceApiCredentialKind::Managed->value)->count()
+        );
     }
 
-    public function test_api_access_key_cannot_reach_control_admin_as_session(): void
+    public function test_api_access_key_cannot_reach_legacy_gateway_as_session(): void
     {
         $user = app(ServiceApiCredentialManager::class)->create($this->seo, 'X', ['service:read']);
         $res = $this->getJson('/admin/gateway', [
@@ -260,15 +262,20 @@ final class ServiceGatewayProvisionerTest extends TestCase
         self::assertTrue(in_array($res->status(), [401, 302, 303, 307, 308], true));
     }
 
-    public function test_internal_key_prefix_not_in_gateway_view_source(): void
+    public function test_legacy_gateway_ui_is_redirect_only_without_secrets(): void
     {
-        $view = (string) file_get_contents(resource_path('views/filament/pages/gateway.blade.php'));
+        self::assertFalse(Gateway::shouldRegisterNavigation());
+        $page = (string) file_get_contents(app_path('Filament/Pages/Gateway.php'));
+        $view = (string) file_get_contents(resource_path('views/filament/pages/gateway-redirect.blade.php'));
+
+        self::assertStringContainsString('ServiceStatusOverview::getUrl', $page);
+        self::assertStringContainsString('shouldRegisterNavigation = false', $page);
+        self::assertStringNotContainsString('createApiCredential', $page);
+        self::assertStringNotContainsString('controlGateStatus', $page);
         self::assertStringNotContainsString('svc_gate_', $view);
         self::assertStringNotContainsString('key_hash', $view);
         self::assertStringNotContainsString('installation_secret', $view);
         self::assertStringNotContainsString('service_key', $view);
-        self::assertStringContainsString('control_readiness', $view);
-        self::assertStringContainsString('tab_api_access', $view);
     }
 
     /**

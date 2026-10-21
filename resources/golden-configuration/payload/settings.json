@@ -1,0 +1,319 @@
+{
+    "general": {
+        "outline_skip_words": [
+            "giới thiệu",
+            "kết luận",
+            "faq",
+            "câu hỏi thường gặp"
+        ],
+        "team_chat_allowed_extensions": [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp",
+            "gif",
+            "pdf",
+            "doc",
+            "docx",
+            "xls",
+            "xlsx",
+            "zip",
+            "txt"
+        ],
+        "team_chat_max_file_size_mb": 10,
+        "social_supported_domains": [
+            "facebook.com",
+            "linkedin.com",
+            "x.com",
+            "twitter.com",
+            "pinterest.com",
+            "reddit.com",
+            "threads.net"
+        ],
+        "default_content_language": "vi",
+        "exclude_pages_from_statistics": true
+    },
+    "date_time": {
+        "timezone": "Asia/Ho_Chi_Minh",
+        "preset": "vi"
+    },
+    "workflows": {
+        "prompt_bindings": {
+            "article.faq.generate": {
+                "portable_uuid": "09ba05c4-d217-40e7-befb-344b054ad653",
+                "name": "Tạo FAQ"
+            },
+            "agent.routing.decide": {
+                "portable_uuid": "f04512f3-37a7-43ae-82d3-a61c5ef92041",
+                "name": "Agent Routing / JEV"
+            },
+            "agent.response.compose": {
+                "portable_uuid": "c67de76d-8a31-425e-bf90-bf4fc08b94ad",
+                "name": "Agent Response Composer"
+            },
+            "seo_keywords.topical_map_audit": {
+                "portable_uuid": "92dde80a-7639-42f8-a517-c70262d5f78f",
+                "name": "Topical Map Audit"
+            },
+            "agent.topic_suggestions.generate": {
+                "portable_uuid": "3878742a-c9a8-4c82-aa14-f20ef1adce3f",
+                "name": "SEO Keywords / Topic Suggestions"
+            },
+            "article.comment.generate": {
+                "portable_uuid": "0e08d072-d92d-437e-8113-ac303177bfb3",
+                "name": "Generate article comments (default)"
+            },
+            "article.content.improve": {
+                "portable_uuid": "dbbcc157-997f-4e98-bbc7-1ffd47261625",
+                "name": "Improve article content (default)"
+            },
+            "article.featured_image.generate": {
+                "portable_uuid": "03f79c03-bd6d-4875-9959-8338554154df",
+                "name": "Create news thumbnail"
+            },
+            "article.outline.structure.generate": {
+                "portable_uuid": "25f4bd78-c6dc-4957-a013-a6559eff2cba",
+                "name": "Dàn ý bài viết — Outline"
+            },
+            "article.vocabulary.generate": {
+                "portable_uuid": "f308df8a-f9b4-4d98-9965-e79d2c1082ff",
+                "name": "Từ vựng bài viết — Vocabulary"
+            },
+            "keyword.discovery.structured": {
+                "portable_uuid": "7cf8c416-d91f-407f-b30d-7aa57fd761f7",
+                "name": "Keyword Discovery"
+            },
+            "seeding.comment.generate": {
+                "portable_uuid": "a78fb240-0875-4790-8e59-fcef088872cc",
+                "name": "Generate seeding social comments (default)"
+            },
+            "seo_audit.discover_new_topics": {
+                "portable_uuid": "3d060ae2-31f1-4038-8b04-9f180e942a2b",
+                "name": "Discover New Topics"
+            },
+            "industry.context.generate": {
+                "portable_uuid": "94c9ecda-3b00-4404-bc67-803a4d3c6391",
+                "name": "Industry Context Generator"
+            }
+        },
+        "task_bindings": [],
+        "media_sources": {
+            "create_image_source": "none",
+            "create_typography_image_source": "none",
+            "create_video_source": "none"
+        }
+    },
+    "ai": {
+        "preferred_provider": "openrouter",
+        "usage_mode": "economy",
+        "resilience": {
+            "max_ai_attempts": 6,
+            "max_free_attempts": 3
+        },
+        "routing": {
+            "text.fast": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "text.longform": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "text.reasoning": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "image.general": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "image.typography": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "image.product": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "video.general": {
+                "enabled": true,
+                "allowed_family_keys": []
+            },
+            "decision.route": {
+                "enabled": true,
+                "allowed_family_keys": []
+            }
+        },
+        "general_image_families": [
+            "nano_banana",
+            "nano_banana_pro",
+            "imagen"
+        ],
+        "typography_image_families": [
+            "nano_banana",
+            "nano_banana_pro",
+            "imagen"
+        ],
+        "connections": [
+            {
+                "connection_ref": {
+                    "provider_key": "openrouter",
+                    "connection_key": "new-ops"
+                },
+                "name": "new-ops",
+                "is_global": false,
+                "status": "active",
+                "credential": {
+                    "configured": true,
+                    "exported": false
+                },
+                "provider_template": null,
+                "metadata": {
+                    "routing_priority": 10
+                }
+            }
+        ]
+    },
+    "article_editor": {
+        "history_step": 20,
+        "autosave_interval_seconds": 2,
+        "wiki_trust_domains": [
+            "wikipedia.org",
+            "*.gov",
+            "*.edu"
+        ],
+        "faq_catch_keywords": [
+            "faq",
+            "faqs",
+            "frequently asked questions",
+            "frequently asked question",
+            "common questions",
+            "common question",
+            "questions and answers",
+            "question and answer",
+            "q&a",
+            "q & a",
+            "faq section",
+            "faq questions",
+            "common faq",
+            "câu hỏi thường gặp",
+            "các câu hỏi thường gặp",
+            "hỏi đáp",
+            "giải đáp",
+            "giải đáp thắc mắc",
+            "thắc mắc thường gặp",
+            "câu hỏi"
+        ]
+    },
+    "keywords": {
+        "cta_blacklist": [
+            "tại đây",
+            "click vào",
+            "yêu cầu mẫu",
+            "liên hệ hotline",
+            "catalogue mẫu",
+            "miễn phí tại đây",
+            "yêu cầu catalogue",
+            "nhấn vào đây",
+            "xem thêm tại đây",
+            "liên hệ ngay"
+        ]
+    },
+    "seo_scoring": {
+        "rules": {
+            "missing_focus_keyword": {
+                "enabled": true,
+                "deduction": 100
+            },
+            "h2_missing": {
+                "enabled": true,
+                "deduction": 20
+            },
+            "content_length_low": {
+                "enabled": true,
+                "deduction": 15
+            },
+            "image_ratio_missing": {
+                "enabled": true,
+                "deduction": 12
+            },
+            "image_ratio_poor": {
+                "enabled": true,
+                "deduction": 7
+            },
+            "image_ratio_low": {
+                "enabled": true,
+                "deduction": 4
+            },
+            "image_ratio_suboptimal": {
+                "enabled": true,
+                "deduction": 2
+            },
+            "image_alt_missing": {
+                "enabled": true,
+                "deduction": 5
+            },
+            "wiki_trust_missing": {
+                "enabled": true,
+                "deduction": 15
+            },
+            "faq_missing": {
+                "enabled": true,
+                "deduction": 10
+            },
+            "keyword_missing_in_title": {
+                "enabled": true,
+                "deduction": 4
+            },
+            "keyword_missing_in_meta": {
+                "enabled": true,
+                "deduction": 4
+            },
+            "keyword_missing_in_slug": {
+                "enabled": true,
+                "deduction": 4
+            },
+            "keyword_missing_in_intro": {
+                "enabled": true,
+                "deduction": 3
+            },
+            "featured_snippet_missing": {
+                "enabled": true,
+                "deduction": 10
+            },
+            "featured_snippet_below_good": {
+                "enabled": true,
+                "deduction": 7
+            },
+            "featured_snippet_below_excellent": {
+                "enabled": true,
+                "deduction": 4
+            }
+        }
+    },
+    "prompt_runtime": {
+        "tone_text": "Viết bằng giọng văn chuyên nghiệp, rõ ràng, phù hợp đối tượng đọc tại Việt Nam.",
+        "tone_of_voice": [
+            "Chuyên nghiệp",
+            "Thân thiện, gần gũi",
+            "Trang trọng, uy tín",
+            "Năng động, trẻ trung",
+            "Khách quan, trung lập",
+            "Thuyết phục, bán hàng",
+            "Giáo dục, hướng dẫn",
+            "Hài hước nhẹ nhàng",
+            "Cao cấp (premium)",
+            "Địa phương, thuần Việt"
+        ],
+        "article_length_product": "1000",
+        "article_length_default": "2000",
+        "keyword_density_product": "Mật độ từ khóa tự nhiên; ưu tiên mô tả sản phẩm, thông số và lợi ích, tránh nhồi nhét.",
+        "keyword_density_default": "Mật độ từ khóa chính tự nhiên (khoảng 0,8–1,2%), phân bổ ở tiêu đề, đoạn mở, các heading H2/H3 và thân bài.",
+        "default_prompt_language": "vi",
+        "featured_snippet_rows_min": 6,
+        "featured_snippet_rows_range": 8,
+        "featured_snippet_rows_max": 10,
+        "featured_snippet_min_columns": 2,
+        "featured_snippet_max_columns": 5
+    }
+}

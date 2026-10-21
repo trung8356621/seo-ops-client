@@ -115,6 +115,7 @@ return [
     'api_access_create_failed' => 'Không tạo được API key',
     'api_access_rotate_failed' => 'Không xoay được API key',
     'api_access_not_found' => 'Không tìm thấy API credential',
+    'api_access_root_only' => 'Chỉ account owner (Root) được tạo, thu hồi hoặc xoay API key.',
 
     'site_resource_navigation_label' => 'Quản lý website',
     'site_resource_model_label' => 'Website',
