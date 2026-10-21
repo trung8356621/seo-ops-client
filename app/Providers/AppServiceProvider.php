@@ -42,6 +42,18 @@ class AppServiceProvider extends ServiceProvider
             \Omnichannel\Addons\SearchFoundation\Contracts\IndustryContextKeyResolver::class,
             \App\IndustryContext\SiteIndustryContextKeyResolver::class,
         );
+        $this->app->singleton(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\InstallationMachineCredentialProvider::class,
+            \App\Services\ConfigurationSync\BlockedInstallationMachineCredentialProvider::class,
+        );
+        $this->app->singleton(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\SeoEntitlementProbe::class,
+            \App\Services\ConfigurationSync\LocalSeoEntitlementProbe::class,
+        );
+        $this->app->singleton(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\ConfigHttpSender::class,
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\LaravelConfigHttpSender::class,
+        );
         $this->registerInterventionImageManager();
         $this->app->bind(FilamentLogoutResponse::class, CanonicalLogoutResponse::class);
 

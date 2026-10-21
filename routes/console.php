@@ -158,3 +158,9 @@ Artisan::command('seo:media-flatten-paths {--dry-run}', function () {
 
 Schedule::command('ai:wallet-check-balance')->hourly();
 
+if ((bool) config('configuration-sync.schedule_enabled', false)) {
+    Schedule::command('seo:config-sync')
+        ->hourly()
+        ->withoutOverlapping(30);
+}
+
