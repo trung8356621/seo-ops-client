@@ -33,6 +33,7 @@ return [
     'meta_jobs' => 'Job nặng',
     'meta_background' => 'Nền',
     'meta_threshold' => 'Ngưỡng user',
+    'threshold_note' => 'Vượt ngưỡng này, hệ thống tạm hoãn tác vụ nặng chạy ngầm. Không giới hạn số người đăng nhập.',
     'mode_restricted' => 'Hạn chế',
     'mode_adaptive' => 'Thích ứng',
     'resource_warning' => 'Preset cao hơn tốn thêm CPU/RAM. Chỉ tăng khi máy còn dư.',

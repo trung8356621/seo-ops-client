@@ -2,6 +2,7 @@
 @import 'tailwindcss/utilities.css' layer(utilities);
 
 @source '../../../views/filament/pages/dashboard.blade.php';
+@source '../../../views/filament/pages/system-performance-settings.blade.php';
 @source '../../../../addons/seo-content-ai-compat/resources/views/filament/pages/partials/ai-usage/*.blade.php';
 
 @layer components {

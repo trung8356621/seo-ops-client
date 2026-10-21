@@ -33,6 +33,7 @@ return [
     'meta_jobs' => 'Heavy jobs',
     'meta_background' => 'Background',
     'meta_threshold' => 'User threshold',
+    'threshold_note' => 'Above this threshold, heavy background work is deferred. Sign-ins are not limited.',
     'mode_restricted' => 'Restricted',
     'mode_adaptive' => 'Adaptive',
     'resource_warning' => 'Higher presets use more CPU/RAM. Raise only if the server has spare capacity.',

@@ -41,6 +41,18 @@
 
 <div>
     <x-filament-panels::page>
+        @php
+            $performanceThemeVite = '';
+            try {
+                $performanceThemeVite = (string) app(\Illuminate\Foundation\Vite::class)([
+                    'resources/css/filament/admin/theme.css',
+                ]);
+            } catch (\Throwable) {
+                $performanceThemeVite = '';
+            }
+        @endphp
+        {!! $performanceThemeVite !!}
+
         <div class="seo-settings-root">
             @include('seo-content-ai::filament.pages.partials.seo-settings-sidebar', ['active' => 'performance'])
 
@@ -138,6 +150,7 @@
                                             <span class="col-span-2 rounded-xl bg-white/65 p-2.5 dark:bg-white/[0.06]">
                                                 <span class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"><x-filament::icon icon="heroicon-o-users" class="h-4 w-4" />{{ __('performance.meta_threshold') }}</span>
                                                 <strong class="mt-1 block text-sm text-gray-950 dark:text-white">{{ $card['threshold'] }}</strong>
+                                                <small class="mt-1 block text-[10px] font-normal leading-4 text-gray-500 dark:text-gray-400">{{ __('performance.threshold_note') }}</small>
                                             </span>
                                         </div>
 
