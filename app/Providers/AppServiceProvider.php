@@ -42,10 +42,8 @@ class AppServiceProvider extends ServiceProvider
             \Omnichannel\Addons\SearchFoundation\Contracts\IndustryContextKeyResolver::class,
             \App\IndustryContext\SiteIndustryContextKeyResolver::class,
         );
-        $this->app->singleton(
-            \Omnichannel\Addons\Seo\Services\ConfigurationSync\InstallationMachineCredentialProvider::class,
-            \App\Services\ConfigurationSync\BlockedInstallationMachineCredentialProvider::class,
-        );
+        // InstallationMachineCredentialProvider is bound by H1LicenseServiceProvider
+        // (H1-backed; returns null until enrolled — replaces Blocked provider).
         $this->app->singleton(
             \Omnichannel\Addons\Seo\Services\ConfigurationSync\SeoEntitlementProbe::class,
             \App\Services\ConfigurationSync\LocalSeoEntitlementProbe::class,

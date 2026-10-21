@@ -13,7 +13,7 @@ use App\Support\RuntimeLogger;
  * commands have been authenticated and applied successfully by H1.
  * This class does not implement HMAC / ACK / recovery / machine credentials.
  */
-final class EntitlementAppliedHook
+class EntitlementAppliedHook
 {
     public function __construct(
         private readonly EntitlementPresentationStore $presentationStore,

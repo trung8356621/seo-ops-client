@@ -1,0 +1,22 @@
+{
+  "protocol": "seo-ops-license/1",
+  "encoding": "UTF-8; LF separators; unpadded base64url",
+  "algorithm": "HMAC-SHA-256",
+  "test_secret_base64url": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8",
+  "vectors": [
+    {
+      "name": "client_reconcile_request",
+      "body_utf8": "{\"protocol\":\"seo-ops-license/1\",\"request_id\":\"req_vector_01\"}",
+      "content_sha256_base64url": "HBTv2LIpYGBqtFyJfR-W6eOo4JrjH72rgZUI68DgZy0",
+      "signing_string_utf8": "seo-ops-license/1\nPOST\n/api/v1/installations/ins_01/license/reconcile\n2026-10-17T08:00:00Z\nAAECAwQFBgcICQoLDA0ODw\nHBTv2LIpYGBqtFyJfR-W6eOo4JrjH72rgZUI68DgZy0",
+      "signature_base64url": "gr0LqT0uvGOGPp5X5otPFjNhbV1clUNjsWS1beZ6zTU"
+    },
+    {
+      "name": "server_reconcile_response",
+      "body_utf8": "{\"protocol\":\"seo-ops-license/1\",\"request_id\":\"req_vector_01\",\"server_time\":\"2026-10-17T08:00:01Z\",\"commands\":[]}",
+      "content_sha256_base64url": "LvPR5Co3fYp7HeL-i69obdFhiGn8ZQIM1G6pdS0KmpI",
+      "signing_string_utf8": "seo-ops-license/1\n200\nAAECAwQFBgcICQoLDA0ODw\n2026-10-17T08:00:01Z\nEBESExQVFhcYGRobHB0eHw\nLvPR5Co3fYp7HeL-i69obdFhiGn8ZQIM1G6pdS0KmpI",
+      "signature_base64url": "i3FNtiBkzgJ5mcXNIBRd-YL9vwZJLv6Ya9XpGC0c2o0"
+    }
+  ]
+}

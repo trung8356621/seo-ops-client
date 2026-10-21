@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use App\Models\Concerns\UsesCoreDatabaseConnection;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
+use App\Services\H1\Exceptions\H1CommandException;
+use App\Services\H1\Sites\AdminSiteStatusPolicy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -11,13 +14,44 @@ class Site extends Model
     use SoftDeletes;
     use UsesCoreDatabaseConnection;
 
-    protected $fillable = ['user_id', 'subscription_id', 'domain', 'status', 'ssl'];
+    protected $fillable = ['user_id', 'subscription_id', 'domain', 'status', 'ssl', 'h1_is_anchor'];
 
-    protected $casts = ['ssl' => 'boolean'];
+    protected $casts = [
+        'ssl' => 'boolean',
+        'h1_is_anchor' => 'boolean',
+    ];
 
     protected static function booted(): void
     {
+        static::saving(function (Site $site): void {
+            if ((string) $site->status !== AdminSiteStatusPolicy::STATUS_ACTIVE) {
+                return;
+            }
+            if ($site->exists && (string) $site->getOriginal('status') === AdminSiteStatusPolicy::STATUS_ACTIVE) {
+                return;
+            }
+
+            try {
+                $gate = app(ServiceEntitlementGate::class);
+                if (! $gate->enforcementActive()) {
+                    return;
+                }
+                if (! $gate->allows('seo')) {
+                    throw new H1CommandException('seo_not_licensed', 'SEO service is not licensed for activation.');
+                }
+                app(AdminSiteStatusPolicy::class)->assertCanActivate($site, $gate->seoQuota());
+            } catch (H1CommandException $e) {
+                throw new \RuntimeException($e->getMessage(), 0, $e);
+            }
+        });
+
         static::deleting(function (Site $site): void {
+            try {
+                app(AdminSiteStatusPolicy::class)->assertDeletable($site);
+            } catch (H1CommandException $e) {
+                throw new \RuntimeException($e->getMessage(), 0, $e);
+            }
+
             if ($site->isForceDeleting()) {
                 return;
             }
@@ -31,6 +65,14 @@ class Site extends Model
             $site->forceFill([
                 'domain' => $domain.'__trashed__'.$site->getKey(),
             ])->saveQuietly();
+        });
+
+        static::forceDeleting(function (Site $site): void {
+            try {
+                app(AdminSiteStatusPolicy::class)->assertDeletable($site);
+            } catch (H1CommandException $e) {
+                throw new \RuntimeException($e->getMessage(), 0, $e);
+            }
         });
     }
 
