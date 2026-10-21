@@ -123,6 +123,30 @@ return [
             ]) : [],
         ],
 
+        /*
+        | Social Automation service DB plane (independent peer service).
+        | Physical database name must never fall back to omi_seo_ai / omi_seeding.
+        */
+        'omi_social_automation' => [
+            'driver' => 'mysql',
+            'url' => env('SOCIAL_AUTOMATION_DB_URL'),
+            'host' => env('SOCIAL_AUTOMATION_DB_HOST', env('DB_HOST', '127.0.0.1')),
+            'port' => env('SOCIAL_AUTOMATION_DB_PORT', env('DB_PORT', '3306')),
+            'database' => env('SOCIAL_AUTOMATION_DB_DATABASE', env('SOCIAL_AUTOMATION_TEST_DATABASE', 'omi_social_automation')),
+            'username' => env('SOCIAL_AUTOMATION_DB_USERNAME', env('DB_USERNAME', 'root')),
+            'password' => env('SOCIAL_AUTOMATION_DB_PASSWORD', env('DB_PASSWORD', '')),
+            'unix_socket' => env('SOCIAL_AUTOMATION_DB_SOCKET', env('DB_SOCKET', '')),
+            'charset' => env('DB_CHARSET', 'utf8mb4'),
+            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mariadb' => [
             'driver' => 'mariadb',
             'url' => env('DB_URL'),

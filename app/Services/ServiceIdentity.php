@@ -16,10 +16,12 @@ final class ServiceIdentity
 
     public const PUBLIC_SEEDING = 'seeding';
 
+    public const PUBLIC_SOCIAL_AUTOMATION = 'social-automation';
+
     /** @return list<string> */
     public static function knownPublicSlugs(): array
     {
-        return [self::PUBLIC_SEO, self::PUBLIC_SEEDING];
+        return [self::PUBLIC_SEO, self::PUBLIC_SEEDING, self::PUBLIC_SOCIAL_AUTOMATION];
     }
 
     /**
@@ -30,6 +32,7 @@ final class ServiceIdentity
         return match ($publicSlug) {
             self::PUBLIC_SEO => ['seo-content-ai', 'seo'],
             self::PUBLIC_SEEDING => ['seeding'],
+            self::PUBLIC_SOCIAL_AUTOMATION => ['social-automation'],
             default => [$publicSlug],
         };
     }
@@ -39,6 +42,7 @@ final class ServiceIdentity
         return match ($catalogSlug) {
             'seo-content-ai', 'seo' => self::PUBLIC_SEO,
             'seeding' => self::PUBLIC_SEEDING,
+            'social-automation' => self::PUBLIC_SOCIAL_AUTOMATION,
             default => $catalogSlug,
         };
     }
@@ -48,6 +52,7 @@ final class ServiceIdentity
         return match ($publicSlug) {
             self::PUBLIC_SEO => 'SEO',
             self::PUBLIC_SEEDING => 'Seeding',
+            self::PUBLIC_SOCIAL_AUTOMATION => 'Social Automation',
             default => ucfirst($publicSlug),
         };
     }
@@ -57,6 +62,7 @@ final class ServiceIdentity
         return match ($publicSlug) {
             self::PUBLIC_SEO => url('/seo'),
             self::PUBLIC_SEEDING => url('/seeding'),
+            self::PUBLIC_SOCIAL_AUTOMATION => url('/social-automation'),
             default => url('/'),
         };
     }
@@ -66,6 +72,7 @@ final class ServiceIdentity
         return match ($publicSlug) {
             self::PUBLIC_SEO => 'omi_seo_ai',
             self::PUBLIC_SEEDING => 'omi_seeding',
+            self::PUBLIC_SOCIAL_AUTOMATION => 'omi_social_automation',
             default => 'mysql',
         };
     }

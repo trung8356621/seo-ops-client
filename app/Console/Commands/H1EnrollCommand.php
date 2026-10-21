@@ -28,7 +28,6 @@ final class H1EnrollCommand extends Command
         $this->line('installation_id='.$result['installation_id']);
         $this->line('credential_id='.$result['credential_id']);
         $this->line('revision='.$result['revision']);
-        $this->warn('Live HTTP enrollment remains blocked until OPS-SERVER exposes POST /api/v1/enrollment/consume.');
 
         return self::SUCCESS;
     }

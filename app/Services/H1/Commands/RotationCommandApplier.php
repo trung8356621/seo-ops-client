@@ -43,15 +43,18 @@ final class RotationCommandApplier
             ->first();
         if ($existing instanceof H1CommandReceipt) {
             if ($existing->payload_hash !== $hash) {
-                return $this->ack($command, 'rejected', 'idempotency_conflict', false);
+                return $this->ack($command, 'rejected', 'idempotency_conflict', false, null, (int) $installation->entitlement_revision);
             }
 
             $stored = is_array($existing->ack_json) ? $existing->ack_json : [];
             $version = isset($stored['observed_state']['credential_version'])
                 ? (int) $stored['observed_state']['credential_version']
                 : null;
+            $rev = isset($stored['observed_state']['entitlement_revision'])
+                ? (int) $stored['observed_state']['entitlement_revision']
+                : (int) $installation->entitlement_revision;
 
-            return $this->ack($command, 'duplicate', null, false, $version);
+            return $this->ack($command, 'duplicate', null, false, $version, $rev);
         }
 
         $from = is_array($command['from_credential'] ?? null) ? $command['from_credential'] : [];
@@ -62,12 +65,12 @@ final class RotationCommandApplier
         $toVersion = (int) ($to['version'] ?? 0);
 
         if ($fromVersion !== (int) $installation->credential_version || $toVersion !== $fromVersion + 1) {
-            return $this->persist($installation, $command, $hash, $this->ack($command, 'rejected', 'credential_version_mismatch', false));
+            return $this->persist($installation, $command, $hash, $this->ack($command, 'rejected', 'credential_version_mismatch', false, null, (int) $installation->entitlement_revision));
         }
 
         $auth = is_array($command['authorization'] ?? null) ? $command['authorization'] : [];
         if (($auth['method'] ?? '') === '' || ($auth['authorization_id'] ?? '') === '') {
-            return $this->persist($installation, $command, $hash, $this->ack($command, 'rejected', 'invalid_state', false));
+            return $this->persist($installation, $command, $hash, $this->ack($command, 'rejected', 'invalid_state', false, null, (int) $installation->entitlement_revision));
         }
 
         try {
@@ -77,7 +80,7 @@ final class RotationCommandApplier
                 $fromId,
             );
         } catch (H1CommandException $e) {
-            return $this->ack($command, 'failed', $e->errorCode, true);
+            return $this->ack($command, 'failed', $e->errorCode, true, null, (int) $installation->entitlement_revision);
         }
 
         return DB::transaction(function () use ($installation, $command, $commandId, $rotationId, $hash, $fromId, $toId, $toVersion, $secret): array {
@@ -119,7 +122,7 @@ final class RotationCommandApplier
             ];
             $locked->save();
 
-            $ack = $this->ack($command, 'applied', null, false, $toVersion);
+            $ack = $this->ack($command, 'applied', null, false, $toVersion, (int) $locked->entitlement_revision);
             $this->persist($locked, $command, $hash, $ack, $rotationId);
 
             return $ack;
@@ -196,6 +199,7 @@ final class RotationCommandApplier
         ?string $reason,
         bool $retryable,
         ?int $credentialVersion = null,
+        ?int $entitlementRevision = null,
     ): array {
         return [
             'protocol' => LicenseProtocol::ID,
@@ -207,7 +211,7 @@ final class RotationCommandApplier
             'reason' => $reason,
             'retryable' => $retryable,
             'observed_state' => [
-                'entitlement_revision' => null,
+                'entitlement_revision' => $entitlementRevision ?? 1,
                 'credential_version' => $credentialVersion ?? (int) (($command['to_credential']['version'] ?? 0)),
                 'last_command_id' => (string) ($command['command_id'] ?? ''),
                 'quota_overflow_reset' => false,

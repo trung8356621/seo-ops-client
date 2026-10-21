@@ -75,6 +75,11 @@ return [
             'connection' => 'omi_seeding',
             'path' => 'addons/seeding/database/migrations',
         ],
+        'social-automation' => [
+            // Dedicated plane — business schema (sa_*) starts Phase B Package Registry.
+            'connection' => 'omi_social_automation',
+            'path' => 'addons/social-automation/database/migrations',
+        ],
         // _legacy-obsolete / seeding legacy-experimental intentionally omitted from active discovery.
     ],
 

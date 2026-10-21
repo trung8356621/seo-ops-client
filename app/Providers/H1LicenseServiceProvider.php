@@ -15,10 +15,12 @@ use App\Services\H1\Enrollment\BlockedEnrollmentTransport;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Enrollment\EnrollmentTransport;
 use App\Services\H1\Enrollment\FixtureEnrollmentTransport;
+use App\Services\H1\Enrollment\HttpEnrollmentTransport;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Protocol\SignedHttpTransport;
 use App\Services\H1\Reconcile\LicenseReconcileService;
 use App\Services\H1\Rotation\BlockedRotationSecretTransport;
+use App\Services\H1\Rotation\HttpRotationSecretTransport;
 use App\Services\H1\Rotation\RotationSecretTransport;
 use App\Services\H1\Sites\AdminSiteStatusPolicy;
 use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
@@ -43,6 +45,9 @@ final class H1LicenseServiceProvider extends ServiceProvider
 
         $this->app->singleton(EnrollmentTransport::class, function ($app) {
             $driver = (string) config('h1-license.enrollment.transport', 'blocked');
+            if ($driver === 'http') {
+                return $app->make(HttpEnrollmentTransport::class);
+            }
             if ($driver === 'fixture' && $app->bound(FixtureEnrollmentTransport::class)) {
                 return $app->make(FixtureEnrollmentTransport::class);
             }
@@ -50,7 +55,14 @@ final class H1LicenseServiceProvider extends ServiceProvider
             return $app->make(BlockedEnrollmentTransport::class);
         });
 
-        $this->app->singleton(RotationSecretTransport::class, BlockedRotationSecretTransport::class);
+        $this->app->singleton(RotationSecretTransport::class, function ($app) {
+            $driver = (string) config('h1-license.rotation.transport', 'blocked');
+            if ($driver === 'http') {
+                return $app->make(HttpRotationSecretTransport::class);
+            }
+
+            return $app->make(BlockedRotationSecretTransport::class);
+        });
 
         $this->app->singleton(H1InstallationMachineCredentialProvider::class);
         $this->app->singleton(

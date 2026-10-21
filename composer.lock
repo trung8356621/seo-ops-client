@@ -4750,7 +4750,7 @@
             "dist": {
                 "type": "path",
                 "url": "../omnichannel-addons",
-                "reference": "1f213dbfe9a40a770933533d7b6be408b8c6a21d"
+                "reference": "d62d93240ad3c160fdf4345234436d7e3724115a"
             },
             "require": {
                 "php": "^8.2"
@@ -4773,6 +4773,7 @@
                     "Omnichannel\\Addons\\Social\\": "social/src/",
                     "Omnichannel\\Addons\\Commerce\\": "commerce/src/",
                     "Omnichannel\\Addons\\Seeding\\": "seeding/src/",
+                    "Omnichannel\\Addons\\SocialAutomation\\": "social-automation/src/",
                     "App\\Addons\\SeoContentAi\\": "seo-content-ai-compat/"
                 }
             },
@@ -4791,7 +4792,8 @@
                     "Omnichannel\\Addons\\Agent\\Tests\\": "agent/tests/",
                     "Omnichannel\\Addons\\AgentRuntime\\Tests\\": "agent-runtime/tests/",
                     "Omnichannel\\Addons\\Social\\Tests\\": "social/tests/",
-                    "Omnichannel\\Addons\\Seeding\\Tests\\": "seeding/tests/"
+                    "Omnichannel\\Addons\\Seeding\\Tests\\": "seeding/tests/",
+                    "Omnichannel\\Addons\\SocialAutomation\\Tests\\": "social-automation/tests/"
                 }
             },
             "license": [

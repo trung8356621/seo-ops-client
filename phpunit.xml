@@ -57,6 +57,9 @@
         <testsuite name="SeedingAddon">
             <directory suffix="Test.php">./addons/seeding/tests</directory>
         </testsuite>
+        <testsuite name="SocialAutomationAddon">
+            <directory suffix="Test.php">./addons/social-automation/tests</directory>
+        </testsuite>
     </testsuites>
     <source>
         <include>
