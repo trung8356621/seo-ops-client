@@ -196,9 +196,28 @@ final class ClientCoreServiceProvider extends ServiceProvider
                     return new HtmlString('');
                 }
 
+                if (! self::isLivewireComponentAvailable('operational-alert-hook')) {
+                    return new HtmlString('');
+                }
+
                 return new HtmlString(view('filament.hooks.operational-alert-hook')->render());
             },
         );
+    }
+
+    public static function isLivewireComponentAvailable(string $name): bool
+    {
+        if (! class_exists(\Livewire\Livewire::class)) {
+            return false;
+        }
+
+        try {
+            app(\Livewire\Mechanisms\ComponentRegistry::class)->getClass($name);
+
+            return true;
+        } catch (\Throwable) {
+            return false;
+        }
     }
 
     /**
