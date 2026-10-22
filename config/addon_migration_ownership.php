@@ -31,7 +31,7 @@ return [
             'path' => 'addons/search-intelligence/database/migrations',
         ],
         'ai-prompt' => [
-            'connection' => 'mysql',
+            'connection' => 'omi_seo_ai',
             'path' => 'addons/ai-prompt/database/migrations',
         ],
         'content' => [

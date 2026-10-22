@@ -63,20 +63,26 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(except: [
-            // Tạm thời để trống hoặc thêm các route nếu cần
+            'setup/api/*',
+            'admin/wp-headless/connect/*', // Cho phép các route này bỏ qua CSRF
         ]);
 
         $middleware->statefulApi(); // Đảm bảo session được giữ cho các request API/Livewire
 
+        $middleware->prepend(\App\Http\Middleware\EnsureApplicationInstalled::class);
+        $middleware->prependToPriorityList(
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \App\Http\Middleware\EnsureApplicationInstalled::class,
+        );
         $middleware->append(\App\Http\Middleware\LogLocalSlowHttpMiddleware::class);
-        $middleware->web(append: [
-            \App\Http\Middleware\TouchActiveUserPresence::class,
-        ]);
-    })
-    ->withMiddleware(function (Middleware $middleware) {
-        $middleware->validateCsrfTokens(except: [
-            'admin/wp-headless/connect/*', // Cho phép các route này bỏ qua CSRF
-        ]);
+        $middleware->web(
+            prepend: [
+                \App\Http\Middleware\EnsureApplicationInstalled::class,
+            ],
+            append: [
+                \App\Http\Middleware\TouchActiveUserPresence::class,
+            ],
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // HTTP → web_app only. Returning false skips default channel (laravel.log),

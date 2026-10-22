@@ -55,9 +55,13 @@ final class AddonMigrationRegistrar
     {
         $owners = config('addon_migration_ownership.owners', []);
         $byConnection = [];
+        $skipSlugs = array_fill_keys(config('addons.skip_slugs', []), true);
 
-        foreach ($owners as $meta) {
+        foreach ($owners as $owner => $meta) {
             if (! is_array($meta)) {
+                continue;
+            }
+            if (isset($skipSlugs[$owner])) {
                 continue;
             }
             $connection = (string) ($meta['connection'] ?? 'omi_seo_ai');

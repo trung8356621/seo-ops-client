@@ -5,7 +5,22 @@ use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
-Route::redirect('/', '/seo');
+Route::get('/', static function (\App\Core\Installation\InstallationStateManager $stateManager) {
+    if ($stateManager->currentStatus() === \App\Core\Installation\InstallationState::DATABASE_UNAVAILABLE) {
+        return response()->view('setup.maintenance', [
+            'title' => 'Bảo trì hệ thống — Database Unavailable',
+            'message' => 'Không thể kết nối đến cơ sở dữ liệu. Hệ thống đang tạm thời ngoại tuyến để bảo trì.',
+        ], 503);
+    }
+
+    if ($stateManager->currentStatus() !== \App\Core\Installation\InstallationState::INSTALLED) {
+        return redirect('/setup');
+    }
+
+    return redirect('/seo');
+});
+
+require __DIR__.'/setup.php';
 
 Route::get('/login', [LoginController::class, 'create'])->name('login');
 Route::post('/login', [LoginController::class, 'store'])

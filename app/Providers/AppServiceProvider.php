@@ -82,6 +82,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->ensureSafeSessionDriverDuringInstallation();
+
         $this->registerFallbackTestCommand();
 
         // HTTP/PHP-FPM → web_app only. Cron/queue giữ LOG_CHANNEL (laravel.log).
@@ -294,5 +296,33 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->register($providerClass);
         $this->registeredAddonProviders[$providerClass] = true;
+    }
+
+    private function ensureSafeSessionDriverDuringInstallation(): void
+    {
+        try {
+            $installerLock = storage_path('installer/installed.lock');
+            if (is_file($installerLock)) {
+                return;
+            }
+
+            $stateFile = storage_path('installer/state.json');
+            if (is_file($stateFile)) {
+                $raw = @file_get_contents($stateFile);
+                $decoded = is_string($raw) ? json_decode($raw, true) : null;
+                if (is_array($decoded) && ($decoded['status'] ?? '') === 'installed') {
+                    return;
+                }
+            }
+
+            if (config('session.driver') === 'database') {
+                $coreConn = (string) config('database.core_connection', config('database.default', 'mysql'));
+                if (! Schema::connection($coreConn)->hasTable('sessions')) {
+                    config(['session.driver' => 'file']);
+                }
+            }
+        } catch (\Throwable) {
+            config(['session.driver' => 'file']);
+        }
     }
 }

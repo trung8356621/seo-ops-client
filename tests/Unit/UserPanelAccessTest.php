@@ -91,6 +91,19 @@ final class UserPanelAccessTest extends TestCase
         $this->assertFalse($blocked->canAccessPanel($panel));
     }
 
+    public function test_authenticated_non_blocked_user_can_access_social_automation_panel(): void
+    {
+        $owner = $this->makeUser(User::ROLE_OWNER);
+        $staff = $this->makeUser(User::ROLE_STAFF, parentId: 10);
+        $blocked = $this->makeUser(User::ROLE_OWNER, status: User::STATUS_BLOCK);
+
+        $panel = $this->panelWithId('social-automation');
+
+        $this->assertTrue($owner->canAccessPanel($panel));
+        $this->assertTrue($staff->canAccessPanel($panel));
+        $this->assertFalse($blocked->canAccessPanel($panel));
+    }
+
     private function makeUser(
         string $role,
         ?int $parentId = null,

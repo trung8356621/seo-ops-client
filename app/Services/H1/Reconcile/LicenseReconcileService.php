@@ -71,7 +71,15 @@ final class LicenseReconcileService
         if ($mockedResponse !== null) {
             $decoded = $mockedResponse;
         } else {
-            $base = rtrim((string) ($installation->control_server_url ?: config('h1-license.base_url', '')), '/');
+            $configuredBase = trim((string) config('h1-license.base_url', ''));
+            $base = rtrim($configuredBase !== '' ? $configuredBase : (string) ($installation->control_server_url ?: ''), '/');
+            if ($configuredBase !== '' && (string) $installation->control_server_url !== $configuredBase) {
+                try {
+                    $installation->control_server_url = $configuredBase;
+                    $installation->save();
+                } catch (\Throwable) {
+                }
+            }
             try {
                 $secret = $credential->secretBase64Url();
                 $result = $this->http->postSigned(

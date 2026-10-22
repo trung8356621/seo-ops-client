@@ -57,6 +57,7 @@ class AdminPanelProvider extends PanelProvider
                 \App\Filament\Widgets\ServiceQuickShortcutsWidget::class,
             ])
             ->middleware([
+                \App\Http\Middleware\EnsureApplicationInstalled::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

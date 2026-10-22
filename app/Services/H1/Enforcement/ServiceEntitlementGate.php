@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\H1\Enforcement;
 
+use App\Core\Installation\InstallationStateManager;
 use App\Models\H1Installation;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
@@ -16,6 +17,7 @@ final class ServiceEntitlementGate
     public function __construct(
         private readonly InstallationStateRepository $installations,
         private readonly EntitlementSnapshotMapper $mapper,
+        private readonly ?InstallationStateManager $installationState = null,
     ) {}
 
     public function enforcementActive(): bool
@@ -28,6 +30,14 @@ final class ServiceEntitlementGate
         // only when installation cutover_mode is enforcing.
         $installation = $this->installations->currentInstallation();
         if ($installation instanceof H1Installation && $installation->cutover_mode === 'enforcing') {
+            return true;
+        }
+
+        // Fresh V1 installation boundary:
+        // A fresh completed installation must enforce entitlement (denying commercial operations)
+        // rather than failing open via legacy pre_enrollment compatibility.
+        $stateManager = $this->installationState ?? app(InstallationStateManager::class);
+        if ($stateManager->isFreshUnlicensed()) {
             return true;
         }
 
