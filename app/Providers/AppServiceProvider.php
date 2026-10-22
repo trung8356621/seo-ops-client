@@ -204,9 +204,19 @@ class AppServiceProvider extends ServiceProvider
             $skip = config('addons.skip_slugs', []);
             $manifests = $discovery->discover($roots, $skip);
             $registry->replaceAll($manifests);
+            /** @var \App\Core\Addon\AddonReadinessValidator $readinessValidator */
+            $readinessValidator = $this->app->make(\App\Core\Addon\AddonReadinessValidator::class);
 
             foreach ($manifests as $manifest) {
                 if (! $manifest->registerEarly) {
+                    continue;
+                }
+
+                $readiness = $readinessValidator->validateManifest($manifest);
+                if (! $readiness->isReady()) {
+                    \App\Support\RuntimeLogger::report(
+                        new \RuntimeException("Fail-isolation: skipped early provider registration for [{$manifest->slug}]: {$readiness->diagnostic()}")
+                    );
                     continue;
                 }
 
@@ -243,6 +253,14 @@ class AppServiceProvider extends ServiceProvider
 
                 $manifest = $registry->get($slug);
                 if ($manifest !== null) {
+                    $readiness = $readinessValidator->validateManifest($manifest);
+                    if (! $readiness->isReady()) {
+                        \App\Support\RuntimeLogger::report(
+                            new \RuntimeException("Fail-isolation: skipped active provider registration for [{$slug}]: {$readiness->diagnostic()}")
+                        );
+                        continue;
+                    }
+
                     foreach ($manifest->allProviderClasses() as $providerClass) {
                         $this->registerAddonProviderClass($providerClass);
                     }

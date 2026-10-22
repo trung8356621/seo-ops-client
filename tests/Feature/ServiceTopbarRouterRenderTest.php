@@ -22,21 +22,21 @@ final class ServiceTopbarRouterRenderTest extends TestCase
         $urls = [
             'admin' => url('/admin'),
             'seo' => url('/seo'),
-            'seeding' => url('/seeding'),
+            'automation' => url('/social-automation'),
         ];
 
         $registry = new WorkspaceDestinationRegistry;
         foreach ([
             ['admin', $urls['admin'], 0],
             ['seo', $urls['seo'], 10],
-            ['seeding', $urls['seeding'], 20],
+            ['automation', $urls['automation'], 20],
         ] as [$key, $url, $sort]) {
             $registry->register(new WorkspaceDestination(
                 key: $key,
                 label: $key,
                 url: $url,
                 sort: $sort,
-                panelId: $key === 'seo' ? 'seo' : $key,
+                panelId: $key === 'seo' ? 'seo' : ($key === 'automation' ? 'social-automation' : $key),
                 canAccess: static fn (User $user): bool => true,
             ));
         }
@@ -52,7 +52,7 @@ final class ServiceTopbarRouterRenderTest extends TestCase
         foreach ([
             ['panel' => 'admin', 'path' => '/admin', 'active' => 'admin'],
             ['panel' => 'seo-main', 'path' => '/seo', 'active' => 'seo'],
-            ['panel' => 'seeding', 'path' => '/seeding', 'active' => 'seeding'],
+            ['panel' => 'social-automation', 'path' => '/social-automation', 'active' => 'automation'],
         ] as $ctx) {
             try {
                 Filament::setCurrentPanel(Filament::getPanel($ctx['panel']));
@@ -67,8 +67,8 @@ final class ServiceTopbarRouterRenderTest extends TestCase
             self::assertStringContainsString('data-service-router', $html, $ctx['panel']);
             self::assertStringContainsString('data-service="admin"', $html);
             self::assertStringContainsString('data-service="seo"', $html);
-            self::assertStringContainsString('data-service="seeding"', $html);
-            foreach (['admin', 'seo', 'seeding'] as $key) {
+            self::assertStringContainsString('data-service="automation"', $html);
+            foreach (['admin', 'seo', 'automation'] as $key) {
                 if ($key === $ctx['active']) {
                     continue;
                 }

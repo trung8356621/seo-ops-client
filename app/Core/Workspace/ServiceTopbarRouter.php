@@ -16,10 +16,10 @@ use Throwable;
 final class ServiceTopbarRouter
 {
     /** Canonical cross-service keys (excludes Tools hub cards). */
-    public const KEYS = ['admin', 'seo', 'seeding'];
+    public const KEYS = ['admin', 'seo', 'automation'];
 
     /** Panels that should show the shared router. */
-    public const PANEL_IDS = ['admin', 'seo', 'seo-main', 'seeding'];
+    public const PANEL_IDS = ['admin', 'seo', 'seo-main', 'seeding', 'social-automation'];
 
     public function __construct(
         private readonly WorkspaceDestinationRegistry $destinations,
@@ -83,6 +83,9 @@ final class ServiceTopbarRouter
         if ($path === 'admin' || str_starts_with($path, 'admin/')) {
             return 'admin';
         }
+        if ($path === 'social-automation' || str_starts_with($path, 'social-automation/')) {
+            return 'automation';
+        }
         if ($path === 'seeding' || str_starts_with($path, 'seeding/')) {
             return 'seeding';
         }
@@ -98,6 +101,7 @@ final class ServiceTopbarRouter
 
         return match ($panelId) {
             'admin' => 'admin',
+            'social-automation' => 'automation',
             'seeding' => 'seeding',
             'seo', 'seo-main' => 'seo',
             default => null,
@@ -135,6 +139,13 @@ final class ServiceTopbarRouter
                     return $user->canAccessSeoPanel();
                 },
             ),
+            'automation' => new WorkspaceDestination(
+                key: 'automation',
+                label: 'Automation',
+                url: url('/social-automation'),
+                sort: 20,
+                panelId: 'social-automation',
+            ),
             'seeding' => new WorkspaceDestination(
                 key: 'seeding',
                 label: 'Seeding',
@@ -151,6 +162,7 @@ final class ServiceTopbarRouter
         return match ($key) {
             'admin' => (string) __('services.admin'),
             'seo' => (string) __('services.seo'),
+            'automation' => (string) __('services.automation'),
             'seeding' => (string) __('services.seeding'),
             default => $key,
         };

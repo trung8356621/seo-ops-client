@@ -12,6 +12,16 @@ return [
     ))),
 
     /*
+    | Addon slugs that are explicitly declared deployment-ready when
+    | the manifest does not declare an explicit deployment_ready property.
+    | Unfinished addons must NOT be included here until verified ready.
+    */
+    'deployment_ready_slugs' => array_values(array_filter(array_map(
+        static fn (string $slug): string => trim($slug),
+        explode(',', (string) env('ADDON_DEPLOYMENT_READY_SLUGS', 'search-foundation,seo,search-intelligence,ai-prompt,content,content-projects,media,wordpress,publishing,site-sync,agent-runtime,social,commerce,seeding,seo-content-ai')),
+    ))),
+
+    /*
     | Absolute or base_path-relative path to the addons monorepo root.
     | Default: client/addons junction → ../omnichannel-addons
     */

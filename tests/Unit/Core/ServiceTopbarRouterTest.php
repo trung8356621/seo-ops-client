@@ -43,6 +43,7 @@ final class ServiceTopbarRouterTest extends TestCase
         ));
         self::assertSame('Admin', __('services.admin'));
         self::assertSame('SEO', __('services.seo'));
+        self::assertSame('Automation', __('services.automation'));
         self::assertSame('Seeding', __('services.seeding'));
     }
 
@@ -66,11 +67,11 @@ final class ServiceTopbarRouterTest extends TestCase
             canAccess: static fn (User $user): bool => true,
         ));
         $registry->register(new WorkspaceDestination(
-            key: 'seeding',
-            label: 'Seeding',
-            url: url('/seeding'),
+            key: 'automation',
+            label: 'Automation',
+            url: url('/social-automation'),
             sort: 20,
-            panelId: 'seeding',
+            panelId: 'social-automation',
             canAccess: static fn (User $user): bool => true,
         ));
 
@@ -87,16 +88,19 @@ final class ServiceTopbarRouterTest extends TestCase
 
         self::assertSame(url('/admin'), $byKey['admin']['url']);
         self::assertSame(url('/seo'), $byKey['seo']['url']);
-        self::assertSame(url('/seeding'), $byKey['seeding']['url']);
-        self::assertSame(['admin', 'seo', 'seeding'], array_column($links, 'key'));
+        self::assertSame(url('/social-automation'), $byKey['automation']['url']);
+        self::assertSame(['admin', 'seo', 'automation'], array_column($links, 'key'));
     }
 
     public function test_active_key_follows_request_path(): void
     {
         $router = new ServiceTopbarRouter(new WorkspaceDestinationRegistry);
 
-        $this->app->instance('request', \Illuminate\Http\Request::create('/seeding/workspace', 'GET'));
-        self::assertSame('seeding', $router->activeKey());
+        $this->app->instance('request', \Illuminate\Http\Request::create('/social-automation', 'GET'));
+        self::assertSame('automation', $router->activeKey());
+
+        $this->app->instance('request', \Illuminate\Http\Request::create('/social-automation/dashboard', 'GET'));
+        self::assertSame('automation', $router->activeKey());
 
         $this->app->instance('request', \Illuminate\Http\Request::create('/seo/articles', 'GET'));
         self::assertSame('seo', $router->activeKey());
@@ -125,11 +129,11 @@ final class ServiceTopbarRouterTest extends TestCase
             canAccess: static fn (User $user): bool => true,
         ));
         $registry->register(new WorkspaceDestination(
-            key: 'seeding',
-            label: 'Seeding',
-            url: url('/seeding'),
+            key: 'automation',
+            label: 'Automation',
+            url: url('/social-automation'),
             sort: 20,
-            panelId: 'seeding',
+            panelId: 'social-automation',
             canAccess: static fn (User $user): bool => true,
         ));
 
@@ -141,7 +145,7 @@ final class ServiceTopbarRouterTest extends TestCase
         $router = new ServiceTopbarRouter($registry);
         $keys = array_column($router->links($user), 'key');
 
-        self::assertSame(['seo', 'seeding'], $keys);
+        self::assertSame(['seo', 'automation'], $keys);
         self::assertNotContains('admin', $keys);
     }
 
@@ -188,12 +192,12 @@ final class ServiceTopbarRouterTest extends TestCase
         self::assertStringNotContainsString('logo.png', $view);
     }
 
-    public function test_panel_ids_cover_admin_seo_seeding(): void
+    public function test_panel_ids_cover_admin_seo_seeding_and_automation(): void
     {
         self::assertSame(
-            ['admin', 'seo', 'seo-main', 'seeding'],
+            ['admin', 'seo', 'seo-main', 'seeding', 'social-automation'],
             ServiceTopbarRouter::PANEL_IDS,
         );
-        self::assertSame(['admin', 'seo', 'seeding'], ServiceTopbarRouter::KEYS);
+        self::assertSame(['admin', 'seo', 'automation'], ServiceTopbarRouter::KEYS);
     }
 }

@@ -104,7 +104,7 @@ final class GlobalSupportTicketContractTest extends TestCase
 
     public function test_panel_ids_cover_admin_seo_seeding(): void
     {
-        self::assertSame(['admin', 'seo', 'seo-main', 'seeding'], ServiceTopbarRouter::PANEL_IDS);
+        self::assertSame(['admin', 'seo', 'seo-main', 'seeding', 'social-automation'], ServiceTopbarRouter::PANEL_IDS);
     }
 
     public function test_unauthorized_role_cannot_access_admin_ticket_resource(): void

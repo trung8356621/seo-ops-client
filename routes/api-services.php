@@ -26,10 +26,33 @@ Route::middleware(['service.api', 'throttle:service-api'])
             ->middleware('service.api.scope:service:read')
             ->name('api.v1.services.status');
 
+        $skipSlugs = array_fill_keys(config('addons.skip_slugs', []), true);
+        /** @var \App\Core\Addon\AddonReadinessValidator $readinessValidator */
+        $readinessValidator = app(\App\Core\Addon\AddonReadinessValidator::class);
         $addonRouteFiles = glob(base_path('addons/*/routes/api-services.php')) ?: [];
+
         foreach ($addonRouteFiles as $addonRouteFile) {
             if (is_string($addonRouteFile) && is_file($addonRouteFile)) {
-                require $addonRouteFile;
+                $slug = basename(dirname($addonRouteFile, 2));
+                if (isset($skipSlugs[$slug])) {
+                    continue;
+                }
+
+                $readiness = $readinessValidator->validateRouteFile($slug, $addonRouteFile);
+                if (! $readiness->isReady()) {
+                    \App\Support\RuntimeLogger::report(
+                        new \RuntimeException("Fail-isolation: skipped route registration for [{$slug}]: {$readiness->diagnostic()}")
+                    );
+                    continue;
+                }
+
+                try {
+                    require $addonRouteFile;
+                } catch (\Throwable $e) {
+                    \App\Support\RuntimeLogger::report(
+                        new \RuntimeException("Fail-isolation: error registering routes for [{$slug}]: {$e->getMessage()}", 0, $e)
+                    );
+                }
             }
         }
     });

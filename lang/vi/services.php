@@ -6,5 +6,6 @@ return [
     'nav_label' => 'Dịch vụ',
     'admin' => 'Admin',
     'seo' => 'SEO',
+    'automation' => 'Automation',
     'seeding' => 'Seeding',
 ];

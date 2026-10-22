@@ -35,7 +35,7 @@ final class GlobalHelpContractTest extends TestCase
         self::assertSame(1, substr_count($source, "view('filament.hooks.global-help-drawer')"));
         self::assertSame(1, substr_count($source, "view('filament.hooks.global-help-assets')"));
         self::assertStringNotContainsString("request()->is('seo'", $source);
-        self::assertSame(['admin', 'seo', 'seo-main', 'seeding'], ServiceTopbarRouter::PANEL_IDS);
+        self::assertSame(['admin', 'seo', 'seo-main', 'seeding', 'social-automation'], ServiceTopbarRouter::PANEL_IDS);
     }
 
     public function test_seo_panel_no_longer_mounts_global_help_shell(): void
