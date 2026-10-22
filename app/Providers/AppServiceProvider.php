@@ -244,6 +244,8 @@ class AppServiceProvider extends ServiceProvider
             $activeServices = \App\Models\Service::where('is_active', true)->get();
             /** @var \App\Core\Addon\AddonRegistry $registry */
             $registry = $this->app->make(\App\Core\Addon\AddonRegistry::class);
+            /** @var \App\Core\Addon\AddonReadinessValidator $readinessValidator */
+            $readinessValidator = $this->app->make(\App\Core\Addon\AddonReadinessValidator::class);
 
             foreach ($activeServices as $service) {
                 $slug = (string) $service->slug;
