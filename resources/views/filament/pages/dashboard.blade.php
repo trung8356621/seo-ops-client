@@ -20,6 +20,43 @@
     {!! $dashboardChartsVite !!}
 
     <div class="ops-dashboard space-y-4">
+        {{-- Quick Setup Onboarding Welcome Card --}}
+        @if ($this->shouldShowQuickSetupWelcome())
+            <div class="rounded-xl border border-primary-500/30 bg-gradient-to-r from-primary-500/10 via-primary-500/5 to-transparent p-5 shadow-sm">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                            <x-filament::icon icon="heroicon-o-sparkles" class="h-6 w-6 text-primary-500" />
+                            <h2 class="text-lg font-bold text-gray-950 dark:text-white">Chào mừng đến SEO-OPS</h2>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
+                            Hoàn thành thiết lập để bắt đầu sử dụng dịch vụ.
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <x-filament::button
+                            tag="a"
+                            href="{{ \App\Filament\Pages\QuickSetupWizard::getUrl() }}"
+                            icon="heroicon-m-arrow-right"
+                            icon-position="after"
+                        >
+                            Bắt đầu thiết lập
+                        </x-filament::button>
+                    </div>
+                </div>
+            </div>
+        @elseif ($this->hasCompletedQuickSetup())
+            <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-xs text-gray-600 shadow-sm dark:border-white/10 dark:bg-gray-900 dark:text-gray-400">
+                <div class="flex items-center gap-2">
+                    <x-filament::icon icon="heroicon-m-check-circle" class="h-4 w-4 text-emerald-500" />
+                    <span>Hệ thống đã hoàn tất thiết lập ban đầu.</span>
+                </div>
+                <a href="{{ \App\Filament\Pages\QuickSetupWizard::getUrl() }}" class="font-medium text-primary-600 hover:underline dark:text-primary-400">
+                    Xem lại thiết lập &rarr;
+                </a>
+            </div>
+        @endif
+
         @if ($canUsage)
             {{-- ROW 1: compact toolbar (title/subheading come from Filament page header) --}}
             <div class="flex flex-wrap items-center justify-end gap-2">

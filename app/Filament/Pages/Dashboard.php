@@ -31,6 +31,28 @@ class Dashboard extends BaseDashboard
         return 'Tổng quan hệ thống SEO-OPS';
     }
 
+    public function shouldShowQuickSetupWelcome(): bool
+    {
+        try {
+            $val = \App\Models\WpOption::get('quick_setup_completed_at');
+
+            return blank($val) || $val === 'null';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    public function hasCompletedQuickSetup(): bool
+    {
+        try {
+            $val = \App\Models\WpOption::get('quick_setup_completed_at');
+
+            return filled($val) && $val !== 'null';
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
     /**
      * @return array<class-string>
      */

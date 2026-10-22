@@ -48,6 +48,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
                 \App\Filament\Pages\Dashboard::class,
+                \App\Filament\Pages\QuickSetupWizard::class,
                 HelpTopicsAdmin::class,
                 HelpTopicEdit::class,
                 HelpTopicCreate::class,
@@ -85,6 +86,7 @@ class AdminPanelProvider extends PanelProvider
     {
         $pages = [
             \App\Filament\Pages\Dashboard::class,
+            \App\Filament\Pages\QuickSetupWizard::class,
             HelpTopicsAdmin::class,
             HelpTopicEdit::class,
             HelpTopicCreate::class,

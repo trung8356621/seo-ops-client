@@ -46,6 +46,11 @@ class WpOption extends Model
 
     public static function set(string $name, mixed $value, string $autoload = 'no'): void
     {
+        if ($value === null) {
+            self::deleteOption($name);
+            return;
+        }
+
         $serialized = is_string($value)
             ? $value
             : json_encode($value, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
@@ -54,6 +59,12 @@ class WpOption extends Model
             ['option_value' => $serialized, 'autoload' => $autoload]
         );
 
+        unset(self::$requestCache[$name]);
+    }
+
+    public static function deleteOption(string $name): void
+    {
+        self::where('option_name', $name)->delete();
         unset(self::$requestCache[$name]);
     }
 
