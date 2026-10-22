@@ -9,6 +9,7 @@ use App\Models\H1Installation;
 use App\Models\Site;
 use App\Models\User;
 use App\Models\WpOption;
+use App\Services\H1\Endpoint\ServerEndpointValidator;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Exceptions\H1EnrollmentException;
@@ -41,6 +42,9 @@ class QuickSetupWizard extends Page
     public int $currentStep = 1;
 
     // STEP 1 Properties
+    public string $serverUrl = '';
+    public ?string $serverConnectionStatus = null; // success, error
+    public ?string $serverConnectionMessage = null;
     public string $enrollmentToken = '';
     public ?string $enrollmentError = null;
     public ?string $enrollmentErrorCode = null;
@@ -124,6 +128,9 @@ class QuickSetupWizard extends Page
             'currentStep' => $this->currentStep,
             'isEnrolled' => $this->isEnrolled,
             'installationDetails' => $this->installationDetails,
+            'serverUrl' => $this->serverUrl,
+            'serverConnectionStatus' => $this->serverConnectionStatus,
+            'serverConnectionMessage' => $this->serverConnectionMessage,
             'enrollmentToken' => $this->enrollmentToken,
             'enrollmentError' => $this->enrollmentError,
             'enrollmentSuccess' => $this->enrollmentSuccess,
@@ -165,6 +172,7 @@ class QuickSetupWizard extends Page
         $installations = app(InstallationStateRepository::class);
         $installation = $installations->currentInstallation();
         $this->isEnrolled = $installations->isEnrolled();
+        $this->serverUrl = $installations->getEffectiveControlServerUrl();
 
         if ($installation instanceof H1Installation && $this->isEnrolled) {
             $cred = $installations->activeCredential($installation->installation_id);
@@ -191,11 +199,109 @@ class QuickSetupWizard extends Page
         }
     }
 
+    public function testServerConnection(): void
+    {
+        $this->serverConnectionStatus = null;
+        $this->serverConnectionMessage = null;
+
+        $installations = app(InstallationStateRepository::class);
+        if ($installations->isEnrolled()) {
+            $this->serverConnectionStatus = 'error';
+            $this->serverConnectionMessage = 'Thiết bị đã được kích hoạt. Không thể thay đổi máy chủ khi chưa hoàn tất thủ tục phục hồi ủy quyền.';
+            return;
+        }
+
+        $url = trim($this->serverUrl);
+        if ($url === '') {
+            $this->serverConnectionStatus = 'error';
+            $this->serverConnectionMessage = 'Vui lòng nhập địa chỉ máy chủ OPS-SERVER.';
+            return;
+        }
+
+        try {
+            $normalized = ServerEndpointValidator::validate($url);
+            $this->serverUrl = $normalized;
+
+            // Save pre-enrollment endpoint securely per Installation
+            $installations->saveConfiguredControlServerUrl($normalized);
+
+            $response = \Illuminate\Support\Facades\Http::timeout(5)->get($normalized . '/api/health');
+
+            if ($response->successful()) {
+                $this->serverConnectionStatus = 'success';
+                $this->serverConnectionMessage = 'Kết nối thành công. OPS-SERVER đang hoạt động bình thường.';
+
+                Notification::make()
+                    ->title('Kết nối OPS-SERVER thành công!')
+                    ->body('Máy chủ tại ' . $normalized . ' phản hồi sẵn sàng.')
+                    ->success()
+                    ->send();
+            } else {
+                $this->serverConnectionStatus = 'error';
+                $this->serverConnectionMessage = 'Máy chủ phản hồi mã lỗi HTTP ' . $response->status() . '.';
+
+                Notification::make()
+                    ->title('Kết nối OPS-SERVER thất bại')
+                    ->body($this->serverConnectionMessage)
+                    ->danger()
+                    ->send();
+            }
+        } catch (\InvalidArgumentException $e) {
+            $this->serverConnectionStatus = 'error';
+            $this->serverConnectionMessage = $e->getMessage();
+
+            Notification::make()
+                ->title('Địa chỉ máy chủ không hợp lệ')
+                ->body($this->serverConnectionMessage)
+                ->danger()
+                ->send();
+        } catch (\Throwable $e) {
+            $this->serverConnectionStatus = 'error';
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'Connection refused') || str_contains($msg, 'cURL error 7')) {
+                $this->serverConnectionMessage = 'Không thể kết nối đến máy chủ tại ' . $url . ' (Máy chủ chưa khởi động hoặc sai cổng).';
+            } elseif (str_contains($msg, 'timed out') || str_contains($msg, 'cURL error 28')) {
+                $this->serverConnectionMessage = 'Kết nối tới máy chủ quá thời gian chờ (Timeout).';
+            } elseif (str_contains($msg, 'SSL') || str_contains($msg, 'certificate')) {
+                $this->serverConnectionMessage = 'Lỗi bảo mật chứng chỉ SSL khi kết nối tới máy chủ.';
+            } else {
+                $this->serverConnectionMessage = 'Lỗi kết nối máy chủ: ' . $msg;
+            }
+
+            Notification::make()
+                ->title('Lỗi kết nối máy chủ')
+                ->body($this->serverConnectionMessage)
+                ->danger()
+                ->send();
+        }
+    }
+
     public function activateEnrollment(): void
     {
         $this->enrollmentError = null;
         $this->enrollmentErrorCode = null;
         $this->enrollmentSuccess = false;
+
+        $installations = app(InstallationStateRepository::class);
+        if ($installations->isEnrolled()) {
+            $this->enrollmentError = 'Thiết bị đã được liên kết với một ID cài đặt. Di chuyển máy chủ yêu cầu quy trình phục hồi ủy quyền.';
+            return;
+        }
+
+        $url = trim($this->serverUrl);
+        if ($url === '') {
+            $this->enrollmentError = 'Vui lòng nhập địa chỉ máy chủ OPS-SERVER.';
+            return;
+        }
+
+        try {
+            $normalized = ServerEndpointValidator::validate($url);
+            $this->serverUrl = $normalized;
+            $installations->saveConfiguredControlServerUrl($normalized);
+        } catch (\InvalidArgumentException $e) {
+            $this->enrollmentError = $e->getMessage();
+            return;
+        }
 
         $token = trim($this->enrollmentToken);
         if ($token === '') {
@@ -203,8 +309,8 @@ class QuickSetupWizard extends Page
             return;
         }
 
-        if (! str_starts_with($token, 'tok_')) {
-            $this->enrollmentError = 'Mã kích hoạt không đúng định dạng (phải bắt đầu bằng "tok_").';
+        if (! preg_match('/^tok_[A-Za-z0-9_-]{8,124}$/', $token)) {
+            $this->enrollmentError = 'Mã kích hoạt không đúng định dạng. Mã phải bắt đầu bằng "tok_" kèm các ký tự Base64URL hợp lệ và không vượt quá 128 ký tự.';
             return;
         }
 
@@ -224,10 +330,13 @@ class QuickSetupWizard extends Page
         } catch (H1EnrollmentException $e) {
             $this->enrollmentErrorCode = $e->errorCode;
             $this->enrollmentError = match ($e->errorCode) {
-                'invalid_receipt' => 'Mã kích hoạt không hợp lệ (phải bắt đầu bằng tok_).',
-                'token_expired' => 'Mã kích hoạt đã hết hạn. Vui lòng tạo mã mới trên OPS-SERVER.',
+                'invalid_receipt' => 'Mã kích hoạt không hợp lệ (phải bắt đầu bằng "tok_" và đúng định dạng).',
+                'token_expired', 'receipt_expired' => 'Mã kích hoạt đã hết hạn. Vui lòng tạo mã mới trên OPS-SERVER.',
                 'token_used' => 'Mã kích hoạt này đã được sử dụng trước đó.',
                 'already_enrolled' => 'Thiết bị này đã được liên kết với một ID cài đặt khác.',
+                'server_unconfigured' => 'Địa chỉ máy chủ OPS-SERVER chưa được cấu hình.',
+                'insecure_transport' => 'Địa chỉ máy chủ yêu cầu sử dụng kết nối bảo mật HTTPS.',
+                'server_offline' => 'Không thể kết nối đến máy chủ OPS-SERVER tại ' . $this->serverUrl . '.',
                 default => 'Lỗi kích hoạt [' . $e->errorCode . ']: ' . $e->getMessage(),
             };
 

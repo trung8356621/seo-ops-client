@@ -117,8 +117,25 @@ final class InstallationStateManager
             return false;
         }
 
-        return ($record['fresh_v1'] ?? false) === true
-            && ($record['h1_enrolled'] ?? false) !== true;
+        if (($record['fresh_v1'] ?? false) !== true) {
+            return false;
+        }
+
+        if (($record['h1_enrolled'] ?? false) === true) {
+            return false;
+        }
+
+        try {
+            if (class_exists(\App\Services\H1\Persistence\InstallationStateRepository::class)) {
+                $installations = app(\App\Services\H1\Persistence\InstallationStateRepository::class);
+                if ($installations->isEnrolled()) {
+                    return false;
+                }
+            }
+        } catch (\Throwable) {
+        }
+
+        return true;
     }
 
     public function getOrCreateSetupToken(): string

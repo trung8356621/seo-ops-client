@@ -72,6 +72,7 @@ class AdminPanelProvider extends PanelProvider
             ->authMiddleware([
                 RedirectStaffFromAdminPanel::class,
                 Authenticate::class,
+                \App\Http\Middleware\RedirectFreshUnlicensedToQuickSetup::class,
             ]);
 
         return $this->discover_addons($panel);

@@ -31,26 +31,63 @@ class Dashboard extends BaseDashboard
         return 'Tổng quan hệ thống SEO-OPS';
     }
 
-    public function shouldShowQuickSetupWelcome(): bool
+    public function isCommercialActivated(): bool
     {
         try {
-            $val = \App\Models\WpOption::get('quick_setup_completed_at');
+            $gate = app(\App\Services\H1\Enforcement\ServiceEntitlementGate::class);
 
-            return blank($val) || $val === 'null';
+            return $gate->enforcementActive() && ($gate->allows('seo') || $gate->allows('seeding'));
         } catch (\Throwable) {
             return false;
         }
     }
 
-    public function hasCompletedQuickSetup(): bool
+    public function hasVisitedQuickSetup(): bool
     {
         try {
-            $val = \App\Models\WpOption::get('quick_setup_completed_at');
+            $val = \App\Models\WpOption::get('quick_setup_completed_at')
+                ?? \App\Models\WpOption::get('quick_setup_visited_at');
 
             return filled($val) && $val !== 'null';
         } catch (\Throwable) {
             return false;
         }
+    }
+
+    public function isConfigurationComplete(): bool
+    {
+        if (! $this->isCommercialActivated()) {
+            return false;
+        }
+
+        try {
+            return \App\Models\ApiConnection::query()->where('status', 'active')->exists();
+        } catch (\Throwable) {
+            return false;
+        }
+    }
+
+    public function quickSetupBannerState(): string
+    {
+        if (! $this->isCommercialActivated()) {
+            return 'unlicensed';
+        }
+
+        if (! $this->isConfigurationComplete()) {
+            return 'needs_config';
+        }
+
+        return 'ready';
+    }
+
+    public function shouldShowQuickSetupWelcome(): bool
+    {
+        return ! $this->hasVisitedQuickSetup();
+    }
+
+    public function hasCompletedQuickSetup(): bool
+    {
+        return $this->quickSetupBannerState() === 'ready';
     }
 
     /**

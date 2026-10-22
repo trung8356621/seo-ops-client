@@ -26,7 +26,7 @@ final class EnrollmentConsumer
     public function enroll(string $enrollmentToken, ?string $clientVersion = null): array
     {
         $token = trim($enrollmentToken);
-        if ($token === '' || ! str_starts_with($token, 'tok_')) {
+        if ($token === '' || ! preg_match('/^tok_[A-Za-z0-9_-]{8,124}$/', $token)) {
             throw new H1EnrollmentException('invalid_receipt', 'Enrollment token format is invalid.');
         }
 
@@ -77,7 +77,7 @@ final class EnrollmentConsumer
             secretBase64Url: $secret,
             entitlementSnapshot: $snapshot,
             anchorIdentity: isset($remote['anchor_identity']) ? (is_string($remote['anchor_identity']) ? $remote['anchor_identity'] : null) : null,
-            controlServerUrl: (string) config('h1-license.base_url', ''),
+            controlServerUrl: $this->installations->getEffectiveControlServerUrl(),
             clientVersion: $version,
             entitlementRevision: $revision,
         );

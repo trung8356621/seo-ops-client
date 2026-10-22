@@ -6,6 +6,8 @@ namespace App\Services\H1\Persistence;
 
 use App\Models\H1Credential;
 use App\Models\H1Installation;
+use App\Models\WpOption;
+use App\Services\H1\Endpoint\ServerEndpointValidator;
 use App\Services\H1\Exceptions\H1EnrollmentException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -94,6 +96,77 @@ final class InstallationStateRepository
     }
 
     /**
+     * Resolves the authoritative OPS-SERVER control endpoint:
+     * 1. Bound persisted Installation control_server_url (once enrolled, authoritative).
+     * 2. Pre-enrollment saved WpOption (if configured by owner).
+     * 3. Fallback to .env configuration.
+     */
+    public function getEffectiveControlServerUrl(): string
+    {
+        $installation = $this->currentInstallation();
+        if ($installation instanceof H1Installation && filled($installation->control_server_url)) {
+            return ServerEndpointValidator::normalize((string) $installation->control_server_url);
+        }
+
+        try {
+            $savedOption = WpOption::get('h1_control_server_url');
+            if (filled($savedOption)) {
+                return ServerEndpointValidator::normalize((string) $savedOption);
+            }
+        } catch (\Throwable) {
+        }
+
+        $configured = (string) (config('h1-license.base_url') ?: config('configuration-sync.base_url', ''));
+        if (filled($configured)) {
+            return ServerEndpointValidator::normalize($configured);
+        }
+
+        return '';
+    }
+
+    /**
+     * Saves the chosen endpoint securely per Installation before or during enrollment.
+     * Prevents server migration without authorized recovery if already enrolled.
+     *
+     * @throws H1EnrollmentException
+     */
+    public function saveConfiguredControlServerUrl(string $url): string
+    {
+        $normalized = ServerEndpointValidator::validate($url);
+
+        $installation = $this->currentInstallation();
+        if ($installation instanceof H1Installation && $this->isEnrolled()) {
+            $existingBound = ServerEndpointValidator::normalize((string) ($installation->control_server_url ?: ''));
+            if ($existingBound !== '' && $existingBound !== $normalized) {
+                throw new H1EnrollmentException(
+                    'server_migration_blocked',
+                    'Thiết bị đã được kích hoạt. Di chuyển máy chủ yêu cầu quy trình phục hồi ủy quyền.',
+                );
+            }
+        }
+
+        try {
+            WpOption::set('h1_control_server_url', $normalized);
+        } catch (\Throwable) {
+        }
+
+        if ($installation instanceof H1Installation) {
+            try {
+                $installation->control_server_url = $normalized;
+                $installation->save();
+            } catch (\Throwable) {
+            }
+        }
+
+        config([
+            'h1-license.base_url' => $normalized,
+            'configuration-sync.base_url' => $normalized,
+        ]);
+
+        return $normalized;
+    }
+
+    /**
      * @param  array<string, mixed>  $entitlementSnapshot
      */
     public function persistFirstEnrollment(
@@ -122,6 +195,21 @@ final class InstallationStateRepository
             // Idempotent retry for same installation — refresh snapshot/credential if needed.
         }
 
+        $effectiveControlServerUrl = filled($controlServerUrl)
+            ? ServerEndpointValidator::normalize($controlServerUrl)
+            : $this->getEffectiveControlServerUrl();
+
+        if ($effectiveControlServerUrl !== '') {
+            try {
+                WpOption::set('h1_control_server_url', $effectiveControlServerUrl);
+            } catch (\Throwable) {
+            }
+            config([
+                'h1-license.base_url' => $effectiveControlServerUrl,
+                'configuration-sync.base_url' => $effectiveControlServerUrl,
+            ]);
+        }
+
         return DB::transaction(function () use (
             $installationId,
             $credentialId,
@@ -129,7 +217,7 @@ final class InstallationStateRepository
             $secretBase64Url,
             $entitlementSnapshot,
             $anchorIdentity,
-            $controlServerUrl,
+            $effectiveControlServerUrl,
             $clientVersion,
             $entitlementRevision,
             $existing,
@@ -138,7 +226,7 @@ final class InstallationStateRepository
             $installation->fill([
                 'installation_id' => $installationId,
                 'product' => (string) config('h1-license.product', 'seo-ops'),
-                'control_server_url' => $controlServerUrl,
+                'control_server_url' => $effectiveControlServerUrl !== '' ? $effectiveControlServerUrl : null,
                 'status' => 'enrolled',
                 'cutover_mode' => (string) ($installation->cutover_mode ?: config('h1-license.enforcement_mode', 'pre_enrollment')),
                 'anchor_identity' => $anchorIdentity,

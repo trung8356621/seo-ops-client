@@ -93,6 +93,18 @@ final class H1LicenseServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        try {
+            $repo = $this->app->make(InstallationStateRepository::class);
+            $effective = $repo->getEffectiveControlServerUrl();
+            if ($effective !== '') {
+                config([
+                    'h1-license.base_url' => $effective,
+                    'configuration-sync.base_url' => $effective,
+                ]);
+            }
+        } catch (\Throwable) {
+        }
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 H1EnrollCommand::class,

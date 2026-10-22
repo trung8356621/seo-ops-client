@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\H1\Protocol;
 
+use App\Services\H1\Endpoint\ServerEndpointValidator;
 use App\Services\H1\Exceptions\H1TransportException;
 use Illuminate\Support\Facades\Http;
 
@@ -137,8 +138,16 @@ final class SignedHttpTransport
         if ($url === '') {
             throw new H1TransportException('server_unconfigured', 'OPS-SERVER base URL is not configured.');
         }
-        if ((bool) config('h1-license.require_https', true) && ! str_starts_with(strtolower($url), 'https://')) {
-            throw new H1TransportException('insecure_transport', 'H1 license transport requires HTTPS.');
+
+        $requireHttps = (bool) config('h1-license.require_https', true);
+        try {
+            ServerEndpointValidator::validate($url, $requireHttps, allowPath: true);
+        } catch (\InvalidArgumentException $e) {
+            $msg = $e->getMessage();
+            if (str_contains($msg, 'HTTPS')) {
+                throw new H1TransportException('insecure_transport', 'H1 license transport requires HTTPS.');
+            }
+            throw new H1TransportException('invalid_url', $msg);
         }
     }
 

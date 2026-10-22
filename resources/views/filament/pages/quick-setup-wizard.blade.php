@@ -2,57 +2,112 @@
     <div class="max-w-4xl mx-auto space-y-6">
 
         {{-- STEPPER HEADER --}}
-        <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/10 dark:bg-gray-900">
-            <div class="grid grid-cols-5 gap-2 text-center">
-                @php
-                    $steps = [
-                        1 => ['label' => 'Kích hoạt', 'full' => 'Kích hoạt dịch vụ', 'icon' => 'heroicon-m-key'],
-                        2 => ['label' => 'Cấu hình', 'full' => 'Cấu hình mặc định', 'icon' => 'heroicon-m-cog-6-tooth'],
-                        3 => ['label' => 'Kết nối AI', 'full' => 'Kết nối AI', 'icon' => 'heroicon-m-cpu-chip'],
-                        4 => ['label' => 'Website', 'full' => 'Website đầu tiên', 'icon' => 'heroicon-m-globe-alt'],
-                        5 => ['label' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'icon' => 'heroicon-m-check-badge'],
-                    ];
-                @endphp
+        <div class="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm dark:border-white/10 dark:bg-gray-900">
+            @php
+                $steps = [
+                    1 => ['short' => 'Kích hoạt', 'full' => 'Kích hoạt dịch vụ', 'desc' => 'Bản quyền OPS'],
+                    2 => ['short' => 'Cấu hình', 'full' => 'Cấu hình mặc định', 'desc' => 'Golden Config'],
+                    3 => ['short' => 'Kết nối AI', 'full' => 'Kết nối AI', 'desc' => 'API Providers'],
+                    4 => ['short' => 'Website', 'full' => 'Website đầu tiên', 'desc' => 'Tên miền SEO'],
+                    5 => ['short' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'desc' => 'Sẵn sàng'],
+                ];
+            @endphp
 
-                @foreach ($steps as $num => $step)
-                    @php
-                        $isActive = $currentStep === $num;
-                        $isPassed = $currentStep > $num;
-                    @endphp
-                    <button
-                        type="button"
-                        wire:click="goToStep({{ $num }})"
-                        class="group flex flex-col items-center gap-1.5 focus:outline-none transition"
-                    >
-                        <div class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold transition
-                            @if ($isActive)
-                                bg-primary-600 text-white shadow-md ring-4 ring-primary-500/20 dark:bg-primary-500
-                            @elseif ($isPassed)
-                                bg-emerald-500 text-white dark:bg-emerald-600
-                            @else
-                                bg-gray-100 text-gray-500 group-hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-gray-700
-                            @endif
-                        ">
-                            @if ($isPassed)
-                                <x-filament::icon icon="heroicon-m-check" class="h-4 w-4" />
-                            @else
-                                {{ $num }}
-                            @endif
-                        </div>
-                        <span class="text-xs font-medium truncate max-w-full
-                            @if ($isActive)
-                                text-primary-600 dark:text-primary-400 font-bold
-                            @elseif ($isPassed)
-                                text-gray-800 dark:text-gray-200
-                            @else
-                                text-gray-400 dark:text-gray-500
-                            @endif
-                        ">
-                            <span class="hidden sm:inline">{{ $step['full'] }}</span>
-                            <span class="sm:hidden">{{ $step['label'] }}</span>
+            {{-- MOBILE VIEW (< 640px: 320, 375, 390px) --}}
+            <div class="block sm:hidden space-y-3">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white dark:bg-primary-500">
+                            {{ $currentStep }}
                         </span>
-                    </button>
-                @endforeach
+                        <div class="text-xs font-bold text-gray-900 dark:text-white">
+                            {{ $steps[$currentStep]['full'] }}
+                        </div>
+                    </div>
+                    <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300">
+                        Bước {{ $currentStep }}/5
+                    </span>
+                </div>
+
+                {{-- 5-segment interactive tap bar --}}
+                <div class="flex items-center gap-1.5 w-full">
+                    @for ($i = 1; $i <= 5; $i++)
+                        @php
+                            $segActive = $currentStep === $i;
+                            $segPassed = $currentStep > $i;
+                        @endphp
+                        <button
+                            type="button"
+                            wire:click="goToStep({{ $i }})"
+                            class="flex-1 h-2 rounded-full transition-all focus:outline-none
+                                @if ($segPassed)
+                                    bg-emerald-500 hover:bg-emerald-600
+                                @elseif ($segActive)
+                                    bg-primary-600 dark:bg-primary-500 ring-2 ring-primary-500/30
+                                @else
+                                    bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700
+                                @endif
+                            "
+                            title="Bước {{ $i }}: {{ $steps[$i]['full'] }}"
+                        ></button>
+                    @endfor
+                </div>
+            </div>
+
+            {{-- TABLET & DESKTOP VIEW (>= 640px: 768px, 1440px) --}}
+            <div class="hidden sm:block">
+                <div class="relative flex items-center justify-between w-full">
+                    {{-- Connecting track behind circles --}}
+                    <div class="absolute left-0 top-4 w-full h-0.5 bg-gray-200 dark:bg-gray-800 -z-0"></div>
+
+                    @foreach ($steps as $num => $step)
+                        @php
+                            $isActive = $currentStep === $num;
+                            $isPassed = $currentStep > $num;
+                        @endphp
+
+                        <button
+                            type="button"
+                            wire:click="goToStep({{ $num }})"
+                            class="group relative flex flex-1 flex-col items-center text-center focus:outline-none z-10"
+                        >
+                            {{-- Step circle --}}
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all shadow-sm ring-4 ring-white dark:ring-gray-900
+                                @if ($isActive)
+                                    bg-primary-600 text-white ring-primary-500/20 dark:bg-primary-500
+                                @elseif ($isPassed)
+                                    bg-emerald-500 text-white dark:bg-emerald-600
+                                @else
+                                    bg-gray-100 text-gray-500 group-hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:group-hover:bg-gray-700
+                                @endif
+                            ">
+                                @if ($isPassed)
+                                    <x-filament::icon icon="heroicon-m-check" class="h-4 w-4" />
+                                @else
+                                    {{ $num }}
+                                @endif
+                            </div>
+
+                            {{-- Step label --}}
+                            <div class="mt-2 flex flex-col items-center">
+                                <span class="text-xs transition-colors
+                                    @if ($isActive)
+                                        font-bold text-primary-600 dark:text-primary-400
+                                    @elseif ($isPassed)
+                                        font-medium text-gray-800 dark:text-gray-200
+                                    @else
+                                        font-medium text-gray-400 dark:text-gray-500
+                                    @endif
+                                ">
+                                    {{ $step['full'] }}
+                                </span>
+                                <span class="text-[10px] text-gray-400 dark:text-gray-500 hidden md:inline">
+                                    {{ $step['desc'] }}
+                                </span>
+                            </div>
+                        </button>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -85,6 +140,25 @@
                             <div>
                                 <span class="font-medium text-gray-500">Phiên bản chứng chỉ:</span>
                                 <div class="font-medium text-gray-900 dark:text-white">{{ $installationDetails['credential_version'] }}</div>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <span class="font-medium text-gray-500">Máy chủ OPS-SERVER liên kết:</span>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <input
+                                        type="text"
+                                        readonly
+                                        disabled
+                                        value="{{ $installationDetails['control_server_url'] }}"
+                                        class="block w-full rounded-lg border-gray-200 bg-gray-50 text-gray-600 font-mono text-xs dark:border-white/10 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
+                                    />
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
+                                        <x-filament::icon icon="heroicon-m-lock-closed" class="h-3.5 w-3.5 text-gray-400" />
+                                        Đã khóa
+                                    </span>
+                                </div>
+                                <p class="text-[11px] text-gray-400 mt-1">
+                                    Máy chủ đã được liên kết cố định với Installation này. Việc đổi máy chủ yêu cầu quy trình phục hồi ủy quyền.
+                                </p>
                             </div>
                             <div>
                                 <span class="font-medium text-gray-500">Dịch vụ SEO:</span>
@@ -134,7 +208,7 @@
                     {{-- Chưa kích hoạt --}}
                     <div class="space-y-4">
                         <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 text-xs text-amber-800 dark:text-amber-300">
-                            <strong>Lưu ý:</strong> Mã kích hoạt (Enrollment Token bắt đầu bằng <code class="font-mono font-bold">tok_...</code>) được tạo từ hệ thống OPS-SERVER của quản trị viên khi đăng ký gói dịch vụ. Nếu chưa có mã, bạn có thể bấm <em>Tiếp tục</em> để dùng thử giao diện nội bộ.
+                            <strong>Lưu ý:</strong> Cấu hình địa chỉ máy chủ OPS-SERVER và nhập mã kích hoạt (Enrollment Token bắt đầu bằng <code class="font-mono font-bold">tok_...</code>) do quản trị viên cấp.
                         </div>
 
                         @if ($enrollmentError)
@@ -143,9 +217,50 @@
                             </div>
                         @endif
 
+                        {{-- 1. Trường cấu hình OPS-SERVER URL TRƯỚC Enrollment Token --}}
                         <div class="space-y-2">
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Địa chỉ máy chủ OPS-SERVER (Server URL)
+                                <span class="text-rose-500">*</span>
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                Nhập URL máy chủ bản quyền (ví dụ: <code class="font-mono text-gray-700 dark:text-gray-300">http://localhost:3000</code> cho phát triển nội bộ, hoặc <code class="font-mono text-gray-700 dark:text-gray-300">https://ops.example.com</code>). Chỉ cho phép HTTP với máy cục bộ (loopback); các máy chủ mạng ngoài bắt buộc dùng HTTPS.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <input
+                                    type="text"
+                                    wire:model="serverUrl"
+                                    placeholder="http://localhost:3000 hoặc https://ops.example.com"
+                                    class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm dark:border-white/10 dark:bg-gray-800 dark:text-white"
+                                />
+                                <x-filament::button
+                                    wire:click="testServerConnection"
+                                    color="gray"
+                                    icon="heroicon-m-signal"
+                                    class="shrink-0"
+                                >
+                                    Kiểm tra kết nối
+                                </x-filament::button>
+                            </div>
+
+                            @if ($serverConnectionStatus === 'success')
+                                <div class="rounded-lg border border-emerald-500/30 bg-emerald-50 p-2.5 text-xs text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-950/30 dark:text-emerald-300 flex items-center gap-2">
+                                    <x-filament::icon icon="heroicon-m-check-circle" class="h-4 w-4 text-emerald-500 shrink-0" />
+                                    <span>{{ $serverConnectionMessage }}</span>
+                                </div>
+                            @elseif ($serverConnectionStatus === 'error')
+                                <div class="rounded-lg border border-rose-500/30 bg-rose-50 p-2.5 text-xs text-rose-700 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-300 flex items-center gap-2">
+                                    <x-filament::icon icon="heroicon-m-exclamation-circle" class="h-4 w-4 text-rose-500 shrink-0" />
+                                    <span>{{ $serverConnectionMessage }}</span>
+                                </div>
+                            @endif
+                        </div>
+
+                        {{-- 2. Trường mã kích hoạt SAU Server URL --}}
+                        <div class="space-y-2 pt-3 border-t border-gray-100 dark:border-white/5">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                 Mã kích hoạt (Enrollment Code)
+                                <span class="text-rose-500">*</span>
                             </label>
                             <div class="flex gap-2">
                                 <input
@@ -171,7 +286,7 @@
                         Chi tiết kỹ thuật kết nối OPS-SERVER (Dành cho Quản trị viên)
                     </summary>
                     <div class="mt-2 space-y-1 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
-                        <p>Server URL: {{ config('h1-license.base_url', 'Chưa cấu hình') }}</p>
+                        <p>Server URL: {{ $serverUrl ?: config('h1-license.base_url', 'Chưa cấu hình') }}</p>
                         <p>Giao thức bảo mật: H1 Signed Reconcile (HMAC SHA-256)</p>
                     </div>
                 </details>

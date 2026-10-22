@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\H1\Rotation;
 
 use App\Models\H1Credential;
+use App\Models\H1Installation;
 use App\Services\H1\Exceptions\H1CommandException;
 use App\Services\H1\Protocol\SignedHttpTransport;
 
@@ -53,7 +54,10 @@ final class HttpRotationSecretTransport implements RotationSecretTransport
             $pathTemplate,
         );
 
-        $base = rtrim((string) config('h1-license.base_url', ''), '/');
+        $installation = H1Installation::query()->where('installation_id', $installationId)->first();
+        $base = filled($installation?->control_server_url)
+            ? rtrim((string) $installation->control_server_url, '/')
+            : app(\App\Services\H1\Persistence\InstallationStateRepository::class)->getEffectiveControlServerUrl();
         $url = $base . $path;
 
         try {

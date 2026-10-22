@@ -102,12 +102,20 @@ final class AdminQuickSetupWizardTest extends TestCase
         Schema::connection($conn)->create('h1_installations', function (Blueprint $table): void {
             $table->id();
             $table->string('installation_id')->unique();
+            $table->string('product', 64)->default('seo-ops');
             $table->string('client_version')->nullable();
             $table->string('control_server_url')->nullable();
+            $table->string('status', 32)->default('enrolled');
+            $table->string('cutover_mode', 32)->default('pre_enrollment');
+            $table->string('anchor_identity')->nullable();
+            $table->unsignedBigInteger('anchor_site_id')->nullable();
             $table->unsignedInteger('credential_version')->default(1);
             $table->unsignedInteger('entitlement_revision')->default(1);
+            $table->string('last_command_id')->nullable();
             $table->json('verified_snapshot')->nullable();
             $table->timestamp('validated_at')->nullable();
+            $table->json('pending_acks')->nullable();
+            $table->json('rotation_state')->nullable();
             $table->timestamps();
         });
 
@@ -116,8 +124,10 @@ final class AdminQuickSetupWizardTest extends TestCase
             $table->string('installation_id');
             $table->string('credential_id')->unique();
             $table->unsignedInteger('version')->default(1);
-            $table->text('secret')->nullable();
+            $table->text('secret_encrypted')->nullable();
             $table->string('status')->default('active');
+            $table->timestamp('activated_at')->nullable();
+            $table->timestamp('retired_at')->nullable();
             $table->timestamps();
         });
 
@@ -214,7 +224,7 @@ final class AdminQuickSetupWizardTest extends TestCase
         $this->assertNotEmpty(WpOption::get('quick_setup_completed_at'));
     }
 
-    public function test_dashboard_shows_review_link_after_completion(): void
+    public function test_dashboard_shows_unlicensed_warning_if_not_entitled(): void
     {
         WpOption::set('quick_setup_completed_at', now()->toIso8601String());
         WpOption::clearRequestCache();
@@ -223,6 +233,217 @@ final class AdminQuickSetupWizardTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertDontSee('Chào mừng đến SEO-OPS');
+        $response->assertSee('Chưa kích hoạt bản quyền thương mại');
+    }
+
+    public function test_dashboard_shows_review_link_after_licensed_and_configured(): void
+    {
+        WpOption::set('quick_setup_completed_at', now()->toIso8601String());
+        WpOption::clearRequestCache();
+
+        config(['h1-license.enforcement_mode' => 'enforcing']);
+        \App\Models\H1Installation::create([
+            'installation_id' => 'inst_test',
+            'product' => 'seo-ops',
+            'control_server_url' => 'https://ops.example.com',
+            'status' => 'active',
+            'cutover_mode' => 'enforcing',
+            'verified_snapshot' => [
+                'services' => [
+                    'seo' => ['enabled' => true],
+                ],
+            ],
+        ]);
+
+        \App\Models\ApiConnection::create([
+            'name' => 'Test AI',
+            'provider' => 'openai',
+            'api_key' => 'sk-test',
+            'status' => 'active',
+        ]);
+
+        $response = $this->actingAs($this->owner)->get('/admin');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Chào mừng đến SEO-OPS');
         $response->assertSee('Xem lại thiết lập');
+    }
+
+    public function test_quick_setup_prefills_existing_server_url(): void
+    {
+        WpOption::set('h1_control_server_url', 'http://localhost:3000');
+        WpOption::clearRequestCache();
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->assertSet('serverUrl', 'http://localhost:3000');
+    }
+
+    public function test_server_connection_test_success_with_health_ping(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/api/health' => \Illuminate\Support\Facades\Http::response(['status' => 'ok'], 200),
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('serverUrl', 'http://localhost:3000')
+            ->call('testServerConnection')
+            ->assertSet('serverConnectionStatus', 'success')
+            ->assertSet('serverUrl', 'http://localhost:3000');
+
+        $this->assertSame('http://localhost:3000', WpOption::get('h1_control_server_url'));
+    }
+
+    public function test_server_connection_test_rejects_non_loopback_http(): void
+    {
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('serverUrl', 'http://ops.remote-server.com')
+            ->call('testServerConnection')
+            ->assertSet('serverConnectionStatus', 'error');
+
+        $message = (string) $testComponent->get('serverConnectionMessage');
+        $this->assertStringContainsString('HTTPS', $message);
+    }
+
+    public function test_server_connection_test_rejects_private_network_ssrf(): void
+    {
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('serverUrl', 'https://192.168.1.50:8000')
+            ->call('testServerConnection')
+            ->assertSet('serverConnectionStatus', 'error');
+
+        $message = (string) $testComponent->get('serverConnectionMessage');
+        $this->assertStringContainsString('IP', $message);
+    }
+
+    public function test_enrollment_rejects_token_violating_ops_server_contract(): void
+    {
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('serverUrl', 'http://localhost:3000')
+            ->set('enrollmentToken', 'tok_invalid with spaces!')
+            ->call('activateEnrollment')
+            ->assertSet('enrollmentSuccess', false);
+
+        $error = (string) $testComponent->get('enrollmentError');
+        $this->assertStringContainsString('Mã kích hoạt không đúng định dạng', $error);
+    }
+
+    public function test_enrollment_success_persists_chosen_server_url_and_locks_read_only(): void
+    {
+        $this->app->singleton(
+            \App\Services\H1\Enrollment\EnrollmentTransport::class,
+            \App\Services\H1\Enrollment\HttpEnrollmentTransport::class,
+        );
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/api/v1/enrollment/consume' => \Illuminate\Support\Facades\Http::response([
+                'success' => true,
+                'installation_id' => 'ins_qs_test_01',
+                'product' => 'seo-ops',
+                'credential' => [
+                    'id' => 'cred_qs_test_01',
+                    'version' => 1,
+                    'secret' => 'unit-test-secret-value-12345',
+                ],
+                'entitlement' => [
+                    'revision' => 1,
+                    'services' => [
+                        'seo' => ['enabled' => true, 'quota' => 10],
+                    ],
+                ],
+            ], 200),
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('serverUrl', 'http://localhost:3000')
+            ->set('enrollmentToken', 'tok_abcdef1234567890abcdef')
+            ->call('activateEnrollment')
+            ->assertSet('enrollmentSuccess', true)
+            ->assertSet('isEnrolled', true);
+
+        // Verify bound in database
+        $installation = \App\Models\H1Installation::where('installation_id', 'ins_qs_test_01')->first();
+        $this->assertNotNull($installation);
+        $this->assertSame('http://localhost:3000', $installation->control_server_url);
+
+        // Reopening preserves binding and locks editing
+        $reopened = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $reopened->assertSet('isEnrolled', true);
+        $this->assertSame('http://localhost:3000', $reopened->get('installationDetails')['control_server_url']);
+
+        // Attempting to migrate/change server while enrolled is blocked
+        $reopened->set('serverUrl', 'https://other-server.example.com')
+            ->call('activateEnrollment')
+            ->assertSet('enrollmentSuccess', false);
+
+        $error = (string) $reopened->get('enrollmentError');
+        $this->assertStringContainsString('phục hồi ủy quyền', $error);
+    }
+
+    public function test_reconcile_and_golden_sync_use_bound_server_url_and_env_does_not_overwrite(): void
+    {
+        $installation = \App\Models\H1Installation::create([
+            'installation_id' => 'ins_bound_01',
+            'product' => 'seo-ops',
+            'control_server_url' => 'http://localhost:3000',
+            'status' => 'enrolled',
+            'cutover_mode' => 'pre_enrollment',
+            'credential_version' => 1,
+            'entitlement_revision' => 1,
+        ]);
+
+        $cred = new \App\Models\H1Credential();
+        $cred->installation_id = 'ins_bound_01';
+        $cred->credential_id = 'cred_bound_01';
+        $cred->version = 1;
+        $cred->status = \App\Models\H1Credential::STATUS_ACTIVE;
+        $secret = \App\Services\H1\Protocol\LicenseCrypto::base64UrlEncode(random_bytes(32));
+        $cred->setSecretBase64Url($secret);
+        $cred->save();
+
+        // Config has a different URL, but installation is already bound to http://localhost:3000
+        config(['h1-license.base_url' => 'https://conflicting-env.example.com']);
+
+        \Illuminate\Support\Facades\Http::fake([
+            'http://localhost:3000/api/v1/installations/ins_bound_01/license/reconcile' => \Illuminate\Support\Facades\Http::response([
+                'success' => false,
+                'code' => 'server_offline',
+                'detail' => 'Simulated offline in test',
+            ], 500),
+            'http://localhost:3000/api/v1/installations/ins_bound_01/services/seo/config/package' => \Illuminate\Support\Facades\Http::response([
+                'success' => true,
+                'package_id' => 'seo-ops-golden-configuration',
+                'files' => [],
+            ], 200),
+        ]);
+
+        // Reconcile attempts outbound call
+        $reconcileService = app(\App\Services\H1\Reconcile\LicenseReconcileService::class);
+        try {
+            $reconcileService->reconcile();
+        } catch (\Throwable) {
+        }
+
+        // Verify reconcile called the bound localhost:3000 and NEVER called conflicting .env!
+        \Illuminate\Support\Facades\Http::assertSent(function ($request): bool {
+            return str_starts_with($request->url(), 'http://localhost:3000/api/v1/installations/ins_bound_01/license/reconcile');
+        });
+        \Illuminate\Support\Facades\Http::assertNotSent(function ($request): bool {
+            return str_contains($request->url(), 'conflicting-env.example.com');
+        });
+
+        // Verify installation's control_server_url was NOT overwritten by conflicting .env!
+        $installation->refresh();
+        $this->assertSame('http://localhost:3000', $installation->control_server_url);
+
+        // Golden sync transport uses the bound URL
+        $transport = app(\Omnichannel\Addons\Seo\Services\ConfigurationSync\ConfigSyncHttpTransport::class);
+        try {
+            $transport->package();
+        } catch (\Throwable) {
+        }
+
+        \Illuminate\Support\Facades\Http::assertSent(function ($request): bool {
+            return str_starts_with($request->url(), 'http://localhost:3000/api/v1/installations/ins_bound_01/services/seo/config/package');
+        });
     }
 }
