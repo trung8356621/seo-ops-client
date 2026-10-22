@@ -12,8 +12,12 @@ namespace App\Core\Addon;
  */
 final class AddonReadinessValidator
 {
+    /**
+     * @param  list<string>|null  $deploymentReadySlugs  Optional server allowlist override
+     */
     public function __construct(
         private readonly ?AddonDependencyValidator $dependencyValidator = null,
+        private readonly ?array $deploymentReadySlugs = null,
     ) {}
 
     public function validateManifest(AddonManifest $manifest): AddonReadinessResult
@@ -23,9 +27,10 @@ final class AddonReadinessValidator
             return AddonReadinessResult::notReady('unknown', 'Manifest missing slug.');
         }
 
-        // 1. Explicit deployment readiness check
-        if (! $this->isExplicitlyDeploymentReady($manifest)) {
-            return AddonReadinessResult::notReady($slug, 'Addon is not marked or configured as deployment_ready.');
+        // 1. Explicit deployment readiness check & server allowlist enforcement
+        $readinessCheck = $this->checkDeploymentReadiness($manifest);
+        if ($readinessCheck !== null) {
+            return $readinessCheck;
         }
 
         // 2. Package / namespace autoload availability
@@ -100,9 +105,9 @@ final class AddonReadinessValidator
             }
         } else {
             // No manifest: check if slug is in deployment_ready allowlist
-            $allowlist = array_fill_keys(config('addons.deployment_ready_slugs', []), true);
+            $allowlist = array_fill_keys($this->getServerAllowlist(), true);
             if (! isset($allowlist[$slug])) {
-                return AddonReadinessResult::notReady($slug, 'Missing manifest and not in deployment_ready allowlist.');
+                return AddonReadinessResult::notReady($slug, "Addon [{$slug}] missing manifest and not approved in server deployment allowlist.");
             }
         }
 
@@ -197,17 +202,42 @@ final class AddonReadinessValidator
         return array_values(array_unique($violations));
     }
 
-    private function isExplicitlyDeploymentReady(AddonManifest $manifest): bool
+    public function checkDeploymentReadiness(AddonManifest $manifest): ?AddonReadinessResult
     {
-        // Explicit boolean in manifest has highest precedence
-        if (array_key_exists('deployment_ready', $manifest->raw)) {
-            return (bool) $manifest->raw['deployment_ready'];
+        $slug = $manifest->slug;
+
+        // 1. Manifest explicit opt-out: if package explicitly declares deployment_ready: false, fail immediately.
+        if (array_key_exists('deployment_ready', $manifest->raw) && ! (bool) $manifest->raw['deployment_ready']) {
+            return AddonReadinessResult::notReady($slug, "Addon [{$slug}] manifest explicitly marks deployment_ready as false.");
         }
 
-        // Fallback to configured deployment ready allowlist
-        $allowlist = array_fill_keys(config('addons.deployment_ready_slugs', []), true);
+        // 2. Server authority: package self-declaration (deployment_ready: true) alone is not enough.
+        // The host environment must have the final decision via the deployment allowlist.
+        $allowlist = array_fill_keys($this->getServerAllowlist(), true);
+        if (! isset($allowlist[$slug])) {
+            return AddonReadinessResult::notReady(
+                $slug,
+                "Addon [{$slug}] is not approved in server deployment allowlist (addons.deployment_ready_slugs)."
+            );
+        }
 
-        return isset($allowlist[$manifest->slug]);
+        return null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function getServerAllowlist(): array
+    {
+        if ($this->deploymentReadySlugs !== null) {
+            return $this->deploymentReadySlugs;
+        }
+
+        if (function_exists('config')) {
+            return (array) config('addons.deployment_ready_slugs', []);
+        }
+
+        return [];
     }
 
     /**

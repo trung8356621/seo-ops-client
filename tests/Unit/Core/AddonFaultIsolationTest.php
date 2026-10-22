@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Core;
 
+use App\Core\Addon\AddonDependencyValidator;
 use App\Core\Addon\AddonManifest;
 use App\Core\Addon\AddonReadinessValidator;
 use App\Core\Capability\CapabilityRegistry;
-use App\Core\Addon\AddonDependencyValidator;
-use Illuminate\Support\Facades\Config;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class AddonFaultIsolationTest extends TestCase
 {
@@ -22,7 +21,8 @@ final class AddonFaultIsolationTest extends TestCase
         $capabilities->register('search.keyword', (object) ['id' => 'search.keyword'], 'search-foundation');
 
         $this->validator = new AddonReadinessValidator(
-            new AddonDependencyValidator($capabilities)
+            new AddonDependencyValidator($capabilities),
+            ['seo', 'search-foundation', 'non-autoloaded-addon', 'broken-panel-addon', 'needs-missing-cap', 'healthy-addon', 'broken-route-addon']
         );
     }
 
@@ -40,13 +40,11 @@ final class AddonFaultIsolationTest extends TestCase
         $result = $this->validator->validateManifest($manifest);
 
         self::assertFalse($result->isReady());
-        self::assertStringContainsString('not marked or configured as deployment_ready', $result->diagnostic());
+        self::assertStringContainsString('manifest explicitly marks deployment_ready as false', $result->diagnostic());
     }
 
     public function test_unlisted_addon_without_explicit_ready_fails_validation(): void
     {
-        Config::set('addons.deployment_ready_slugs', ['seo', 'search-foundation']);
-
         $manifest = new AddonManifest(
             slug: 'unknown-addon',
             name: 'Unknown Addon',
@@ -56,10 +54,70 @@ final class AddonFaultIsolationTest extends TestCase
             raw: [],
         );
 
-        $result = $this->validator->validateManifest($manifest);
+        $validator = new AddonReadinessValidator(
+            deploymentReadySlugs: ['seo', 'search-foundation']
+        );
+
+        $result = $validator->validateManifest($manifest);
 
         self::assertFalse($result->isReady());
-        self::assertStringContainsString('not marked or configured as deployment_ready', $result->diagnostic());
+        self::assertStringContainsString('not approved in server deployment allowlist', $result->diagnostic());
+    }
+
+    public function test_package_self_declared_ready_is_rejected_when_not_in_server_allowlist(): void
+    {
+        $manifest = new AddonManifest(
+            slug: 'unapproved-new-addon',
+            name: 'Unapproved New Addon',
+            version: '0.1.0',
+            provider: 'App\\Providers\\AppServiceProvider',
+            path: '/path/to/addon',
+            raw: ['deployment_ready' => true],
+        );
+
+        $validator = new AddonReadinessValidator(
+            deploymentReadySlugs: ['seo', 'search-foundation']
+        );
+
+        $result = $validator->validateManifest($manifest);
+
+        self::assertFalse($result->isReady());
+        self::assertStringContainsString('not approved in server deployment allowlist', $result->diagnostic());
+    }
+
+    public function test_social_automation_with_deployment_ready_true_is_isolated_when_server_allowlist_omits_it_while_seo_remains_ready(): void
+    {
+        $socialManifest = new AddonManifest(
+            slug: 'social-automation',
+            name: 'Social Automation',
+            version: '0.1.0',
+            provider: 'Omnichannel\\Addons\\SocialAutomation\\Providers\\SocialAutomationServiceProvider',
+            path: '/path/to/social-automation',
+            raw: ['deployment_ready' => true],
+        );
+
+        $seoManifest = new AddonManifest(
+            slug: 'seo',
+            name: 'SEO',
+            version: '1.0.0',
+            provider: 'App\\Providers\\AppServiceProvider',
+            path: '/path/to/seo',
+            raw: [],
+        );
+
+        // Production server allowlist has 'seo' but NOT 'social-automation'
+        $serverValidator = new AddonReadinessValidator(
+            deploymentReadySlugs: ['seo', 'seeding', 'search-foundation']
+        );
+
+        // Social Automation MUST be rejected despite deployment_ready: true in manifest
+        $socialResult = $serverValidator->validateManifest($socialManifest);
+        self::assertFalse($socialResult->isReady());
+        self::assertStringContainsString('not approved in server deployment allowlist', $socialResult->diagnostic());
+
+        // SEO addon MUST remain healthy and ready
+        $seoResult = $serverValidator->validateManifest($seoManifest);
+        self::assertTrue($seoResult->isReady());
     }
 
     public function test_missing_composer_namespace_fails_readiness(): void
@@ -183,11 +241,10 @@ PHP;
 
     public function test_route_file_readiness_validates_existing_seo_service_api(): void
     {
-        Config::set('addons.deployment_ready_slugs', ['seo']);
-
-        $path = base_path('addons/seo/routes/api-services.php');
+        $base = dirname(__DIR__, 3);
+        $path = $base.'/addons/seo/routes/api-services.php';
         if (! is_file($path)) {
-            $path = dirname(base_path()).'/omnichannel-addons/seo/routes/api-services.php';
+            $path = dirname($base).'/omnichannel-addons/seo/routes/api-services.php';
         }
 
         self::assertFileExists($path);
