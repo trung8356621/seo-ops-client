@@ -326,14 +326,14 @@
                     </div>
                 @endif
 
-                @if (! $isSeoLicensed)
+                @if (! $goldenSeoEntitled || $goldenStatus === 'unlicensed')
                     <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 space-y-2">
                         <div class="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300 text-sm">
                             <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5" />
-                            <span>Dịch vụ SEO chưa được cấp phép</span>
+                            <span>SEO chưa được cấp quyền — Golden chưa áp dụng</span>
                         </div>
                         <p class="text-xs text-amber-700 dark:text-amber-400">
-                            Tính năng Cấu hình chuẩn Golden chỉ áp dụng khi hệ thống có bản quyền dịch vụ SEO. Bạn có thể bỏ qua bước này để tiếp tục thiết lập các phần khác.
+                            {{ $goldenReason ?: 'Thiết bị có thể đã enrollment nhưng dịch vụ SEO chưa có entitlement. Bấm Tiếp tục để sang bước sau; nạp Golden khi OPS-SERVER cấp quyền SEO.' }}
                         </p>
                     </div>
                 @elseif ($goldenStatus === 'blank')
@@ -372,7 +372,7 @@
                     </div>
                 @endif
 
-                @if ($isSeoLicensed && ! in_array($goldenStatus, ['in_sync', 'unlicensed'], true))
+                @if ($goldenSeoEntitled && ! in_array($goldenStatus, ['in_sync', 'unlicensed'], true))
                     <label class="flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 text-xs text-gray-700 dark:border-white/10 dark:bg-gray-800/40 dark:text-gray-300">
                         <input
                             type="checkbox"

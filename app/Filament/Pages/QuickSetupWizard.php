@@ -24,6 +24,7 @@ use Omnichannel\Addons\AiPrompt\Support\ApiConnectionProviders;
 use Omnichannel\Addons\Seo\Services\ConfigurationSync\BlankInstallationDetector;
 use Omnichannel\Addons\Seo\Services\ConfigurationSync\ConfigurationSyncCoordinator;
 use Omnichannel\Addons\Seo\Services\ConfigurationSync\GoldenBootstrapService;
+use Omnichannel\Addons\Seo\Services\ConfigurationSync\SeoEntitlementProbe;
 
 /**
  * Admin Quick Setup Wizard (Rank Math-style onboarding).
@@ -53,7 +54,13 @@ class QuickSetupWizard extends Page
     public ?array $installationDetails = null;
 
     // STEP 2 Properties
+    /** Commercial SEO gate (H1 snapshot / fail-open). Used by Step 4 site creation — not Golden. */
     public bool $isSeoLicensed = false;
+    /**
+     * Golden-eligible SEO entitlement from {@see SeoEntitlementProbe} / local presentation store.
+     * Must match GoldenBootstrapService — do not use ServiceEntitlementGate fail-open here.
+     */
+    public bool $goldenSeoEntitled = false;
     public string $goldenStatus = 'blank'; // blank, in_sync, customized, unlicensed, error
     public ?string $goldenReason = null;
     public array $goldenCounts = ['prompts' => 0, 'workflows' => 0, 'bindings' => 0];
@@ -139,6 +146,7 @@ class QuickSetupWizard extends Page
             'enrollmentError' => $this->enrollmentError,
             'enrollmentSuccess' => $this->enrollmentSuccess,
             'isSeoLicensed' => $this->isSeoLicensed,
+            'goldenSeoEntitled' => $this->goldenSeoEntitled,
             'goldenStatus' => $this->goldenStatus,
             'goldenReason' => $this->goldenReason,
             'goldenCounts' => $this->goldenCounts,
@@ -399,8 +407,9 @@ class QuickSetupWizard extends Page
     public function loadStep2Data(): void
     {
         $userId = (int) Auth::id();
-        $gate = app(ServiceEntitlementGate::class);
-        $this->isSeoLicensed = $gate->allows('seo');
+        // Commercial gate kept for other steps; Golden eligibility uses the same probe as bootstrap.
+        $this->isSeoLicensed = app(ServiceEntitlementGate::class)->allows('seo');
+        $this->refreshGoldenSeoEntitlement();
 
         $promptsCount = 0;
         $workflowsCount = 0;
@@ -424,9 +433,9 @@ class QuickSetupWizard extends Page
             'bindings' => $bindingsCount,
         ];
 
-        if (! $this->isSeoLicensed) {
-            $this->goldenStatus = 'unlicensed';
-            $this->goldenReason = 'Dịch vụ SEO chưa được kích hoạt bản quyền.';
+        if (! $this->goldenSeoEntitled) {
+            $this->markGoldenPendingLicense('unlicensed_service');
+
             return;
         }
 
@@ -458,6 +467,31 @@ class QuickSetupWizard extends Page
     }
 
     /**
+     * Same source of truth as {@see GoldenBootstrapService} entitlement preflight.
+     */
+    public function refreshGoldenSeoEntitlement(): bool
+    {
+        $this->goldenSeoEntitled = app(SeoEntitlementProbe::class)->seoServiceEnabled();
+
+        return $this->goldenSeoEntitled;
+    }
+
+    /**
+     * Enrolled-but-unlicensed (or not yet entitled): skip Golden, keep data, do not mark synced.
+     */
+    private function markGoldenPendingLicense(string $code = 'unlicensed_service'): void
+    {
+        $this->goldenSuccess = false;
+        $this->goldenSeoEntitled = false;
+        $this->goldenStatus = 'unlicensed';
+        $this->goldenError = null;
+        $this->goldenReason = match ($code) {
+            'blocked_on_h1' => 'Chưa có credential enrollment — Golden sẽ khả dụng sau khi kích hoạt thiết bị.',
+            default => 'SEO chưa được cấp quyền trên OPS-SERVER. Đã bỏ qua nạp Golden; có thể đồng bộ sau khi entitlement được cấp.',
+        };
+    }
+
+    /**
      * Run Golden bootstrap/overwrite using the Step 2 checkbox.
      *
      * @return bool true when the wizard may leave Step 2
@@ -468,10 +502,16 @@ class QuickSetupWizard extends Page
         $this->goldenSuccess = false;
         $userId = (int) Auth::id();
 
-        if (! $this->isSeoLicensed) {
-            $this->goldenError = 'Cần kích hoạt bản quyền SEO trước khi nạp cấu hình chuẩn.';
+        if (! $this->refreshGoldenSeoEntitlement()) {
+            $this->markGoldenPendingLicense('unlicensed_service');
 
-            return false;
+            Notification::make()
+                ->title('Bỏ qua Cấu hình chuẩn')
+                ->body($this->goldenReason)
+                ->warning()
+                ->send();
+
+            return true;
         }
 
         try {
@@ -508,8 +548,20 @@ class QuickSetupWizard extends Page
                 return true;
             }
 
+            // Local probe / bootstrap preflight — not an OPS-SERVER network failure.
+            if (in_array($status, ['unlicensed_service', 'blocked_on_h1'], true)) {
+                $this->markGoldenPendingLicense($status);
+                Notification::make()
+                    ->title('Bỏ qua Cấu hình chuẩn')
+                    ->body($this->goldenReason)
+                    ->warning()
+                    ->send();
+
+                return true;
+            }
+
             $errCode = $res['error_code'] ?? $status;
-            $this->goldenError = 'Nạp cấu hình không thành công: '.$errCode.'. Kiểm tra kết nối OPS-SERVER / bản quyền SEO rồi thử lại.';
+            $this->goldenError = 'Nạp cấu hình không thành công: '.$errCode.'. Kiểm tra kết nối OPS-SERVER rồi thử lại.';
 
             Notification::make()
                 ->title('Lỗi nạp cấu hình')
@@ -532,7 +584,7 @@ class QuickSetupWizard extends Page
     }
 
     /**
-     * Step 2 continue: apply Golden when overwrite is checked; otherwise skip and advance.
+     * Step 2 continue: apply Golden when entitled + overwrite checked; otherwise skip and advance.
      *
      * @return bool true when navigation to Step 3 is allowed
      */
@@ -543,9 +595,17 @@ class QuickSetupWizard extends Page
         }
 
         $this->goldenError = null;
+        $this->refreshGoldenSeoEntitlement();
 
-        // Unlicensed or unchecked = explicit skip (do not call Golden bootstrap).
-        if (! $this->isSeoLicensed || ! $this->overwriteGoldenConfiguration) {
+        // Enrolled-but-unlicensed (or no SEO presentation): skip Golden import; do not mark synced.
+        if (! $this->goldenSeoEntitled) {
+            $this->markGoldenPendingLicense('unlicensed_service');
+
+            return true;
+        }
+
+        // Explicit opt-out — preserve existing configuration.
+        if (! $this->overwriteGoldenConfiguration) {
             return true;
         }
 
@@ -891,16 +951,16 @@ class QuickSetupWizard extends Page
                 'link' => url('/admin/settings/general'),
                 'link_label' => 'Cài đặt SEO',
             ];
-        } elseif (! $isSeo) {
+        } elseif ($this->goldenStatus === 'unlicensed' || ! $this->goldenSeoEntitled || ! $isSeo) {
             $checklist[] = [
                 'key' => 'golden',
                 'title' => 'Cấu hình chuẩn SEO-OPS (Golden Configuration)',
-                'status' => 'unavailable',
-                'badge' => 'gray',
-                'status_label' => 'Chưa khả dụng',
-                'description' => 'Yêu cầu kích hoạt bản quyền dịch vụ SEO để tải cấu hình chuẩn.',
-                'link' => null,
-                'link_label' => null,
+                'status' => 'pending',
+                'badge' => 'amber',
+                'status_label' => 'Chờ bản quyền SEO',
+                'description' => 'Đã bỏ qua nạp Golden vì SEO chưa được cấp quyền. Đồng bộ lại sau khi OPS-SERVER cấp entitlement.',
+                'link' => ServiceStatusOverview::getUrl(),
+                'link_label' => 'Quản lý Dịch vụ',
             ];
         } else {
             $checklist[] = [

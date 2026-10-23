@@ -280,6 +280,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
     public function test_step2_continue_checked_runs_bootstrap_and_advances_on_success(): void
     {
+        $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
@@ -288,7 +289,7 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->assertSet('overwriteGoldenConfiguration', true);
         $testComponent->set('currentStep', 2)
-            ->set('isSeoLicensed', true)
+            ->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true)
             ->call('nextStep')
@@ -302,6 +303,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
     public function test_step2_continue_unchecked_skips_bootstrap_and_advances(): void
     {
+        $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
@@ -309,7 +311,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->set('currentStep', 2)
-            ->set('isSeoLicensed', true)
+            ->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'customized')
             ->set('overwriteGoldenConfiguration', false)
             ->call('nextStep')
@@ -321,6 +323,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
     public function test_step2_continue_checked_stays_on_step_on_bootstrap_failure(): void
     {
+        $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'download_failed',
             'imported' => false,
@@ -329,7 +332,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->set('currentStep', 2)
-            ->set('isSeoLicensed', true)
+            ->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true)
             ->call('nextStep')
@@ -343,6 +346,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
     public function test_step2_continue_duplicate_submission_is_ignored_while_applying(): void
     {
+        $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
@@ -350,7 +354,7 @@ final class AdminQuickSetupWizardTest extends TestCase
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->set('currentStep', 2)
-            ->set('isSeoLicensed', true)
+            ->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true)
             ->set('goldenApplying', true)
@@ -358,6 +362,54 @@ final class AdminQuickSetupWizardTest extends TestCase
             ->assertSet('currentStep', 2);
 
         $this->assertCount(0, $fake->calls);
+    }
+
+    public function test_step2_enrolled_but_unlicensed_skips_bootstrap_and_does_not_mark_synced(): void
+    {
+        $this->bindSeoEntitlementProbe(false);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        // Gate may fail-open (isSeoLicensed=true) while Golden probe denies — the real bug path.
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('currentStep', 2)
+            ->set('isSeoLicensed', true)
+            ->set('overwriteGoldenConfiguration', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 3)
+            ->assertSet('goldenSuccess', false)
+            ->assertSet('goldenStatus', 'unlicensed')
+            ->assertSet('goldenError', null)
+            ->assertSet('goldenSeoEntitled', false);
+
+        $this->assertCount(0, $fake->calls);
+        $reason = (string) $testComponent->get('goldenReason');
+        $this->assertStringContainsString('SEO chưa được cấp quyền', $reason);
+    }
+
+    public function test_apply_golden_treats_unlicensed_service_response_as_pending_skip(): void
+    {
+        $this->bindSeoEntitlementProbe(true);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'unlicensed_service',
+            'imported' => false,
+            'live_integration' => 'BLOCKED_ON_H1',
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('currentStep', 2)
+            ->set('goldenSeoEntitled', true)
+            ->set('goldenStatus', 'blank')
+            ->set('overwriteGoldenConfiguration', true);
+
+        $allowed = $testComponent->instance()->applyGoldenConfiguration();
+        $this->assertTrue($allowed);
+        $testComponent->assertSet('goldenSuccess', false)
+            ->assertSet('goldenStatus', 'unlicensed')
+            ->assertSet('goldenError', null);
+        $this->assertCount(1, $fake->calls);
     }
 
     public function test_step2_view_has_no_separate_apply_button_and_wires_continue_to_next_step(): void
@@ -405,6 +457,21 @@ final class AdminQuickSetupWizardTest extends TestCase
         );
 
         return $fake;
+    }
+
+    private function bindSeoEntitlementProbe(bool $enabled): void
+    {
+        $this->app->instance(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\SeoEntitlementProbe::class,
+            new class($enabled) implements \Omnichannel\Addons\Seo\Services\ConfigurationSync\SeoEntitlementProbe {
+                public function __construct(private bool $enabled) {}
+
+                public function seoServiceEnabled(): bool
+                {
+                    return $this->enabled;
+                }
+            },
+        );
     }
 
     public function test_server_connection_test_success_with_health_ping(): void
