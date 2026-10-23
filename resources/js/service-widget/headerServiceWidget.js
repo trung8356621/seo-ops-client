@@ -1,15 +1,38 @@
 /**
- * Lazy-load OPS Service Widget into Admin Header.
+ * Lazy-load OPS Service Widget into Admin Header dropdown.
  * No OPS-SERVER network until the user clicks Dịch vụ.
  */
 
 const SCRIPT_ATTR = 'data-ops-service-widget-script';
 let scriptPromise = null;
 let mounted = false;
+let open = false;
+
+const FRIENDLY = {
+  server_offline: 'Không kết nối được máy chủ dịch vụ. Kiểm tra mạng rồi thử lại.',
+  server_unconfigured: 'Chưa cấu hình địa chỉ OPS-SERVER.',
+  secret_unconfigured: 'Máy chủ dịch vụ chưa sẵn sàng cấp phiên. Liên hệ quản trị viên.',
+  not_enrolled: 'Thiết bị chưa Enrollment. Hoàn tất Quick Setup trước.',
+  scope_mismatch: 'Phiên dịch vụ không khớp Installation hiện tại.',
+  invalid_response: 'Phản hồi từ máy chủ dịch vụ không hợp lệ. Thử lại.',
+  invalid_scope: 'Phiên dịch vụ thiếu quyền cần thiết.',
+  token_expired: 'Phiên dịch vụ hết hạn. Thử lại để lấy phiên mới.',
+  session_error: 'Không mở được Dịch vụ. Thử lại.',
+};
 
 function csrfToken() {
   const meta = document.querySelector('meta[name="csrf-token"]');
   return meta?.getAttribute('content') || '';
+}
+
+function friendlyMessage(error) {
+  const code = error?.code || 'session_error';
+  if (FRIENDLY[code]) return FRIENDLY[code];
+  const raw = String(error?.message || '');
+  if (!raw || /exception|stack|\{|\}|access_token|expires_at/i.test(raw)) {
+    return FRIENDLY.session_error;
+  }
+  return raw;
 }
 
 function loadScriptOnce(url) {
@@ -24,7 +47,9 @@ function loadScriptOnce(url) {
   if (existing) {
     scriptPromise = new Promise((resolve, reject) => {
       existing.addEventListener('load', () => resolve());
-      existing.addEventListener('error', () => reject(new Error('Failed to load Service Widget bundle.')));
+      existing.addEventListener('error', () =>
+        reject(Object.assign(new Error('Failed to load Service Widget bundle.'), { code: 'server_offline' })),
+      );
     });
     return scriptPromise;
   }
@@ -37,7 +62,7 @@ function loadScriptOnce(url) {
     script.onload = () => resolve();
     script.onerror = () => {
       scriptPromise = null;
-      reject(new Error('Failed to load Service Widget bundle.'));
+      reject(Object.assign(new Error('Failed to load Service Widget bundle.'), { code: 'server_offline' }));
     };
     document.head.appendChild(script);
   });
@@ -64,17 +89,17 @@ async function fetchSession(sessionUrl) {
 
     const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const message = data?.error?.message || `Session failed (${response.status})`;
-      const error = new Error(message);
+      const error = new Error(data?.error?.message || 'Session failed');
       error.code = data?.error?.code || 'session_error';
       throw error;
+    }
+    if (!data?.accessToken || !data?.installationId || !data?.apiBaseUrl) {
+      throw Object.assign(new Error('Incomplete session'), { code: 'invalid_response' });
     }
     return data;
   } catch (error) {
     if (error?.name === 'AbortError') {
-      const timeout = new Error('OPS-SERVER timed out.');
-      timeout.code = 'server_offline';
-      throw timeout;
+      throw Object.assign(new Error('OPS-SERVER timed out.'), { code: 'server_offline' });
     }
     throw error;
   } finally {
@@ -82,34 +107,25 @@ async function fetchSession(sessionUrl) {
   }
 }
 
-function setUiState(root, state, message = '') {
+function setPanelState(root, state, message = '') {
+  const dropdown = root.querySelector('[data-service-widget-dropdown]');
+  const loading = root.querySelector('[data-service-widget-loading]');
+  const errorBox = root.querySelector('[data-service-widget-error]');
   const status = root.querySelector('[data-service-widget-status]');
-  const retry = root.querySelector('[data-service-widget-retry]');
-  if (status) {
-    status.textContent = message;
-    status.hidden = !message;
-    status.dataset.state = state;
-  }
-  if (retry) {
-    retry.hidden = !(state === 'offline' || state === 'error');
-  }
-  root.dataset.swState = state;
+  const host = root.querySelector('[data-ops-service-widget-host]');
   const trigger = root.querySelector('[data-service-widget-trigger]');
+
+  if (dropdown) dropdown.hidden = state === 'closed';
+  if (loading) loading.hidden = state !== 'loading';
+  if (errorBox) errorBox.hidden = state !== 'error' && state !== 'offline';
+  if (status) status.textContent = message;
+  if (host) host.hidden = state !== 'ready';
   if (trigger) {
     trigger.disabled = state === 'loading';
     trigger.setAttribute('aria-busy', state === 'loading' ? 'true' : 'false');
+    trigger.setAttribute('aria-expanded', state === 'closed' ? 'false' : 'true');
   }
-}
-
-function ensureHost(root) {
-  let host = root.querySelector('[data-ops-service-widget-host]');
-  if (!host) {
-    host = document.createElement('div');
-    host.setAttribute('data-ops-service-widget-host', '1');
-    host.id = 'ops-service-widget';
-    root.appendChild(host);
-  }
-  return host;
+  root.dataset.swState = state;
 }
 
 function clickWidgetTrigger(host) {
@@ -119,7 +135,7 @@ function clickWidgetTrigger(host) {
 
 async function ensureMounted(root) {
   if (mounted && window.OpsServiceWidget) {
-    return ensureHost(root);
+    return root.querySelector('[data-ops-service-widget-host]');
   }
 
   const sessionUrl = root.dataset.sessionUrl;
@@ -127,16 +143,19 @@ async function ensureMounted(root) {
     throw Object.assign(new Error('Missing session endpoint.'), { code: 'misconfigured' });
   }
 
-  setUiState(root, 'loading', 'Đang tải…');
+  setPanelState(root, 'loading');
   const session = await fetchSession(sessionUrl);
   await loadScriptOnce(session.bundleUrl);
 
   if (!window.OpsServiceWidget) {
-    throw new Error('OpsServiceWidget API missing after bundle load.');
+    throw Object.assign(new Error('OpsServiceWidget API missing.'), { code: 'invalid_response' });
   }
 
-  const host = ensureHost(root);
-  // Remount replaces the React root on the same host — never create a second host.
+  const host = root.querySelector('[data-ops-service-widget-host]');
+  if (!host) {
+    throw Object.assign(new Error('Missing widget host.'), { code: 'misconfigured' });
+  }
+
   window.OpsServiceWidget.unmount(host);
   window.OpsServiceWidget.setAuthContext({
     mode: 'bearer',
@@ -151,35 +170,34 @@ async function ensureMounted(root) {
     locale: 'vi',
   });
 
-  // Header owns the visible CTA; hide the widget's inner trigger (Shadow DOM).
   const hide = document.createElement('style');
   hide.setAttribute('data-ops-sw-header-hide-trigger', '1');
   hide.textContent =
-    '.ops-sw__trigger{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important;}';
+    '.ops-sw__trigger{position:absolute!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important;overflow:hidden!important;}.ops-sw__popover{position:static!important;width:100%!important;box-shadow:none!important;border:0!important;padding:0!important;}';
   host.shadowRoot?.appendChild(hide);
 
   mounted = true;
-  root.classList.add('service-widget-header--mounted');
-  setUiState(root, 'ready', '');
+  setPanelState(root, 'ready');
+  requestAnimationFrame(() => clickWidgetTrigger(host));
   return host;
 }
 
-async function onTriggerClick(root) {
+function closeDropdown(root) {
+  open = false;
+  setPanelState(root, 'closed');
+}
+
+async function openDropdown(root) {
+  open = true;
   try {
-    const host = await ensureMounted(root);
-    // Toggle popover via the mounted widget trigger.
-    requestAnimationFrame(() => clickWidgetTrigger(host));
+    await ensureMounted(root);
   } catch (error) {
     mounted = false;
     const offline =
       error?.code === 'server_offline' ||
       error?.code === 'server_unconfigured' ||
       /unreachable|timed out|Failed to load/i.test(String(error?.message || ''));
-    setUiState(
-      root,
-      offline ? 'offline' : 'error',
-      error?.message || 'Không kết nối được OPS-SERVER.',
-    );
+    setPanelState(root, offline ? 'offline' : 'error', friendlyMessage(error));
   }
 }
 
@@ -188,15 +206,28 @@ function bindRoot(root) {
     return;
   }
   root.dataset.swBound = '1';
+  setPanelState(root, 'closed');
 
   root.querySelector('[data-service-widget-trigger]')?.addEventListener('click', (event) => {
     event.preventDefault();
-    void onTriggerClick(root);
+    if (open) {
+      closeDropdown(root);
+      return;
+    }
+    void openDropdown(root);
   });
 
   root.querySelector('[data-service-widget-retry]')?.addEventListener('click', (event) => {
     event.preventDefault();
-    void onTriggerClick(root);
+    mounted = false;
+    void openDropdown(root);
+  });
+
+  document.addEventListener('mousedown', (event) => {
+    if (!open) return;
+    if (event.target instanceof Node && !root.contains(event.target)) {
+      closeDropdown(root);
+    }
   });
 }
 
@@ -214,4 +245,4 @@ if (document.readyState === 'loading') {
   boot();
 }
 
-export { boot as bootServiceWidgetHeader };
+export { boot as bootServiceWidgetHeader, friendlyMessage };

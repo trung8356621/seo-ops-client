@@ -23,7 +23,10 @@ final class ServiceWidgetSessionController extends Controller
     {
         if (! auth()->check()) {
             return response()->json([
-                'error' => ['code' => 'unauthenticated', 'message' => 'Authentication required.'],
+                'error' => [
+                    'code' => 'unauthenticated',
+                    'message' => 'Bạn cần đăng nhập để mở Dịch vụ.',
+                ],
             ], 401);
         }
 
@@ -33,8 +36,10 @@ final class ServiceWidgetSessionController extends Controller
         } catch (H1TransportException $e) {
             $status = match ($e->errorCode) {
                 'not_enrolled' => 409,
-                'server_offline' => 503,
-                'server_unconfigured' => 503,
+                'server_offline', 'server_unconfigured', 'secret_unconfigured' => 503,
+                'scope_mismatch', 'installation_mismatch', 'invalid_scope' => 403,
+                'token_expired', 'request_expired', 'invalid_timestamp' => 401,
+                'invalid_response' => 502,
                 default => 502,
             };
 
