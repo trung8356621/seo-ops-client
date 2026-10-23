@@ -242,14 +242,20 @@ class AppServiceProvider extends ServiceProvider
                 return;
             }
 
-            // services = local runtime catalog / activation snapshot (is_active).
-            $activeServices = \App\Models\Service::where('is_active', true)->get();
+            // Catalog rows register addon providers. Commercial use is gated by H1
+            // (ServiceEntitlementGate), not legacy services.is_active.
+            // PHPUnit swaps DB connections after provider boot — never read host MySQL here.
+            if ($this->app->environment('testing')) {
+                return;
+            }
+
+            $catalogServices = \App\Models\Service::query()->get();
             /** @var \App\Core\Addon\AddonRegistry $registry */
             $registry = $this->app->make(\App\Core\Addon\AddonRegistry::class);
             /** @var \App\Core\Addon\AddonReadinessValidator $readinessValidator */
             $readinessValidator = $this->app->make(\App\Core\Addon\AddonReadinessValidator::class);
 
-            foreach ($activeServices as $service) {
+            foreach ($catalogServices as $service) {
                 $slug = (string) $service->slug;
                 if (in_array($slug, config('addons.skip_slugs', []), true)) {
                     continue;

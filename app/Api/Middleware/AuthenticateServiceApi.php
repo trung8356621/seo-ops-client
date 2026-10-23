@@ -11,6 +11,7 @@ use App\Api\Services\ServiceApiError;
 use App\Models\Service;
 use App\Models\ServiceApiCredential;
 use App\Models\ServiceGatewayProvision;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\ServiceIdentity;
 use Closure;
 use Illuminate\Http\Request;
@@ -32,6 +33,7 @@ final class AuthenticateServiceApi
     public function __construct(
         private readonly ApiKeyResolver $resolver,
         private readonly ApiCredentialUsageTracker $usageTracker,
+        private readonly ServiceEntitlementGate $entitlementGate,
     ) {}
 
     public function handle(Request $request, Closure $next): Response
@@ -56,7 +58,7 @@ final class AuthenticateServiceApi
             return ServiceApiError::unauthorized();
         }
 
-        if (! $credentialService->is_active) {
+        if (! $this->commerciallyAllowed($credentialService)) {
             return ServiceApiError::serviceInactive();
         }
 
@@ -73,7 +75,7 @@ final class AuthenticateServiceApi
             if ((int) $routeService->id !== (int) $credentialService->id) {
                 return ServiceApiError::forbidden();
             }
-            if (! $routeService->is_active) {
+            if (! $this->commerciallyAllowed($routeService)) {
                 return ServiceApiError::serviceInactive();
             }
             $credentialService = $routeService;
@@ -98,6 +100,13 @@ final class AuthenticateServiceApi
         $token = trim((string) $m[1]);
 
         return $token !== '' ? $token : null;
+    }
+
+    private function commerciallyAllowed(Service $service): bool
+    {
+        $publicSlug = ServiceIdentity::publicSlugForCatalog((string) $service->slug);
+
+        return $this->entitlementGate->allows($publicSlug);
     }
 
     private function managedExecutionAllowed(ServiceApiCredential $credential): bool

@@ -54,15 +54,9 @@ final class ServiceQuickShortcutsWidget extends Widget
                 'slug' => $publicSlug,
                 'open_url' => ServiceIdentity::openUrl($publicSlug),
                 'setup_url' => ServiceConfigure::getUrl(['service' => $publicSlug]),
-                'badge' => match (true) {
-                    ! $health['active'] => 'Inactive',
-                    ! $health['key_provisioned'] => 'Key thiếu',
-                    ($health['connection_source'] ?? '') === 'canonical' && $health['database_reachable'] => 'Sẵn sàng',
-                    ($health['connection_source'] ?? '') === 'canonical' && $health['database_configured'] => 'DB lỗi',
-                    default => 'Chưa cấu hình DB',
-                },
+                'badge' => $health['status_label'] ?? 'Chưa cấu hình',
                 'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình',
-                'key_label' => $health['key_provisioned'] ? 'Key ✓' : 'Key —',
+                'key_label' => $health['entitled'] ? 'H1 ✓' : 'H1 —',
             ];
         }
 

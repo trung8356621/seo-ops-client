@@ -270,7 +270,7 @@ Phạm vi: uncommitted / WIP trên `omnichannel-client` + `omnichannel-addons` (
 ### Service Architecture (Core)
 
 - Doc mới: `SERVICE_ARCHITECTURE.md` — Addon ≠ Service; ops-server `services.apply`; `service_key`; `service_database_connections` 1:1.
-- Admin: `/admin/services` + `/admin/services/{seo|seeding}`; legacy SEO/Seeding DB list → redirect.
+- Admin: `/admin/services` + `/admin/services/{seo|seeding|social-automation}` — H1 entitlement + DB readiness (no manual Activate); legacy SEO/Seeding DB list → redirect.
 - Fixture: `php artisan service:simulate` (local/testing only).
 - Index: `docs/README.md`, `ADDON_ARCHITECTURE.md`, `FINAL_DATABASE_ARCHITECTURE.md`, `DB_REPOSITORY_OWNERSHIP.json`, `SYSTEM_OVERVIEW.md`, `DATA_AND_RUNTIME_BOUNDARIES.md`, `API_AND_AUTHORIZATION.md`.
 

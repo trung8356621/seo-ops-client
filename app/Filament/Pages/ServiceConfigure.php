@@ -31,8 +31,8 @@ use RuntimeException;
 use Throwable;
 
 /**
- * Generic Service detail: status + DB connection upsert + API Access credentials.
- * No entitlement Create/Activate controls. Never shows service_key or key_hash.
+ * Generic Service detail: H1 entitlement status + DB connection upsert + API Access.
+ * No commercial Activate/Deactivate controls. Never shows service_key or key_hash.
  */
 final class ServiceConfigure extends Page implements HasForms
 {
@@ -71,17 +71,7 @@ final class ServiceConfigure extends Page implements HasForms
         $this->revealedApiKey = null;
         $this->revealedApiKeyName = null;
 
-        $row = app(ServiceDatabaseConnectionResolver::class)->resolve($service);
-        $this->form->fill([
-            'host' => $row?->host ?? '127.0.0.1',
-            'port' => $row?->port ?? '3306',
-            'database' => $row?->database ?? ServiceIdentity::defaultLogicalConnection($service),
-            'username' => $row?->username ?? '',
-            'password' => '',
-            'clear_password' => false,
-            'is_active' => $row?->is_active ?? true,
-            'type' => $row?->type ?? 'manual',
-        ]);
+        $this->fillFormFromSaved();
     }
 
     public function getTitle(): string
@@ -116,7 +106,6 @@ final class ServiceConfigure extends Page implements HasForms
                                     $set('password', '');
                                 }
                             }),
-                        Toggle::make('is_active')->label(__('site-service.service_configure_active_label'))->default(true),
                     ])
                     ->columns(2),
             ])
@@ -388,22 +377,25 @@ final class ServiceConfigure extends Page implements HasForms
 
     public function testConnection(): void
     {
-        try {
-            $this->runDraftTest($this->form->getState());
-        } catch (RuntimeException $e) {
-            Notification::make()
-                ->title(__('site-service.connection_failed'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        Notification::make()->title(__('site-service.connection_success'))->success()->send();
+        $this->persistValidatedDraft(
+            successTitle: __('site-service.connection_success'),
+            failureTitle: __('site-service.connection_failed'),
+        );
     }
 
     public function save(): void
+    {
+        $this->persistValidatedDraft(
+            successTitle: __('site-service.saved_db_configuration'),
+            failureTitle: __('site-service.save_failed_connection_failed'),
+        );
+    }
+
+    /**
+     * Single persist path for Test + Save: draft test (+ schema) then upsert.
+     * Failure never overwrites a previously valid stored configuration.
+     */
+    private function persistValidatedDraft(string $successTitle, string $failureTitle): void
     {
         $service = $this->catalogService();
         if (! $service instanceof Service) {
@@ -423,7 +415,7 @@ final class ServiceConfigure extends Page implements HasForms
             $this->runDraftTest($state);
         } catch (RuntimeException $e) {
             Notification::make()
-                ->title(__('site-service.save_failed_connection_failed'))
+                ->title($failureTitle)
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
@@ -452,12 +444,12 @@ final class ServiceConfigure extends Page implements HasForms
             return;
         }
 
-        Notification::make()->title(__('site-service.saved_db_configuration'))->success()->send();
+        Notification::make()->title($successTitle)->success()->send();
         $this->fillFormFromSaved();
     }
 
     /**
-     * Test EXACT form draft — no env/legacy fallback.
+     * Test EXACT form draft — no env/legacy fallback. Includes required schema probe.
      *
      * @param  array<string, mixed>  $state
      */
@@ -473,7 +465,7 @@ final class ServiceConfigure extends Page implements HasForms
             $existing instanceof ServiceDatabaseConnection ? (string) ($existing->password ?? '') : null,
         );
 
-        app(ServiceDatabaseConnectionResolver::class)->testDraftAttributes($state, $plain);
+        app(ServiceDatabaseConnectionResolver::class)->testDraftAttributes($state, $plain, $this->service);
     }
 
     private function fillFormFromSaved(): void
@@ -486,7 +478,6 @@ final class ServiceConfigure extends Page implements HasForms
             'username' => $row?->username ?? '',
             'password' => '',
             'clear_password' => false,
-            'is_active' => $row?->is_active ?? true,
             'type' => $row?->type ?? 'manual',
         ]);
     }

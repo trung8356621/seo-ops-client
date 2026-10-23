@@ -139,7 +139,7 @@ final class ServiceDatabaseConnectionResolverTest extends TestCase
 
         self::assertFalse($health['database_configured']);
         self::assertSame('unavailable', $health['connection_source']);
-        self::assertSame('Chưa cấu hình', $health['readiness_label']);
+        self::assertSame('Chưa cấu hình DB', $health['readiness_label']);
     }
 
     public function test_migrated_ciphertext_is_not_double_encrypted(): void

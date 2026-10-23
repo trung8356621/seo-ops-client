@@ -104,13 +104,14 @@ final class ServiceApiAuthHttpTest extends TestCase
             'Authorization' => 'Bearer '.$expired->rawKey,
         ])->assertStatus(401);
 
-        $inactive = $this->makeService('Seeding', 'seeding', false);
-        $key = $manager->create($inactive, 'I', ['service:read']);
+        // Legacy services.is_active=false must not block when H1 allows (pre_enrollment / open).
+        $legacyInactive = $this->makeService('Seeding', 'seeding', false);
+        $key = $manager->create($legacyInactive, 'I', ['service:read']);
         $this->getJson('/api/v1/services/seeding/status', [
             'Authorization' => 'Bearer '.$key->rawKey,
         ])
-            ->assertStatus(403)
-            ->assertJsonPath('error.code', 'service_api_service_inactive');
+            ->assertOk()
+            ->assertJsonPath('data.active', true);
     }
 
     public function test_cross_service_credential_isolation(): void

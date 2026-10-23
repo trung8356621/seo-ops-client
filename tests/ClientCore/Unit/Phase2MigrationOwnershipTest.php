@@ -21,6 +21,7 @@ final class Phase2MigrationOwnershipTest extends TestCase
             'wordpress',
             'search-intelligence',
             'content-projects',
+            'agent-runtime',
         ];
 
         foreach ($required as $slug) {

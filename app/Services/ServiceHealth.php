@@ -7,19 +7,25 @@ namespace App\Services;
 /**
  * Standardized Service readiness (no secrets).
  *
- * Canonical DB health uses ONLY ServiceDatabaseConnection — never env/legacy paint.
+ * Commercial entitlement = H1 only. DB readiness = canonical ServiceDatabaseConnection
+ * + connect + required schema. Legacy services.is_active is not a commercial/runtime gate.
  *
  * @phpstan-type HealthArray array{
  *     slug: string,
  *     public_slug: string,
  *     name: string,
  *     active: bool,
+ *     entitled: bool,
+ *     entitlement_state: string,
  *     key_provisioned: bool,
  *     database_configured: bool,
  *     database_reachable: bool,
+ *     schema_ready: bool,
  *     database_ready: bool,
  *     runtime_ready: bool,
  *     ready: bool,
+ *     status: string,
+ *     status_label: string,
  *     db_connection: string,
  *     database: string|null,
  *     host: string|null,
@@ -35,7 +41,18 @@ namespace App\Services;
  */
 final class ServiceHealth
 {
+    public const STATUS_NOT_ENTITLED = 'not_entitled';
+
+    public const STATUS_NEEDS_CONFIG = 'needs_config';
+
+    public const STATUS_READY = 'ready';
+
+    public const STATUS_SUSPENDED = 'suspended';
+
+    public const STATUS_CONNECTION_ERROR = 'connection_error';
+
     /**
+     * @param  'allowed'|'not_entitled'|'suspended'  $entitlementState
      * @return HealthArray
      */
     public static function make(
@@ -43,6 +60,8 @@ final class ServiceHealth
         ?\App\Models\Service $service,
         bool $databaseConfigured,
         bool $databaseReachable,
+        bool $schemaReady = false,
+        string $entitlementState = 'allowed',
         ?string $database = null,
         ?string $error = null,
         string $connectionSource = 'unavailable',
@@ -53,34 +72,56 @@ final class ServiceHealth
         ?string $lastTestedAt = null,
         ?bool $lastTestOk = null,
     ): array {
-        $active = (bool) ($service?->is_active);
+        $entitled = $entitlementState === 'allowed';
         $key = (bool) ($service?->hasServiceKey());
         $dbConnection = (string) ($service?->db_connection ?: ServiceIdentity::defaultLogicalConnection($publicSlug));
-        $databaseReady = $databaseConfigured && $databaseReachable;
+        $databaseReady = $databaseConfigured && $databaseReachable && $schemaReady;
+        $runtimeReady = $entitled && $databaseReady;
 
-        $runtimeReady = $publicSlug === ServiceIdentity::PUBLIC_SEEDING
-            ? ($active && $key)
-            : ($active && $key && $databaseReady);
+        $status = match (true) {
+            $entitlementState === 'suspended' => self::STATUS_SUSPENDED,
+            $entitlementState === 'not_entitled' => self::STATUS_NOT_ENTITLED,
+            ! $databaseConfigured => self::STATUS_NEEDS_CONFIG,
+            ! $databaseReachable => self::STATUS_CONNECTION_ERROR,
+            ! $schemaReady => self::STATUS_NEEDS_CONFIG,
+            default => self::STATUS_READY,
+        };
+
+        $statusLabel = match ($status) {
+            self::STATUS_NOT_ENTITLED => 'Chưa được cấp quyền',
+            self::STATUS_NEEDS_CONFIG => 'Đã cấp quyền — cần cấu hình',
+            self::STATUS_READY => 'Sẵn sàng',
+            self::STATUS_SUSPENDED => 'Đã tạm ngưng',
+            self::STATUS_CONNECTION_ERROR => 'Kết nối lỗi',
+            default => 'Chưa cấu hình',
+        };
 
         $readinessLabel = match (true) {
-            ! $databaseConfigured => 'Chưa cấu hình',
-            $databaseReachable => 'Đã kết nối',
-            $lastTestOk === false => 'Kết nối lỗi',
-            $lastTestedAt === null => 'Đã cấu hình — chưa kiểm tra',
-            default => 'Kết nối lỗi',
+            ! $databaseConfigured => 'Chưa cấu hình DB',
+            ! $databaseReachable => ($lastTestOk === false || $lastTestedAt !== null)
+                ? 'Kết nối lỗi'
+                : 'Đã cấu hình — chưa kiểm tra',
+            ! $schemaReady => 'Schema chưa sẵn sàng',
+            default => 'Đã kết nối',
         };
 
         return [
             'slug' => (string) ($service?->slug ?? $publicSlug),
             'public_slug' => $publicSlug,
             'name' => ServiceIdentity::displayName($publicSlug),
-            'active' => $active,
+            // Backward-compat: "active" means commercially entitled (H1), not services.is_active.
+            'active' => $entitled,
+            'entitled' => $entitled,
+            'entitlement_state' => $entitlementState,
             'key_provisioned' => $key,
             'database_configured' => $databaseConfigured,
             'database_reachable' => $databaseReachable,
+            'schema_ready' => $schemaReady,
             'database_ready' => $databaseReady,
             'runtime_ready' => $runtimeReady,
             'ready' => $runtimeReady,
+            'status' => $status,
+            'status_label' => $statusLabel,
             'db_connection' => $dbConnection,
             'database' => $database,
             'host' => $host,

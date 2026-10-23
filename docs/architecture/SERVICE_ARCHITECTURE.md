@@ -1,6 +1,6 @@
 # Service Architecture (canonical)
 
-**Last verified:** 2026-09-26
+**Last verified:** 2026-10-23
 
 ## A. Addon vs Service
 
@@ -9,15 +9,24 @@
 | **Addon** | Installed code/capability package under `addons/{slug}` (discovery). |
 | **Service** | Ops-server-provisioned runtime entitlement/instance in Core `services`. |
 
-**Addon installed ≠ Service active.** Discovery must not grant product entitlement.
+**Addon installed ≠ commercially entitled.** Discovery / catalog rows must not grant product entitlement.
 
-## B. Ops-server ownership
+## B. Commercial entitlement (H1) vs runtime readiness
 
-**Only ops-server** may provision / deprovision Services (signed `services.apply`).
+| Concern | Authority |
+|--------|-----------|
+| Commercial right to use a service | **H1** `ServiceEntitlementGate` (sole) |
+| DB credentials / connectivity / schema | `ServiceDatabaseConnection` + resolver health |
+| Legacy `services.is_active` | Catalog snapshot column only — **not** a commercial or connection gate |
+| Legacy `service_database_connections.is_active` | Retained; resolver ignores it when loading the unique row |
 
-Client Admin **must not** expose: Create / Install / Activate / Deactivate / Delete Service.
+**Runtime ready** = H1 allows **and** DB configured **and** DB reachable **and** required schema present.
+
+Client Admin **must not** expose: Create / Install / Activate / Deactivate / Delete Service (commercial).
 
 Local `php artisan service:simulate` is a **dev fixture only** (local/testing), not a product feature.
+
+H1 Suspend / Expire / Revoke **locks business use** and **must not** delete or wipe Service / DB configuration rows.
 
 ### Legacy Control Server Integration (Removed)
 
@@ -110,7 +119,16 @@ Password form semantics:
 - **New** + blank → intentional empty password
 - **Existing** + blank → keep stored password
 - `clear_password` → force null
-- Form **Kiểm tra kết nối** tests the draft only (no env/legacy fallback)
+- Form **Kiểm tra kết nối** and **Lưu** share one persist path: draft test (+ required schema probe) → upsert → mark `last_test_ok`. Failure does not overwrite a previously valid config.
+
+Required schema probe (minimal sentinels): SEO `articles`, Seeding `seeding_topics`, Social Automation `sa_packages`.
+
+### Setup handoff (fresh install)
+
+`DatabaseConfigurator` writes Core/SEO/Seeding/Social credentials to `.env` (bootstrap/migrations only).  
+After Core migrations + Service catalog (`AddonManager::discover`), `ServiceDatabaseConnectionHandoff` copies those credentials into `service_database_connections` via `ServiceDatabaseConnectionResolver::upsert`.
+
+Rules: idempotent; **never overwrite** an existing connection row; `.env` remains for installer/migrate bootstrap; Admin health still has **no** `.env` fallback.
 
 ## G. Service vs SiteService
 
@@ -128,9 +146,11 @@ Not primary product resources. No connection list/CRUD as top-level Admin produc
 
 ## I. Admin UX
 
-- Nav: **Dịch vụ** → `/admin/services` (read-only entitlement status)
-- Detail: `/admin/services/{seo|seeding}` — status + DB upsert/test + **API Access** (create/revoke/rotate credentials)
-- Dashboard quick cards → `/seo`, `/seeding` (+ Cấu hình)
+- Nav: **Dịch vụ** → `/admin/services` — compact rows: name, H1 entitlement, DB readiness, **Cấu hình** (no slug/key/DB internals in overview)
+- Detail: `/admin/services/{seo|seeding|social-automation}` — short status strip + DB upsert/test + **API Access**
+- Statuses: Chưa được cấp quyền · Đã cấp quyền — cần cấu hình · Sẵn sàng · Đã tạm ngưng · Kết nối lỗi
+- No manual `is_active` toggle; no Activate/Deactivate actions
+- Dashboard shortcuts use the same readiness labels
 - Legacy `/admin/seo-database-connections` and `/admin/seeding-database-connections` redirect to Service detail
 - Never show raw `service_key`, `key_hash`, or recovered API keys after leave/reload
 
@@ -144,9 +164,9 @@ Not primary product resources. No connection list/CRUD as top-level Admin produc
 
 ## K. Security rules
 
-1. Only ops-server provisions Services.  
-2. Client cannot create/activate entitlement.  
-3. Addon installed ≠ Service active.  
+1. Only H1 / ops-server grant commercial entitlement.  
+2. Client cannot create/activate commercial entitlement (DB config ≠ entitlement).  
+3. Addon installed / catalog row ≠ commercially entitled.  
 4. ≤1 DB connection per Service.  
 5. DB connection ≠ product identity.  
 6. `service_key` never in JSON config.  

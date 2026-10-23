@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Models\Service;
 use App\Models\ServiceDatabaseConnection;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Support\Database\DriverAwareConnectionConfig;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -17,11 +18,16 @@ use Throwable;
  * Generic Core resolver: Service.db_connection ← ServiceDatabaseConnection credentials.
  *
  * Canonical health/test NEVER falls back to env or legacy SEO/Seeding tables.
+ * Connection rows are not blocked by legacy is_active flags.
  */
 final class ServiceDatabaseConnectionResolver
 {
     /** @var array<string, string> */
     private static array $fingerprints = [];
+
+    public function __construct(
+        private readonly ServiceSchemaProbe $schemaProbe = new ServiceSchemaProbe,
+    ) {}
 
     public function findService(string $publicOrCatalogSlug): ?Service
     {
@@ -45,11 +51,8 @@ final class ServiceDatabaseConnectionResolver
             return null;
         }
 
-        $row = ServiceDatabaseConnection::query()
-            ->where('service_id', $service->id)
-            ->where('is_active', true)
-            ->first()
-            ?? ServiceDatabaseConnection::query()->where('service_id', $service->id)->first();
+        // UNIQUE(service_id): ignore legacy is_active — valid config must remain usable.
+        $row = ServiceDatabaseConnection::query()->where('service_id', $service->id)->first();
 
         return $row instanceof ServiceDatabaseConnection ? $row : null;
     }
@@ -99,11 +102,15 @@ final class ServiceDatabaseConnectionResolver
 
     /**
      * Explicit form draft test — NO env/legacy fallback.
+     * Optionally verifies required schema for the public service slug.
      *
      * @param  array<string, mixed>  $attributes
      */
-    public function testDraftAttributes(array $attributes, string $plainPassword): void
-    {
+    public function testDraftAttributes(
+        array $attributes,
+        string $plainPassword,
+        ?string $publicSlugForSchema = null,
+    ): void {
         $model = new ServiceDatabaseConnection([
             'type' => $attributes['type'] ?? 'manual',
             'driver' => $attributes['driver'] ?? 'mysql',
@@ -116,7 +123,8 @@ final class ServiceDatabaseConnectionResolver
         // Empty string = intentional no-password; never pull ENV here.
         $model->password = $plainPassword === '' ? null : $plainPassword;
 
-        $this->assertWorks($this->buildConfig($model));
+        $config = $this->buildConfig($model);
+        $this->assertWorks($config, $publicSlugForSchema);
     }
 
     /**
@@ -148,6 +156,7 @@ final class ServiceDatabaseConnectionResolver
      * @return array{
      *     configured: bool,
      *     reachable: bool,
+     *     schema_ready: bool,
      *     connection: string,
      *     database: string,
      *     host: ?string,
@@ -162,17 +171,17 @@ final class ServiceDatabaseConnectionResolver
      */
     public function health(string $publicOrCatalogSlug): array
     {
+        $publicSlug = ServiceIdentity::publicSlugForCatalog($publicOrCatalogSlug);
         $service = $this->findService($publicOrCatalogSlug);
         $logical = (string) ($service?->db_connection
-            ?: ServiceIdentity::defaultLogicalConnection(
-                ServiceIdentity::publicSlugForCatalog($publicOrCatalogSlug)
-            ));
+            ?: ServiceIdentity::defaultLogicalConnection($publicSlug));
 
         $row = $service instanceof Service ? $this->connectionForService($service) : null;
         if (! $row instanceof ServiceDatabaseConnection) {
             return [
                 'configured' => false,
                 'reachable' => false,
+                'schema_ready' => false,
                 'connection' => $logical,
                 'database' => '',
                 'host' => null,
@@ -200,20 +209,20 @@ final class ServiceDatabaseConnectionResolver
         ];
 
         try {
-            $this->bootstrap(
-                ServiceIdentity::publicSlugForCatalog((string) $service->slug),
-                forceReconnect: true,
-            );
+            $this->bootstrap($publicSlug, forceReconnect: true);
             DB::connection($logical)->getPdo();
             DB::connection($logical)->select('select 1 as ok');
+            $schemaReady = $this->schemaProbe->isReady($logical, $publicSlug);
 
             return $meta + [
                 'reachable' => true,
-                'error' => null,
+                'schema_ready' => $schemaReady,
+                'error' => $schemaReady ? null : 'schema_missing',
             ];
         } catch (Throwable) {
             return $meta + [
                 'reachable' => false,
+                'schema_ready' => false,
                 'error' => 'unreachable',
             ];
         }
@@ -223,12 +232,20 @@ final class ServiceDatabaseConnectionResolver
     {
         $service = ServiceIdentity::findService($publicSlug);
         $db = $this->health($publicSlug);
+        $entitlementState = 'allowed';
+        try {
+            $entitlementState = app(ServiceEntitlementGate::class)->state($publicSlug);
+        } catch (Throwable) {
+            $entitlementState = 'allowed';
+        }
 
         return ServiceHealth::make(
             publicSlug: $publicSlug,
             service: $service,
             databaseConfigured: (bool) $db['configured'],
             databaseReachable: (bool) $db['reachable'],
+            schemaReady: (bool) ($db['schema_ready'] ?? false),
+            entitlementState: $entitlementState,
             database: ($db['database'] ?? '') !== '' ? (string) $db['database'] : null,
             error: $db['error'] ?? null,
             connectionSource: (string) ($db['connection_source'] ?? 'unavailable'),
@@ -258,7 +275,8 @@ final class ServiceDatabaseConnectionResolver
             'port' => $attributes['port'] ?? $row->port,
             'database' => $attributes['database'] ?? $row->database,
             'username' => $attributes['username'] ?? $row->username,
-            'is_active' => (bool) ($attributes['is_active'] ?? true),
+            // Legacy column retained; never used as a commercial/runtime gate.
+            'is_active' => true,
         ]);
 
         match ($passwordIntent['action']) {
@@ -297,7 +315,7 @@ final class ServiceDatabaseConnectionResolver
     /**
      * @param  array<string, mixed>  $connection
      */
-    private function assertWorks(array $connection): void
+    private function assertWorks(array $connection, ?string $publicSlugForSchema = null): void
     {
         $name = 'service_db_test_'.md5((string) json_encode([
             'host' => $connection['host'] ?? '',
@@ -312,8 +330,26 @@ final class ServiceDatabaseConnectionResolver
         try {
             DB::connection($name)->getPdo();
             DB::connection($name)->select('select 1 as ok');
+            if (is_string($publicSlugForSchema) && $publicSlugForSchema !== '') {
+                $this->schemaProbe->assertReady($name, $publicSlugForSchema);
+            }
         } catch (Throwable $e) {
-            throw new RuntimeException('Không kết nối được database: '.$e->getMessage(), 0, $e);
+            $message = $e->getMessage();
+            if (str_contains($message, 'Schema chưa sẵn sàng') || str_contains($message, 'Thiếu database')) {
+                throw $e instanceof RuntimeException
+                    ? $e
+                    : new RuntimeException($message, 0, $e);
+            }
+            if (str_contains(strtolower($message), 'unknown database')) {
+                $dbName = (string) ($connection['database'] ?? '');
+                throw new RuntimeException(
+                    'Database chưa tồn tại'.($dbName !== '' ? " [{$dbName}]" : '').'. Hãy tạo database trước (hệ thống không tự tạo). Chi tiết: '.$message,
+                    0,
+                    $e,
+                );
+            }
+
+            throw new RuntimeException('Không kết nối được database: '.$message, 0, $e);
         } finally {
             DB::purge($name);
             Config::set('database.connections.'.$name, null);

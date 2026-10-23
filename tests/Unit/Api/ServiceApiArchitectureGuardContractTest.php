@@ -85,6 +85,8 @@ final class ServiceApiArchitectureGuardContractTest extends TestCase
         self::assertStringContainsString('defaultApiCredentialScopes', $page);
         self::assertStringContainsString('api_access_expires_helper', $page);
         self::assertStringContainsString('content-projects:draft:write', $page);
+        self::assertStringContainsString('persistValidatedDraft', $page);
+        self::assertStringNotContainsString("Toggle::make('is_active')", $page);
         self::assertStringNotContainsString('$cred->key_hash', $page);
         self::assertStringNotContainsString('->service_key', $page);
         self::assertDoesNotMatchRegularExpression('/\becho\b.*key_hash/', $page);

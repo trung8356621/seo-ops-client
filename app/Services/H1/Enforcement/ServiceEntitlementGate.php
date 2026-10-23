@@ -46,37 +46,60 @@ final class ServiceEntitlementGate
 
     public function allows(string $serviceKey): bool
     {
+        return $this->state($serviceKey) === 'allowed';
+    }
+
+    /**
+     * Commercial entitlement state for a service key (H1 is sole authority).
+     *
+     * @return 'allowed'|'not_entitled'|'suspended'
+     */
+    public function state(string $serviceKey): string
+    {
         if ($serviceKey === 'agent') {
-            return true;
+            return 'allowed';
         }
 
         if (! $this->enforcementActive()) {
-            return true;
+            return 'allowed';
         }
 
         $installation = $this->installations->currentInstallation();
         if (! $installation instanceof H1Installation || ! is_array($installation->verified_snapshot)) {
-            return false;
+            return 'not_entitled';
         }
 
-        $services = $installation->verified_snapshot['services'] ?? [];
+        $snap = $installation->verified_snapshot;
+        $services = $snap['services'] ?? [];
         if (! is_array($services) || ! isset($services[$serviceKey]) || ! is_array($services[$serviceKey])) {
-            return false;
+            return 'not_entitled';
         }
 
         $service = $services[$serviceKey];
+        if ($this->serviceSnapshotAllows($service, $snap)) {
+            return 'allowed';
+        }
+
+        // Present in verified snapshot but not currently usable → suspended/revoked/expired.
+        return 'suspended';
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     * @param  array<string, mixed>  $snap
+     */
+    private function serviceSnapshotAllows(array $service, array $snap): bool
+    {
         if (! $this->mapper->serviceCurrentlyLicensed($service)) {
             return false;
         }
 
-        // Product-level revoke / expiry also blocks when no per-service dates.
-        $snap = $installation->verified_snapshot;
         if (! empty($snap['revoked_at'])) {
             return false;
         }
+
         $deadline = $snap['grace_until'] ?? $snap['valid_until'] ?? null;
         if (is_string($deadline) && $deadline !== '' && ! $this->mapper->timestampAllows($deadline)) {
-            // Per-service dates already checked; product deadline is a backstop when service omits dates.
             if (empty($service['valid_until']) && empty($service['grace_until'])) {
                 return false;
             }

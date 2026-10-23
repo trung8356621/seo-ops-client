@@ -125,7 +125,7 @@ class SiteServiceResource extends Resource
 
                         Forms\Components\Select::make('service_id')
                             ->label(__('site-service.site_service_select_service_label'))
-                            ->options(fn () => Service::where('is_active', true)->pluck('name', 'id'))
+                            ->options(fn () => Service::query()->orderBy('name')->pluck('name', 'id'))
                             ->required()
                             ->live() // Kích hoạt tương tác thời gian thực
                             ->afterStateUpdated(function ($state, Forms\Set $set) {

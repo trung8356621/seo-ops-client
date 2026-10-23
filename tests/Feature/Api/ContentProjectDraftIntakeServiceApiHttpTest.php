@@ -87,10 +87,10 @@ final class ContentProjectDraftIntakeServiceApiHttpTest extends TestCase
             'Authorization' => 'Bearer '.$seedKey->rawKey,
         ])->assertStatus(403);
 
+        // Legacy is_active=false is not a commercial gate when H1 allows.
         Service::query()->whereKey($this->seo->id)->update(['is_active' => false]);
-        $this->postJson('/api/v1/services/seo/content-projects/draft/intake', $body, $this->auth())
-            ->assertStatus(403)
-            ->assertJsonPath('error.code', 'service_api_service_inactive');
+        $legacy = $this->postJson('/api/v1/services/seo/content-projects/draft/intake', $body, $this->auth());
+        self::assertNotSame('service_api_service_inactive', data_get($legacy->json(), 'error.code'));
     }
 
     public function test_draft_scope_allowed_and_validation(): void

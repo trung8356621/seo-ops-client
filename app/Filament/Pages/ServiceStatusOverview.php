@@ -12,7 +12,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Read-only Admin Service catalog overview (no entitlement controls).
+ * Admin Service catalog overview — H1 entitlement + DB readiness (no Activate controls).
  */
 final class ServiceStatusOverview extends Page
 {
@@ -70,16 +70,20 @@ final class ServiceStatusOverview extends Page
             }
 
             $health = $resolver->healthReport($publicSlug);
+            $entitlementLabel = match ($health['entitlement_state'] ?? '') {
+                'allowed' => 'Quyền H1: Đã cấp',
+                'suspended' => 'Quyền H1: Tạm ngưng',
+                default => 'Quyền H1: Chưa cấp',
+            };
+
             $cards[] = [
                 'slug' => $publicSlug,
                 'name' => $health['name'],
-                'active' => $health['active'],
                 'exists' => $service instanceof Service,
-                'key_label' => $health['key_provisioned'] ? 'Key ✓' : 'Key chưa provision',
-                'db_connection' => $health['db_connection'],
-                'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình',
-                'connection_source' => $health['connection_source'] ?? 'unavailable',
-                'open_url' => ServiceIdentity::openUrl($publicSlug),
+                'status' => $health['status'] ?? 'needs_config',
+                'status_label' => $health['status_label'] ?? 'Chưa cấu hình',
+                'entitlement_label' => $entitlementLabel,
+                'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình DB',
                 'setup_url' => ServiceConfigure::getUrl(['service' => $publicSlug]),
             ];
         }

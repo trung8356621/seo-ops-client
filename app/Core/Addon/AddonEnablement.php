@@ -6,7 +6,8 @@ namespace App\Core\Addon;
 
 /**
  * Runtime addon enablement helpers for UI contribution gates.
- * Enablement = AddonRegistry::markEnabled (services.is_active) — not panel URL.
+ * Enablement = AddonRegistry::markEnabled (catalog Service rows) — not panel URL.
+ * Commercial entitlement remains ServiceEntitlementGate (H1).
  */
 final class AddonEnablement
 {

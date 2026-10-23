@@ -41,8 +41,8 @@ final class AppInitializer
         try {
             $byConnection = $this->migrationRegistrar->pathsByConnection();
 
-            // 1. Core + ai-prompt migrations on mysql connection
-            $log('Running Core migrations on mysql connection...');
+            // 1. Core + Agent Runtime (and other mysql-owned) migrations on mysql connection
+            $log('Running Core / mysql-owned migrations (includes agent-runtime when registered)...');
             $corePaths = $byConnection['mysql'] ?? [database_path('migrations')];
             $relativeCorePaths = $this->refactorRunner->toRelativePaths($corePaths);
 
@@ -57,6 +57,9 @@ final class AppInitializer
                 throw new \RuntimeException($result['failed'] ?? 'Core migration failed');
             }
             $stepsExecuted[] = 'core_migrations';
+            if ($this->pathsIncludeAgentRuntime($relativeCorePaths)) {
+                $stepsExecuted[] = 'agent_runtime_migrations';
+            }
 
             // 2. SEO peer addon migrations on omi_seo_ai connection
             $seoPaths = $byConnection['omi_seo_ai'] ?? [];
@@ -119,6 +122,19 @@ final class AppInitializer
             $log('All services registered in catalog as inactive (unlicensed).');
             $stepsExecuted[] = 'addon_discovery_service_catalog';
 
+            // 5b. Handoff installer/.env DB credentials → service_database_connections
+            // (Admin Services health has no .env fallback; never overwrite existing rows.)
+            $log('Handing off service database connections from installer config...');
+            $handoff = app(ServiceDatabaseConnectionHandoff::class)->ensureFromConfiguredConnections();
+            $log(sprintf(
+                'Service DB handoff: created=[%s] skipped=[%s] missing=[%s] incomplete=[%s]',
+                implode(',', $handoff['created']),
+                implode(',', $handoff['skipped']),
+                implode(',', $handoff['missing_service']),
+                implode(',', $handoff['incomplete_config']),
+            ));
+            $stepsExecuted[] = 'service_database_connection_handoff';
+
             // 6. Minimum system data
             $log('Ensuring system background user...');
             SeoOpsSystemUser::ensure();
@@ -158,5 +174,20 @@ final class AppInitializer
                 'steps' => $stepsExecuted,
             ];
         }
+    }
+
+    /**
+     * @param  list<string>  $absoluteOrRelativePaths
+     */
+    private function pathsIncludeAgentRuntime(array $absoluteOrRelativePaths): bool
+    {
+        foreach ($absoluteOrRelativePaths as $path) {
+            $normalized = str_replace('\\', '/', (string) $path);
+            if (str_contains($normalized, 'agent-runtime/database/migrations')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

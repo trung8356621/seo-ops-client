@@ -8,7 +8,7 @@ use Filament\Pages\Page;
 
 /**
  * Local service activation UI is disabled.
- * Service.is_active remains a runtime snapshot; ops-server will own entitlement later.
+ * Commercial entitlement is H1-only; services.is_active is a legacy column only.
  */
 class ManageServices extends Page
 {

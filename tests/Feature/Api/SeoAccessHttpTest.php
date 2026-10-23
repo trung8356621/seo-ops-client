@@ -649,11 +649,10 @@ final class SeoAccessHttpTest extends TestCase
             ->assertStatus(401)
             ->assertJsonPath('error.code', 'service_api_temporary_access_invalid');
 
+        // Legacy is_active=false must not invalidate temporary access when H1 allows.
         $token = $this->mintToken(7);
         Service::query()->whereKey($this->seo->id)->update(['is_active' => false]);
-        $this->getJson('/api/v1/access/'.$token)
-            ->assertStatus(401)
-            ->assertJsonPath('error.code', 'service_api_temporary_access_invalid');
+        $this->getJson('/api/v1/access/'.$token)->assertOk();
     }
 
     public function test_mint_global_token_and_site_bound_route_rejection(): void

@@ -62,6 +62,11 @@ return [
             'connection' => 'omi_seo_ai',
             'path' => 'addons/agent/database/migrations',
         ],
+        'agent-runtime' => [
+            // Core mysql plane - Agent Runtime tables (agent_apps/threads/runs/messages).
+            'connection' => 'mysql',
+            'path' => 'addons/agent-runtime/database/migrations',
+        ],
         'commerce' => [
             'connection' => 'omi_seo_ai',
             'path' => 'addons/commerce/database/migrations',
@@ -108,6 +113,13 @@ return [
             'publishing_queue',
             'publishing_lease',
             'publish_attempts',
+        ]],
+        ['owner' => 'agent-runtime', 'any' => [
+            'agent_apps',
+            'agent_threads',
+            'agent_runs',
+            'agent_messages',
+            'seed_seo_ops_agent_app',
         ]],
         ['owner' => 'agent', 'any' => [
             'seo_agent',

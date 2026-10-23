@@ -7,6 +7,7 @@ namespace App\Api\Http\Controllers;
 use App\Api\Services\ServiceApiContext;
 use App\Core\Addon\AddonEntitlementGate;
 use App\Models\Service;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\ServiceIdentity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Schema;
@@ -39,7 +40,8 @@ final class ApiAccessCapabilitiesController
         $out = [];
         foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
             $service = ServiceIdentity::findService($publicSlug);
-            $active = $service instanceof Service && (bool) $service->is_active;
+            $active = $service instanceof Service
+                && app(ServiceEntitlementGate::class)->allows($publicSlug);
             $available = $service instanceof Service;
             $addonSlug = $this->addonSlugHint($publicSlug, $service);
             $out[$publicSlug] = [

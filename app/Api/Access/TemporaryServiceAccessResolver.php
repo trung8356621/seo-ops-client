@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Api\Access;
 
 use App\Models\Service;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\ServiceIdentity;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -70,10 +71,11 @@ final class TemporaryServiceAccessResolver
         if (! $service instanceof Service) {
             return null;
         }
-        if (! $service->is_active) {
+        $publicSlug = ServiceIdentity::publicSlugForCatalog((string) $service->slug);
+        if (! app(ServiceEntitlementGate::class)->allows($publicSlug)) {
             return null;
         }
-        if (ServiceIdentity::publicSlugForCatalog((string) $service->slug) !== ServiceIdentity::PUBLIC_SEO) {
+        if ($publicSlug !== ServiceIdentity::PUBLIC_SEO) {
             return null;
         }
 
