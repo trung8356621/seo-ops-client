@@ -9,7 +9,7 @@ const TOKEN_SKEW_MS = 60_000;
 
 let scriptPromise = null;
 
-/** @type {WeakMap<HTMLElement, { open: boolean, mounted: boolean, mounting: boolean, session: object|null }>} */
+/** @type {WeakMap<HTMLElement, { open: boolean, mounted: boolean, mounting: boolean, session: object|null, dropdown: HTMLElement|null }>} */
 const rootState = new WeakMap();
 
 const FRIENDLY = {
@@ -28,7 +28,7 @@ const FRIENDLY = {
 function state(root) {
   let s = rootState.get(root);
   if (!s) {
-    s = { open: false, mounted: false, mounting: false, session: null };
+    s = { open: false, mounted: false, mounting: false, session: null, dropdown: null };
     rootState.set(root, s);
   }
   return s;
@@ -60,6 +60,32 @@ function hostHasBody(host) {
   return Boolean(host?.shadowRoot?.querySelector('[data-ops-sw-root]'));
 }
 
+function cacheBustedUrl(url) {
+  try {
+    const resolved = new URL(url, window.location.origin);
+    // Bust Nginx expires 7d on /vendor/*.js for import-test / local deploys.
+    if (!resolved.searchParams.has('v')) {
+      resolved.searchParams.set('v', 'sw-body-20261023');
+    }
+    return resolved.toString();
+  } catch {
+    return url;
+  }
+}
+
+/** Prefer IPv4 loopback — Windows localhost→::1 often hangs while 127.0.0.1 works. */
+function browserReachableApiBase(url) {
+  try {
+    const resolved = new URL(url);
+    if (resolved.hostname === 'localhost') {
+      resolved.hostname = '127.0.0.1';
+    }
+    return resolved.toString().replace(/\/$/, '');
+  } catch {
+    return String(url || '').replace(/\/$/, '');
+  }
+}
+
 function loadScriptOnce(url) {
   if (window.OpsServiceWidget) {
     return Promise.resolve();
@@ -68,6 +94,7 @@ function loadScriptOnce(url) {
     return scriptPromise;
   }
 
+  const src = cacheBustedUrl(url);
   const existing = document.querySelector(`script[${SCRIPT_ATTR}]`);
   if (existing) {
     scriptPromise = new Promise((resolve, reject) => {
@@ -81,7 +108,7 @@ function loadScriptOnce(url) {
 
   scriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script');
-    script.src = url;
+    script.src = src;
     script.async = true;
     script.setAttribute(SCRIPT_ATTR, '1');
     script.onload = () => resolve();
@@ -132,12 +159,88 @@ async function fetchSession(sessionUrl) {
   }
 }
 
+function getDropdown(root) {
+  const s = state(root);
+  if (s.dropdown instanceof HTMLElement && document.body.contains(s.dropdown)) {
+    return s.dropdown;
+  }
+  const local = root.querySelector('[data-service-widget-dropdown]');
+  if (local) {
+    s.dropdown = local;
+    return local;
+  }
+  const byId = document.getElementById('service-widget-dropdown');
+  if (byId) {
+    s.dropdown = byId;
+  }
+  return byId;
+}
+
+function getHost(root) {
+  return (
+    getDropdown(root)?.querySelector('[data-ops-service-widget-host]') ||
+    root.querySelector('[data-ops-service-widget-host]') ||
+    document.getElementById('ops-service-widget')
+  );
+}
+
+/**
+ * Move dropdown under document.body so Filament sticky topbar overflow-x:clip
+ * cannot truncate it (position:fixed inside sticky is still clipped).
+ */
+function portalDropdown(root) {
+  const dropdown = getDropdown(root);
+  if (!dropdown) {
+    return null;
+  }
+  if (dropdown.parentElement !== document.body) {
+    document.body.appendChild(dropdown);
+    dropdown.dataset.swPortaled = '1';
+  }
+  state(root).dropdown = dropdown;
+  return dropdown;
+}
+
+/**
+ * Pin the (portaled) dropdown to the trigger in the viewport.
+ */
+function positionDropdown(root) {
+  const trigger = root.querySelector('[data-service-widget-trigger]');
+  const dropdown = portalDropdown(root);
+  if (!trigger || !dropdown || dropdown.hidden) {
+    return;
+  }
+
+  const rect = trigger.getBoundingClientRect();
+  const width = Math.min(440, Math.max(280, window.innerWidth - 24));
+  let left = rect.right - width;
+  if (left < 12) {
+    left = 12;
+  }
+  if (left + width > window.innerWidth - 12) {
+    left = Math.max(12, window.innerWidth - width - 12);
+  }
+
+  const maxHeight = Math.min(560, window.innerHeight - rect.bottom - 16);
+  dropdown.style.position = 'fixed';
+  dropdown.style.top = `${Math.round(rect.bottom + 8)}px`;
+  dropdown.style.left = `${Math.round(left)}px`;
+  dropdown.style.right = 'auto';
+  dropdown.style.width = `${Math.round(width)}px`;
+  dropdown.style.maxHeight = `${Math.max(180, Math.round(maxHeight))}px`;
+  dropdown.style.zIndex = '80';
+}
+
 function setPanelState(root, panelState, message = '') {
-  const dropdown = root.querySelector('[data-service-widget-dropdown]');
-  const loading = root.querySelector('[data-service-widget-loading]');
-  const errorBox = root.querySelector('[data-service-widget-error]');
-  const status = root.querySelector('[data-service-widget-status]');
-  const host = root.querySelector('[data-ops-service-widget-host]');
+  const dropdown = portalDropdown(root) || getDropdown(root);
+  const loading = dropdown?.querySelector('[data-service-widget-loading]')
+    || root.querySelector('[data-service-widget-loading]');
+  const errorBox = dropdown?.querySelector('[data-service-widget-error]')
+    || root.querySelector('[data-service-widget-error]');
+  const status = dropdown?.querySelector('[data-service-widget-status]')
+    || root.querySelector('[data-service-widget-status]');
+  const host = dropdown?.querySelector('[data-ops-service-widget-host]')
+    || root.querySelector('[data-ops-service-widget-host]');
   const trigger = root.querySelector('[data-service-widget-trigger]');
   const showError = panelState === 'error' || panelState === 'offline';
   const showHost = panelState === 'ready';
@@ -160,6 +263,9 @@ function setPanelState(root, panelState, message = '') {
     trigger.setAttribute('aria-expanded', panelState === 'closed' ? 'false' : 'true');
   }
   root.dataset.swState = panelState;
+  if (panelState !== 'closed') {
+    positionDropdown(root);
+  }
 }
 
 /**
@@ -171,7 +277,8 @@ function applyHostFillLayout(host) {
   host.style.width = '100%';
   host.style.minWidth = '0';
   host.style.maxWidth = '100%';
-  host.style.height = '100%';
+  host.style.height = 'auto';
+  host.style.maxHeight = '100%';
   host.style.boxSizing = 'border-box';
 
   const shadow = host.shadowRoot;
@@ -192,7 +299,8 @@ function applyHostFillLayout(host) {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
+  max-height: 100% !important;
   box-sizing: border-box !important;
 }
 [data-ops-sw-root],
@@ -202,13 +310,15 @@ function applyHostFillLayout(host) {
   width: 100% !important;
   min-width: 0 !important;
   max-width: 100% !important;
-  height: 100% !important;
+  height: auto !important;
+  max-height: 100% !important;
   box-sizing: border-box !important;
 }
 .ops-sw__list {
   overflow-x: hidden !important;
   overflow-y: auto !important;
   min-width: 0 !important;
+  flex: 1 1 auto !important;
 }
 `;
 }
@@ -218,14 +328,16 @@ function mountBody(root, session) {
     throw Object.assign(new Error('OpsServiceWidget API missing.'), { code: 'invalid_response' });
   }
 
-  const host = root.querySelector('[data-ops-service-widget-host]');
+  const host = getHost(root);
   if (!host) {
     throw Object.assign(new Error('Missing widget host.'), { code: 'misconfigured' });
   }
 
+  const apiBaseUrl = browserReachableApiBase(session.apiBaseUrl);
+
   host.dataset.opsInstallationId = session.installationId;
   host.dataset.opsUseMock = 'false';
-  host.dataset.opsApiBase = session.apiBaseUrl;
+  host.dataset.opsApiBase = apiBaseUrl;
   host.dataset.opsLocale = 'vi';
 
   // Do not unmount on session refresh or API errors — remount reuses the React root.
@@ -238,7 +350,7 @@ function mountBody(root, session) {
     target: host,
     useMock: false,
     installationId: session.installationId,
-    apiBaseUrl: session.apiBaseUrl,
+    apiBaseUrl,
     apiTimeoutMs: session.apiTimeoutMs || 5000,
     locale: 'vi',
   });
@@ -249,7 +361,7 @@ function mountBody(root, session) {
 
 async function ensureMounted(root) {
   const s = state(root);
-  const host = root.querySelector('[data-ops-service-widget-host]');
+  let host = getHost(root);
 
   if (
     s.mounted &&
@@ -269,7 +381,7 @@ async function ensureMounted(root) {
   setPanelState(root, 'loading');
   const session = await fetchSession(sessionUrl);
   await loadScriptOnce(session.bundleUrl);
-  mountBody(root, session);
+  host = mountBody(root, session);
 
   s.session = session;
   s.mounted = true;
@@ -324,12 +436,13 @@ function syncAfterNavigation(root) {
   if (!s?.mounted) {
     return;
   }
-  const host = root.querySelector('[data-ops-service-widget-host]');
+  const host = getHost(root);
   if (!hostHasBody(host)) {
     // Livewire morph wiped Shadow DOM — remount on next open, never duplicate.
     s.mounted = false;
     s.session = null;
     s.open = false;
+    s.dropdown = null;
   }
 }
 
@@ -362,10 +475,37 @@ function bindRoot(root) {
   document.addEventListener('mousedown', (event) => {
     const s = state(root);
     if (!s.open) return;
-    if (event.target instanceof Node && !root.contains(event.target)) {
-      closeDropdown(root);
+    const dropdown = getDropdown(root);
+    const path = typeof event.composedPath === 'function' ? event.composedPath() : [];
+    if (
+      path.includes(root) ||
+      (dropdown && path.includes(dropdown)) ||
+      (event.target instanceof Node && (root.contains(event.target) || dropdown?.contains(event.target)))
+    ) {
+      return;
     }
+    closeDropdown(root);
   });
+
+  window.addEventListener(
+    'resize',
+    () => {
+      if (state(root).open) {
+        positionDropdown(root);
+      }
+    },
+    { passive: true },
+  );
+
+  window.addEventListener(
+    'scroll',
+    () => {
+      if (state(root).open) {
+        positionDropdown(root);
+      }
+    },
+    { passive: true, capture: true },
+  );
 }
 
 function boot() {

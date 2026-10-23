@@ -57,18 +57,15 @@
 
 /*
  * Laravel owns dropdown size/position.
- * Use a definite width so Shadow DOM percentage widths resolve to the panel,
- * not intrinsic/content size (narrow left strip + clipping).
+ * Fixed positioning (set by JS) escapes Filament .fi-topbar overflow-x: clip.
  */
 .service-widget-header__dropdown {
-    position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    z-index: 70;
-    width: 360px;
+    position: fixed;
+    z-index: 80;
+    width: 440px;
     max-width: calc(100vw - 24px);
-    height: 420px;
-    max-height: calc(100vh - 96px);
+    height: auto;
+    max-height: min(560px, calc(100vh - 96px));
     box-sizing: border-box;
 }
 
@@ -76,7 +73,8 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    height: 100%;
+    height: auto;
+    max-height: min(560px, calc(100vh - 96px));
     min-width: 0;
     min-height: 0;
     border: 1px solid rgb(226 232 240);
@@ -159,7 +157,8 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
-    height: 100%;
+    height: auto;
+    max-height: inherit;
     min-height: 0;
     position: relative;
     box-sizing: border-box;

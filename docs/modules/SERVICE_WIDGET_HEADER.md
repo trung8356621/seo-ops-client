@@ -2,7 +2,7 @@
 
 Embeds the OPS-SERVER React Service Widget **body** into Filament Admin / SEO / Seeding headers.
 
-Canonical OPS-SERVER contracts: sibling repo `ops-server` → `docs/modules/SERVICE_STATUS_WIDGET.md` + `SERVICE_WIDGET_RENEWAL.md`.
+Canonical OPS-SERVER contracts: sibling repo `ops-server` → `docs/modules/SERVICE_STATUS_WIDGET.md`, `SERVICE_WIDGET_RENEWAL.md`, and `SERVICE_WIDGET_CHECKOUT_SECURITY.md` (Production: widget must never collect/confirm payment; checkout is OPS-hosted).
 
 ## Ownership
 
@@ -82,7 +82,9 @@ OPS-SERVER must set `OPS_SERVICE_WIDGET_TOKEN_SECRET` and allow CORS origin (`in
 2. `GET /api/v1/widget/installations/{id}/services` — OPS (React)
 3. `POST /api/v1/widget/installations/{id}/renewals` — OPS (React; Pending Order)
 
-Renewal success shows Order ID + Pending in-widget. No Mark as Paid / entitlement grant from the Client.
+Renewal success creates a **Pending** Order only. No Mark as Paid / entitlement grant from the Client.
+
+DEV may show Pending Order details in-widget for manual OPS Mark as Paid. Production must open OPS-SERVER-hosted Checkout (not embedded payment collection) — see OPS `SERVICE_WIDGET_CHECKOUT_SECURITY.md`.
 
 ## Live check (`seo-ops.test`)
 

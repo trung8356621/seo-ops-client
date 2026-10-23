@@ -66,6 +66,8 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         self::assertStringContainsString('Do not unmount on session refresh', $js);
         self::assertStringContainsString('applyHostFillLayout', $js);
         self::assertStringContainsString('Never show Laravel Retry alongside the React body', $js);
+        self::assertStringContainsString('portalDropdown', $js);
+        self::assertStringContainsString("document.body.appendChild(dropdown)", $js);
     }
 
     #[Test]
@@ -74,7 +76,8 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         $css = (string) file_get_contents(resource_path('css/service-widget-header.css'));
         self::assertStringContainsString('display: none !important', $css);
         self::assertStringContainsString('.service-widget-header__error:not([hidden])', $css);
-        self::assertStringContainsString('width: 360px', $css);
+        self::assertStringContainsString('width: 440px', $css);
+        self::assertStringContainsString('position: fixed', $css);
         self::assertStringContainsString('[data-ops-service-widget-host]:not([hidden])', $css);
         self::assertStringContainsString('min-width: 0', $css);
         self::assertStringNotContainsString('transform:', $css);
