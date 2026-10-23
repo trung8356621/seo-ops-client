@@ -15,6 +15,7 @@ Route::middleware(['web'])->group(function (): void {
         Route::post('/database', [SetupWizardController::class, 'configureDatabase'])->name('setup.api.database');
         Route::post('/initialize', [SetupWizardController::class, 'initializeApp'])->name('setup.api.initialize');
         Route::post('/admin', [SetupWizardController::class, 'createAdmin'])->name('setup.api.admin');
+        Route::post('/primary-site', [SetupWizardController::class, 'registerPrimarySite'])->name('setup.api.primary_site');
         Route::post('/finish', [SetupWizardController::class, 'finish'])->name('setup.api.finish');
     });
 });

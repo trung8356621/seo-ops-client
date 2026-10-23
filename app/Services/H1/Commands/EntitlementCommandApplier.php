@@ -209,7 +209,7 @@ final class EntitlementCommandApplier
         if (! is_int($quota)) {
             return false;
         }
-        if ($this->sites->activeCount() > $quota) {
+        if ($this->sites->quotaConsumedCount() > $quota) {
             $this->sites->resetAllInactive();
 
             return true;
@@ -233,7 +233,7 @@ final class EntitlementCommandApplier
             return false;
         }
 
-        return $this->sites->activeCount() > $newQuota;
+        return $this->sites->quotaConsumedCount() > $newQuota;
     }
 
     /**

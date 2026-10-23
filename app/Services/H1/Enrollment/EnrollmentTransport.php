@@ -23,5 +23,8 @@ interface EnrollmentTransport
      *   detail?: string
      * }
      */
-    public function consume(string $enrollmentToken, string $clientVersion): array;
+    /**
+     * @param  string|null  $anchorIdentity  Local Domain Anchor hostname (optional; legacy clients omit)
+     */
+    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array;
 }

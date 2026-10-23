@@ -28,7 +28,7 @@ final class FixtureEnrollmentTransport implements EnrollmentTransport
         ];
     }
 
-    public function consume(string $enrollmentToken, string $clientVersion): array
+    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array
     {
         unset($clientVersion);
 
@@ -49,6 +49,9 @@ final class FixtureEnrollmentTransport implements EnrollmentTransport
         $response['success'] = true;
         $response['is_retry'] = $isRetry;
         $response['code'] = $isRetry ? 'enrolled_retry' : 'enrolled';
+        if (is_string($anchorIdentity) && trim($anchorIdentity) !== '') {
+            $response['anchor_identity'] = strtolower(trim($anchorIdentity));
+        }
 
         return $response;
     }

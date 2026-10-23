@@ -8,6 +8,8 @@ use App\Services\Gateway\EntitlementAppliedHook;
 use App\Services\Gateway\VerifiedEntitlementSnapshot;
 use App\Services\H1\Exceptions\H1EnrollmentException;
 use App\Services\H1\Persistence\InstallationStateRepository;
+use App\Services\H1\Sites\AdminSiteStatusPolicy;
+use App\Services\H1\Sites\PrimaryAnchorSiteService;
 use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
 use Illuminate\Support\Facades\Schema;
 
@@ -18,6 +20,8 @@ final class EnrollmentConsumer
         private readonly InstallationStateRepository $installations,
         private readonly EntitlementSnapshotMapper $mapper,
         private readonly EntitlementAppliedHook $appliedHook,
+        private readonly PrimaryAnchorSiteService $primarySites,
+        private readonly AdminSiteStatusPolicy $sitePolicy,
     ) {}
 
     /**
@@ -36,8 +40,9 @@ final class EnrollmentConsumer
 
         $existing = $this->installations->currentInstallation();
         $version = $clientVersion ?: (string) config('app.version', config('configuration-sync.client_version', '0.0.0'));
+        $localAnchor = $this->primarySites->currentAnchorDomain();
 
-        $remote = $this->transport->consume($token, $version);
+        $remote = $this->transport->consume($token, $version, $localAnchor);
         if (! ($remote['success'] ?? false)) {
             throw new H1EnrollmentException(
                 (string) ($remote['code'] ?? 'enrollment_failed'),
@@ -70,17 +75,33 @@ final class EnrollmentConsumer
         $revision = (int) ($remote['entitlement_revision'] ?? ($entitlement['revision'] ?? 1));
         $snapshot = $this->mapper->normalizeEntitlement($entitlement, $installationId, $revision, $credentialVersion);
 
-        $this->installations->persistFirstEnrollment(
+        $remoteAnchor = isset($remote['anchor_identity']) && is_string($remote['anchor_identity'])
+            ? strtolower(trim($remote['anchor_identity']))
+            : null;
+        if ($remoteAnchor === '') {
+            $remoteAnchor = null;
+        }
+
+        // Local primary Site is authoritative when present; never replace a different bound local Anchor.
+        $anchorIdentity = $localAnchor ?? $remoteAnchor;
+        if ($localAnchor !== null && $remoteAnchor !== null && $localAnchor !== $remoteAnchor) {
+            $anchorIdentity = $localAnchor;
+        }
+
+        $installation = $this->installations->persistFirstEnrollment(
             installationId: $installationId,
             credentialId: $credentialId,
             credentialVersion: $credentialVersion,
             secretBase64Url: $secret,
             entitlementSnapshot: $snapshot,
-            anchorIdentity: isset($remote['anchor_identity']) ? (is_string($remote['anchor_identity']) ? $remote['anchor_identity'] : null) : null,
+            anchorIdentity: $anchorIdentity,
             controlServerUrl: $this->installations->getEffectiveControlServerUrl(),
             clientVersion: $version,
             entitlementRevision: $revision,
         );
+
+        $this->sitePolicy->bindAnchorFromInstallation($installation->fresh() ?? $installation);
+        $this->primarySites->syncInstallationBinding();
 
         $presentation = $this->mapper->toPresentation($snapshot);
         $this->appliedHook->afterVerifiedEntitlementApplied($presentation);

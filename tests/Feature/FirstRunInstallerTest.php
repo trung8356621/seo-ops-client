@@ -279,10 +279,31 @@ final class FirstRunInstallerTest extends TestCase
         User::query()->where('email', $testEmail)->delete();
     }
 
-    public function test_6_finish_step_persists_lock_and_unlicensed_state(): void
+    public function test_6_finish_requires_primary_site_then_persists_lock(): void
     {
         $this->stateManager->setStatusForTesting(InstallationState::CONFIGURING);
         $this->withSession(['setup_authorized' => true]);
+
+        $blocked = $this->postJson('/setup/api/finish');
+        $blocked->assertStatus(422);
+        $blocked->assertJson(['ok' => false]);
+        $this->assertFalse($this->stateManager->hasInstalledLock());
+
+        $owner = User::create([
+            'name' => 'Finish Owner',
+            'email' => 'finish_owner_'.bin2hex(random_bytes(3)).'@test.com',
+            'password' => Hash::make('password123'),
+            'role' => User::ROLE_OWNER,
+            'status' => User::STATUS_NORMAL,
+        ]);
+
+        Site::query()->create([
+            'user_id' => $owner->id,
+            'domain' => 'primary-finish.example.com',
+            'status' => 'inactive',
+            'ssl' => true,
+            'h1_is_anchor' => true,
+        ]);
 
         $response = $this->postJson('/setup/api/finish');
         $response->assertStatus(200);
@@ -299,6 +320,7 @@ final class FirstRunInstallerTest extends TestCase
         $this->assertSame('unlicensed', $record['commercial_status']);
         $this->assertFalse($record['h1_enrolled']);
         $this->assertFalse($record['services_activated']);
+        $this->assertSame('primary-finish.example.com', $record['primary_domain'] ?? null);
     }
 
     public function test_7_8_admin_can_access_admin_panel(): void

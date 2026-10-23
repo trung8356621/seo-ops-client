@@ -406,6 +406,10 @@
                 </div>
                 <div class="step-item" id="nav-step-4">
                     <span class="step-badge">4</span>
+                    <span>Website chính</span>
+                </div>
+                <div class="step-item" id="nav-step-5">
+                    <span class="step-badge">5</span>
                     <span>Hoàn tất</span>
                 </div>
             </div>
@@ -714,8 +718,49 @@
                     </form>
                 </div>
 
-                <!-- STEP 4: FINISH -->
+                <!-- STEP 4: PRIMARY SITE (DOMAIN ANCHOR) -->
                 <div id="step-4-panel" class="hidden">
+                    <h2>Bước 4 — Đăng ký Website chính (Domain Anchor)</h2>
+                    <p class="desc">
+                        Website chính là một Website bình thường được gắn cố định với Installation này. Domain này sẽ đồng bộ sang OPS-SERVER khi kích hoạt bản quyền.
+                    </p>
+
+                    <div class="alert alert-info">
+                        <strong>Lưu ý:</strong> Website phải truy cập được công khai (HTTP/HTTPS). Localhost, IP nội bộ và HTTP 404 sẽ bị từ chối. Sau khi đăng ký, không thể xóa hoặc đổi domain của Website chính.
+                    </div>
+
+                    <form id="primary-site-form" onsubmit="handlePrimarySiteSubmit(event)">
+                        <div class="field">
+                            <label for="primary_domain">Tên miền Website chính</label>
+                            <input
+                                type="text"
+                                id="primary_domain"
+                                name="domain"
+                                value="{{ $registeredPrimaryDomain ?? $suggestedPrimaryDomain ?? '' }}"
+                                placeholder="example.com"
+                                required
+                                @if(!empty($registeredPrimaryDomain)) readonly @endif
+                            >
+                            @if(!empty($suggestedPrimaryDomain) && empty($registeredPrimaryDomain))
+                                <div style="margin-top:0.4rem;font-size:0.8rem;color:var(--text-muted);">
+                                    Gợi ý từ cấu hình ứng dụng: <strong>{{ $suggestedPrimaryDomain }}</strong>
+                                </div>
+                            @endif
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem;">
+                            <button type="button" class="btn btn-secondary" onclick="goToStep(3)">
+                                &larr; Quay lại Bước 3
+                            </button>
+                            <button type="submit" id="btn-register-primary" class="btn btn-primary">
+                                <span>{{ !empty($registeredPrimaryDomain) ? 'Tiếp tục' : 'Kiểm tra & đăng ký Website chính' }}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- STEP 5: FINISH -->
+                <div id="step-5-panel" class="hidden">
                     <div style="text-align: center; padding: 1.5rem 0;">
                         <div style="width: 4rem; height: 4rem; background: #ecfdf5; color: var(--success); border-radius: 9999px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1.25rem;">
                             <svg style="width: 2.25rem; height: 2.25rem;" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -731,7 +776,8 @@
                         <div class="alert alert-info" style="text-align: left; max-width: 32rem; margin: 0 auto 2rem;">
                             <div style="font-weight: 700; margin-bottom: 0.5rem; color: #1e293b;">Trạng thái hệ thống:</div>
                             <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.85rem; line-height: 1.6;">
-                                <li><strong>4 MySQL Databases:</strong> Đã kết nối và chạy migrations thành công.</li>
+                                <li><strong>MySQL Databases:</strong> Đã kết nối và chạy migrations thành công.</li>
+                                <li><strong>Website chính (Domain Anchor):</strong> <em id="finish-primary-domain">{{ $registeredPrimaryDomain ?? '—' }}</em></li>
                                 <li><strong>Service Catalog:</strong> Đã đăng ký thụ động (Tất cả Dịch vụ: <em>Inactive / Chưa cấp quyền</em>).</li>
                                 <li><strong>Bản quyền Thương mại:</strong> <em>Zero Commercial Activation</em> (Chưa liên kết OPS-SERVER / H1).</li>
                                 <li><strong>Tài khoản Quản trị:</strong> Đã sẵn sàng truy cập vào /admin.</li>
@@ -773,9 +819,10 @@
 
         function goToStep(stepNum) {
             clearAlert();
-            for (let i = 1; i <= 4; i++) {
+            for (let i = 1; i <= 5; i++) {
                 const nav = document.getElementById('nav-step-' + i);
                 const panel = document.getElementById('step-' + i + '-panel');
+                if (!nav || !panel) continue;
                 if (i === stepNum) {
                     nav.classList.add('active');
                     panel.classList.remove('hidden');
@@ -1071,7 +1118,47 @@
             }
         }
 
-        // STEP 4: Finish
+        // STEP 4: Primary Site (Domain Anchor)
+        async function handlePrimarySiteSubmit(e) {
+            e.preventDefault();
+            clearAlert();
+            const btn = document.getElementById('btn-register-primary');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Đang kiểm tra website...';
+
+            const form = document.getElementById('primary-site-form');
+            const data = Object.fromEntries(new FormData(form).entries());
+
+            try {
+                const res = await fetch('{{ url("/setup/api/primary-site") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                });
+                const json = await res.json();
+                if (res.ok && json.ok) {
+                    const finishLabel = document.getElementById('finish-primary-domain');
+                    if (finishLabel && json.domain) {
+                        finishLabel.textContent = json.domain;
+                    }
+                    showAlert(json.message || 'Đã đăng ký Website chính.', 'success');
+                    setTimeout(() => goToStep(5), 700);
+                } else {
+                    showAlert(json.message || 'Không thể đăng ký Website chính.');
+                }
+            } catch (err) {
+                showAlert('Lỗi: ' + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<span>Kiểm tra & đăng ký Website chính</span>';
+            }
+        }
+
+        // STEP 5: Finish
         async function finishAndGoAdmin() {
             const btn = document.getElementById('btn-finish-go');
             btn.disabled = true;
@@ -1087,17 +1174,28 @@
                     },
                 });
                 const json = await res.json();
+                if (!res.ok || !json.ok) {
+                    showAlert(json.message || 'Không thể hoàn tất cài đặt. Cần đăng ký Website chính trước.');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>Truy cập Quản trị (/admin) &rarr;</span>';
+                    goToStep(4);
+                    return;
+                }
                 window.location.href = json.redirect || '{{ url("/admin") }}';
             } catch (err) {
-                window.location.href = '{{ url("/admin") }}';
+                showAlert('Lỗi hoàn tất cài đặt: ' + err.message);
+                btn.disabled = false;
+                btn.innerHTML = '<span>Truy cập Quản trị (/admin) &rarr;</span>';
             }
         }
 
         // Init step from server status if available
         @if (($currentStep ?? '') === 'admin')
             goToStep(3);
-        @elseif (($currentStep ?? '') === 'finish')
+        @elseif (($currentStep ?? '') === 'primary_site')
             goToStep(4);
+        @elseif (($currentStep ?? '') === 'finish')
+            goToStep(5);
         @elseif (($currentStep ?? '') === 'migrations')
             goToStep(2);
         @endif

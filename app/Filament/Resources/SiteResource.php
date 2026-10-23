@@ -4,12 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\SiteResource\Pages;
 use App\Models\Site;
+use App\Services\H1\Sites\AdminSiteStatusPolicy;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Validation\Rules\Unique;
 
 class SiteResource extends Resource
@@ -61,6 +63,11 @@ class SiteResource extends Resource
                         modifyRuleUsing: fn (Unique $rule): Unique => $rule->whereNull('deleted_at'),
                     )
                     ->maxLength(255)
+                    ->disabled(fn (?Site $record): bool => $record instanceof Site && app(AdminSiteStatusPolicy::class)->isAnchor($record))
+                    ->dehydrated()
+                    ->helperText(fn (?Site $record): ?string => $record instanceof Site && app(AdminSiteStatusPolicy::class)->isAnchor($record)
+                        ? 'Website chính (Domain Anchor) — domain không thể thay đổi.'
+                        : null)
                     // Tự động bóc tách domain nếu khách nhập full URL
                     ->live(onBlur: true)
                     ->afterStateUpdated(function ($state, callable $set) {
@@ -143,15 +150,42 @@ class SiteResource extends Resource
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn (Site $record): bool => ! app(AdminSiteStatusPolicy::class)->isAnchor($record)),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\ForceDeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->action(function ($records): void {
+                            $policy = app(AdminSiteStatusPolicy::class);
+                            foreach ($records as $record) {
+                                if ($record instanceof Site && ! $policy->isAnchor($record)) {
+                                    $record->delete();
+                                }
+                            }
+                        }),
+                    Tables\Actions\ForceDeleteBulkAction::make()
+                        ->action(function ($records): void {
+                            $policy = app(AdminSiteStatusPolicy::class);
+                            foreach ($records as $record) {
+                                if ($record instanceof Site && ! $policy->isAnchor($record)) {
+                                    $record->forceDelete();
+                                }
+                            }
+                        }),
                     Tables\Actions\RestoreBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return $record instanceof Site && ! app(AdminSiteStatusPolicy::class)->isAnchor($record);
+    }
+
+    public static function canForceDelete(Model $record): bool
+    {
+        return static::canDelete($record);
     }
 
     public static function getEloquentQuery(): Builder

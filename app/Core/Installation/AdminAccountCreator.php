@@ -70,8 +70,9 @@ final class AdminAccountCreator
             $current = $this->stateManager->readRecord() ?? [];
             $this->stateManager->saveRecord(array_merge($current, [
                 'status' => InstallationState::CONFIGURING,
-                'step' => 'finish',
+                'step' => 'primary_site',
                 'admin_email' => $user->email,
+                'admin_user_id' => (int) $user->id,
                 'updated_at' => date('c'),
             ]));
 

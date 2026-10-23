@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * SEO domain_quota accounting: only status=active consumes quota.
+ * SEO domain_quota accounting:
+ * - Ordinary sites: only status=active consumes quota.
+ * - Domain Anchor: always consumes exactly 1 slot (active or inactive).
  */
 final class AdminSiteStatusPolicy
 {
@@ -40,6 +42,29 @@ final class AdminSiteStatusPolicy
         return (int) $query->count();
     }
 
+    /**
+     * Sites that occupy SEO domain_quota slots.
+     */
+    public function quotaConsumedCount(?int $exceptSiteId = null): int
+    {
+        if (! Schema::hasTable('sites')) {
+            return 0;
+        }
+
+        $query = Site::query()->where(function ($q): void {
+            $q->where('status', self::STATUS_ACTIVE);
+            if (Schema::hasColumn('sites', 'h1_is_anchor')) {
+                $q->orWhere('h1_is_anchor', true);
+            }
+        });
+
+        if ($exceptSiteId !== null) {
+            $query->where('id', '!=', $exceptSiteId);
+        }
+
+        return (int) $query->count();
+    }
+
     public function defaultStatusForNewSite(): string
     {
         return self::STATUS_INACTIVE;
@@ -56,8 +81,14 @@ final class AdminSiteStatusPolicy
         if ($seoQuota === null) {
             throw new H1CommandException('quota_undefined', 'SEO domain quota is not defined on the verified entitlement.');
         }
+
+        // Anchor already occupies its slot while inactive — activating it does not add capacity use.
+        if ($site->exists && $this->isAnchor($site)) {
+            return;
+        }
+
         $exceptId = $site->exists ? (int) $site->getKey() : null;
-        if ($this->activeCount($exceptId) + 1 > $seoQuota) {
+        if ($this->quotaConsumedCount($exceptId) + 1 > $seoQuota) {
             throw new H1CommandException('quota_capacity_reached', 'SEO domain quota capacity reached.');
         }
     }
@@ -80,6 +111,7 @@ final class AdminSiteStatusPolicy
 
     /**
      * One-shot overflow / rotation reset — all Admin Sites → inactive.
+     * Anchor remains bound and continues to consume its quota slot.
      *
      * @return int number of rows changed
      */
@@ -116,7 +148,7 @@ final class AdminSiteStatusPolicy
 
         DB::transaction(function () use ($site, $installation): void {
             if (Schema::hasColumn('sites', 'h1_is_anchor')) {
-                Site::query()->where('h1_is_anchor', true)->update(['h1_is_anchor' => false]);
+                Site::query()->where('h1_is_anchor', true)->where('id', '!=', $site->getKey())->update(['h1_is_anchor' => false]);
                 $site->forceFill(['h1_is_anchor' => true])->saveQuietly();
             }
             $installation->anchor_site_id = (int) $site->getKey();
@@ -148,6 +180,16 @@ final class AdminSiteStatusPolicy
     {
         if ($this->isAnchor($site)) {
             throw new H1CommandException('anchor_protected', 'Anchor Admin Site cannot be deleted.');
+        }
+    }
+
+    /**
+     * @throws H1CommandException
+     */
+    public function assertDomainMutable(Site $site): void
+    {
+        if ($this->isAnchor($site)) {
+            throw new H1CommandException('anchor_domain_immutable', 'Domain of the Anchor Admin Site cannot be changed.');
         }
     }
 }

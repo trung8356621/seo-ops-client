@@ -7,6 +7,7 @@ namespace Tests\Unit\H1;
 use App\Models\H1Credential;
 use App\Models\H1Installation;
 use App\Models\Service;
+use App\Models\Site;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Enrollment\FixtureEnrollmentTransport;
 use App\Services\H1\Exceptions\H1EnrollmentException;
@@ -33,6 +34,13 @@ final class EnrollmentConsumerTest extends TestCase
 
     public function test_first_enrollment_persists_encrypted_credential(): void
     {
+        Site::query()->create([
+            'domain' => 'local-anchor.example',
+            'status' => 'inactive',
+            'ssl' => true,
+            'h1_is_anchor' => true,
+        ]);
+
         $secret = LicenseCrypto::base64UrlEncode(random_bytes(32));
         $this->transport->registerToken('tok_first_enroll_abcdef', [
             'installation_id' => 'ins_01',
@@ -44,7 +52,8 @@ final class EnrollmentConsumerTest extends TestCase
                 'services' => $this->sampleServices(),
             ],
             'entitlement_revision' => 1,
-            'anchor_identity' => 'anchor.example',
+            // Server may return a different legacy value; local primary Site wins.
+            'anchor_identity' => 'server-anchor.example',
         ]);
 
         $result = app(EnrollmentConsumer::class)->enroll('tok_first_enroll_abcdef');
@@ -54,7 +63,8 @@ final class EnrollmentConsumerTest extends TestCase
         $installation = H1Installation::query()->first();
         self::assertNotNull($installation);
         self::assertSame(1, (int) $installation->entitlement_revision);
-        self::assertSame('anchor.example', $installation->anchor_identity);
+        self::assertSame('local-anchor.example', $installation->anchor_identity);
+        self::assertNotNull($installation->anchor_site_id);
 
         $cred = H1Credential::query()->first();
         self::assertNotNull($cred);

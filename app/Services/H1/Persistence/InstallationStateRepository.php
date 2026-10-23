@@ -223,13 +223,22 @@ final class InstallationStateRepository
             $existing,
         ): H1Installation {
             $installation = $existing ?? new H1Installation;
+            $boundAnchor = filled($installation->anchor_identity)
+                ? strtolower(trim((string) $installation->anchor_identity))
+                : null;
+            $incomingAnchor = is_string($anchorIdentity) && trim($anchorIdentity) !== ''
+                ? strtolower(trim($anchorIdentity))
+                : null;
+            // Domain Anchor is permanently bound once set — never replace with a different identity.
+            $resolvedAnchor = $boundAnchor ?? $incomingAnchor;
+
             $installation->fill([
                 'installation_id' => $installationId,
                 'product' => (string) config('h1-license.product', 'seo-ops'),
                 'control_server_url' => $effectiveControlServerUrl !== '' ? $effectiveControlServerUrl : null,
                 'status' => 'enrolled',
                 'cutover_mode' => (string) ($installation->cutover_mode ?: config('h1-license.enforcement_mode', 'pre_enrollment')),
-                'anchor_identity' => $anchorIdentity,
+                'anchor_identity' => $resolvedAnchor,
                 'client_version' => $clientVersion,
                 'entitlement_revision' => $entitlementRevision,
                 'credential_version' => $credentialVersion,

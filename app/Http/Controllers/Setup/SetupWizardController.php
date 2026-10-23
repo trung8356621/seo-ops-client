@@ -10,10 +10,12 @@ use App\Core\Installation\DatabaseConfigurator;
 use App\Core\Installation\InstallationState;
 use App\Core\Installation\InstallationStateManager;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Services\H1\Sites\PrimaryAnchorSiteService;
+use App\Services\H1\Sites\SiteDomainNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Throwable;
 
 final class SetupWizardController extends Controller
 {
@@ -22,6 +24,8 @@ final class SetupWizardController extends Controller
         private readonly DatabaseConfigurator $dbConfigurator,
         private readonly AppInitializer $appInitializer,
         private readonly AdminAccountCreator $adminCreator,
+        private readonly PrimaryAnchorSiteService $primarySites,
+        private readonly SiteDomainNormalizer $domains,
     ) {}
 
     public function index(Request $request): View|\Illuminate\Http\RedirectResponse
@@ -40,6 +44,8 @@ final class SetupWizardController extends Controller
             $request->session()->put('setup_authorized', true);
         }
 
+        $anchor = $this->primarySites->currentAnchorSite();
+
         return view('setup.wizard', [
             'status' => $status,
             'currentStep' => $record['step'] ?? 'database',
@@ -47,6 +53,8 @@ final class SetupWizardController extends Controller
             'tokenPath' => $this->stateManager->tokenFilePath(),
             'isAuthorized' => (bool) $request->session()->get('setup_authorized', false),
             'record' => $record,
+            'suggestedPrimaryDomain' => $this->domains->suggestedFromAppUrl(),
+            'registeredPrimaryDomain' => $anchor?->domain,
         ]);
     }
 
@@ -62,6 +70,7 @@ final class SetupWizardController extends Controller
             'databases' => $record['databases'] ?? null,
             'authorized' => $isAuthorized,
             'token_file' => $this->stateManager->tokenFilePath(),
+            'primary_domain' => $this->primarySites->currentAnchorDomain(),
         ]);
     }
 
@@ -141,11 +150,61 @@ final class SetupWizardController extends Controller
         });
     }
 
+    public function registerPrimarySite(Request $request): JsonResponse
+    {
+        $this->assertAuthorized($request);
+
+        return $this->stateManager->withLock(function () use ($request): JsonResponse {
+            $ownerId = $this->resolveOwnerUserId();
+            if ($ownerId === null) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Chưa có tài khoản Administrator. Vui lòng hoàn tất bước 3 trước.',
+                ], 422);
+            }
+
+            $result = $this->primarySites->registerFromInstaller(
+                (string) $request->input('domain', ''),
+                $ownerId,
+                (bool) $request->boolean('ssl', true),
+            );
+
+            if (! ($result['ok'] ?? false)) {
+                return response()->json($result, 422);
+            }
+
+            $current = $this->stateManager->readRecord() ?? [];
+            $this->stateManager->saveRecord(array_merge($current, [
+                'status' => InstallationState::CONFIGURING,
+                'step' => 'finish',
+                'primary_domain' => $result['domain'] ?? null,
+                'primary_site_id' => $result['site_id'] ?? null,
+                'updated_at' => date('c'),
+            ]));
+
+            return response()->json($result);
+        });
+    }
+
     public function finish(Request $request): JsonResponse
     {
         $this->assertAuthorized($request);
 
         return $this->stateManager->withLock(function () use ($request): JsonResponse {
+            $anchorDomain = $this->primarySites->currentAnchorDomain();
+            if ($anchorDomain === null) {
+                return response()->json([
+                    'ok' => false,
+                    'message' => 'Chưa đăng ký Website chính (Domain Anchor). Vui lòng hoàn tất bước đăng ký trước khi khóa installer.',
+                ], 422);
+            }
+
+            $current = $this->stateManager->readRecord() ?? [];
+            $this->stateManager->saveRecord(array_merge($current, [
+                'primary_domain' => $anchorDomain,
+                'updated_at' => date('c'),
+            ]));
+
             $this->stateManager->markInstalled();
             $request->session()->forget('setup_authorized');
 
@@ -153,8 +212,26 @@ final class SetupWizardController extends Controller
                 'ok' => true,
                 'message' => 'Installation completed successfully.',
                 'redirect' => url('/admin'),
+                'primary_domain' => $anchorDomain,
             ]);
         });
+    }
+
+    private function resolveOwnerUserId(): ?int
+    {
+        $record = $this->stateManager->readRecord() ?? [];
+        $fromRecord = (int) ($record['admin_user_id'] ?? 0);
+        if ($fromRecord > 0 && User::query()->whereKey($fromRecord)->exists()) {
+            return $fromRecord;
+        }
+
+        $owner = User::query()
+            ->whereIn('role', [User::ROLE_OWNER, User::ROLE_ADMIN])
+            ->where('is_system', false)
+            ->orderBy('id')
+            ->first();
+
+        return $owner instanceof User ? (int) $owner->getKey() : null;
     }
 
     private function assertAuthorized(Request $request): void

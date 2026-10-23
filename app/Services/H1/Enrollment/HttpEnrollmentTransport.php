@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Http;
  */
 final class HttpEnrollmentTransport implements EnrollmentTransport
 {
-    public function consume(string $enrollmentToken, string $clientVersion): array
+    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array
     {
         $installations = app(InstallationStateRepository::class);
         $base = $installations->getEffectiveControlServerUrl();
@@ -23,16 +23,21 @@ final class HttpEnrollmentTransport implements EnrollmentTransport
         $path = (string) config('h1-license.enrollment.path', '/api/v1/enrollment/consume');
         $url = $base . $path;
 
+        $payload = [
+            'enrollment_token' => $enrollmentToken,
+            'client_version' => $clientVersion,
+        ];
+        if (is_string($anchorIdentity) && trim($anchorIdentity) !== '') {
+            $payload['anchor_identity'] = strtolower(trim($anchorIdentity));
+        }
+
         try {
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ])
                 ->timeout((int) config('h1-license.timeout_seconds', 15))
-                ->post($url, [
-                    'enrollment_token' => $enrollmentToken,
-                    'client_version' => $clientVersion,
-                ]);
+                ->post($url, $payload);
         } catch (\Throwable) {
             throw new H1EnrollmentException('server_offline', 'OPS-SERVER enrollment endpoint is unreachable.');
         }

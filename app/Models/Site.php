@@ -24,6 +24,20 @@ class Site extends Model
     protected static function booted(): void
     {
         static::saving(function (Site $site): void {
+            $policy = app(AdminSiteStatusPolicy::class);
+
+            if ($site->exists && $site->isDirty('domain')) {
+                try {
+                    $policy->assertDomainMutable($site);
+                } catch (H1CommandException $e) {
+                    throw new \RuntimeException($e->getMessage(), 0, $e);
+                }
+            }
+
+            if ($site->exists && $site->isDirty('h1_is_anchor') && (bool) $site->getOriginal('h1_is_anchor') === true && ! (bool) $site->h1_is_anchor) {
+                throw new \RuntimeException('Anchor Admin Site binding cannot be cleared.');
+            }
+
             if ((string) $site->status !== AdminSiteStatusPolicy::STATUS_ACTIVE) {
                 return;
             }
@@ -39,7 +53,7 @@ class Site extends Model
                 if (! $gate->allows('seo')) {
                     throw new H1CommandException('seo_not_licensed', 'SEO service is not licensed for activation.');
                 }
-                app(AdminSiteStatusPolicy::class)->assertCanActivate($site, $gate->seoQuota());
+                $policy->assertCanActivate($site, $gate->seoQuota());
             } catch (H1CommandException $e) {
                 throw new \RuntimeException($e->getMessage(), 0, $e);
             }
