@@ -179,7 +179,7 @@ final class InstallationStateManager
 
     private function resolveStatus(): string
     {
-        // 1. If explicit installed.lock exists
+        // 1. Explicit installed.lock = already installed. Unreachable DB = outage (503), never Setup.
         if ($this->hasInstalledLock()) {
             if (! $this->probeDatabaseReachable()) {
                 return InstallationState::DATABASE_UNAVAILABLE;
@@ -188,7 +188,7 @@ final class InstallationStateManager
             return InstallationState::INSTALLED;
         }
 
-        // 2. Check state.json
+        // 2. state.json
         $record = $this->readRecord();
         $stateStatus = strtoupper((string) ($record['status'] ?? ''));
 
@@ -200,19 +200,13 @@ final class InstallationStateManager
             return InstallationState::INSTALLED;
         }
 
+        // Mid-setup / recovery: Setup must stay reachable while databases are being created.
+        // Do not escalate missing/unreachable DB to DATABASE_UNAVAILABLE without install evidence.
         if ($stateStatus === InstallationState::RECOVERABLE_FAILURE) {
-            if (! $this->probeDatabaseReachable()) {
-                return InstallationState::DATABASE_UNAVAILABLE;
-            }
-
             return InstallationState::RECOVERABLE_FAILURE;
         }
 
         if ($stateStatus === InstallationState::CONFIGURING) {
-            if (! $this->probeDatabaseReachable()) {
-                return InstallationState::DATABASE_UNAVAILABLE;
-            }
-
             return InstallationState::CONFIGURING;
         }
 
@@ -220,22 +214,14 @@ final class InstallationStateManager
             return InstallationState::UNCONFIGURED;
         }
 
-        // 3. Neither lock nor state.json says installed.
-        // Check if database is configured in .env
+        // 3. No install evidence. .env may already name databases that do not exist yet
+        // (fresh setup). Only auto-promote to INSTALLED when schema is present.
         $coreConn = (string) config('database.core_connection', config('database.default', 'mysql'));
         $connConfig = config("database.connections.{$coreConn}", []);
         $configuredDb = (string) ($connConfig['database'] ?? '');
         $hasAppKey = (string) config('app.key', '') !== '';
 
-        if ($configuredDb !== '' && $hasAppKey) {
-            $reachable = $this->probeDatabaseReachable();
-            if (! $reachable) {
-                // If .env has a database configured and key set, but connection failed,
-                // do NOT assume unconfigured; it is an outage.
-                return InstallationState::DATABASE_UNAVAILABLE;
-            }
-
-            // Connection succeeded. Does the database already contain application tables?
+        if ($configuredDb !== '' && $hasAppKey && $this->probeDatabaseReachable()) {
             if ($this->databaseHasInstalledSchema()) {
                 return InstallationState::INSTALLED;
             }
