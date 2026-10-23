@@ -46,7 +46,14 @@
                     Thử lại
                 </button>
             </div>
-            <div data-ops-service-widget-host id="ops-service-widget"></div>
+            {{-- wire:ignore: protect Shadow DOM React body across Livewire morphs --}}
+            <div
+                wire:ignore
+                hidden
+                data-ops-service-widget-host
+                id="ops-service-widget"
+                style="display:block;width:100%;min-width:0;height:100%;box-sizing:border-box"
+            ></div>
         </div>
     </div>
 </div>

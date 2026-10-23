@@ -31,6 +31,8 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         self::assertStringContainsString('data-service-widget-header', $blade);
         self::assertStringContainsString('service-widget.session', $blade);
         self::assertStringContainsString('headerServiceWidget.js', $blade);
+        self::assertStringContainsString('data-ops-service-widget-host', $blade);
+        self::assertStringContainsString('wire:ignore', $blade);
     }
 
     #[Test]
@@ -40,9 +42,55 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         self::assertStringContainsString('No OPS-SERVER network until the user clicks', $js);
         self::assertStringContainsString('fetchSession', $js);
         self::assertStringContainsString('loadScriptOnce', $js);
-        self::assertStringContainsString("useMock: false", $js);
+        self::assertStringContainsString('useMock: false', $js);
+        self::assertStringContainsString('setAuthContext', $js);
+        self::assertStringContainsString('installationId: session.installationId', $js);
         // boot only binds click handlers — must not call fetch/session at import time.
         self::assertDoesNotMatchRegularExpression('/boot\(\)[\s\S]*fetchSession\(/', $js);
+    }
+
+    #[Test]
+    public function header_uses_body_only_embed_contract(): void
+    {
+        $js = (string) file_get_contents(resource_path('js/service-widget/headerServiceWidget.js'));
+
+        self::assertStringNotContainsString('clickWidgetTrigger', $js);
+        self::assertStringNotContainsString('ops-sw__trigger', $js);
+        self::assertStringNotContainsString('ops-sw__popover', $js);
+        self::assertStringNotContainsString('data-ops-sw-header-hide-trigger', $js);
+        self::assertStringNotContainsString('dispatchEvent(new MouseEvent', $js);
+
+        self::assertStringContainsString('livewire:navigated', $js);
+        self::assertStringContainsString('tokenNeedsRefresh', $js);
+        self::assertStringContainsString('Hide only', $js);
+        self::assertStringContainsString('Do not unmount on session refresh', $js);
+        self::assertStringContainsString('applyHostFillLayout', $js);
+        self::assertStringContainsString('Never show Laravel Retry alongside the React body', $js);
+    }
+
+    #[Test]
+    public function header_css_hides_shell_layers_and_fills_dropdown_width(): void
+    {
+        $css = (string) file_get_contents(resource_path('css/service-widget-header.css'));
+        self::assertStringContainsString('display: none !important', $css);
+        self::assertStringContainsString('.service-widget-header__error:not([hidden])', $css);
+        self::assertStringContainsString('width: 360px', $css);
+        self::assertStringContainsString('[data-ops-service-widget-host]:not([hidden])', $css);
+        self::assertStringContainsString('min-width: 0', $css);
+        self::assertStringNotContainsString('transform:', $css);
+        self::assertStringNotContainsString('scale(', $css);
+    }
+
+    #[Test]
+    public function vendor_bundle_is_body_only_ops_build(): void
+    {
+        $bundle = (string) file_get_contents(public_path('vendor/ops-service-widget/ops-service-widget.js'));
+        self::assertStringContainsString('OpsServiceWidget', $bundle);
+        self::assertStringContainsString('setAuthContext', $bundle);
+        self::assertStringContainsString('ops-service-widget-body', $bundle);
+        // Old dual-trigger chrome must not ship in the host vendor copy.
+        self::assertStringNotContainsString('ops-sw__trigger', $bundle);
+        self::assertStringNotContainsString('ops-sw__popover', $bundle);
     }
 
     #[Test]
