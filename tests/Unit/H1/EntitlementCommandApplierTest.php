@@ -252,6 +252,175 @@ final class EntitlementCommandApplierTest extends TestCase
         self::assertSame('active', Site::query()->where('domain', 'a.example')->value('status'));
     }
 
+    public function test_commercial_scenarios_a_through_e_gate_and_quota_enforcement(): void
+    {
+        $applier = app(EntitlementCommandApplier::class);
+        $gate = app(ServiceEntitlementGate::class);
+
+        // Start from unassigned enrollment (Revision 1: all commercial services disabled)
+        H1Installation::query()->where('installation_id', 'ins_01')->update([
+            'entitlement_revision' => 1,
+            'last_command_id' => 'cmd_init_01',
+            'verified_snapshot' => [
+                'protocol' => 'seo-ops-license/1',
+                'installation_id' => 'ins_01',
+                'product' => 'seo-ops',
+                'entitlement_revision' => 1,
+                'plan_key' => 'unassigned',
+                'valid_until' => '2029-10-21T00:00:00Z',
+                'services' => [
+                    'agent' => ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    'seo' => ['key' => 'seo', 'enabled' => false, 'license_model' => 'domain_quota', 'quota' => null, 'valid_until' => '2029-10-21T00:00:00Z'],
+                    'seeding' => ['key' => 'seeding', 'enabled' => false, 'license_model' => 'flat', 'valid_until' => '2029-10-21T00:00:00Z'],
+                ],
+            ],
+        ]);
+
+        self::assertFalse($gate->allows('seo'));
+        self::assertFalse($gate->allows('seeding'));
+        self::assertFalse($gate->allows('social-automation'));
+        self::assertFalse($gate->allows('pbn'));
+
+        // Scenario A: Grant SEO 5 domains (Revision 2)
+        $ackA = $applier->apply([
+            'message_type' => 'entitlement_command',
+            'command_id' => 'cmd_ord_a',
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => 'grant',
+            'target_service' => 'seo',
+            'entitlement_revision' => 2,
+            'credential_version' => 1,
+            'issued_at' => '2026-10-22T08:00:00Z',
+            'effective_at' => '2026-10-22T08:00:00Z',
+            'entitlement' => [
+                'plan_key' => 'seo-5-domains',
+                'valid_until' => '2027-10-22T08:00:00Z',
+                'services' => [
+                    ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    ['key' => 'seo', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'domain_quota', 'quota' => 5, 'valid_until' => '2027-10-22T08:00:00Z'],
+                    ['key' => 'seeding', 'enabled' => false, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:00:00Z'],
+                    ['key' => 'social-automation', 'enabled' => false, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:00:00Z'],
+                    ['key' => 'pbn', 'enabled' => false, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:00:00Z'],
+                ],
+            ],
+        ]);
+        self::assertSame('applied', $ackA['result']);
+        self::assertTrue($gate->allows('seo'));
+        self::assertSame(5, $gate->seoQuota());
+        self::assertFalse($gate->allows('seeding'));
+        self::assertFalse($gate->allows('social-automation'));
+        self::assertFalse($gate->allows('pbn'));
+
+        Site::query()->create(['domain' => 'site1.example', 'status' => 'active']);
+
+        // Scenario C: Add Seeding Standard (flat) to same installation (Revision 3)
+        $ackC = $applier->apply([
+            'message_type' => 'entitlement_command',
+            'command_id' => 'cmd_ord_c',
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => 'grant',
+            'target_service' => 'seeding',
+            'entitlement_revision' => 3,
+            'credential_version' => 1,
+            'issued_at' => '2026-10-22T08:05:00Z',
+            'effective_at' => '2026-10-22T08:05:00Z',
+            'entitlement' => [
+                'plan_key' => 'seeding-standard',
+                'valid_until' => '2027-10-22T08:05:00Z',
+                'services' => [
+                    ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    ['key' => 'seo', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'domain_quota', 'quota' => 5, 'valid_until' => '2027-10-22T08:00:00Z'],
+                    ['key' => 'seeding', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:05:00Z'],
+                ],
+            ],
+        ]);
+        self::assertSame('applied', $ackC['result']);
+        self::assertTrue($gate->allows('seo'));
+        self::assertSame(5, $gate->seoQuota());
+        self::assertTrue($gate->allows('seeding'));
+        self::assertSame('active', Site::query()->where('domain', 'site1.example')->value('status'));
+
+        // Scenario D: Upgrade SEO from 5 -> 30 domains (Revision 4)
+        $ackD = $applier->apply([
+            'message_type' => 'entitlement_command',
+            'command_id' => 'cmd_ord_d',
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => 'change_plan',
+            'target_service' => 'seo',
+            'entitlement_revision' => 4,
+            'credential_version' => 1,
+            'issued_at' => '2026-10-22T08:10:00Z',
+            'effective_at' => '2026-10-22T08:10:00Z',
+            'entitlement' => [
+                'plan_key' => 'seo-30-domains',
+                'valid_until' => '2027-10-22T08:05:00Z',
+                'services' => [
+                    ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    ['key' => 'seo', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'domain_quota', 'quota' => 30, 'valid_until' => '2027-10-22T08:00:00Z'],
+                    ['key' => 'seeding', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:05:00Z'],
+                ],
+            ],
+        ]);
+        self::assertSame('applied', $ackD['result']);
+        self::assertSame(30, $gate->seoQuota());
+        self::assertTrue($gate->allows('seeding'));
+        self::assertSame('active', Site::query()->where('domain', 'site1.example')->value('status'));
+
+        // Scenario E: Renew SEO (Revision 5) then Revoke Seeding (Revision 6)
+        $ackERenew = $applier->apply([
+            'message_type' => 'entitlement_command',
+            'command_id' => 'cmd_ord_e_renew',
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => 'renew',
+            'target_service' => 'seo',
+            'entitlement_revision' => 5,
+            'credential_version' => 1,
+            'issued_at' => '2026-10-22T08:15:00Z',
+            'effective_at' => '2026-10-22T08:15:00Z',
+            'entitlement' => [
+                'plan_key' => 'seo-30-domains',
+                'valid_until' => '2028-10-21T08:00:00Z',
+                'services' => [
+                    ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    ['key' => 'seo', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'domain_quota', 'quota' => 30, 'valid_until' => '2028-10-21T08:00:00Z'],
+                    ['key' => 'seeding', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:05:00Z'],
+                ],
+            ],
+        ]);
+        self::assertSame('applied', $ackERenew['result']);
+
+        $ackERevoke = $applier->apply([
+            'message_type' => 'entitlement_command',
+            'command_id' => 'cmd_ord_e_revoke',
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => 'revoke',
+            'target_service' => 'seeding',
+            'entitlement_revision' => 6,
+            'credential_version' => 1,
+            'issued_at' => '2026-10-22T08:20:00Z',
+            'effective_at' => '2026-10-22T08:20:00Z',
+            'entitlement' => [
+                'plan_key' => 'seo-30-domains',
+                'valid_until' => '2028-10-21T08:00:00Z',
+                'services' => [
+                    ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+                    ['key' => 'seo', 'enabled' => true, 'scope' => 'licensed', 'license_model' => 'domain_quota', 'quota' => 30, 'valid_until' => '2028-10-21T08:00:00Z'],
+                    ['key' => 'seeding', 'enabled' => false, 'scope' => 'licensed', 'license_model' => 'flat', 'quota' => null, 'valid_until' => '2027-10-22T08:05:00Z', 'revoked_at' => '2026-10-22T08:20:00Z'],
+                ],
+            ],
+        ]);
+        self::assertSame('applied', $ackERevoke['result']);
+        self::assertTrue($gate->allows('seo'));
+        self::assertSame(30, $gate->seoQuota());
+        self::assertFalse($gate->allows('seeding'));
+        self::assertSame('active', Site::query()->where('domain', 'site1.example')->value('status'));
+    }
+
     private function seedInstallation(): void
     {
         $secret = LicenseCrypto::base64UrlEncode(str_repeat('a', 32));

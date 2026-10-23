@@ -345,18 +345,9 @@
                                     Áp dụng Cấu hình chuẩn SEO-OPS
                                 </h4>
                                 <p class="text-xs text-gray-600 dark:text-gray-300">
-                                    Hệ thống hiện tại chưa có dữ liệu cấu hình. Nạp cấu hình chuẩn sẽ trang bị đầy đủ các Prompt viết bài chuẩn SEO, quy trình tự động hóa bài viết và các thiết lập ghi điểm chất lượng.
+                                    Hệ thống hiện tại chưa có dữ liệu cấu hình. Khi bạn bấm <strong>Tiếp tục: Kết nối AI</strong>, hệ thống sẽ nạp Prompt / Workflow / thiết lập chuẩn (nếu ô ghi đè bên dưới đang bật).
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="pt-2">
-                            <x-filament::button
-                                wire:click="applyGoldenConfiguration"
-                                icon="heroicon-m-arrow-down-tray"
-                            >
-                                Nạp Cấu hình chuẩn ngay
-                            </x-filament::button>
                         </div>
                     </div>
                 @elseif ($goldenStatus === 'in_sync')
@@ -370,15 +361,35 @@
                         </p>
                     </div>
                 @elseif ($goldenStatus === 'customized')
-                    <div class="rounded-lg border border-blue-500/30 bg-blue-50/50 p-4 dark:border-blue-500/20 dark:bg-blue-950/20 space-y-2">
-                        <div class="flex items-center gap-2 font-semibold text-blue-800 dark:text-blue-300 text-sm">
-                            <x-filament::icon icon="heroicon-m-shield-check" class="h-5 w-5" />
+                    <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 space-y-2">
+                        <div class="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-300 text-sm">
+                            <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5" />
                             <span>Đã phát hiện Cấu hình tùy chỉnh riêng của bạn</span>
                         </div>
-                        <p class="text-xs text-blue-700 dark:text-blue-400">
-                            Bạn đã có Prompts hoặc Quy trình được điều chỉnh riêng. SEO-OPS tôn trọng và bảo toàn 100% dữ liệu tùy chỉnh của bạn, không tự động ghi đè hoặc nạp lại.
+                        <p class="text-xs text-amber-800 dark:text-amber-400">
+                            Bật ghi đè bên dưới rồi bấm <strong>Tiếp tục</strong> để thay Prompt / Workflow / thiết lập chuẩn trùng phạm vi Golden. Tắt ô ghi đè để giữ nguyên cấu hình hiện có và sang bước tiếp theo.
                         </p>
                     </div>
+                @endif
+
+                @if ($isSeoLicensed && ! in_array($goldenStatus, ['in_sync', 'unlicensed'], true))
+                    <label class="flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 text-xs text-gray-700 dark:border-white/10 dark:bg-gray-800/40 dark:text-gray-300">
+                        <input
+                            type="checkbox"
+                            wire:model.live="overwriteGoldenConfiguration"
+                            @disabled($goldenApplying)
+                            class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                        />
+                        <span>
+                            <span class="font-semibold text-gray-900 dark:text-white">Ghi đè cấu hình hiện có bằng Golden Configuration</span>
+                            <span class="block mt-0.5 text-gray-500 dark:text-gray-400">
+                                Mặc định bật. Áp dụng khi bấm <strong>Tiếp tục: Kết nối AI</strong>. Chỉ ảnh hưởng Prompt, Workflow và cấu hình chuẩn trong phạm vi Golden — không đụng Installation ID, credential hay dữ liệu nghiệp vụ.
+                                @if ($overwriteGoldenConfiguration && $goldenStatus === 'customized')
+                                    <span class="block mt-1 font-medium text-amber-700 dark:text-amber-300">Cảnh báo: cấu hình tùy chỉnh trùng phạm vi Golden sẽ bị thay bằng bản chuẩn.</span>
+                                @endif
+                            </span>
+                        </span>
+                    </label>
                 @endif
 
                 {{-- Thống kê số lượng hiện tại --}}
@@ -403,6 +414,9 @@
                         wire:click="prevStep"
                         color="gray"
                         icon="heroicon-m-arrow-left"
+                        wire:loading.attr="disabled"
+                        wire:target="nextStep"
+                        :disabled="$goldenApplying"
                     >
                         Quay lại
                     </x-filament::button>
@@ -410,8 +424,15 @@
                         wire:click="nextStep"
                         icon="heroicon-m-arrow-right"
                         icon-position="after"
+                        wire:loading.attr="disabled"
+                        wire:target="nextStep"
+                        :disabled="$goldenApplying"
                     >
-                        Tiếp tục: Kết nối AI
+                        <span wire:loading.remove wire:target="nextStep">Tiếp tục: Kết nối AI</span>
+                        <span wire:loading wire:target="nextStep" class="inline-flex items-center gap-1">
+                            <x-filament::loading-indicator class="h-4 w-4" />
+                            Đang áp dụng cấu hình…
+                        </span>
                     </x-filament::button>
                 </div>
             </div>

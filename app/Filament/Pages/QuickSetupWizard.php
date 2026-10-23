@@ -59,6 +59,10 @@ class QuickSetupWizard extends Page
     public array $goldenCounts = ['prompts' => 0, 'workflows' => 0, 'bindings' => 0];
     public ?string $goldenError = null;
     public bool $goldenSuccess = false;
+    /** Default checked: apply Golden Configuration even when customized config already exists. */
+    public bool $overwriteGoldenConfiguration = true;
+    /** Guards Step 2 continue against duplicate Livewire submissions while bootstrap runs. */
+    public bool $goldenApplying = false;
 
     // STEP 3 Properties
     public string $aiProvider = 'gemini';
@@ -140,6 +144,8 @@ class QuickSetupWizard extends Page
             'goldenCounts' => $this->goldenCounts,
             'goldenError' => $this->goldenError,
             'goldenSuccess' => $this->goldenSuccess,
+            'overwriteGoldenConfiguration' => $this->overwriteGoldenConfiguration,
+            'goldenApplying' => $this->goldenApplying,
             'aiProvider' => $this->aiProvider,
             'aiConnectionName' => $this->aiConnectionName,
             'aiApiKey' => $this->aiApiKey,
@@ -442,7 +448,7 @@ class QuickSetupWizard extends Page
                     $this->goldenReason = 'Cấu hình hiện tại khớp hoàn toàn với cấu hình chuẩn (Golden Configuration).';
                 } else {
                     $this->goldenStatus = 'customized';
-                    $this->goldenReason = 'Hệ thống phát hiện cấu hình đã được tùy chỉnh. Dữ liệu của bạn được bảo toàn.';
+                    $this->goldenReason = 'Hệ thống phát hiện cấu hình đã được tùy chỉnh. Có thể ghi đè bằng Golden Configuration nếu bạn chọn tùy chọn bên dưới.';
                 }
             }
         } catch (\Throwable $e) {
@@ -451,7 +457,12 @@ class QuickSetupWizard extends Page
         }
     }
 
-    public function applyGoldenConfiguration(): void
+    /**
+     * Run Golden bootstrap/overwrite using the Step 2 checkbox.
+     *
+     * @return bool true when the wizard may leave Step 2
+     */
+    public function applyGoldenConfiguration(): bool
     {
         $this->goldenError = null;
         $this->goldenSuccess = false;
@@ -459,49 +470,95 @@ class QuickSetupWizard extends Page
 
         if (! $this->isSeoLicensed) {
             $this->goldenError = 'Cần kích hoạt bản quyền SEO trước khi nạp cấu hình chuẩn.';
-            return;
+
+            return false;
         }
 
         try {
             $bootstrapService = app(GoldenBootstrapService::class);
-            $res = $bootstrapService->bootstrap($userId);
+            $res = $bootstrapService->bootstrap(
+                $userId,
+                null,
+                $this->overwriteGoldenConfiguration,
+            );
 
             $status = $res['status'] ?? 'unknown';
 
             if ($status === 'bootstrapped') {
                 $this->goldenSuccess = true;
-                $this->loadAllStepData();
+                $this->loadStep2Data();
 
                 Notification::make()
                     ->title('Áp dụng Cấu hình chuẩn thành công!')
                     ->body('Đã nạp thành công các Prompt và Quy trình chuẩn.')
                     ->success()
                     ->send();
-            } elseif ($status === 'existing_client') {
-                $this->loadAllStepData();
+
+                return true;
+            }
+
+            if ($status === 'existing_client') {
+                $this->loadStep2Data();
                 Notification::make()
                     ->title('Bảo toàn cấu hình hiện có')
-                    ->body('Hệ thống phát hiện đã có dữ liệu cấu hình, giữ nguyên không ghi đè.')
+                    ->body('Ghi đè đang tắt hoặc không được yêu cầu — cấu hình tùy chỉnh hiện có được giữ nguyên.')
                     ->info()
                     ->send();
-            } else {
-                $errCode = $res['error_code'] ?? $status;
-                $this->goldenError = 'Nạp cấu hình không thành công: ' . $errCode;
 
-                Notification::make()
-                    ->title('Lỗi nạp cấu hình')
-                    ->body($this->goldenError)
-                    ->danger()
-                    ->send();
+                return true;
             }
+
+            $errCode = $res['error_code'] ?? $status;
+            $this->goldenError = 'Nạp cấu hình không thành công: '.$errCode.'. Kiểm tra kết nối OPS-SERVER / bản quyền SEO rồi thử lại.';
+
+            Notification::make()
+                ->title('Lỗi nạp cấu hình')
+                ->body($this->goldenError)
+                ->danger()
+                ->send();
+
+            return false;
         } catch (\Throwable $e) {
-            $this->goldenError = 'Lỗi nạp cấu hình: ' . $e->getMessage();
+            $this->goldenError = 'Lỗi nạp cấu hình: '.$e->getMessage();
 
             Notification::make()
                 ->title('Lỗi ngoại lệ')
                 ->body($this->goldenError)
                 ->danger()
                 ->send();
+
+            return false;
+        }
+    }
+
+    /**
+     * Step 2 continue: apply Golden when overwrite is checked; otherwise skip and advance.
+     *
+     * @return bool true when navigation to Step 3 is allowed
+     */
+    public function completeStep2BeforeAdvance(): bool
+    {
+        if ($this->goldenApplying) {
+            return false;
+        }
+
+        $this->goldenError = null;
+
+        // Unlicensed or unchecked = explicit skip (do not call Golden bootstrap).
+        if (! $this->isSeoLicensed || ! $this->overwriteGoldenConfiguration) {
+            return true;
+        }
+
+        // Already aligned — no need to re-run bootstrap on continue.
+        if ($this->goldenStatus === 'in_sync' || $this->goldenSuccess) {
+            return true;
+        }
+
+        $this->goldenApplying = true;
+        try {
+            return $this->applyGoldenConfiguration();
+        } finally {
+            $this->goldenApplying = false;
         }
     }
 
@@ -963,6 +1020,10 @@ class QuickSetupWizard extends Page
 
     public function nextStep(): void
     {
+        if ($this->currentStep === 2 && ! $this->completeStep2BeforeAdvance()) {
+            return;
+        }
+
         if ($this->currentStep < 5) {
             $this->goToStep($this->currentStep + 1);
         }

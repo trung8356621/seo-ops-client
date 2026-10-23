@@ -278,6 +278,135 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent->assertSet('serverUrl', 'http://localhost:3000');
     }
 
+    public function test_step2_continue_checked_runs_bootstrap_and_advances_on_success(): void
+    {
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->assertSet('overwriteGoldenConfiguration', true);
+        $testComponent->set('currentStep', 2)
+            ->set('isSeoLicensed', true)
+            ->set('goldenStatus', 'blank')
+            ->set('overwriteGoldenConfiguration', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 3)
+            ->assertSet('goldenSuccess', true)
+            ->assertSet('goldenError', null);
+
+        $this->assertCount(1, $fake->calls);
+        $this->assertTrue($fake->calls[0]['overwrite']);
+    }
+
+    public function test_step2_continue_unchecked_skips_bootstrap_and_advances(): void
+    {
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('currentStep', 2)
+            ->set('isSeoLicensed', true)
+            ->set('goldenStatus', 'customized')
+            ->set('overwriteGoldenConfiguration', false)
+            ->call('nextStep')
+            ->assertSet('currentStep', 3)
+            ->assertSet('goldenError', null);
+
+        $this->assertCount(0, $fake->calls);
+    }
+
+    public function test_step2_continue_checked_stays_on_step_on_bootstrap_failure(): void
+    {
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'download_failed',
+            'imported' => false,
+            'error_code' => 'server_offline',
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('currentStep', 2)
+            ->set('isSeoLicensed', true)
+            ->set('goldenStatus', 'blank')
+            ->set('overwriteGoldenConfiguration', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 2)
+            ->assertSet('goldenSuccess', false);
+
+        $error = (string) $testComponent->get('goldenError');
+        $this->assertStringContainsString('server_offline', $error);
+        $this->assertCount(1, $fake->calls);
+    }
+
+    public function test_step2_continue_duplicate_submission_is_ignored_while_applying(): void
+    {
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->set('currentStep', 2)
+            ->set('isSeoLicensed', true)
+            ->set('goldenStatus', 'blank')
+            ->set('overwriteGoldenConfiguration', true)
+            ->set('goldenApplying', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 2);
+
+        $this->assertCount(0, $fake->calls);
+    }
+
+    public function test_step2_view_has_no_separate_apply_button_and_wires_continue_to_next_step(): void
+    {
+        $view = (string) file_get_contents(resource_path('views/filament/pages/quick-setup-wizard.blade.php'));
+        $this->assertStringNotContainsString('wire:click="applyGoldenConfiguration"', $view);
+        $this->assertStringNotContainsString('Ghi đè bằng Cấu hình chuẩn', $view);
+        $this->assertStringContainsString('Ghi đè cấu hình hiện có bằng Golden Configuration', $view);
+        $this->assertStringContainsString('wire:click="nextStep"', $view);
+        $this->assertStringContainsString('Đang áp dụng cấu hình…', $view);
+
+        $source = (string) file_get_contents((new \ReflectionClass(QuickSetupWizard::class))->getFileName());
+        $this->assertStringContainsString('completeStep2BeforeAdvance', $source);
+        $this->assertStringContainsString('overwriteGoldenConfiguration = true', $source);
+    }
+
+    /**
+     * @param  callable(): array<string, mixed>  $responder
+     * @return object{calls: list<array{userId: int, root: ?string, overwrite: bool}>}
+     */
+    private function bindFakeGoldenBootstrap(callable $responder): object
+    {
+        $fake = new class($responder) {
+            /** @var list<array{userId: int, root: ?string, overwrite: bool}> */
+            public array $calls = [];
+
+            /** @param callable(): array<string, mixed> $responder */
+            public function __construct(private $responder) {}
+
+            public function bootstrap(int $userId, ?string $targetRoot = null, bool $overwriteExisting = false): array
+            {
+                $this->calls[] = [
+                    'userId' => $userId,
+                    'root' => $targetRoot,
+                    'overwrite' => $overwriteExisting,
+                ];
+
+                return ($this->responder)();
+            }
+        };
+
+        $this->app->instance(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\GoldenBootstrapService::class,
+            $fake,
+        );
+
+        return $fake;
+    }
+
     public function test_server_connection_test_success_with_health_ping(): void
     {
         \Illuminate\Support\Facades\Http::fake([
