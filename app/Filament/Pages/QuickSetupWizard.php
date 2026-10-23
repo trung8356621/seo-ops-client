@@ -15,6 +15,7 @@ use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Exceptions\H1EnrollmentException;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Reconcile\LicenseReconcileService;
+use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
@@ -53,12 +54,40 @@ class QuickSetupWizard extends Page
     public bool $isEnrolled = false;
     public ?array $installationDetails = null;
 
+    public const MAX_STEP = 4;
+
+    public const COMMERCIAL_GATE_MESSAGE = 'Chưa có dịch vụ được kích hoạt. Vui lòng liên hệ quản trị viên hoặc đồng bộ lại quyền sử dụng.';
+
+    /**
+     * Commercial services for Step 1 badges (seo / seeding / social-automation).
+     * Sourced only from verified H1 snapshot — never from enrollment alone; never includes agent.
+     *
+     * @var list<array{key: string, label: string, enabled: bool, quota_label: ?string}>
+     */
+    public array $commercialServices = [];
+
+    public bool $hasCommercialServiceEnabled = false;
+
+    public ?string $commercialGateMessage = null;
+
+    /** True while License Reconcile is in flight (locks Continue). */
+    public bool $reconcileRunning = false;
+
+    /** Connection/timeout error from last reconcile attempt (null when OK). */
+    public ?string $reconcileError = null;
+
+    /**
+     * Prevents duplicate auto-reconcile from Livewire rerender / step navigation.
+     * Reset only on explicit Retry after failure is not required — Retry calls reconcile directly.
+     */
+    public bool $step1AutoReconcileCompleted = false;
+
     // STEP 2 Properties
-    /** Commercial SEO gate (H1 snapshot / fail-open). Used by Step 4 site creation — not Golden. */
+    /** Commercial SEO from verified snapshot (checklist / Site Management). */
     public bool $isSeoLicensed = false;
     /**
      * Golden-eligible SEO entitlement from {@see SeoEntitlementProbe} / local presentation store.
-     * Must match GoldenBootstrapService — do not use ServiceEntitlementGate fail-open here.
+     * Required for Apply only — Download uses enrollment credential.
      */
     public bool $goldenSeoEntitled = false;
     public string $goldenStatus = 'blank'; // blank, in_sync, customized, unlicensed, error
@@ -66,10 +95,18 @@ class QuickSetupWizard extends Page
     public array $goldenCounts = ['prompts' => 0, 'workflows' => 0, 'bindings' => 0];
     public ?string $goldenError = null;
     public bool $goldenSuccess = false;
-    /** Default checked: apply Golden Configuration even when customized config already exists. */
+    /**
+     * Apply overwrite consent. Auto-true on blank; false on customized until user checks.
+     * Checkbox is only shown when status is customized.
+     */
     public bool $overwriteGoldenConfiguration = true;
     /** Guards Step 2 continue against duplicate Livewire submissions while bootstrap runs. */
     public bool $goldenApplying = false;
+    public bool $goldenDownloading = false;
+    /** none | pending_apply | applied | error */
+    public string $goldenPackageStatus = 'none';
+    public ?string $goldenPackageVersion = null;
+    public ?string $goldenDownloadMessage = null;
 
     // STEP 3 Properties
     public string $aiProvider = 'gemini';
@@ -79,13 +116,10 @@ class QuickSetupWizard extends Page
     public ?string $aiTestDetails = null;
     public array $existingAiConnections = [];
 
-    // STEP 4 Properties
-    public string $newSiteDomain = '';
-    public bool $newSiteSsl = true;
+    /** Checklist / Site Management summary (no Quick Setup website creation step). */
     public array $existingSites = [];
-    public ?string $siteError = null;
 
-    // STEP 5 Properties
+    // STEP 4 Properties (completion)
     public array $checklist = [];
 
     public static function getNavigationGroup(): ?string
@@ -126,11 +160,30 @@ class QuickSetupWizard extends Page
         abort_unless(static::canAccess(), 403);
 
         $requestedStep = (int) request()->query('step', 1);
-        if ($requestedStep >= 1 && $requestedStep <= 5) {
+        // Legacy sessions used 5 steps (Website + Completion). Map old step 5 → Completion (4).
+        if ($requestedStep >= 5) {
+            $requestedStep = self::MAX_STEP;
+        }
+        if ($requestedStep >= 1 && $requestedStep <= self::MAX_STEP) {
             $this->currentStep = $requestedStep;
         }
 
         $this->loadAllStepData();
+        $this->enforceCommercialStepGate();
+        if ($this->currentStep === 2) {
+            $this->runAutomaticGoldenLifecycle();
+        }
+    }
+
+    public function hydrate(): void
+    {
+        $this->enforceCommercialStepGate();
+    }
+
+    public function updatedCurrentStep(mixed $value): void
+    {
+        unset($value);
+        $this->enforceCommercialStepGate();
     }
 
     protected function getViewData(): array
@@ -145,6 +198,12 @@ class QuickSetupWizard extends Page
             'enrollmentToken' => $this->enrollmentToken,
             'enrollmentError' => $this->enrollmentError,
             'enrollmentSuccess' => $this->enrollmentSuccess,
+            'commercialServices' => $this->commercialServices,
+            'hasCommercialServiceEnabled' => $this->hasCommercialServiceEnabled,
+            'commercialGateMessage' => $this->commercialGateMessage,
+            'reconcileRunning' => $this->reconcileRunning,
+            'reconcileError' => $this->reconcileError,
+            'step1AutoReconcileCompleted' => $this->step1AutoReconcileCompleted,
             'isSeoLicensed' => $this->isSeoLicensed,
             'goldenSeoEntitled' => $this->goldenSeoEntitled,
             'goldenStatus' => $this->goldenStatus,
@@ -154,16 +213,17 @@ class QuickSetupWizard extends Page
             'goldenSuccess' => $this->goldenSuccess,
             'overwriteGoldenConfiguration' => $this->overwriteGoldenConfiguration,
             'goldenApplying' => $this->goldenApplying,
+            'goldenDownloading' => $this->goldenDownloading,
+            'goldenPackageStatus' => $this->goldenPackageStatus,
+            'goldenPackageVersion' => $this->goldenPackageVersion,
+            'goldenDownloadMessage' => $this->goldenDownloadMessage,
             'aiProvider' => $this->aiProvider,
             'aiConnectionName' => $this->aiConnectionName,
             'aiApiKey' => $this->aiApiKey,
             'aiTestStatus' => $this->aiTestStatus,
             'aiTestDetails' => $this->aiTestDetails,
             'existingAiConnections' => $this->existingAiConnections,
-            'newSiteDomain' => $this->newSiteDomain,
-            'newSiteSsl' => $this->newSiteSsl,
             'existingSites' => $this->existingSites,
-            'siteError' => $this->siteError,
             'checklist' => $this->checklist,
         ];
     }
@@ -173,8 +233,8 @@ class QuickSetupWizard extends Page
         $this->loadStep1Data();
         $this->loadStep2Data();
         $this->loadStep3Data();
+        $this->loadSitesSummary();
         $this->loadStep4Data();
-        $this->loadStep5Data();
     }
 
     // ==========================================
@@ -187,30 +247,152 @@ class QuickSetupWizard extends Page
         $installation = $installations->currentInstallation();
         $this->isEnrolled = $installations->isEnrolled();
         $this->serverUrl = $installations->getEffectiveControlServerUrl();
+        $this->refreshCommercialServices();
 
         if ($installation instanceof H1Installation && $this->isEnrolled) {
             $cred = $installations->activeCredential($installation->installation_id);
-            $services = is_array($installation->verified_snapshot['services'] ?? null)
-                ? $installation->verified_snapshot['services']
-                : [];
-
-            $seo = $services['seo'] ?? [];
-            $seeding = $services['seeding'] ?? [];
+            $seo = $this->commercialServiceRow('seo');
+            $seeding = $this->commercialServiceRow('seeding');
+            $social = $this->commercialServiceRow('social-automation');
 
             $this->installationDetails = [
                 'installation_id' => $installation->installation_id,
                 'control_server_url' => (string) ($installation->control_server_url ?: config('h1-license.base_url', '—')),
                 'credential_version' => $installation->credential_version ? "v{$installation->credential_version}" : ($cred ? "v{$cred->version}" : 'v1'),
                 'last_reconciled' => $installation->validated_at ? $installation->validated_at->format('d/m/Y H:i:s') : 'Chưa có',
-                'seo_active' => ! empty($seo['enabled']) && empty($seo['revoked_at']),
-                'seo_quota' => isset($seo['quota']) ? "{$seo['quota']} domains" : 'Không giới hạn',
-                'seo_valid_until' => ! empty($seo['valid_until']) ? (string) $seo['valid_until'] : '—',
-                'seeding_active' => ! empty($seeding['enabled']) && empty($seeding['revoked_at']),
-                'seeding_valid_until' => ! empty($seeding['valid_until']) ? (string) $seeding['valid_until'] : '—',
+                'seo_active' => (bool) ($seo['enabled'] ?? false),
+                'seo_quota' => $seo['quota_label'] ?? null,
+                'seeding_active' => (bool) ($seeding['enabled'] ?? false),
+                'social_active' => (bool) ($social['enabled'] ?? false),
             ];
         } else {
             $this->installationDetails = null;
         }
+
+        if ($this->hasCommercialServiceEnabled) {
+            $this->commercialGateMessage = null;
+        }
+    }
+
+    /**
+     * Verified H1 commercial entitlements only (seo / seeding / social-automation).
+     * Agent is ignored. Enrollment alone never implies Enabled.
+     */
+    public function refreshCommercialServices(): void
+    {
+        $catalog = [
+            'seo' => 'SEO',
+            'seeding' => 'Seeding',
+            'social-automation' => 'Social Automation',
+        ];
+
+        $this->commercialServices = [];
+        $this->hasCommercialServiceEnabled = false;
+        $this->isSeoLicensed = false;
+
+        $installations = app(InstallationStateRepository::class);
+        $installation = $installations->currentInstallation();
+        $mapper = app(EntitlementSnapshotMapper::class);
+
+        $snapshot = ($installation instanceof H1Installation && is_array($installation->verified_snapshot))
+            ? $installation->verified_snapshot
+            : null;
+        $productAllows = $this->productSnapshotAllowsCommercial($snapshot, $mapper);
+        $services = is_array($snapshot['services'] ?? null) ? $snapshot['services'] : [];
+
+        foreach ($catalog as $key => $label) {
+            $row = is_array($services[$key] ?? null) ? $services[$key] : null;
+            $enabled = $productAllows
+                && is_array($row)
+                && $mapper->serviceCurrentlyLicensed($row)
+                && $this->servicePassesProductDeadline($row, $snapshot, $mapper);
+
+            $quotaLabel = null;
+            if (is_array($row) && array_key_exists('quota', $row) && is_numeric($row['quota'])) {
+                $quotaLabel = $key === 'seo'
+                    ? ((int) $row['quota']).' domains'
+                    : (string) (int) $row['quota'];
+            }
+
+            $this->commercialServices[] = [
+                'key' => $key,
+                'label' => $label,
+                'enabled' => $enabled,
+                'quota_label' => $quotaLabel,
+            ];
+
+            if ($enabled) {
+                $this->hasCommercialServiceEnabled = true;
+            }
+            if ($key === 'seo') {
+                $this->isSeoLicensed = $enabled;
+            }
+        }
+    }
+
+    public function canContinuePastCommercialGate(): bool
+    {
+        $this->refreshCommercialServices();
+
+        return $this->hasCommercialServiceEnabled;
+    }
+
+    /**
+     * Block Step 2–4 when no commercial service is Enabled (URL / goToStep / Livewire state).
+     */
+    public function enforceCommercialStepGate(): void
+    {
+        $this->refreshCommercialServices();
+        if ($this->currentStep > 1 && ! $this->hasCommercialServiceEnabled) {
+            $this->currentStep = 1;
+            $this->commercialGateMessage = self::COMMERCIAL_GATE_MESSAGE;
+        }
+    }
+
+    /**
+     * @return array{key: string, label: string, enabled: bool, quota_label: ?string}|null
+     */
+    private function commercialServiceRow(string $key): ?array
+    {
+        foreach ($this->commercialServices as $row) {
+            if (($row['key'] ?? '') === $key) {
+                return $row;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Product-level revoke blocks all commercial services. Expiry is a per-service backstop.
+     *
+     * @param  array<string, mixed>|null  $snapshot
+     */
+    private function productSnapshotAllowsCommercial(?array $snapshot, EntitlementSnapshotMapper $mapper): bool
+    {
+        unset($mapper);
+
+        return $snapshot !== null && empty($snapshot['revoked_at']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $service
+     * @param  array<string, mixed>|null  $snapshot
+     */
+    private function servicePassesProductDeadline(array $service, ?array $snapshot, EntitlementSnapshotMapper $mapper): bool
+    {
+        if ($snapshot === null) {
+            return false;
+        }
+        if (! empty($service['valid_until']) || ! empty($service['grace_until'])) {
+            return true;
+        }
+        $deadline = $snapshot['grace_until'] ?? $snapshot['valid_until'] ?? null;
+        if (is_string($deadline) && $deadline !== '' && ! $mapper->timestampAllows($deadline)) {
+            return false;
+        }
+
+        return true;
     }
 
     public function testServerConnection(): void
@@ -334,7 +516,9 @@ class QuickSetupWizard extends Page
 
             $this->enrollmentSuccess = true;
             $this->enrollmentToken = '';
+            $this->step1AutoReconcileCompleted = false;
             $this->loadAllStepData();
+            $this->maybeAutoReconcileOnStep1();
 
             Notification::make()
                 ->title('Kích hoạt dịch vụ thành công!')
@@ -370,34 +554,83 @@ class QuickSetupWizard extends Page
         }
     }
 
+    /**
+     * Auto-reconcile when entering Step 1 (wire:init). Idempotent per component lifetime.
+     */
+    public function maybeAutoReconcileOnStep1(): void
+    {
+        if ($this->step1AutoReconcileCompleted || $this->reconcileRunning) {
+            return;
+        }
+
+        if (! $this->isEnrolled) {
+            $this->step1AutoReconcileCompleted = true;
+
+            return;
+        }
+
+        $this->runStep1Reconcile();
+    }
+
+    /**
+     * Manual Retry — always attempts reconcile (does not create orders / invent entitlements).
+     */
     public function reconcileLicense(): void
     {
-        try {
-            $reconcile = app(LicenseReconcileService::class);
-            $result = $reconcile->reconcile();
+        if ($this->reconcileRunning) {
+            return;
+        }
 
-            $this->loadAllStepData();
+        $this->runStep1Reconcile();
+    }
+
+    /**
+     * Runs existing {@see LicenseReconcileService}; refreshes commercial badges from verified snapshot only.
+     */
+    public function runStep1Reconcile(): void
+    {
+        if ($this->reconcileRunning) {
+            return;
+        }
+
+        if (! $this->isEnrolled) {
+            $this->step1AutoReconcileCompleted = true;
+
+            return;
+        }
+
+        $this->reconcileRunning = true;
+        $this->reconcileError = null;
+
+        try {
+            $result = app(LicenseReconcileService::class)->reconcile();
+            $this->loadStep1Data();
 
             if ($result['offline'] ?? false) {
-                Notification::make()
-                    ->title('OPS-SERVER Ngoại tuyến')
-                    ->body('Máy chủ OPS-SERVER tạm thời ngoại tuyến. Đang dùng bản quyền xác minh gần nhất.')
-                    ->warning()
-                    ->send();
-            } else {
-                Notification::make()
-                    ->title('Đã đồng bộ bản quyền thành công')
-                    ->body('Bản quyền đã được xác minh lại với OPS-SERVER.')
-                    ->success()
-                    ->send();
+                $this->reconcileError = 'Không kết nối được OPS-SERVER (offline hoặc timeout). Đang dùng bản quyền đã xác minh gần nhất (nếu có).';
+            } elseif (! $this->hasCommercialServiceEnabled) {
+                $this->commercialGateMessage = self::COMMERCIAL_GATE_MESSAGE;
             }
         } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Đồng bộ thất bại')
-                ->body('Lỗi: ' . $e->getMessage())
-                ->danger()
-                ->send();
+            $this->reconcileError = $this->formatReconcileConnectionError($e);
+            $this->loadStep1Data();
+        } finally {
+            $this->reconcileRunning = false;
+            $this->step1AutoReconcileCompleted = true;
         }
+    }
+
+    private function formatReconcileConnectionError(\Throwable $e): string
+    {
+        $msg = $e->getMessage();
+        if (str_contains($msg, 'timed out') || str_contains($msg, 'cURL error 28') || str_contains($msg, 'timeout')) {
+            return 'Kết nối OPS-SERVER quá thời gian chờ (timeout). Vui lòng thử lại.';
+        }
+        if (str_contains($msg, 'Connection refused') || str_contains($msg, 'cURL error 7') || str_contains($msg, 'server_offline')) {
+            return 'Không kết nối được OPS-SERVER. Vui lòng thử lại.';
+        }
+
+        return 'Lỗi đồng bộ bản quyền: '.$msg;
     }
 
     // ==========================================
@@ -407,9 +640,9 @@ class QuickSetupWizard extends Page
     public function loadStep2Data(): void
     {
         $userId = (int) Auth::id();
-        // Commercial gate kept for other steps; Golden eligibility uses the same probe as bootstrap.
-        $this->isSeoLicensed = app(ServiceEntitlementGate::class)->allows('seo');
+        $this->refreshCommercialServices();
         $this->refreshGoldenSeoEntitlement();
+        $this->refreshGoldenPackageState();
 
         $promptsCount = 0;
         $workflowsCount = 0;
@@ -425,7 +658,8 @@ class QuickSetupWizard extends Page
             if (class_exists(\Omnichannel\Addons\Seo\Services\SeoCreateArticleSettingsService::class)) {
                 $bindingsCount = count(app(\Omnichannel\Addons\Seo\Services\SeoCreateArticleSettingsService::class)->getPromptHookBindings());
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
         $this->goldenCounts = [
             'prompts' => $promptsCount,
@@ -433,10 +667,18 @@ class QuickSetupWizard extends Page
             'bindings' => $bindingsCount,
         ];
 
-        if (! $this->goldenSeoEntitled) {
-            $this->markGoldenPendingLicense('unlicensed_service');
+        if (! $this->isEnrolled) {
+            $this->goldenStatus = 'unlicensed';
+            $this->goldenReason = 'Cần kích hoạt Installation (Enrollment) trước khi tải Golden Package từ OPS-SERVER.';
 
             return;
+        }
+
+        if (! $this->goldenSeoEntitled) {
+            $this->goldenStatus = 'unlicensed';
+            $this->goldenReason = $this->goldenPackageStatus === 'pending_apply'
+                ? 'Golden đã tải. SEO chưa kích hoạt — bỏ qua Apply cấu hình SEO.'
+                : 'Golden sẽ được tải tự động. SEO chưa kích hoạt — không Apply cấu hình SEO.';
         }
 
         try {
@@ -444,31 +686,73 @@ class QuickSetupWizard extends Page
             $assessment = $blankAssessor->assess($userId);
 
             if ($assessment['blank'] === true) {
-                $this->goldenStatus = 'blank';
-                $this->goldenReason = 'Chưa nạp cấu hình chuẩn. Sẵn sàng nạp.';
+                if ($this->goldenSeoEntitled) {
+                    $this->goldenStatus = 'blank';
+                    $this->goldenReason = 'Cấu hình trống — hệ thống sẽ tự Apply Golden sau khi tải package.';
+                    $this->overwriteGoldenConfiguration = true;
+                }
             } else {
-                // Client has configuration, compare against baseline
                 $coordinator = app(ConfigurationSyncCoordinator::class);
                 $comparison = $coordinator->compare($userId);
                 $outcome = $comparison['outcome'] ?? 'customized';
 
                 if ($outcome === 'in_sync') {
                     $this->goldenStatus = 'in_sync';
-                    $this->goldenReason = 'Cấu hình hiện tại khớp hoàn toàn với cấu hình chuẩn (Golden Configuration).';
-                } else {
+                    $this->goldenReason = 'Cấu hình hiện tại khớp Golden Configuration.';
+                } elseif ($this->goldenSeoEntitled) {
                     $this->goldenStatus = 'customized';
-                    $this->goldenReason = 'Hệ thống phát hiện cấu hình đã được tùy chỉnh. Có thể ghi đè bằng Golden Configuration nếu bạn chọn tùy chọn bên dưới.';
+                    $this->goldenReason = 'Đã có cấu hình tùy chỉnh. Chỉ ghi đè khi bạn đồng ý bên dưới.';
+                    $this->overwriteGoldenConfiguration = false;
                 }
             }
         } catch (\Throwable $e) {
-            $this->goldenStatus = 'error';
-            $this->goldenReason = 'Không thể kiểm tra cấu hình: ' . $e->getMessage();
+            if ($this->goldenSeoEntitled) {
+                $this->goldenStatus = 'error';
+                $this->goldenReason = 'Không thể kiểm tra cấu hình: '.$e->getMessage();
+            }
         }
     }
 
     /**
-     * Same source of truth as {@see GoldenBootstrapService} entitlement preflight.
+     * On entering Step 2: download Golden if needed; auto-apply only when SEO + blank.
      */
+    public function runAutomaticGoldenLifecycle(): void
+    {
+        if (! $this->isEnrolled || $this->goldenDownloading || $this->goldenApplying) {
+            return;
+        }
+
+        $this->refreshGoldenSeoEntitlement();
+        $this->refreshGoldenPackageState();
+
+        if ($this->goldenPackageStatus === 'none' || $this->goldenPackageStatus === 'error') {
+            $this->downloadGoldenPackage(quiet: true);
+        }
+
+        if (! $this->goldenSeoEntitled) {
+            // Download-only path for Seeding / Social — not an install failure.
+            if ($this->goldenError !== null && str_contains($this->goldenError, 'SEO')) {
+                $this->goldenError = null;
+            }
+
+            return;
+        }
+
+        if (in_array($this->goldenStatus, ['in_sync', 'customized'], true) || $this->goldenPackageStatus === 'applied' || $this->goldenSuccess) {
+            return;
+        }
+
+        if ($this->goldenStatus === 'blank' && in_array($this->goldenPackageStatus, ['pending_apply', 'applied'], true)) {
+            $this->overwriteGoldenConfiguration = true;
+            $this->goldenApplying = true;
+            try {
+                $this->applyGoldenConfiguration();
+            } finally {
+                $this->goldenApplying = false;
+            }
+        }
+    }
+
     public function refreshGoldenSeoEntitlement(): bool
     {
         $this->goldenSeoEntitled = app(SeoEntitlementProbe::class)->seoServiceEnabled();
@@ -476,23 +760,92 @@ class QuickSetupWizard extends Page
         return $this->goldenSeoEntitled;
     }
 
-    /**
-     * Enrolled-but-unlicensed (or not yet entitled): skip Golden, keep data, do not mark synced.
-     */
-    private function markGoldenPendingLicense(string $code = 'unlicensed_service'): void
+    public function refreshGoldenPackageState(): void
     {
-        $this->goldenSuccess = false;
-        $this->goldenSeoEntitled = false;
-        $this->goldenStatus = 'unlicensed';
-        $this->goldenError = null;
-        $this->goldenReason = match ($code) {
-            'blocked_on_h1' => 'Chưa có credential enrollment — Golden sẽ khả dụng sau khi kích hoạt thiết bị.',
-            default => 'SEO chưa được cấp quyền trên OPS-SERVER. Đã bỏ qua nạp Golden; có thể đồng bộ sau khi entitlement được cấp.',
-        };
+        $service = app(GoldenBootstrapService::class);
+        $local = $service->inspectLocalPackage();
+        $statePackage = null;
+        try {
+            $statePackage = app(\Omnichannel\Addons\Seo\Services\ConfigurationSync\ConfigurationSyncStateStore::class)->read()['package'] ?? null;
+        } catch (\Throwable) {
+        }
+
+        if (is_array($local)) {
+            $this->goldenPackageVersion = (string) $local['package_version'];
+            $status = is_array($statePackage) ? (string) ($statePackage['status'] ?? 'pending_apply') : 'pending_apply';
+            $this->goldenPackageStatus = $status === 'applied' ? 'applied' : 'pending_apply';
+            $this->goldenDownloadMessage = $this->goldenPackageStatus === 'applied'
+                ? 'Package đã áp dụng (v'.$this->goldenPackageVersion.').'
+                : 'Package đã tải (v'.$this->goldenPackageVersion.') — chờ áp dụng.';
+            return;
+        }
+
+        $this->goldenPackageStatus = 'none';
+        $this->goldenPackageVersion = null;
+        $this->goldenDownloadMessage = $this->isEnrolled
+            ? 'Chưa tải Golden Package.'
+            : 'Enrollment bắt buộc trước khi tải package.';
     }
 
     /**
-     * Run Golden bootstrap/overwrite using the Step 2 checkbox.
+     * Download/stage Golden package — enrollment credential only (no SEO entitlement).
+     */
+    public function downloadGoldenPackage(bool $quiet = false): void
+    {
+        $this->goldenError = null;
+        $this->goldenDownloading = true;
+
+        try {
+            if (! $this->isEnrolled) {
+                $this->goldenError = 'Chưa Enrollment — không thể tải Golden Package.';
+                if (! $quiet) {
+                    Notification::make()->title('Không thể tải package')->body($this->goldenError)->warning()->send();
+                }
+
+                return;
+            }
+
+            $res = app(GoldenBootstrapService::class)->downloadPackage();
+            $status = (string) ($res['status'] ?? 'download_failed');
+
+            if (in_array($status, ['downloaded', 'already_downloaded'], true)) {
+                $this->refreshGoldenPackageState();
+                if (! $quiet) {
+                    Notification::make()
+                        ->title($status === 'already_downloaded' ? 'Package đã sẵn sàng' : 'Tải Golden Package thành công')
+                        ->body('Package đã lưu tại resources/golden-configuration. Chưa ghi vào database.')
+                        ->success()
+                        ->send();
+                }
+                $this->loadStep2Data();
+
+                return;
+            }
+
+            if ($status === 'blocked_on_h1') {
+                $this->goldenError = 'Thiếu credential Installation — hoàn tất Kích hoạt dịch vụ trước.';
+            } else {
+                $err = (string) ($res['error_code'] ?? $status);
+                $this->goldenError = 'Tải Golden Package thất bại: '.$err;
+                $this->goldenPackageStatus = 'error';
+            }
+
+            if (! $quiet) {
+                Notification::make()->title('Lỗi tải package')->body($this->goldenError)->danger()->send();
+            }
+        } catch (\Throwable $e) {
+            $this->goldenError = 'Lỗi tải package: '.$e->getMessage();
+            $this->goldenPackageStatus = 'error';
+            if (! $quiet) {
+                Notification::make()->title('Lỗi ngoại lệ')->body($this->goldenError)->danger()->send();
+            }
+        } finally {
+            $this->goldenDownloading = false;
+        }
+    }
+
+    /**
+     * Apply staged Golden package into DB (requires SEO entitlement).
      *
      * @return bool true when the wizard may leave Step 2
      */
@@ -503,10 +856,13 @@ class QuickSetupWizard extends Page
         $userId = (int) Auth::id();
 
         if (! $this->refreshGoldenSeoEntitlement()) {
-            $this->markGoldenPendingLicense('unlicensed_service');
+            $this->goldenStatus = 'unlicensed';
+            $this->goldenReason = $this->goldenPackageStatus === 'pending_apply'
+                ? 'Golden đã tải, đang chờ quyền SEO để áp dụng.'
+                : 'SEO chưa được cấp quyền — bỏ qua Apply và tiếp tục.';
 
             Notification::make()
-                ->title('Bỏ qua Cấu hình chuẩn')
+                ->title('Bỏ qua áp dụng Golden')
                 ->body($this->goldenReason)
                 ->warning()
                 ->send();
@@ -515,8 +871,7 @@ class QuickSetupWizard extends Page
         }
 
         try {
-            $bootstrapService = app(GoldenBootstrapService::class);
-            $res = $bootstrapService->bootstrap(
+            $res = app(GoldenBootstrapService::class)->applyPackage(
                 $userId,
                 null,
                 $this->overwriteGoldenConfiguration,
@@ -548,30 +903,30 @@ class QuickSetupWizard extends Page
                 return true;
             }
 
-            // Local probe / bootstrap preflight — not an OPS-SERVER network failure.
             if (in_array($status, ['unlicensed_service', 'blocked_on_h1'], true)) {
-                $this->markGoldenPendingLicense($status);
-                Notification::make()
-                    ->title('Bỏ qua Cấu hình chuẩn')
-                    ->body($this->goldenReason)
-                    ->warning()
-                    ->send();
+                $this->goldenStatus = 'unlicensed';
+                $this->goldenReason = $status === 'blocked_on_h1'
+                    ? 'Chưa có credential enrollment.'
+                    : 'Golden đã tải (nếu có), đang chờ quyền SEO để áp dụng.';
+                Notification::make()->title('Bỏ qua áp dụng Golden')->body($this->goldenReason)->warning()->send();
 
                 return true;
             }
 
             $errCode = $res['error_code'] ?? $status;
-            $this->goldenError = 'Nạp cấu hình không thành công: '.$errCode.'. Kiểm tra kết nối OPS-SERVER rồi thử lại.';
+            $this->goldenError = 'Áp dụng cấu hình không thành công: '.$errCode.'. Package đã tải (nếu có) vẫn được giữ.';
+            $this->refreshGoldenPackageState();
 
             Notification::make()
-                ->title('Lỗi nạp cấu hình')
+                ->title('Lỗi áp dụng cấu hình')
                 ->body($this->goldenError)
                 ->danger()
                 ->send();
 
             return false;
         } catch (\Throwable $e) {
-            $this->goldenError = 'Lỗi nạp cấu hình: '.$e->getMessage();
+            $this->goldenError = 'Lỗi áp dụng cấu hình: '.$e->getMessage();
+            $this->refreshGoldenPackageState();
 
             Notification::make()
                 ->title('Lỗi ngoại lệ')
@@ -584,34 +939,43 @@ class QuickSetupWizard extends Page
     }
 
     /**
-     * Step 2 continue: apply Golden when entitled + overwrite checked; otherwise skip and advance.
+     * Step 2 continue: ensure download; apply when SEO + (blank or overwrite consented).
      *
      * @return bool true when navigation to Step 3 is allowed
      */
     public function completeStep2BeforeAdvance(): bool
     {
-        if ($this->goldenApplying) {
+        if ($this->goldenApplying || $this->goldenDownloading) {
             return false;
         }
 
-        $this->goldenError = null;
         $this->refreshGoldenSeoEntitlement();
+        $this->refreshGoldenPackageState();
 
-        // Enrolled-but-unlicensed (or no SEO presentation): skip Golden import; do not mark synced.
+        if ($this->isEnrolled && in_array($this->goldenPackageStatus, ['none', 'error'], true)) {
+            $this->downloadGoldenPackage(quiet: true);
+        }
+
         if (! $this->goldenSeoEntitled) {
-            $this->markGoldenPendingLicense('unlicensed_service');
+            $this->goldenStatus = 'unlicensed';
+            $this->goldenReason = $this->goldenPackageStatus === 'pending_apply'
+                ? 'Golden đã tải. SEO chưa kích hoạt — bỏ qua Apply cấu hình SEO.'
+                : 'SEO chưa kích hoạt — tiếp tục Quick Setup không Apply SEO.';
+            $this->goldenError = null;
 
             return true;
         }
 
-        // Explicit opt-out — preserve existing configuration.
-        if (! $this->overwriteGoldenConfiguration) {
+        if ($this->goldenStatus === 'in_sync' || $this->goldenSuccess || $this->goldenPackageStatus === 'applied') {
             return true;
         }
 
-        // Already aligned — no need to re-run bootstrap on continue.
-        if ($this->goldenStatus === 'in_sync' || $this->goldenSuccess) {
+        if ($this->goldenStatus === 'customized' && ! $this->overwriteGoldenConfiguration) {
             return true;
+        }
+
+        if ($this->goldenStatus === 'blank') {
+            $this->overwriteGoldenConfiguration = true;
         }
 
         $this->goldenApplying = true;
@@ -786,15 +1150,13 @@ class QuickSetupWizard extends Page
         }
     }
 
-    // ==========================================
-    // STEP 4 — WEBSITE ĐẦU TIÊN
-    // ==========================================
-
-    public function loadStep4Data(): void
+    /**
+     * Site inventory for completion checklist (Installer Domain Anchor + ordinary sites).
+     */
+    public function loadSitesSummary(): void
     {
         $userId = (int) Auth::id();
-        $gate = app(ServiceEntitlementGate::class);
-        $this->isSeoLicensed = $gate->allows('seo');
+        $this->isSeoLicensed = app(ServiceEntitlementGate::class)->allows('seo');
 
         $sites = Site::query()
             ->where('user_id', $userId)
@@ -808,6 +1170,7 @@ class QuickSetupWizard extends Page
                 'domain' => (string) $site->domain,
                 'status' => (string) $site->status,
                 'ssl' => (bool) $site->ssl,
+                'is_anchor' => (bool) ($site->h1_is_anchor ?? false),
                 'created_at' => $site->created_at ? $site->created_at->format('d/m/Y') : '—',
             ];
         }
@@ -815,74 +1178,11 @@ class QuickSetupWizard extends Page
         $this->existingSites = $list;
     }
 
-    public function createSite(): void
-    {
-        $this->siteError = null;
-
-        if (! $this->isSeoLicensed) {
-            $this->siteError = 'Dịch vụ SEO chưa được cấp phép. Không thể thêm website.';
-            Notification::make()
-                ->title('Dịch vụ chưa được cấp phép')
-                ->body($this->siteError)
-                ->warning()
-                ->send();
-            return;
-        }
-
-        $domain = strtolower(trim($this->newSiteDomain));
-        $domain = preg_replace('#^https?://#', '', $domain);
-        $domain = rtrim($domain, '/');
-
-        if ($domain === '') {
-            $this->siteError = 'Vui lòng nhập tên miền website.';
-            return;
-        }
-
-        if (! preg_match('/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/i', $domain)) {
-            $this->siteError = 'Tên miền không đúng định dạng (Ví dụ: example.com).';
-            return;
-        }
-
-        $userId = (int) Auth::id();
-        $exists = Site::query()->where('user_id', $userId)->where('domain', $domain)->exists();
-        if ($exists) {
-            $this->siteError = 'Website này đã tồn tại trong danh sách của bạn.';
-            return;
-        }
-
-        try {
-            // New sites are kept inactive initially
-            Site::create([
-                'user_id' => $userId,
-                'domain' => $domain,
-                'ssl' => $this->newSiteSsl,
-                'status' => 'inactive',
-            ]);
-
-            $this->newSiteDomain = '';
-            $this->loadAllStepData();
-
-            Notification::make()
-                ->title('Đã thêm website thành công')
-                ->body("Website {$domain} đã được tạo với trạng thái Chưa kích hoạt.")
-                ->success()
-                ->send();
-        } catch (\Throwable $e) {
-            $this->siteError = 'Lỗi tạo website: ' . $e->getMessage();
-
-            Notification::make()
-                ->title('Lỗi thêm website')
-                ->body($this->siteError)
-                ->danger()
-                ->send();
-        }
-    }
-
     // ==========================================
-    // STEP 5 — HOÀN TẤT & TỔNG KẾT
+    // STEP 4 — HOÀN TẤT & TỔNG KẾT
     // ==========================================
 
-    public function loadStep5Data(): void
+    public function loadStep4Data(): void
     {
         $gate = app(ServiceEntitlementGate::class);
         $isEnrolled = app(InstallationStateRepository::class)->isEnrolled();
@@ -1001,8 +1301,15 @@ class QuickSetupWizard extends Page
             ];
         }
 
-        // 5. Website
+        // 5. Website (Domain Anchor from Fresh Installer + ordinary sites)
         $sitesCount = count($this->existingSites);
+        $anchorDomain = null;
+        foreach ($this->existingSites as $siteRow) {
+            if (! empty($siteRow['is_anchor'])) {
+                $anchorDomain = (string) $siteRow['domain'];
+                break;
+            }
+        }
         if ($sitesCount > 0) {
             $checklist[] = [
                 'key' => 'sites',
@@ -1010,7 +1317,9 @@ class QuickSetupWizard extends Page
                 'status' => 'complete',
                 'badge' => 'emerald',
                 'status_label' => "Đã có {$sitesCount} website",
-                'description' => 'Đã tạo website đầu tiên trong hệ thống.',
+                'description' => $anchorDomain
+                    ? "Website chính (Domain Anchor): {$anchorDomain}. Quản lý thêm website trong menu Quản lý Website."
+                    : 'Đã có website trong hệ thống (đăng ký từ Fresh Installer hoặc Quản lý Website).',
                 'link' => url('/admin/sites'),
                 'link_label' => 'Danh sách Website',
             ];
@@ -1021,9 +1330,9 @@ class QuickSetupWizard extends Page
                 'status' => 'unavailable',
                 'badge' => 'gray',
                 'status_label' => 'Chưa khả dụng',
-                'description' => 'Yêu cầu bản quyền SEO để quản lý website.',
-                'link' => null,
-                'link_label' => null,
+                'description' => 'Yêu cầu bản quyền SEO để quản lý website bổ sung. Website chính được đăng ký ở Fresh Installer.',
+                'link' => url('/admin/sites'),
+                'link_label' => 'Mở Quản lý Website',
             ];
         } else {
             $checklist[] = [
@@ -1032,7 +1341,7 @@ class QuickSetupWizard extends Page
                 'status' => 'optional',
                 'badge' => 'gray',
                 'status_label' => 'Chưa có website',
-                'description' => 'Bạn có thể thêm website ở Bước 4 hoặc trực tiếp trong menu Quản lý Website.',
+                'description' => 'Website chính nên được đăng ký ở Fresh Installer. Thêm website vệ tinh trong menu Quản lý Website.',
                 'link' => url('/admin/sites'),
                 'link_label' => 'Thêm Website',
             ];
@@ -1072,19 +1381,59 @@ class QuickSetupWizard extends Page
 
     public function goToStep(int $step): void
     {
-        if ($step >= 1 && $step <= 5) {
-            $this->currentStep = $step;
-            $this->loadAllStepData();
+        if ($step >= 5) {
+            $step = self::MAX_STEP;
+        }
+        if ($step < 1 || $step > self::MAX_STEP) {
+            return;
+        }
+
+        if ($step > 1 && ! $this->canContinuePastCommercialGate()) {
+            $this->currentStep = 1;
+            $this->commercialGateMessage = self::COMMERCIAL_GATE_MESSAGE;
+            $this->loadStep1Data();
+            Notification::make()
+                ->title('Chưa thể tiếp tục')
+                ->body(self::COMMERCIAL_GATE_MESSAGE)
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $this->currentStep = $step;
+        $this->loadAllStepData();
+        if ($step === 2) {
+            $this->runAutomaticGoldenLifecycle();
         }
     }
 
     public function nextStep(): void
     {
+        if ($this->currentStep === 1) {
+            if ($this->reconcileRunning) {
+                return;
+            }
+            if (! $this->canContinuePastCommercialGate()) {
+                $this->commercialGateMessage = self::COMMERCIAL_GATE_MESSAGE;
+                Notification::make()
+                    ->title('Chưa thể tiếp tục')
+                    ->body(self::COMMERCIAL_GATE_MESSAGE)
+                    ->warning()
+                    ->send();
+
+                return;
+            }
+            $this->goToStep(2);
+
+            return;
+        }
+
         if ($this->currentStep === 2 && ! $this->completeStep2BeforeAdvance()) {
             return;
         }
 
-        if ($this->currentStep < 5) {
+        if ($this->currentStep < self::MAX_STEP) {
             $this->goToStep($this->currentStep + 1);
         }
     }

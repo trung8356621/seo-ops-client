@@ -106,9 +106,11 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->loadOwnedMigrations();
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
+        $this->registerServiceWidgetHeaderHook();
         $this->registerSupportTicketHeaderHook();
         $this->registerOperationalAlertHook();
         $this->registerGlobalHelpHeaderHook();
+
         $this->registerGlobalHelpAssetsHook();
         $this->registerGlobalHelpDrawerHook();
         $this->registerPerformancePresenceHook();
@@ -139,6 +141,25 @@ final class ClientCoreServiceProvider extends ServiceProvider
             static function (): HtmlString {
                 return new HtmlString(
                     view('filament.hooks.service-topbar-router')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * Service Widget (OPS-SERVER) — lazy header entry beside Ticket / Help.
+     */
+    private function registerServiceWidgetHeaderHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_BEFORE,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.service-widget-header')->render()
                 );
             },
         );

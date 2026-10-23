@@ -8,8 +8,7 @@
                     1 => ['short' => 'Kích hoạt', 'full' => 'Kích hoạt dịch vụ', 'desc' => 'Bản quyền OPS'],
                     2 => ['short' => 'Cấu hình', 'full' => 'Cấu hình mặc định', 'desc' => 'Golden Config'],
                     3 => ['short' => 'Kết nối AI', 'full' => 'Kết nối AI', 'desc' => 'API Providers'],
-                    4 => ['short' => 'Website', 'full' => 'Website đầu tiên', 'desc' => 'Tên miền SEO'],
-                    5 => ['short' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'desc' => 'Sẵn sàng'],
+                    4 => ['short' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'desc' => 'Sẵn sàng'],
                 ];
             @endphp
 
@@ -25,13 +24,13 @@
                         </div>
                     </div>
                     <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300">
-                        Bước {{ $currentStep }}/5
+                        Bước {{ $currentStep }}/4
                     </span>
                 </div>
 
-                {{-- 5-segment interactive tap bar --}}
+                {{-- 4-segment interactive tap bar --}}
                 <div class="flex items-center gap-1.5 w-full">
-                    @for ($i = 1; $i <= 5; $i++)
+                    @for ($i = 1; $i <= 4; $i++)
                         @php
                             $segActive = $currentStep === $i;
                             $segPassed = $currentStep > $i;
@@ -125,84 +124,104 @@
                 </div>
 
                 @if ($isEnrolled && $installationDetails)
-                    {{-- Đã kích hoạt --}}
-                    <div class="rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20 space-y-3">
+                    {{-- Đã kích hoạt — auto-reconcile once via wire:init --}}
+                    <div
+                        wire:init="maybeAutoReconcileOnStep1"
+                        class="rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20 space-y-4"
+                    >
                         <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
                             <x-filament::icon icon="heroicon-m-check-circle" class="h-5 w-5" />
-                            <span>Thiết bị đã được kích hoạt thành công với OPS-SERVER</span>
+                            <span>Thiết bị đã được kích hoạt với OPS-SERVER</span>
                         </div>
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-gray-600 dark:text-gray-300">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-300">
                             <div>
-                                <span class="font-medium text-gray-500">Mã thiết bị (Installation ID):</span>
+                                <span class="font-medium text-gray-500">Mã thiết bị:</span>
                                 <div class="font-mono text-gray-900 dark:text-white truncate">{{ $installationDetails['installation_id'] }}</div>
                             </div>
                             <div>
-                                <span class="font-medium text-gray-500">Phiên bản chứng chỉ:</span>
-                                <div class="font-medium text-gray-900 dark:text-white">{{ $installationDetails['credential_version'] }}</div>
-                            </div>
-                            <div class="sm:col-span-2">
-                                <span class="font-medium text-gray-500">Máy chủ OPS-SERVER liên kết:</span>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <input
-                                        type="text"
-                                        readonly
-                                        disabled
-                                        value="{{ $installationDetails['control_server_url'] }}"
-                                        class="block w-full rounded-lg border-gray-200 bg-gray-50 text-gray-600 font-mono text-xs dark:border-white/10 dark:bg-gray-800 dark:text-gray-400 cursor-not-allowed"
-                                    />
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300 whitespace-nowrap">
-                                        <x-filament::icon icon="heroicon-m-lock-closed" class="h-3.5 w-3.5 text-gray-400" />
-                                        Đã khóa
-                                    </span>
-                                </div>
-                                <p class="text-[11px] text-gray-400 mt-1">
-                                    Máy chủ đã được liên kết cố định với Installation này. Việc đổi máy chủ yêu cầu quy trình phục hồi ủy quyền.
-                                </p>
-                            </div>
-                            <div>
-                                <span class="font-medium text-gray-500">Dịch vụ SEO:</span>
-                                <div>
-                                    @if ($installationDetails['seo_active'])
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                            Hoạt động ({{ $installationDetails['seo_quota'] }})
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                                            Chưa cấp quyền
-                                        </span>
-                                    @endif
-                                </div>
-                            </div>
-                            <div>
-                                <span class="font-medium text-gray-500">Dịch vụ Seeding:</span>
-                                <div>
-                                    @if ($installationDetails['seeding_active'])
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                                            Hoạt động
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                                            Chưa cấp quyền
-                                        </span>
-                                    @endif
-                                </div>
+                                <span class="font-medium text-gray-500">Đồng bộ lần cuối:</span>
+                                <div class="font-medium text-gray-900 dark:text-white">{{ $installationDetails['last_reconciled'] }}</div>
                             </div>
                         </div>
 
-                        <div class="pt-2 flex flex-wrap items-center gap-3">
-                            <x-filament::button
-                                wire:click="reconcileLicense"
-                                color="gray"
-                                size="sm"
-                                icon="heroicon-m-arrow-path"
-                            >
-                                Kiểm tra / Đồng bộ lại bản quyền
-                            </x-filament::button>
-                            <span class="text-xs text-gray-400">
-                                Đồng bộ lần cuối: {{ $installationDetails['last_reconciled'] }}
-                            </span>
+                        @if ($reconcileRunning)
+                            <div class="flex items-center gap-3 rounded-lg border border-sky-400/40 bg-sky-50 p-3 text-sm text-sky-900 dark:border-sky-500/30 dark:bg-sky-950/30 dark:text-sky-200">
+                                <x-filament::loading-indicator class="h-5 w-5" />
+                                <span>Đang đồng bộ quyền sử dụng với OPS-SERVER…</span>
+                            </div>
+                        @endif
+
+                        @if ($reconcileError)
+                            <div class="rounded-lg border border-rose-500/40 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <span>{{ $reconcileError }}</span>
+                                <x-filament::button
+                                    wire:click="reconcileLicense"
+                                    color="danger"
+                                    size="sm"
+                                    icon="heroicon-m-arrow-path"
+                                    wire:loading.attr="disabled"
+                                    wire:target="reconcileLicense,maybeAutoReconcileOnStep1"
+                                    :disabled="$reconcileRunning"
+                                >
+                                    Thử lại
+                                </x-filament::button>
+                            </div>
+                        @endif
+
+                        {{-- Commercial service badges (Verified Entitlement only) --}}
+                        <div class="space-y-2 {{ $reconcileRunning ? 'opacity-60' : '' }}">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">Dịch vụ thương mại</div>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                @foreach ($commercialServices as $svc)
+                                    <div class="rounded-xl border p-4
+                                        {{ ($svc['enabled'] ?? false)
+                                            ? 'border-emerald-400/50 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-950/30'
+                                            : 'border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-gray-800/50' }}
+                                    ">
+                                        <div class="text-base font-bold text-gray-950 dark:text-white">{{ $svc['label'] }}</div>
+                                        <div class="mt-2">
+                                            @if ($svc['enabled'] ?? false)
+                                                <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-emerald-600 text-white dark:bg-emerald-500">
+                                                    Enabled
+                                                </span>
+                                            @else
+                                                <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+                                                    Disabled
+                                                </span>
+                                            @endif
+                                        </div>
+                                        @if (! empty($svc['quota_label']))
+                                            <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                                Quota: {{ $svc['quota_label'] }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
+
+                        @if (! $reconcileRunning && ($commercialGateMessage || ! $hasCommercialServiceEnabled))
+                            <div class="rounded-lg border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
+                                {{ $commercialGateMessage ?: 'Chưa có dịch vụ được kích hoạt. Vui lòng liên hệ quản trị viên hoặc đồng bộ lại quyền sử dụng.' }}
+                            </div>
+                        @endif
+
+                        @if (! $reconcileError)
+                            <div class="pt-1 flex flex-wrap items-center gap-3">
+                                <x-filament::button
+                                    wire:click="reconcileLicense"
+                                    color="gray"
+                                    size="sm"
+                                    icon="heroicon-m-arrow-path"
+                                    wire:loading.attr="disabled"
+                                    wire:target="reconcileLicense,maybeAutoReconcileOnStep1"
+                                    :disabled="$reconcileRunning"
+                                >
+                                    Thử lại
+                                </x-filament::button>
+                            </div>
+                        @endif
                     </div>
                 @else
                     {{-- Chưa kích hoạt --}}
@@ -299,8 +318,17 @@
                             wire:click="nextStep"
                             icon="heroicon-m-arrow-right"
                             icon-position="after"
+                            wire:loading.attr="disabled"
+                            wire:target="nextStep,reconcileLicense,maybeAutoReconcileOnStep1"
+                            :disabled="! $hasCommercialServiceEnabled || $reconcileRunning"
                         >
-                            Tiếp tục: Cấu hình mặc định
+                            <span wire:loading.remove wire:target="reconcileLicense,maybeAutoReconcileOnStep1">
+                                Tiếp tục: Cấu hình mặc định
+                            </span>
+                            <span wire:loading wire:target="reconcileLicense,maybeAutoReconcileOnStep1" class="inline-flex items-center gap-1">
+                                <x-filament::loading-indicator class="h-4 w-4" />
+                                Đang đồng bộ…
+                            </span>
                         </x-filament::button>
                     </div>
                 </div>
@@ -316,81 +344,116 @@
                         Bước 2: Cấu hình mặc định (Golden Configuration)
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Cung cấp hệ thống Mẫu gợi ý (Prompts), Quy trình làm việc (Workflows) và Cài đặt SEO chuẩn mực được tuyển chọn.
+                        Hệ thống tự tải Golden Package. Apply cấu hình SEO chỉ khi dịch vụ SEO được kích hoạt.
                     </p>
                 </div>
 
                 @if ($goldenError)
-                    <div class="rounded-lg border border-rose-500/30 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400">
-                        {{ $goldenError }}
+                    <div class="rounded-lg border border-rose-500/30 bg-rose-50 p-3 text-sm text-rose-700 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <span>{{ $goldenError }}</span>
+                        <x-filament::button
+                            wire:click="downloadGoldenPackage"
+                            color="danger"
+                            size="sm"
+                            icon="heroicon-m-arrow-path"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadGoldenPackage"
+                            :disabled="! $isEnrolled || $goldenDownloading || $goldenApplying"
+                        >
+                            Retry
+                        </x-filament::button>
                     </div>
                 @endif
 
-                @if (! $goldenSeoEntitled || $goldenStatus === 'unlicensed')
-                    <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 space-y-2">
-                        <div class="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300 text-sm">
-                            <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5" />
-                            <span>SEO chưa được cấp quyền — Golden chưa áp dụng</span>
+                {{-- Download status (separate from Apply) --}}
+                <div class="rounded-lg border border-gray-200 bg-gray-50/60 p-4 dark:border-white/10 dark:bg-gray-800/40 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div class="space-y-1">
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">Download</div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                {{ $goldenDownloadMessage ?: 'Chưa tải package.' }}
+                            </p>
                         </div>
-                        <p class="text-xs text-amber-700 dark:text-amber-400">
-                            {{ $goldenReason ?: 'Thiết bị có thể đã enrollment nhưng dịch vụ SEO chưa có entitlement. Bấm Tiếp tục để sang bước sau; nạp Golden khi OPS-SERVER cấp quyền SEO.' }}
-                        </p>
+                        @php
+                            $downloadBadge = match ($goldenPackageStatus) {
+                                'pending_apply' => ['Downloaded', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300'],
+                                'applied' => ['Downloaded', 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300'],
+                                'error' => ['Failed', 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'],
+                                default => ['Pending', 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'],
+                            };
+                        @endphp
+                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold {{ $downloadBadge[1] }}">
+                            {{ $downloadBadge[0] }}
+                            @if ($goldenPackageVersion)
+                                <span class="ml-1 opacity-80">v{{ $goldenPackageVersion }}</span>
+                            @endif
+                        </span>
                     </div>
-                @elseif ($goldenStatus === 'blank')
-                    <div class="rounded-lg border border-primary-500/30 bg-primary-50/30 p-5 dark:border-primary-500/20 dark:bg-primary-950/20 space-y-4">
-                        <div class="flex items-start gap-3">
-                            <x-filament::icon icon="heroicon-o-sparkles" class="h-6 w-6 text-primary-500 flex-shrink-0 mt-0.5" />
-                            <div class="space-y-1">
-                                <h4 class="text-sm font-bold text-gray-900 dark:text-white">
-                                    Áp dụng Cấu hình chuẩn SEO-OPS
-                                </h4>
-                                <p class="text-xs text-gray-600 dark:text-gray-300">
-                                    Hệ thống hiện tại chưa có dữ liệu cấu hình. Khi bạn bấm <strong>Tiếp tục: Kết nối AI</strong>, hệ thống sẽ nạp Prompt / Workflow / thiết lập chuẩn (nếu ô ghi đè bên dưới đang bật).
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                @elseif ($goldenStatus === 'in_sync')
-                    <div class="rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20 space-y-2">
-                        <div class="flex items-center gap-2 font-semibold text-emerald-800 dark:text-emerald-300 text-sm">
-                            <x-filament::icon icon="heroicon-m-check-circle" class="h-5 w-5" />
-                            <span>Cấu hình hiện tại đang khớp hoàn toàn với Cấu hình chuẩn</span>
-                        </div>
-                        <p class="text-xs text-emerald-700 dark:text-emerald-400">
-                            Hệ thống đang hoạt động với phiên bản cấu hình chuẩn Golden mới nhất. Không cần nạp lại.
-                        </p>
-                    </div>
-                @elseif ($goldenStatus === 'customized')
-                    <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 space-y-2">
-                        <div class="flex items-center gap-2 font-semibold text-amber-900 dark:text-amber-300 text-sm">
-                            <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5" />
-                            <span>Đã phát hiện Cấu hình tùy chỉnh riêng của bạn</span>
-                        </div>
-                        <p class="text-xs text-amber-800 dark:text-amber-400">
-                            Bật ghi đè bên dưới rồi bấm <strong>Tiếp tục</strong> để thay Prompt / Workflow / thiết lập chuẩn trùng phạm vi Golden. Tắt ô ghi đè để giữ nguyên cấu hình hiện có và sang bước tiếp theo.
-                        </p>
-                    </div>
-                @endif
+                    @if ($goldenPackageStatus === 'error' || $goldenPackageStatus === 'none')
+                        <x-filament::button
+                            wire:click="downloadGoldenPackage"
+                            color="gray"
+                            size="sm"
+                            icon="heroicon-m-arrow-down-tray"
+                            wire:loading.attr="disabled"
+                            wire:target="downloadGoldenPackage"
+                            :disabled="! $isEnrolled || $goldenDownloading || $goldenApplying"
+                        >
+                            <span wire:loading.remove wire:target="downloadGoldenPackage">Retry Download</span>
+                            <span wire:loading wire:target="downloadGoldenPackage">Đang tải…</span>
+                        </x-filament::button>
+                    @endif
+                </div>
 
-                @if ($goldenSeoEntitled && ! in_array($goldenStatus, ['in_sync', 'unlicensed'], true))
-                    <label class="flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 text-xs text-gray-700 dark:border-white/10 dark:bg-gray-800/40 dark:text-gray-300">
-                        <input
-                            type="checkbox"
-                            wire:model.live="overwriteGoldenConfiguration"
-                            @disabled($goldenApplying)
-                            class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
-                        />
-                        <span>
-                            <span class="font-semibold text-gray-900 dark:text-white">Ghi đè cấu hình hiện có bằng Golden Configuration</span>
-                            <span class="block mt-0.5 text-gray-500 dark:text-gray-400">
-                                Mặc định bật. Áp dụng khi bấm <strong>Tiếp tục: Kết nối AI</strong>. Chỉ ảnh hưởng Prompt, Workflow và cấu hình chuẩn trong phạm vi Golden — không đụng Installation ID, credential hay dữ liệu nghiệp vụ.
-                                @if ($overwriteGoldenConfiguration && $goldenStatus === 'customized')
-                                    <span class="block mt-1 font-medium text-amber-700 dark:text-amber-300">Cảnh báo: cấu hình tùy chỉnh trùng phạm vi Golden sẽ bị thay bằng bản chuẩn.</span>
+                {{-- Apply status --}}
+                <div class="rounded-lg border border-gray-200 p-4 dark:border-white/10 space-y-3 bg-white dark:bg-gray-900">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white">Apply</div>
+                        @php
+                            $applyBadge = match (true) {
+                                $goldenPackageStatus === 'applied' || $goldenSuccess || $goldenStatus === 'in_sync' => ['Applied', 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300'],
+                                ! $goldenSeoEntitled && in_array($goldenPackageStatus, ['pending_apply', 'applied'], true) => ['Pending Apply', 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200'],
+                                $goldenStatus === 'customized' && ! $overwriteGoldenConfiguration => ['Pending Apply', 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200'],
+                                $goldenError && $goldenSeoEntitled => ['Failed', 'bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300'],
+                                $goldenPackageStatus === 'pending_apply' && $goldenSeoEntitled => ['Pending Apply', 'bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200'],
+                                default => ['Pending Apply', 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'],
+                            };
+                        @endphp
+                        <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold {{ $applyBadge[1] }}">
+                            {{ $applyBadge[0] }}
+                        </span>
+                    </div>
+
+                    @if (! $goldenSeoEntitled)
+                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                            {{ $goldenReason ?: 'SEO chưa kích hoạt — đã tải Golden (nếu thành công), không Apply cấu hình SEO.' }}
+                        </p>
+                    @elseif ($goldenStatus === 'in_sync' || $goldenSuccess)
+                        <p class="text-sm font-medium text-emerald-800 dark:text-emerald-300">Cấu hình DB đã khớp / đã Apply Golden.</p>
+                    @elseif ($goldenStatus === 'customized')
+                        <p class="text-sm text-amber-800 dark:text-amber-300">
+                            Đã có cấu hình tùy chỉnh. Chỉ ghi đè khi bạn đồng ý.
+                        </p>
+                        <label class="flex items-start gap-2 rounded-md border border-gray-200 bg-gray-50/80 p-3 text-sm text-gray-700 dark:border-white/10 dark:bg-gray-800/40 dark:text-gray-300">
+                            <input
+                                type="checkbox"
+                                wire:model.live="overwriteGoldenConfiguration"
+                                @disabled($goldenApplying || $goldenDownloading)
+                                class="mt-0.5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-50"
+                            />
+                            <span>
+                                <span class="font-semibold text-gray-900 dark:text-white">Ghi đè cấu hình hiện có bằng Golden Configuration</span>
+                                @if ($overwriteGoldenConfiguration)
+                                    <span class="block mt-1 font-medium text-amber-700 dark:text-amber-300">Cấu hình tùy chỉnh trong phạm vi Golden sẽ bị thay bằng bản chuẩn.</span>
                                 @endif
                             </span>
-                        </span>
-                    </label>
-                @endif
+                        </label>
+                    @elseif ($goldenStatus === 'blank')
+                        <p class="text-sm text-gray-600 dark:text-gray-300">
+                            Cấu hình trống — hệ thống tự Apply Golden (không hỏi ghi đè).
+                        </p>
+                    @endif
+                </div>
 
                 {{-- Thống kê số lượng hiện tại --}}
                 <div class="grid grid-cols-3 gap-3">
@@ -415,8 +478,8 @@
                         color="gray"
                         icon="heroicon-m-arrow-left"
                         wire:loading.attr="disabled"
-                        wire:target="nextStep"
-                        :disabled="$goldenApplying"
+                        wire:target="nextStep,downloadGoldenPackage"
+                        :disabled="$goldenApplying || $goldenDownloading"
                     >
                         Quay lại
                     </x-filament::button>
@@ -425,13 +488,13 @@
                         icon="heroicon-m-arrow-right"
                         icon-position="after"
                         wire:loading.attr="disabled"
-                        wire:target="nextStep"
-                        :disabled="$goldenApplying"
+                        wire:target="nextStep,downloadGoldenPackage"
+                        :disabled="$goldenApplying || $goldenDownloading"
                     >
                         <span wire:loading.remove wire:target="nextStep">Tiếp tục: Kết nối AI</span>
                         <span wire:loading wire:target="nextStep" class="inline-flex items-center gap-1">
                             <x-filament::loading-indicator class="h-4 w-4" />
-                            Đang áp dụng cấu hình…
+                            Đang xử lý cấu hình…
                         </span>
                     </x-filament::button>
                 </div>
@@ -587,151 +650,19 @@
                         icon="heroicon-m-arrow-right"
                         icon-position="after"
                     >
-                        Tiếp tục: Thêm Website
-                    </x-filament::button>
-                </div>
-            </div>
-        @endif
-
-        {{-- STEP 4: WEBSITE ĐẦU TIÊN --}}
-        @if ($currentStep === 4)
-            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900 space-y-6">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-950 dark:text-white flex items-center gap-2">
-                        <x-filament::icon icon="heroicon-o-globe-alt" class="h-5 w-5 text-primary-500" />
-                        Bước 4: Thiết lập Website đầu tiên
-                    </h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        Khai báo website vệ tinh hoặc website chính để SEO-OPS theo dõi từ khóa và phân phối bài viết.
-                    </p>
-                </div>
-
-                @if (! $isSeoLicensed)
-                    <div class="rounded-lg border border-amber-500/30 bg-amber-50/50 p-4 dark:border-amber-500/20 dark:bg-amber-950/20 space-y-2">
-                        <div class="flex items-center gap-2 font-medium text-amber-800 dark:text-amber-300 text-sm">
-                            <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5" />
-                            <span>Yêu cầu bản quyền Dịch vụ SEO</span>
-                        </div>
-                        <p class="text-xs text-amber-700 dark:text-amber-400">
-                            Quản lý website yêu cầu bản quyền dịch vụ SEO hợp lệ. Khi có bản quyền, bạn có thể quay lại trang này bất kỳ lúc nào để thêm website.
-                        </p>
-                    </div>
-                @else
-                    {{-- Danh sách website hiện có --}}
-                    @if (count($existingSites) > 0)
-                        <div class="space-y-3">
-                            <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                Website hiện có trong hệ thống ({{ count($existingSites) }})
-                            </h4>
-                            <div class="space-y-2">
-                                @foreach ($existingSites as $site)
-                                    <div class="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50/50 p-3 dark:border-white/10 dark:bg-gray-800/40">
-                                        <div class="flex items-center gap-3">
-                                            <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
-                                                <x-filament::icon icon="heroicon-m-globe-alt" class="h-4 w-4" />
-                                            </div>
-                                            <div>
-                                                <div class="text-sm font-bold text-gray-900 dark:text-white">
-                                                    {{ $site['domain'] }}
-                                                </div>
-                                                <div class="text-xs text-gray-400">
-                                                    SSL: {{ $site['ssl'] ? 'Bật (HTTPS)' : 'Tắt (HTTP)' }} • Ngày tạo: {{ $site['created_at'] }}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium
-                                            @if ($site['status'] === 'active')
-                                                bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300
-                                            @else
-                                                bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300
-                                            @endif
-                                        ">
-                                            {{ $site['status'] === 'active' ? 'Hoạt động' : 'Chưa kích hoạt' }}
-                                        </span>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
-                    {{-- Form thêm website mới --}}
-                    <div class="rounded-lg border border-gray-200 bg-white p-4 dark:border-white/10 dark:bg-gray-800/20 space-y-4">
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ count($existingSites) > 0 ? 'Thêm một website khác' : 'Thêm website đầu tiên của bạn' }}
-                        </h4>
-
-                        @if ($siteError)
-                            <div class="rounded-lg border border-rose-500/30 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400">
-                                {{ $siteError }}
-                            </div>
-                        @endif
-
-                        <div class="space-y-3">
-                            <div class="space-y-1">
-                                <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">
-                                    Tên miền (Domain)
-                                </label>
-                                <input
-                                    type="text"
-                                    wire:model="newSiteDomain"
-                                    placeholder="ví dụ: mywebsite.com"
-                                    class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 font-mono text-sm dark:border-white/10 dark:bg-gray-800 dark:text-white"
-                                />
-                                <p class="text-xs text-gray-500">Chỉ cần nhập tên miền chính, không cần nhập https://</p>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <input
-                                    type="checkbox"
-                                    id="site_ssl_toggle"
-                                    wire:model="newSiteSsl"
-                                    class="rounded border-gray-300 text-primary-600 shadow-sm focus:ring-primary-500 dark:border-white/10 dark:bg-gray-800"
-                                />
-                                <label for="site_ssl_toggle" class="text-xs font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
-                                    Sử dụng kết nối bảo mật SSL / HTTPS
-                                </label>
-                            </div>
-                        </div>
-
-                        <div class="pt-2">
-                            <x-filament::button
-                                wire:click="createSite"
-                                size="sm"
-                                icon="heroicon-m-plus"
-                            >
-                                Thêm Website
-                            </x-filament::button>
-                        </div>
-                    </div>
-                @endif
-
-                {{-- Navigation Actions --}}
-                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
-                    <x-filament::button
-                        wire:click="prevStep"
-                        color="gray"
-                        icon="heroicon-m-arrow-left"
-                    >
-                        Quay lại
-                    </x-filament::button>
-                    <x-filament::button
-                        wire:click="nextStep"
-                        icon="heroicon-m-arrow-right"
-                        icon-position="after"
-                    >
                         Tiếp tục: Hoàn tất & Tổng kết
                     </x-filament::button>
                 </div>
             </div>
         @endif
 
-        {{-- STEP 5: HOÀN TẤT & TỔNG KẾT --}}
-        @if ($currentStep === 5)
+        {{-- STEP 4: HOÀN TẤT & TỔNG KẾT --}}
+        @if ($currentStep === 4)
             <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900 space-y-6">
                 <div>
                     <h3 class="text-lg font-bold text-gray-950 dark:text-white flex items-center gap-2">
                         <x-filament::icon icon="heroicon-o-check-badge" class="h-5 w-5 text-emerald-500" />
-                        Bước 5: Tổng kết tình trạng hệ thống
+                        Bước 4: Tổng kết tình trạng hệ thống
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Kiểm tra danh sách hạng mục đã thiết lập trước khi bắt đầu sử dụng bảng điều khiển SEO-OPS.
@@ -811,7 +742,7 @@
                         color="gray"
                         icon="heroicon-m-arrow-left"
                     >
-                        Quay lại Bước 4
+                        Quay lại Bước 3
                     </x-filament::button>
                     <x-filament::button
                         wire:click="finishQuickSetup"

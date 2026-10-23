@@ -1,0 +1,32 @@
+[
+    {
+        "portable_uuid": "3a68f26a-371a-4d11-83da-407501a658cc",
+        "name": "Quy trình đăng bài viết",
+        "workflow_fingerprint": "56812ae7753d7e5df41ae0e7161113a44002c11aeb3b9d2557333a7b816baf89",
+        "enabled": true,
+        "referenced_prompt_portable_uuids": [
+            "25f4bd78-c6dc-4957-a013-a6559eff2cba",
+            "3addbdae-d042-46a2-875a-a2bf3965931f",
+            "ce7647b9-a39c-4fb8-94f4-cddec03ba0e5"
+        ]
+    },
+    {
+        "portable_uuid": "0603f414-29e8-42af-8a9b-b61a4d0d1969",
+        "name": "Review product",
+        "workflow_fingerprint": "cdf9dbda7c053b87f1232905d38c860d63d59ad23c73e92383c8784b6897de08",
+        "enabled": true,
+        "referenced_prompt_portable_uuids": [
+            "40acacef-f837-4f79-b430-52f3e65f8663"
+        ]
+    },
+    {
+        "portable_uuid": "2bf21373-f8c9-433a-a778-4d7c46703456",
+        "name": "Image flow",
+        "workflow_fingerprint": "e2db019e56d225c5ea85ed01e14306ff17633720e889bdc1f8163f560bcba456",
+        "enabled": true,
+        "referenced_prompt_portable_uuids": [
+            "ad4b75d4-f0fe-41d3-9656-558d03590281",
+            "cd10b04e-73cc-474d-bdcc-15ce1baf8335"
+        ]
+    }
+]

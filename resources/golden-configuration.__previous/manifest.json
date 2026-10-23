@@ -1,0 +1,15 @@
+{
+    "package_id": "seo-ops-golden-configuration",
+    "package_version": "1.0.0",
+    "package_format_version": "1.0",
+    "configuration_schema_version": "1.1",
+    "package_type": "golden_configuration",
+    "source": "seo-ops-client",
+    "created_at": "2026-10-21T04:19:16Z",
+    "compatibility": {
+        "client": "12.50.0",
+        "addons": "0.1.0"
+    },
+    "entrypoint": "payload/full-configuration.json",
+    "checksum_algorithm": "sha256"
+}

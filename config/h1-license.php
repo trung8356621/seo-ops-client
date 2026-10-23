@@ -46,4 +46,23 @@ return [
     'reconcile' => [
         'path_template' => '/api/v1/installations/{installation_id}/license/reconcile',
     ],
+
+    /*
+    | Widget token exchange — machine-signed mint of short-lived Service Widget bearer tokens.
+    | Response body never contains H1 credential secrets.
+    */
+    'widget' => [
+        'path_template' => '/api/v1/installations/{installation_id}/widget/token',
+        'timeout_seconds' => (int) env('OPS_SERVICE_WIDGET_TIMEOUT', 5),
+        /*
+        | Static React IIFE bundle URL (prefer SEO-OPS local copy).
+        | Override with absolute OPS-SERVER/CDN URL when needed.
+        */
+        'bundle_url' => (string) env(
+            'OPS_SERVICE_WIDGET_BUNDLE_URL',
+            '/vendor/ops-service-widget/ops-service-widget.js'
+        ),
+        'api_timeout_ms' => (int) env('OPS_SERVICE_WIDGET_API_TIMEOUT_MS', 5000),
+    ],
 ];
+

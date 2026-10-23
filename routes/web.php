@@ -59,7 +59,11 @@ Route::middleware(['web', 'auth'])->group(function (): void {
         Route::post('/', [\App\Http\Controllers\SupportTicketController::class, 'store'])
             ->name('support-tickets.store');
     });
+
+    Route::post('/api/service-widget/session', [\App\Http\Controllers\ServiceWidgetSessionController::class, 'store'])
+        ->name('service-widget.session');
 });
+
 
 require __DIR__.'/auth.php';
 

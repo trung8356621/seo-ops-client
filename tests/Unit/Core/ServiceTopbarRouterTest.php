@@ -25,6 +25,7 @@ final class ServiceTopbarRouterTest extends TestCase
         self::assertStringContainsString('PanelsRenderHook::TOPBAR_START', $source);
         self::assertStringContainsString('service-topbar-router', $source);
         self::assertStringContainsString('support-ticket-header', $source);
+        self::assertStringContainsString('registerServiceWidgetHeaderHook', $source);
         self::assertStringContainsString("key: 'admin'", $source);
         self::assertStringContainsString("url('/admin')", $source);
         self::assertStringContainsString('ServiceTopbarRouter::class', $source);

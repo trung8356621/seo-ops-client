@@ -1,0 +1,124 @@
+[
+    {
+        "schema_version": "1.0",
+        "provider": {
+            "key": "gemini",
+            "name": "Gemini",
+            "short_code": "GG",
+            "protocol": "gemini"
+        },
+        "connection": {
+            "base_url": "https://generativelanguage.googleapis.com",
+            "auth": {
+                "type": "query",
+                "query_param": "key"
+            }
+        },
+        "endpoints": {
+            "models": {
+                "enabled": true,
+                "method": "GET",
+                "path": "/v1beta/models",
+                "response": {
+                    "items_path": "models",
+                    "id_path": "name",
+                    "name_path": "displayName"
+                }
+            },
+            "text": {
+                "enabled": true,
+                "method": "POST",
+                "path": "/v1beta/models"
+            },
+            "image": {
+                "enabled": false
+            },
+            "video": {
+                "enabled": false
+            }
+        },
+        "package_type": "ai_provider_template"
+    },
+    {
+        "schema_version": "1.0",
+        "provider": {
+            "key": "deepseek",
+            "name": "DeepSeek",
+            "short_code": "DS",
+            "protocol": "openai_compatible"
+        },
+        "connection": {
+            "base_url": "https://api.deepseek.com",
+            "auth": {
+                "type": "bearer"
+            }
+        },
+        "endpoints": {
+            "models": {
+                "enabled": true,
+                "method": "GET",
+                "path": "/models",
+                "response": {
+                    "items_path": "data",
+                    "id_path": "id",
+                    "name_path": "id"
+                }
+            },
+            "text": {
+                "enabled": true,
+                "method": "POST",
+                "path": "/chat/completions"
+            },
+            "image": {
+                "enabled": false
+            },
+            "video": {
+                "enabled": false
+            }
+        },
+        "package_type": "ai_provider_template"
+    },
+    {
+        "schema_version": "1.0",
+        "provider": {
+            "key": "openrouter",
+            "name": "OpenRouter",
+            "short_code": "OR",
+            "protocol": "openrouter"
+        },
+        "connection": {
+            "base_url": "https://openrouter.ai/api/v1",
+            "auth": {
+                "type": "bearer"
+            },
+            "headers": {
+                "http-referer": "https://omnichannel.local",
+                "x-title": "seo-ops"
+            }
+        },
+        "endpoints": {
+            "models": {
+                "enabled": true,
+                "method": "GET",
+                "path": "/models",
+                "response": {
+                    "items_path": "data",
+                    "id_path": "id",
+                    "name_path": "name"
+                }
+            },
+            "text": {
+                "enabled": true,
+                "method": "POST",
+                "path": "/chat/completions"
+            },
+            "image": {
+                "enabled": false
+            },
+            "video": {
+                "enabled": false
+            }
+        },
+        "package_type": "ai_provider_template"
+    }
+]

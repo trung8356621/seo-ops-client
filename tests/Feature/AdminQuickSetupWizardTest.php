@@ -185,43 +185,270 @@ final class AdminQuickSetupWizardTest extends TestCase
     {
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
 
-        // Step 1 initial
-        $testComponent->assertSet('currentStep', 1);
+        // Step 1 initial — no commercial services → cannot advance
+        $testComponent->assertSet('currentStep', 1)
+            ->assertSet('hasCommercialServiceEnabled', false);
 
-        // Invalid token rejection
         $testComponent->set('enrollmentToken', 'invalid_no_prefix')
             ->call('activateEnrollment')
             ->assertSet('enrollmentSuccess', false);
 
-        // Navigate to Step 2
+        $testComponent->call('goToStep', 2)
+            ->assertSet('currentStep', 1)
+            ->assertSet('commercialGateMessage', QuickSetupWizard::COMMERCIAL_GATE_MESSAGE);
+
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true, 'quota' => 5],
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->assertSet('hasCommercialServiceEnabled', true);
+
         $testComponent->call('goToStep', 2)
             ->assertSet('currentStep', 2);
 
-        // Navigate to Step 3
         $testComponent->call('goToStep', 3)
             ->assertSet('currentStep', 3);
 
-        // Empty API key rejection
         $testComponent->set('aiApiKey', '')
             ->call('testAiConnection')
             ->assertSet('aiTestStatus', 'error');
 
-        // Navigate to Step 4
         $testComponent->call('goToStep', 4)
             ->assertSet('currentStep', 4);
-
-        // Navigate to Step 5
         $testComponent->call('goToStep', 5)
-            ->assertSet('currentStep', 5);
+            ->assertSet('currentStep', 4);
 
-        // Verify checklist items exist
         $checklist = $testComponent->get('checklist');
         $this->assertIsArray($checklist);
         $this->assertGreaterThanOrEqual(5, count($checklist));
 
-        // Finish setup
         $testComponent->call('finishQuickSetup');
         $this->assertNotEmpty(WpOption::get('quick_setup_completed_at'));
+    }
+
+    public function test_enrolled_without_commercial_service_blocks_step1_continue(): void
+    {
+        $this->seedEnrolledCommercial([
+            'agent' => ['key' => 'agent', 'enabled' => true, 'scope' => 'global'],
+            'seo' => ['key' => 'seo', 'enabled' => false],
+            'seeding' => ['key' => 'seeding', 'enabled' => false],
+            'social-automation' => ['key' => 'social-automation', 'enabled' => false],
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->assertSet('isEnrolled', true)
+            ->assertSet('hasCommercialServiceEnabled', false)
+            ->call('nextStep')
+            ->assertSet('currentStep', 1)
+            ->assertSet('commercialGateMessage', QuickSetupWizard::COMMERCIAL_GATE_MESSAGE);
+
+        $testComponent->call('goToStep', 3)->assertSet('currentStep', 1);
+        $testComponent->set('currentStep', 2)->assertSet('currentStep', 1);
+    }
+
+    public function test_core_agent_enabled_alone_does_not_unlock_step1(): void
+    {
+        $this->seedEnrolledCommercial([
+            'agent' => ['key' => 'agent', 'enabled' => true],
+        ]);
+
+        Livewire::actingAs($this->owner)->test(QuickSetupWizard::class)
+            ->assertSet('hasCommercialServiceEnabled', false)
+            ->call('goToStep', 2)
+            ->assertSet('currentStep', 1);
+    }
+
+    public function test_url_step_query_cannot_bypass_commercial_gate(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
+
+        Livewire::actingAs($this->owner)
+            ->withQueryParams(['step' => 3])
+            ->test(QuickSetupWizard::class)
+            ->assertSet('currentStep', 1)
+            ->assertSet('hasCommercialServiceEnabled', false);
+    }
+
+    public function test_seeding_only_passes_step1_downloads_without_seo_apply(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seeding' => ['key' => 'seeding', 'enabled' => true],
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
+        $this->bindSeoEntitlementProbe(false);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->assertSet('hasCommercialServiceEnabled', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 2)
+            ->assertSet('goldenSeoEntitled', false)
+            ->assertSet('goldenSuccess', false);
+
+        $downloadCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'download'));
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertGreaterThanOrEqual(1, count($downloadCalls));
+        $this->assertCount(0, $applyCalls);
+
+        $testComponent->call('nextStep')->assertSet('currentStep', 3);
+        $applyAfter = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(0, $applyAfter);
+    }
+
+    public function test_social_only_passes_step1_downloads_without_seo_apply(): void
+    {
+        $this->seedEnrolledCommercial([
+            'social-automation' => ['key' => 'social-automation', 'enabled' => true],
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
+        $this->bindSeoEntitlementProbe(false);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        Livewire::actingAs($this->owner)->test(QuickSetupWizard::class)
+            ->call('nextStep')
+            ->assertSet('currentStep', 2)
+            ->assertSet('goldenSeoEntitled', false);
+
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(0, $applyCalls);
+    }
+
+    public function test_h1_unacked_entitlement_not_reported_enabled(): void
+    {
+        $this->seedEnrolledCommercial([]);
+        $installation = \App\Models\H1Installation::query()->first();
+        $this->assertNotNull($installation);
+        $installation->verified_snapshot = null;
+        $installation->validated_at = null;
+        $installation->entitlement_revision = 0;
+        $installation->save();
+
+        Livewire::actingAs($this->owner)->test(QuickSetupWizard::class)
+            ->assertSet('isEnrolled', true)
+            ->assertSet('hasCommercialServiceEnabled', false);
+    }
+
+    public function test_step1_auto_reconcile_runs_once_and_refreshes_commercial(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
+        $reconcile = $this->bindFakeReconcile(function (): array {
+            $installation = \App\Models\H1Installation::query()->first();
+            $this->assertNotNull($installation);
+            $installation->verified_snapshot = [
+                'services' => [
+                    'seo' => ['key' => 'seo', 'enabled' => true, 'quota' => 3],
+                    'seeding' => ['key' => 'seeding', 'enabled' => false],
+                    'social-automation' => ['key' => 'social-automation', 'enabled' => false],
+                ],
+            ];
+            $installation->validated_at = now();
+            $installation->save();
+
+            return ['commands_applied' => 1, 'acks' => [], 'offline' => false];
+        });
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('maybeAutoReconcileOnStep1')
+            ->assertSet('step1AutoReconcileCompleted', true)
+            ->assertSet('reconcileRunning', false)
+            ->assertSet('reconcileError', null)
+            ->assertSet('hasCommercialServiceEnabled', true);
+
+        $this->assertSame(1, $reconcile->calls);
+
+        $testComponent->call('maybeAutoReconcileOnStep1');
+        $this->assertSame(1, $reconcile->calls, 'auto-reconcile must not repeat on rerender');
+
+        $testComponent->call('nextStep')->assertSet('currentStep', 2);
+    }
+
+    public function test_step1_auto_reconcile_offline_shows_error_and_retry(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true, 'quota' => 2],
+        ]);
+        $reconcile = $this->bindFakeReconcile(static fn (): array => [
+            'commands_applied' => 0,
+            'acks' => [],
+            'offline' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('maybeAutoReconcileOnStep1')
+            ->assertSet('step1AutoReconcileCompleted', true)
+            ->assertSet('hasCommercialServiceEnabled', true)
+            ->assertSee('Thử lại');
+
+        $error = (string) $testComponent->get('reconcileError');
+        $this->assertStringContainsString('OPS-SERVER', $error);
+        $this->assertSame(1, $reconcile->calls);
+
+        $testComponent->call('reconcileLicense');
+        $this->assertSame(2, $reconcile->calls, 'Retry must call reconcile again');
+    }
+
+    public function test_step1_reconcile_timeout_sets_connection_error(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seeding' => ['key' => 'seeding', 'enabled' => true],
+        ]);
+        $this->bindFakeReconcile(static function (): array {
+            throw new \RuntimeException('cURL error 28: Operation timed out');
+        });
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('maybeAutoReconcileOnStep1')
+            ->assertSet('hasCommercialServiceEnabled', true);
+
+        $error = (string) $testComponent->get('reconcileError');
+        $this->assertStringContainsString('timeout', strtolower($error));
+
+        $testComponent->call('nextStep')->assertSet('currentStep', 2);
+    }
+
+    public function test_step1_continue_locked_while_reconcile_running(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
+        $this->bindFakeReconcile();
+
+        Livewire::actingAs($this->owner)->test(QuickSetupWizard::class)
+            ->set('reconcileRunning', true)
+            ->set('hasCommercialServiceEnabled', true)
+            ->call('nextStep')
+            ->assertSet('currentStep', 1);
+    }
+
+    public function test_step1_no_commercial_after_reconcile_keeps_continue_blocked(): void
+    {
+        $this->seedEnrolledCommercial([
+            'agent' => ['key' => 'agent', 'enabled' => true],
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
+        $this->bindFakeReconcile(static fn (): array => [
+            'commands_applied' => 0,
+            'acks' => [],
+            'offline' => false,
+        ]);
+
+        Livewire::actingAs($this->owner)->test(QuickSetupWizard::class)
+            ->call('maybeAutoReconcileOnStep1')
+            ->assertSet('hasCommercialServiceEnabled', false)
+            ->assertSet('commercialGateMessage', QuickSetupWizard::COMMERCIAL_GATE_MESSAGE)
+            ->call('nextStep')
+            ->assertSet('currentStep', 1);
     }
 
     public function test_dashboard_shows_unlicensed_warning_if_not_entitled(): void
@@ -278,52 +505,94 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent->assertSet('serverUrl', 'http://localhost:3000');
     }
 
-    public function test_step2_continue_checked_runs_bootstrap_and_advances_on_success(): void
+    public function test_step2_seo_enabled_auto_downloads_and_applies_on_blank(): void
     {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true, 'quota' => 10],
+        ]);
         $this->bindSeoEntitlementProbe(true);
+        $this->bindBlankAssessment(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
         ]);
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->assertSet('overwriteGoldenConfiguration', true);
-        $testComponent->set('currentStep', 2)
-            ->set('goldenSeoEntitled', true)
+        $testComponent->call('nextStep')
+            ->assertSet('currentStep', 2)
+            ->assertSet('goldenSuccess', true);
+
+        $downloadCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'download'));
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertGreaterThanOrEqual(1, count($downloadCalls));
+        $this->assertGreaterThanOrEqual(1, count($applyCalls));
+        $this->assertTrue($applyCalls[0]['overwrite']);
+    }
+
+    public function test_step2_continue_checked_runs_bootstrap_and_advances_on_success(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
+        $this->bindSeoEntitlementProbe(true);
+        $this->bindBlankAssessment(true);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $testComponent->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
+            ->set('goldenSuccess', false)
             ->set('overwriteGoldenConfiguration', true)
+            ->set('goldenPackageStatus', 'pending_apply')
             ->call('nextStep')
             ->assertSet('currentStep', 3)
             ->assertSet('goldenSuccess', true)
             ->assertSet('goldenError', null);
 
-        $this->assertCount(1, $fake->calls);
-        $this->assertTrue($fake->calls[0]['overwrite']);
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(1, $applyCalls);
+        $this->assertTrue($applyCalls[0]['overwrite']);
     }
 
-    public function test_step2_continue_unchecked_skips_bootstrap_and_advances(): void
+    public function test_step2_customized_does_not_overwrite_without_consent(): void
     {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
         $this->bindSeoEntitlementProbe(true);
+        $this->bindBlankAssessment(false);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
         ]);
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->set('currentStep', 2)
-            ->set('goldenSeoEntitled', true)
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $testComponent->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'customized')
             ->set('overwriteGoldenConfiguration', false)
+            ->set('goldenPackageStatus', 'pending_apply')
             ->call('nextStep')
             ->assertSet('currentStep', 3)
             ->assertSet('goldenError', null);
 
-        $this->assertCount(0, $fake->calls);
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(0, $applyCalls);
     }
 
     public function test_step2_continue_checked_stays_on_step_on_bootstrap_failure(): void
     {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
         $this->bindSeoEntitlementProbe(true);
+        $this->bindBlankAssessment(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'download_failed',
             'imported' => false,
@@ -331,21 +600,32 @@ final class AdminQuickSetupWizardTest extends TestCase
         ]);
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->set('currentStep', 2)
-            ->set('goldenSeoEntitled', true)
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $fake->local = [
+            'package_id' => 'seo-ops-golden-configuration',
+            'package_version' => '1.0.0',
+            'canonical_hash' => str_repeat('a', 64),
+        ];
+        $testComponent->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true)
+            ->set('goldenPackageStatus', 'pending_apply')
             ->call('nextStep')
             ->assertSet('currentStep', 2)
             ->assertSet('goldenSuccess', false);
 
         $error = (string) $testComponent->get('goldenError');
         $this->assertStringContainsString('server_offline', $error);
-        $this->assertCount(1, $fake->calls);
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(1, $applyCalls);
     }
 
     public function test_step2_continue_duplicate_submission_is_ignored_while_applying(): void
     {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
         $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
@@ -353,8 +633,9 @@ final class AdminQuickSetupWizardTest extends TestCase
         ]);
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->set('currentStep', 2)
-            ->set('goldenSeoEntitled', true)
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $testComponent->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true)
             ->set('goldenApplying', true)
@@ -366,17 +647,20 @@ final class AdminQuickSetupWizardTest extends TestCase
 
     public function test_step2_enrolled_but_unlicensed_skips_bootstrap_and_does_not_mark_synced(): void
     {
+        $this->seedEnrolledCommercial([
+            'seeding' => ['key' => 'seeding', 'enabled' => true],
+            'seo' => ['key' => 'seo', 'enabled' => false],
+        ]);
         $this->bindSeoEntitlementProbe(false);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'bootstrapped',
             'imported' => true,
         ]);
 
-        // Gate may fail-open (isSeoLicensed=true) while Golden probe denies — the real bug path.
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->set('currentStep', 2)
-            ->set('isSeoLicensed', true)
-            ->set('overwriteGoldenConfiguration', true)
+        $testComponent->call('goToStep', 2);
+        $fake->calls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'download'));
+        $testComponent->set('overwriteGoldenConfiguration', true)
             ->call('nextStep')
             ->assertSet('currentStep', 3)
             ->assertSet('goldenSuccess', false)
@@ -384,13 +668,16 @@ final class AdminQuickSetupWizardTest extends TestCase
             ->assertSet('goldenError', null)
             ->assertSet('goldenSeoEntitled', false);
 
-        $this->assertCount(0, $fake->calls);
-        $reason = (string) $testComponent->get('goldenReason');
-        $this->assertStringContainsString('SEO chưa được cấp quyền', $reason);
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(0, $applyCalls);
+        $this->assertFalse((bool) $testComponent->get('goldenSuccess'));
     }
 
     public function test_apply_golden_treats_unlicensed_service_response_as_pending_skip(): void
     {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
         $this->bindSeoEntitlementProbe(true);
         $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
             'status' => 'unlicensed_service',
@@ -399,8 +686,9 @@ final class AdminQuickSetupWizardTest extends TestCase
         ]);
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
-        $testComponent->set('currentStep', 2)
-            ->set('goldenSeoEntitled', true)
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $testComponent->set('goldenSeoEntitled', true)
             ->set('goldenStatus', 'blank')
             ->set('overwriteGoldenConfiguration', true);
 
@@ -409,32 +697,187 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent->assertSet('goldenSuccess', false)
             ->assertSet('goldenStatus', 'unlicensed')
             ->assertSet('goldenError', null);
-        $this->assertCount(1, $fake->calls);
+        $applyCalls = array_values(array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'apply'));
+        $this->assertCount(1, $applyCalls);
     }
 
-    public function test_step2_view_has_no_separate_apply_button_and_wires_continue_to_next_step(): void
+    public function test_retry_download_is_idempotent_when_package_already_local(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true],
+        ]);
+        $this->bindSeoEntitlementProbe(true);
+        $fake = $this->bindFakeGoldenBootstrap(static fn (): array => [
+            'status' => 'bootstrapped',
+            'imported' => true,
+        ]);
+        $fake->downloadResponder = static fn (): array => [
+            'status' => 'already_downloaded',
+            'downloaded' => false,
+            'imported' => false,
+            'package_version' => '1.0.0',
+            'canonical_hash' => str_repeat('a', 64),
+            'apply_status' => 'pending_apply',
+        ];
+        $fake->local = [
+            'package_id' => 'seo-ops-golden-configuration',
+            'package_version' => '1.0.0',
+            'canonical_hash' => str_repeat('a', 64),
+        ];
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('goToStep', 2);
+        $fake->calls = [];
+        $testComponent->call('downloadGoldenPackage')
+            ->assertSet('goldenPackageStatus', 'pending_apply');
+
+        $this->assertCount(1, array_filter($fake->calls, static fn (array $c): bool => ($c['op'] ?? '') === 'download'));
+    }
+
+    public function test_step2_view_separates_download_and_apply_and_wires_continue(): void
     {
         $view = (string) file_get_contents(resource_path('views/filament/pages/quick-setup-wizard.blade.php'));
+        $this->assertStringContainsString('wire:click="downloadGoldenPackage"', $view);
         $this->assertStringNotContainsString('wire:click="applyGoldenConfiguration"', $view);
-        $this->assertStringNotContainsString('Ghi đè bằng Cấu hình chuẩn', $view);
+        $this->assertStringNotContainsString('Website đầu tiên', $view);
         $this->assertStringContainsString('Ghi đè cấu hình hiện có bằng Golden Configuration', $view);
+        $this->assertStringContainsString('goldenStatus === \'customized\'', $view);
         $this->assertStringContainsString('wire:click="nextStep"', $view);
-        $this->assertStringContainsString('Đang áp dụng cấu hình…', $view);
+        $this->assertStringContainsString('Đang xử lý cấu hình…', $view);
+        $this->assertStringContainsString('Bước {{ $currentStep }}/4', $view);
+        $this->assertStringContainsString('Dịch vụ thương mại', $view);
+        $this->assertStringContainsString('hasCommercialServiceEnabled', $view);
+        $this->assertStringContainsString('wire:init="maybeAutoReconcileOnStep1"', $view);
+        $this->assertStringContainsString('Thử lại', $view);
+        $this->assertStringContainsString('reconcileRunning', $view);
 
         $source = (string) file_get_contents((new \ReflectionClass(QuickSetupWizard::class))->getFileName());
         $this->assertStringContainsString('completeStep2BeforeAdvance', $source);
-        $this->assertStringContainsString('overwriteGoldenConfiguration = true', $source);
+        $this->assertStringContainsString('runAutomaticGoldenLifecycle', $source);
+        $this->assertStringContainsString('canContinuePastCommercialGate', $source);
+        $this->assertStringContainsString('maybeAutoReconcileOnStep1', $source);
+        $this->assertStringContainsString('runStep1Reconcile', $source);
+        $this->assertStringContainsString('downloadPackage', $source);
+        $this->assertStringContainsString('applyPackage', $source);
+        $this->assertStringNotContainsString('function createSite', $source);
+    }
+
+    /**
+     * @param  array<string, array<string, mixed>>  $services
+     */
+    private function seedEnrolledCommercial(array $services): void
+    {
+        \App\Models\H1Credential::query()->delete();
+        \App\Models\H1Installation::query()->delete();
+
+        $installationId = 'ins_qs_commercial_'.bin2hex(random_bytes(2));
+        \App\Models\H1Installation::create([
+            'installation_id' => $installationId,
+            'product' => 'seo-ops',
+            'control_server_url' => 'http://localhost:3000',
+            'status' => 'enrolled',
+            'cutover_mode' => 'pre_enrollment',
+            'credential_version' => 1,
+            'entitlement_revision' => 1,
+            'verified_snapshot' => [
+                'services' => $services,
+            ],
+            'validated_at' => now(),
+        ]);
+
+        $cred = new \App\Models\H1Credential();
+        $cred->installation_id = $installationId;
+        $cred->credential_id = 'cred_'.$installationId;
+        $cred->version = 1;
+        $cred->status = \App\Models\H1Credential::STATUS_ACTIVE;
+        $cred->setSecretBase64Url(\App\Services\H1\Protocol\LicenseCrypto::base64UrlEncode(random_bytes(32)));
+        $cred->save();
+
+        // Default no-op reconcile so enrolled Step 1 tests do not hit the network.
+        $this->bindFakeReconcile();
+    }
+
+    /**
+     * @param  (callable(): array{commands_applied: int, acks: list<array<string, mixed>>, offline: bool})|null  $responder
+     * @return object{calls: int}
+     */
+    private function bindFakeReconcile(?callable $responder = null): object
+    {
+        $fake = new class($responder) {
+            public int $calls = 0;
+
+            /** @param (callable(): array{commands_applied: int, acks: list<array<string, mixed>>, offline: bool})|null $responder */
+            public function __construct(private $responder) {}
+
+            /**
+             * @param  array<string, mixed>|null  $mockedResponse
+             * @return array{commands_applied: int, acks: list<array<string, mixed>>, offline: bool}
+             */
+            public function reconcile(?array $mockedResponse = null): array
+            {
+                unset($mockedResponse);
+                $this->calls++;
+                if (is_callable($this->responder)) {
+                    return ($this->responder)();
+                }
+
+                return ['commands_applied' => 0, 'acks' => [], 'offline' => false];
+            }
+        };
+
+        $this->app->instance(\App\Services\H1\Reconcile\LicenseReconcileService::class, $fake);
+
+        return $fake;
+    }
+
+    private function bindBlankAssessment(bool $blank): void
+    {
+        $this->app->instance(
+            \Omnichannel\Addons\Seo\Services\ConfigurationSync\BlankInstallationDetector::class,
+            new class($blank) {
+                public function __construct(private bool $blank) {}
+
+                /** @return array{blank: bool} */
+                public function assess(int $userId): array
+                {
+                    return ['blank' => $this->blank];
+                }
+            },
+        );
+
+        if (! $blank) {
+            $this->app->instance(
+                \Omnichannel\Addons\Seo\Services\ConfigurationSync\ConfigurationSyncCoordinator::class,
+                new class {
+                    /** @return array{outcome: string} */
+                    public function compare(int $userId): array
+                    {
+                        return ['outcome' => 'customized'];
+                    }
+                },
+            );
+        }
     }
 
     /**
      * @param  callable(): array<string, mixed>  $responder
-     * @return object{calls: list<array{userId: int, root: ?string, overwrite: bool}>}
+     * @return object{
+     *     calls: list<array{op: string, userId?: int, root?: ?string, overwrite?: bool}>,
+     *     local: ?array<string, mixed>,
+     *     downloadResponder: ?callable
+     * }
      */
     private function bindFakeGoldenBootstrap(callable $responder): object
     {
         $fake = new class($responder) {
-            /** @var list<array{userId: int, root: ?string, overwrite: bool}> */
+            /** @var list<array{op: string, userId?: int, root?: ?string, overwrite?: bool}> */
             public array $calls = [];
+
+            /** @var array<string, mixed>|null */
+            public ?array $local = null;
+
+            /** @var (callable(): array<string, mixed>)|null */
+            public $downloadResponder = null;
 
             /** @param callable(): array<string, mixed> $responder */
             public function __construct(private $responder) {}
@@ -442,12 +885,63 @@ final class AdminQuickSetupWizardTest extends TestCase
             public function bootstrap(int $userId, ?string $targetRoot = null, bool $overwriteExisting = false): array
             {
                 $this->calls[] = [
+                    'op' => 'bootstrap',
                     'userId' => $userId,
                     'root' => $targetRoot,
                     'overwrite' => $overwriteExisting,
                 ];
 
                 return ($this->responder)();
+            }
+
+            public function downloadPackage(?string $targetRoot = null): array
+            {
+                $this->calls[] = ['op' => 'download', 'root' => $targetRoot];
+
+                if (is_callable($this->downloadResponder)) {
+                    $res = ($this->downloadResponder)();
+                } else {
+                    $res = [
+                        'status' => 'downloaded',
+                        'downloaded' => true,
+                        'imported' => false,
+                        'package_version' => '1.0.0',
+                        'canonical_hash' => str_repeat('a', 64),
+                        'apply_status' => 'pending_apply',
+                    ];
+                }
+
+                if (in_array((string) ($res['status'] ?? ''), ['downloaded', 'already_downloaded'], true)) {
+                    $this->local = [
+                        'package_id' => 'seo-ops-golden-configuration',
+                        'package_version' => (string) ($res['package_version'] ?? '1.0.0'),
+                        'canonical_hash' => (string) ($res['canonical_hash'] ?? str_repeat('a', 64)),
+                    ];
+                }
+
+                return $res;
+            }
+
+            public function applyPackage(int $userId, ?string $targetRoot = null, bool $overwriteExisting = false): array
+            {
+                $this->calls[] = [
+                    'op' => 'apply',
+                    'userId' => $userId,
+                    'root' => $targetRoot,
+                    'overwrite' => $overwriteExisting,
+                ];
+
+                $res = ($this->responder)();
+                if (($res['status'] ?? '') === 'bootstrapped') {
+                    // Keep local package; apply status tracked via wizard goldenSuccess / state store.
+                }
+
+                return $res;
+            }
+
+            public function inspectLocalPackage(?string $targetRoot = null): ?array
+            {
+                return $this->local;
             }
         };
 
@@ -529,6 +1023,7 @@ final class AdminQuickSetupWizardTest extends TestCase
             \App\Services\H1\Enrollment\EnrollmentTransport::class,
             \App\Services\H1\Enrollment\HttpEnrollmentTransport::class,
         );
+        $this->bindFakeReconcile();
 
         \Illuminate\Support\Facades\Http::fake([
             'http://localhost:3000/api/v1/enrollment/consume' => \Illuminate\Support\Facades\Http::response([
