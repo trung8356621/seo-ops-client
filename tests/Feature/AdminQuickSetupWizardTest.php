@@ -496,6 +496,35 @@ final class AdminQuickSetupWizardTest extends TestCase
         $response->assertSee('Xem lại thiết lập');
     }
 
+    public function test_dashboard_recognizes_verified_license_in_pre_enrollment_mode(): void
+    {
+        WpOption::set('quick_setup_completed_at', now()->toIso8601String());
+        WpOption::clearRequestCache();
+
+        config(['h1-license.enforcement_mode' => 'pre_enrollment']);
+        \App\Models\H1Installation::create([
+            'installation_id' => 'inst_pre_enrollment_licensed',
+            'product' => 'seo-ops',
+            'control_server_url' => 'https://ops.example.com',
+            'status' => 'active',
+            'cutover_mode' => 'pre_enrollment',
+            'verified_snapshot' => [
+                'valid_until' => now()->addYear()->utc()->format('Y-m-d\TH:i:s\Z'),
+                'services' => [
+                    'social-automation' => [
+                        'enabled' => true,
+                        'valid_until' => now()->addYear()->utc()->format('Y-m-d\TH:i:s\Z'),
+                    ],
+                ],
+            ],
+        ]);
+
+        $response = $this->actingAs($this->owner)->get('/admin');
+
+        $response->assertStatus(200);
+        $response->assertDontSee('Chưa kích hoạt bản quyền thương mại');
+    }
+
     public function test_quick_setup_prefills_existing_server_url(): void
     {
         WpOption::set('h1_control_server_url', 'http://localhost:3000');

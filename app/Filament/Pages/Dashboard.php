@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\ServiceQuickShortcutsWidget;
+use App\Models\H1Installation;
 use App\Services\Ai\AiOperationalAlertsService;
+use App\Services\H1\Persistence\InstallationStateRepository;
+use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
 use Filament\Pages\Dashboard as BaseDashboard;
 use Illuminate\Contracts\Support\Htmlable;
 use Omnichannel\Addons\AiPrompt\Filament\Concerns\InteractsWithAiUsageOverview;
@@ -34,9 +37,30 @@ class Dashboard extends BaseDashboard
     public function isCommercialActivated(): bool
     {
         try {
-            $gate = app(\App\Services\H1\Enforcement\ServiceEntitlementGate::class);
+            $installation = app(InstallationStateRepository::class)->currentInstallation();
+            if (! $installation instanceof H1Installation || ! is_array($installation->verified_snapshot)) {
+                return false;
+            }
 
-            return $gate->enforcementActive() && ($gate->allows('seo') || $gate->allows('seeding'));
+            $snapshot = $installation->verified_snapshot;
+            if (! empty($snapshot['revoked_at'])) {
+                return false;
+            }
+
+            $mapper = app(EntitlementSnapshotMapper::class);
+            $deadline = (string) ($snapshot['grace_until'] ?? $snapshot['valid_until'] ?? '');
+            if ($deadline !== '' && ! $mapper->timestampAllows($deadline)) {
+                return false;
+            }
+
+            $services = is_array($snapshot['services'] ?? null) ? $snapshot['services'] : [];
+            foreach (['seo', 'seeding', 'social-automation'] as $key) {
+                if (is_array($services[$key] ?? null) && $mapper->serviceCurrentlyLicensed($services[$key])) {
+                    return true;
+                }
+            }
+
+            return false;
         } catch (\Throwable) {
             return false;
         }

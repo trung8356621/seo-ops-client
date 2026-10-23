@@ -25,7 +25,12 @@ final class PrimaryAnchorSiteService
 
     public function currentAnchorSite(): ?Site
     {
-        if (! Schema::hasTable('sites')) {
+        try {
+            if (! Schema::hasTable('sites')) {
+                return null;
+            }
+        } catch (\Throwable) {
+            // A fresh installer may be opened before the configured database exists.
             return null;
         }
 
