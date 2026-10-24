@@ -30,7 +30,7 @@ Future Agent:            NOT IMPLEMENTED YET
 | Agent Workspace schedules | **not** scheduled |
 | DB | `2026_09_26_100000_retire_legacy_agent_workspace_seo_agent_tables` drops `seo_agent_*` |
 
-**Chat Workspace** (Group Chat + Support Ticket) lives at `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage` (`/seo/{hash}/chat`). Agent tab is disabled.
+**Chat Workspace** (Group Chat) lives at `Omnichannel\Addons\Content\Filament\Pages\ChatWorkspacePage` (`/seo/{hash}/chat`). Agent tab is disabled. Local Support Ticket UI is retired.
 
 **Still transitional under `addons/agent/` namespace (not Agent Workspace product):** Business Hook `Automation/*` and `Extension/*` bootstrapped by `seo-content-ai-compat` until extracted.
 

@@ -3,12 +3,9 @@ import { createViteConfig } from './vite.shared.config.js';
 
 export default defineConfig(createViteConfig({
     input: [
-        'resources/js/support-ticket/headerTicketComposer.js',
-        'resources/css/support-ticket-header.css',
         'resources/js/service-widget/headerServiceWidget.js',
         'resources/css/service-widget-header.css',
         'addons/content/resources/js/chat/groupChatApp.js',
-        'addons/content/resources/js/chat/ticketPanel.js',
         'addons/content/resources/js/chat/unreadBadge.js',
         'addons/ai-prompt/resources/css/global-ai-chat.css',
     ],

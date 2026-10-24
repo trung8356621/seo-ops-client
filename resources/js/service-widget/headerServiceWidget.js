@@ -86,8 +86,12 @@ function browserReachableApiBase(url) {
   }
 }
 
+function getWidgetApi() {
+  return window.OpsCommerceWidget || window.OpsServiceWidget || null;
+}
+
 function loadScriptOnce(url) {
-  if (window.OpsServiceWidget) {
+  if (getWidgetApi()) {
     return Promise.resolve();
   }
   if (scriptPromise) {
@@ -324,8 +328,9 @@ function applyHostFillLayout(host) {
 }
 
 function mountBody(root, session) {
-  if (!window.OpsServiceWidget?.setAuthContext || !window.OpsServiceWidget?.mount) {
-    throw Object.assign(new Error('OpsServiceWidget API missing.'), { code: 'invalid_response' });
+  const api = getWidgetApi();
+  if (!api?.setAuthContext || !api?.mount) {
+    throw Object.assign(new Error('OpsCommerceWidget API missing.'), { code: 'invalid_response' });
   }
 
   const host = getHost(root);
@@ -341,12 +346,12 @@ function mountBody(root, session) {
   host.dataset.opsLocale = 'vi';
 
   // Do not unmount on session refresh or API errors — remount reuses the React root.
-  window.OpsServiceWidget.setAuthContext({
+  api.setAuthContext({
     mode: 'bearer',
     accessToken: session.accessToken,
     installationId: session.installationId,
   });
-  window.OpsServiceWidget.mount({
+  api.mount({
     target: host,
     useMock: false,
     installationId: session.installationId,
@@ -368,7 +373,7 @@ async function ensureMounted(root) {
     s.session &&
     !tokenNeedsRefresh(s.session) &&
     hostHasBody(host) &&
-    window.OpsServiceWidget
+    getWidgetApi()
   ) {
     return host;
   }

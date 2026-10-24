@@ -89,7 +89,6 @@ return [
                 'service_database_connections',
                 'team_messages',
                 'team_chat_read_cursors',
-                'support_tickets',
                 // Spatie laravel-permission (addon roles/permissions; account scope = users.parent_id)
                 'roles',
                 'permissions',

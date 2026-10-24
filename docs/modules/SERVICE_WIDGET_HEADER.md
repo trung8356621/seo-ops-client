@@ -22,12 +22,12 @@ No second React trigger, no synthetic clicks, no CSS-hidden popover chrome.
 5. Lazy-load `/vendor/ops-service-widget/ops-service-widget.js`, then:
 
 ```js
-OpsServiceWidget.setAuthContext({
+OpsCommerceWidget.setAuthContext({ // alias: OpsServiceWidget
   mode: 'bearer',
   accessToken,
   installationId, // from session — not browser input
 });
-OpsServiceWidget.mount({
+OpsCommerceWidget.mount({
   target: host,
   useMock: false,
   installationId,
@@ -37,7 +37,7 @@ OpsServiceWidget.mount({
 });
 ```
 
-6. React body calls OPS `GET .../services` and `POST .../renewals` (Pending Orders only).
+6. React body calls OPS `GET .../services` (product + catalog + pending), `POST .../renewals`, `POST .../purchases` (Pending Orders; no live payment).
 
 ## Lifecycle
 

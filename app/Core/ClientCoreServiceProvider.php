@@ -108,7 +108,6 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
         $this->registerServiceWidgetHeaderHook();
-        $this->registerSupportTicketHeaderHook();
         $this->registerOperationalAlertHook();
         $this->registerGlobalHelpHeaderHook();
 
@@ -148,7 +147,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
     }
 
     /**
-     * Service Widget (OPS-SERVER) — lazy header entry beside Ticket / Help.
+     * Commerce / Service Widget (OPS-SERVER) — lazy header entry beside Help.
      * Owner-only: same {@see ServiceWidgetPolicy} as POST /api/service-widget/session
      * (no Vite/JS for non-Owner).
      */
@@ -167,35 +166,6 @@ final class ClientCoreServiceProvider extends ServiceProvider
 
                 return new HtmlString(
                     view('filament.hooks.service-widget-header')->render()
-                );
-            },
-        );
-    }
-
-    /**
-     * Global Support Ticket composer — one registration for Admin / SEO / Seeding.
-     */
-    private function registerSupportTicketHeaderHook(): void
-    {
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::USER_MENU_BEFORE,
-            static function (): HtmlString {
-                if (! auth()->check()) {
-                    return new HtmlString('');
-                }
-
-                try {
-                    $panelId = \Filament\Facades\Filament::getCurrentPanel()?->getId();
-                } catch (\Throwable) {
-                    return new HtmlString('');
-                }
-
-                if (! is_string($panelId) || ! in_array($panelId, ServiceTopbarRouter::PANEL_IDS, true)) {
-                    return new HtmlString('');
-                }
-
-                return new HtmlString(
-                    view('filament.hooks.support-ticket-header')->render()
                 );
             },
         );

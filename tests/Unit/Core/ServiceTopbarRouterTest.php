@@ -21,10 +21,10 @@ final class ServiceTopbarRouterTest extends TestCase
         );
 
         self::assertStringContainsString('registerServiceTopbarRouterHook', $source);
-        self::assertStringContainsString('registerSupportTicketHeaderHook', $source);
+        self::assertStringNotContainsString('registerSupportTicketHeaderHook', $source);
         self::assertStringContainsString('PanelsRenderHook::TOPBAR_START', $source);
         self::assertStringContainsString('service-topbar-router', $source);
-        self::assertStringContainsString('support-ticket-header', $source);
+        self::assertStringNotContainsString('support-ticket-header', $source);
         self::assertStringContainsString('registerServiceWidgetHeaderHook', $source);
         self::assertStringContainsString("key: 'admin'", $source);
         self::assertStringContainsString("url('/admin')", $source);
