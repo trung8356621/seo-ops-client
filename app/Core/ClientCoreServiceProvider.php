@@ -28,6 +28,7 @@ use App\Core\Sites\SiteAccess;
 use App\Core\Workspace\ServiceTopbarRouter;
 use App\Core\Workspace\WorkspaceDestination;
 use App\Core\Workspace\WorkspaceDestinationRegistry;
+use App\Policies\ServiceWidgetPolicy;
 use Filament\Support\Facades\FilamentView;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Support\HtmlString;
@@ -148,6 +149,8 @@ final class ClientCoreServiceProvider extends ServiceProvider
 
     /**
      * Service Widget (OPS-SERVER) — lazy header entry beside Ticket / Help.
+     * Owner-only: same {@see ServiceWidgetPolicy} as POST /api/service-widget/session
+     * (no Vite/JS for non-Owner).
      */
     private function registerServiceWidgetHeaderHook(): void
     {
@@ -155,6 +158,10 @@ final class ClientCoreServiceProvider extends ServiceProvider
             PanelsRenderHook::USER_MENU_BEFORE,
             function (): HtmlString {
                 if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                if (! ServiceWidgetPolicy::allows(auth()->user())) {
                     return new HtmlString('');
                 }
 

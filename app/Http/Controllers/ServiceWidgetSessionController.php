@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Policies\ServiceWidgetPolicy;
 use App\Services\H1\Exceptions\H1TransportException;
 use App\Services\H1\Widget\WidgetTokenExchangeClient;
 use Illuminate\Http\JsonResponse;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 /**
  * Authenticated Admin session → short-lived Service Widget session.
  * Installation identity comes only from enrolled H1 state (never from the browser body).
+ * Authorization: {@see ServiceWidgetPolicy} (same policy as header "Dịch vụ").
  */
 final class ServiceWidgetSessionController extends Controller
 {
@@ -28,6 +30,15 @@ final class ServiceWidgetSessionController extends Controller
                     'message' => 'Bạn cần đăng nhập để mở Dịch vụ.',
                 ],
             ], 401);
+        }
+
+        if (! ServiceWidgetPolicy::allows(auth()->user())) {
+            return response()->json([
+                'error' => [
+                    'code' => 'forbidden',
+                    'message' => 'Chỉ Installation Owner mới mở được Dịch vụ.',
+                ],
+            ], 403);
         }
 
         // Ignore any client-supplied installation id — server is the authority.

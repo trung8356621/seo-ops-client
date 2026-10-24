@@ -14,6 +14,7 @@ final class ServiceWidgetHeaderContractTest extends TestCase
     {
         $source = (string) file_get_contents(app_path('Core/ClientCoreServiceProvider.php'));
         self::assertStringContainsString('registerServiceWidgetHeaderHook', $source);
+        self::assertStringContainsString('ServiceWidgetPolicy::allows(auth()->user())', $source);
         self::assertStringContainsString("view('filament.hooks.service-widget-header')", $source);
         self::assertStringContainsString('PanelsRenderHook::USER_MENU_BEFORE', $source);
     }
