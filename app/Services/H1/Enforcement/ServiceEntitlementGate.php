@@ -26,8 +26,13 @@ final class ServiceEntitlementGate
         if ($mode === 'enforcing') {
             return true;
         }
-        // Cutover: once enrolled, prefer verified snapshot even in pre_enrollment
-        // only when installation cutover_mode is enforcing.
+
+        // Enrolled installations are always under H1 snapshot authority.
+        // pre_enrollment fail-open applies only to legacy installs that never enrolled.
+        if ($this->installations->isEnrolled()) {
+            return true;
+        }
+
         $installation = $this->installations->currentInstallation();
         if ($installation instanceof H1Installation && $installation->cutover_mode === 'enforcing') {
             return true;

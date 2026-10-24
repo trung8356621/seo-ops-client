@@ -27,7 +27,7 @@ final class LicenseReconcileService
     /**
      * @return array{commands_applied: int, acks: list<array<string, mixed>>, offline: bool}
      */
-    public function reconcile(?array $mockedResponse = null): array
+    public function reconcile(?array $mockedResponse = null, bool $flushAcks = true): array
     {
         $installation = $this->installations->currentInstallation();
         $credential = $this->installations->activeCredential();
@@ -114,6 +114,7 @@ final class LicenseReconcileService
             }
         }
 
+        $pending = [];
         $fresh = $this->installations->currentInstallation();
         if ($fresh instanceof H1Installation) {
             $pending = array_values(array_filter(
@@ -121,7 +122,20 @@ final class LicenseReconcileService
                 static fn (array $ack): bool => in_array(($ack['result'] ?? ''), ['applied', 'duplicate'], true),
             ));
             $fresh->pending_acks = $pending;
+            $fresh->validated_at = now();
             $fresh->save();
+        }
+
+        // OPS marks commands applied only after ACK ingest. One follow-up pull
+        // flushes local pending_acks without waiting for the next schedule tick.
+        if ($flushAcks && $mockedResponse === null && $pending !== [] && $applied > 0) {
+            try {
+                $followUp = $this->reconcile(null, false);
+                $newAcks = array_merge($newAcks, $followUp['acks']);
+                $applied += $followUp['commands_applied'];
+            } catch (H1TransportException) {
+                // Local snapshot already advanced; ACK retry on next reconcile.
+            }
         }
 
         return [

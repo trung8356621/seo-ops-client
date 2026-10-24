@@ -19,12 +19,20 @@ return [
     'timestamp_skew_seconds' => (int) env('H1_TIMESTAMP_SKEW_SECONDS', 300),
 
     /*
-    | pre_enrollment — existing installs keep working until enrolled + cutover.
-    | enforcing — licensed SEO/Seeding require a verified entitlement snapshot.
+    | pre_enrollment — legacy unenrolled installs fail-open until they enroll.
+    |                   Once enrolled, ServiceEntitlementGate always enforces the
+    |                   verified H1 snapshot (enrollment is the cutover).
+    | enforcing — force snapshot checks even before enrollment (deny commercial).
     */
     'enforcement_mode' => (string) env('H1_ENFORCEMENT_MODE', 'pre_enrollment'),
 
-    'schedule_enabled' => (bool) env('H1_RECONCILE_SCHEDULE_ENABLED', false),
+    /*
+    | Periodic pull of pending entitlement/rotation commands from OPS-SERVER.
+    | Services Admin also reconciles on page load. Enable for enrolled installs.
+    */
+    'schedule_enabled' => (bool) env('H1_RECONCILE_SCHEDULE_ENABLED', true),
+
+    'queue' => (string) env('H1_RECONCILE_QUEUE', 'default'),
 
     /*
     | Enrollment HTTP path from handoff — NOT present on OPS-SERVER HTTP app yet.

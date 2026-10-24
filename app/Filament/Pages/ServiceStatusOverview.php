@@ -6,13 +6,19 @@ namespace App\Filament\Pages;
 
 use App\Models\Service;
 use App\Models\User;
+use App\Services\H1\Enforcement\ServiceEntitlementGate;
+use App\Services\H1\Exceptions\H1TransportException;
+use App\Services\H1\Persistence\InstallationStateRepository;
+use App\Services\H1\Reconcile\LicenseReconcileService;
+use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
 use App\Services\ServiceDatabaseConnectionResolver;
 use App\Services\ServiceIdentity;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Auth;
 
 /**
- * Admin Service catalog overview — H1 entitlement + DB readiness (no Activate controls).
+ * Admin Service catalog overview — H1 connection ≠ service entitlement ≠ operational.
  */
 final class ServiceStatusOverview extends Page
 {
@@ -23,6 +29,12 @@ final class ServiceStatusOverview extends Page
     protected static string $view = 'filament.pages.service-status-overview';
 
     protected static ?int $navigationSort = 11;
+
+    public bool $reconcileRunning = false;
+
+    public ?string $reconcileError = null;
+
+    private bool $autoReconcileCompleted = false;
 
     public static function getNavigationGroup(): ?string
     {
@@ -53,11 +65,70 @@ final class ServiceStatusOverview extends Page
     }
 
     /**
+     * Pull pending entitlement commands when opening Services (H1 connected ≠ up to date).
+     */
+    public function mountAutoReconcile(): void
+    {
+        if ($this->autoReconcileCompleted || $this->reconcileRunning) {
+            return;
+        }
+        $this->autoReconcileCompleted = true;
+        $this->runReconcile(notify: false);
+    }
+
+    public function reconcileLicense(): void
+    {
+        $this->runReconcile(notify: true);
+    }
+
+    private function runReconcile(bool $notify): void
+    {
+        if ($this->reconcileRunning) {
+            return;
+        }
+
+        $repo = app(InstallationStateRepository::class);
+        if (! $repo->isEnrolled()) {
+            $this->reconcileError = null;
+
+            return;
+        }
+
+        $this->reconcileRunning = true;
+        $this->reconcileError = null;
+
+        try {
+            $result = app(LicenseReconcileService::class)->reconcile();
+            if (! empty($result['offline'])) {
+                $this->reconcileError = 'Không kết nối được OPS-SERVER. Đang dùng bản quyền đã xác minh gần nhất (nếu có).';
+            } elseif ($notify) {
+                Notification::make()
+                    ->title('Đã đồng bộ quyền H1')
+                    ->body('Áp dụng '.((int) ($result['commands_applied'] ?? 0)).' lệnh entitlement.')
+                    ->success()
+                    ->send();
+            }
+        } catch (H1TransportException $e) {
+            $this->reconcileError = $e->getMessage();
+            if ($notify) {
+                Notification::make()
+                    ->title('Đồng bộ H1 thất bại')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->send();
+            }
+        } finally {
+            $this->reconcileRunning = false;
+        }
+    }
+
+    /**
      * @return list<array<string, mixed>>
      */
     public function serviceCards(): array
     {
         $resolver = app(ServiceDatabaseConnectionResolver::class);
+        $gate = app(ServiceEntitlementGate::class);
         $cards = [];
 
         foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
@@ -70,10 +141,11 @@ final class ServiceStatusOverview extends Page
             }
 
             $health = $resolver->healthReport($publicSlug);
-            $entitlementLabel = match ($health['entitlement_state'] ?? '') {
-                'allowed' => 'Quyền H1: Đã cấp',
-                'suspended' => 'Quyền H1: Tạm ngưng',
-                default => 'Quyền H1: Chưa cấp',
+            $entitlementState = (string) ($health['entitlement_state'] ?? $gate->state($publicSlug));
+            $entitlementLabel = match ($entitlementState) {
+                'allowed' => 'Quyền dịch vụ: Đã cấp',
+                'suspended' => 'Quyền dịch vụ: Tạm ngưng / Thu hồi',
+                default => 'Quyền dịch vụ: Chưa cấp',
             };
 
             $cards[] = [
@@ -83,6 +155,7 @@ final class ServiceStatusOverview extends Page
                 'status' => $health['status'] ?? 'needs_config',
                 'status_label' => $health['status_label'] ?? 'Chưa cấu hình',
                 'entitlement_label' => $entitlementLabel,
+                'entitlement_state' => $entitlementState,
                 'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình DB',
                 'setup_url' => ServiceConfigure::getUrl(['service' => $publicSlug]),
             ];
@@ -98,28 +171,32 @@ final class ServiceStatusOverview extends Page
      */
     public function opsServerConnectionReport(): array
     {
-        $installations = app(\App\Services\H1\Persistence\InstallationStateRepository::class);
+        $installations = app(InstallationStateRepository::class);
         $installation = $installations->currentInstallation();
         $cred = $installation ? $installations->activeCredential($installation->installation_id) : null;
+        $mapper = app(EntitlementSnapshotMapper::class);
 
         if (! $installation instanceof \App\Models\H1Installation) {
             return [
                 'enrolled' => false,
-                'status_label' => 'Chưa liên kết OPS-SERVER (Unenrolled)',
+                'h1_connected' => false,
+                'status_label' => 'H1: Chưa liên kết OPS-SERVER',
                 'status_badge' => 'gray',
                 'installation_id' => '—',
                 'control_server_url' => (string) config('h1-license.base_url', '—'),
                 'credential_version' => '—',
                 'last_reconciled' => 'Chưa có dữ liệu',
                 'entitlement_revision' => 0,
-                'seo_status' => 'Chưa cấu hình',
+                'seo_status' => 'Chưa cấp',
                 'seo_quota' => '—',
                 'seo_valid_until' => '—',
-                'seeding_status' => 'Chưa cấu hình',
+                'seeding_status' => 'Chưa cấp',
                 'seeding_valid_until' => '—',
+                'social_automation_status' => 'Chưa cấp',
                 'golden_status' => 'Chưa đồng bộ',
                 'golden_version' => '1.0.0',
-                'last_error' => null,
+                'last_error' => $this->reconcileError,
+                'reconcile_running' => $this->reconcileRunning,
             ];
         }
 
@@ -127,12 +204,21 @@ final class ServiceStatusOverview extends Page
             ? $installation->verified_snapshot['services']
             : [];
 
-        $seo = $services['seo'] ?? [];
-        $seoActive = ! empty($seo['enabled']) && empty($seo['revoked_at']);
-        $seeding = $services['seeding'] ?? [];
-        $seedingActive = ! empty($seeding['enabled']) && empty($seeding['revoked_at']);
+        $serviceStatus = static function (array $services, string $key) use ($mapper): string {
+            $row = $services[$key] ?? null;
+            if (! is_array($row)) {
+                return 'Chưa cấp';
+            }
+            if (! empty($row['revoked_at'])) {
+                return 'Thu hồi';
+            }
+            if ($mapper->serviceCurrentlyLicensed($row)) {
+                return 'Đã cấp';
+            }
 
-        // Golden Configuration sync state
+            return ! empty($row['enabled']) ? 'Hết hạn' : 'Tắt';
+        };
+
         $goldenOutcome = 'Chưa đồng bộ';
         $goldenVersion = '1.0.0';
         try {
@@ -141,25 +227,30 @@ final class ServiceStatusOverview extends Page
             if (isset($state['last_compare']['outcome'])) {
                 $goldenOutcome = (string) $state['last_compare']['outcome'];
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
-        // Last error
-        $lastError = null;
+        $lastError = $this->reconcileError;
         try {
             $failedReceipt = \App\Models\H1CommandReceipt::query()
                 ->where('result', 'failed')
                 ->latest('id')
                 ->first();
-            if ($failedReceipt instanceof \App\Models\H1CommandReceipt) {
-                $lastError = "{$failedReceipt->command_id}: " . ($failedReceipt->reason ?? 'Lỗi không xác định');
+            if ($failedReceipt instanceof \App\Models\H1CommandReceipt && $lastError === null) {
+                $lastError = "{$failedReceipt->command_id}: ".($failedReceipt->reason ?? 'Lỗi không xác định');
             }
-        } catch (\Throwable) {}
+        } catch (\Throwable) {
+        }
 
-        $statusLabel = $installation->validated_at ? 'Đã liên kết & Đồng bộ (Active)' : 'Chờ đồng bộ lần đầu (Pending First Reconcile)';
-        $statusBadge = $installation->validated_at ? 'emerald' : 'amber';
+        $h1Connected = $cred !== null;
+        $statusLabel = $h1Connected
+            ? 'H1: Đã kết nối (enrollment) — quyền dịch vụ theo snapshot bên dưới'
+            : 'H1: Chờ credential';
+        $statusBadge = $h1Connected ? 'emerald' : 'amber';
 
         return [
-            'enrolled' => true,
+            'enrolled' => $h1Connected,
+            'h1_connected' => $h1Connected,
             'status_label' => $statusLabel,
             'status_badge' => $statusBadge,
             'installation_id' => $installation->installation_id,
@@ -167,14 +258,16 @@ final class ServiceStatusOverview extends Page
             'credential_version' => $installation->credential_version ? "v{$installation->credential_version}" : ($cred ? "v{$cred->version}" : '—'),
             'last_reconciled' => $installation->validated_at ? $installation->validated_at->format('Y-m-d H:i:s T') : 'Chưa có dữ liệu',
             'entitlement_revision' => (int) $installation->entitlement_revision,
-            'seo_status' => $seoActive ? 'Active' : (empty($seo['enabled']) ? 'Inactive' : 'Revoked'),
-            'seo_quota' => isset($seo['quota']) ? "{$seo['quota']} domains" : 'Không giới hạn',
-            'seo_valid_until' => ! empty($seo['valid_until']) ? (string) $seo['valid_until'] : '—',
-            'seeding_status' => $seedingActive ? 'Active' : (empty($seeding['enabled']) ? 'Inactive' : 'Revoked'),
-            'seeding_valid_until' => ! empty($seeding['valid_until']) ? (string) $seeding['valid_until'] : '—',
+            'seo_status' => $serviceStatus($services, 'seo'),
+            'seo_quota' => isset($services['seo']['quota']) ? "{$services['seo']['quota']} domains" : '—',
+            'seo_valid_until' => ! empty($services['seo']['valid_until']) ? (string) $services['seo']['valid_until'] : '—',
+            'seeding_status' => $serviceStatus($services, 'seeding'),
+            'seeding_valid_until' => ! empty($services['seeding']['valid_until']) ? (string) $services['seeding']['valid_until'] : '—',
+            'social_automation_status' => $serviceStatus($services, 'social-automation'),
             'golden_status' => $goldenOutcome,
             'golden_version' => $goldenVersion,
             'last_error' => $lastError,
+            'reconcile_running' => $this->reconcileRunning,
         ];
     }
 }

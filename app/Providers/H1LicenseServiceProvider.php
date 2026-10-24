@@ -80,6 +80,7 @@ final class H1LicenseServiceProvider extends ServiceProvider
                     'search-foundation' => 'seo',
                     'search-intelligence' => 'seo',
                     'seeding' => 'seeding',
+                    'social-automation' => 'social-automation',
                 ];
                 $service = $map[$addonSlug] ?? null;
                 if ($service === null) {

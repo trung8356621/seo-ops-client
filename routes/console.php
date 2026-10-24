@@ -164,3 +164,9 @@ if ((bool) config('configuration-sync.schedule_enabled', false)) {
         ->withoutOverlapping(30);
 }
 
+if ((bool) config('h1-license.schedule_enabled', false)) {
+    Schedule::job(new \App\Jobs\H1\LicenseReconcileJob)
+        ->everyFiveMinutes()
+        ->withoutOverlapping(4);
+}
+

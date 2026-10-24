@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Core\Addon;
 
 /**
- * Entitlement hook placeholder — Core does not enforce billing here yet.
+ * Addon commercial gate. When H1 wires a resolver, it is authoritative.
+ * Config flag alone never grants access if a resolver is bound.
  */
 final class AddonEntitlementGate
 {
@@ -18,14 +19,14 @@ final class AddonEntitlementGate
 
     public function allows(string $addonSlug): bool
     {
+        if (is_callable($this->resolver)) {
+            return (bool) ($this->resolver)($addonSlug);
+        }
+
         if (! (bool) config('addons.entitlement.enabled', false)) {
             return true;
         }
 
-        if (! is_callable($this->resolver)) {
-            return true;
-        }
-
-        return (bool) ($this->resolver)($addonSlug);
+        return true;
     }
 }
