@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Unit\H1;
 
+use App\Models\H1ClientNotification;
 use App\Models\H1Credential;
 use App\Models\H1Installation;
 use App\Models\Service;
 use App\Models\Site;
 use App\Services\H1\Commands\EntitlementCommandApplier;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
+use App\Services\H1\Notifications\ClientNotificationStore;
 use App\Services\H1\Protocol\LicenseCrypto;
 use App\Services\H1\Rotation\FixtureRotationSecretTransport;
 use App\Services\H1\Rotation\RotationSecretTransport;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 final class EntitlementCommandApplierTest extends TestCase
@@ -419,6 +423,144 @@ final class EntitlementCommandApplierTest extends TestCase
         self::assertSame(30, $gate->seoQuota());
         self::assertFalse($gate->allows('seeding'));
         self::assertSame('active', Site::query()->where('domain', 'site1.example')->value('status'));
+    }
+
+    public function test_suspend_resume_revoke_notifications_idempotent_and_scoped(): void
+    {
+        Schema::dropIfExists('h1_client_notifications');
+        Schema::create('h1_client_notifications', function (Blueprint $table): void {
+            $table->id();
+            $table->string('notification_id', 128)->unique();
+            $table->string('installation_id', 128);
+            $table->string('command_id', 128)->nullable();
+            $table->string('action', 32);
+            $table->string('service_key', 64)->nullable();
+            $table->text('message');
+            $table->string('status_before', 32)->nullable();
+            $table->string('status_after', 32)->nullable();
+            $table->unsignedBigInteger('entitlement_revision')->default(0);
+            $table->timestamp('issued_at')->nullable();
+            $table->boolean('display_active')->default(true);
+            $table->timestamp('superseded_at')->nullable();
+            $table->timestamps();
+        });
+
+        $applier = app(EntitlementCommandApplier::class);
+        $suspendCmd = $this->lifecycleCommand(
+            commandId: 'cmd_suspend_seo',
+            revision: 2,
+            operation: 'change_plan',
+            target: 'seo',
+            services: $this->sampleServicesWithSeoEnabled(false),
+            notification: [
+                'id' => 'cmd_suspend_seo',
+                'action' => 'suspend',
+                'service_key' => 'seo',
+                'message' => 'Tạm ngưng SEO bảo trì',
+                'status_before' => 'active',
+                'status_after' => 'suspended',
+                'entitlement_revision' => 2,
+                'issued_at' => '2026-10-24T09:00:00Z',
+            ],
+        );
+
+        self::assertSame('applied', $applier->apply($suspendCmd)['result']);
+        self::assertSame('duplicate', $applier->apply($suspendCmd)['result']);
+        self::assertSame(1, H1ClientNotification::query()->count());
+
+        $resumeCmd = $this->lifecycleCommand(
+            commandId: 'cmd_resume_seo',
+            revision: 3,
+            operation: 'change_plan',
+            target: 'seo',
+            services: $this->sampleServicesWithSeoEnabled(true),
+            notification: [
+                'id' => 'cmd_resume_seo',
+                'action' => 'resume',
+                'service_key' => 'seo',
+                'message' => 'Đã khôi phục SEO',
+                'status_before' => 'suspended',
+                'status_after' => 'active',
+                'entitlement_revision' => 3,
+                'issued_at' => '2026-10-24T10:00:00Z',
+            ],
+        );
+        self::assertSame('applied', $applier->apply($resumeCmd)['result']);
+
+        $services = $this->sampleServices();
+        $services[2]['enabled'] = false;
+        $services[2]['revoked_at'] = '2026-10-24T11:00:00Z';
+        $revokeSeeding = $this->lifecycleCommand(
+            commandId: 'cmd_revoke_seeding',
+            revision: 4,
+            operation: 'revoke',
+            target: 'seeding',
+            services: $services,
+            notification: [
+                'id' => 'cmd_revoke_seeding',
+                'action' => 'revoke',
+                'service_key' => 'seeding',
+                'message' => 'Thu hồi Seeding',
+                'status_before' => 'active',
+                'status_after' => 'revoked',
+                'entitlement_revision' => 4,
+                'issued_at' => '2026-10-24T11:00:00Z',
+            ],
+        );
+        self::assertSame('applied', $applier->apply($revokeSeeding)['result']);
+        self::assertSame('duplicate', $applier->apply($revokeSeeding)['result']);
+
+        $latest = app(ClientNotificationStore::class)->latestByService('ins_01');
+        self::assertSame('Đã khôi phục SEO', $latest['seo']['message']);
+        self::assertSame('resume', $latest['seo']['action']);
+        self::assertSame('Thu hồi Seeding', $latest['seeding']['message']);
+        self::assertSame(3, H1ClientNotification::query()->count());
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $services
+     * @param  array<string, mixed>  $notification
+     * @return array<string, mixed>
+     */
+    private function lifecycleCommand(
+        string $commandId,
+        int $revision,
+        string $operation,
+        string $target,
+        array $services,
+        array $notification,
+    ): array {
+        return [
+            'message_type' => 'entitlement_command',
+            'command_id' => $commandId,
+            'installation_id' => 'ins_01',
+            'product' => 'seo-ops',
+            'operation' => $operation,
+            'target_service' => $target,
+            'entitlement_revision' => $revision,
+            'credential_version' => 1,
+            'issued_at' => $notification['issued_at'] ?? '2026-10-24T09:00:00Z',
+            'effective_at' => $notification['issued_at'] ?? '2026-10-24T09:00:00Z',
+            'entitlement' => [
+                'plan_key' => 'seo-pro-30',
+                'valid_until' => '2029-10-21T00:00:00Z',
+                'grace_until' => null,
+                'revoked_at' => null,
+                'services' => $services,
+            ],
+            'client_notification' => $notification,
+        ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function sampleServicesWithSeoEnabled(bool $enabled): array
+    {
+        $services = $this->sampleServices();
+        $services[1]['enabled'] = $enabled;
+
+        return $services;
     }
 
     private function seedInstallation(): void

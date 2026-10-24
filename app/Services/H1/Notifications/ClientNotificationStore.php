@@ -9,7 +9,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Persist client-facing H1 entitlement notifications (idempotent by notification_id).
+ * Persist H1 entitlement notifications (idempotent by notification_id).
+ * Latest notification per service is display_active; full history retained.
  */
 final class ClientNotificationStore
 {
@@ -68,74 +69,60 @@ final class ClientNotificationStore
             'superseded_at' => null,
         ]);
 
-        $this->applyDisplayRules($row);
+        $this->markLatestPerService($row);
     }
 
-    private function applyDisplayRules(H1ClientNotification $row): void
+    /**
+     * Only the newest notification for a service stays display_active
+     * (resume replaces suspend as the current reason under that service).
+     */
+    private function markLatestPerService(H1ClientNotification $row): void
     {
-        $action = (string) $row->action;
         $serviceKey = $row->service_key;
-
-        // Resume / grant / renew / upgrade clear prior active warning for the same service.
-        if (in_array($action, ['resume', 'grant', 'renew', 'upgrade'], true) && is_string($serviceKey) && $serviceKey !== '') {
-            H1ClientNotification::query()
-                ->where('installation_id', $row->installation_id)
-                ->where('service_key', $serviceKey)
-                ->where('display_active', true)
-                ->where('id', '!=', $row->id)
-                ->whereIn('action', ['suspend', 'revoke', 'quota_change'])
-                ->update([
-                    'display_active' => false,
-                    'superseded_at' => now(),
-                ]);
+        if (! is_string($serviceKey) || $serviceKey === '') {
+            return;
         }
 
-        // Informational resume/grant messages stay in history but are not warning banners.
-        if (in_array($action, ['resume', 'grant', 'renew', 'upgrade'], true)) {
-            $row->forceFill([
+        H1ClientNotification::query()
+            ->where('installation_id', $row->installation_id)
+            ->where('service_key', $serviceKey)
+            ->where('id', '!=', $row->id)
+            ->where('display_active', true)
+            ->update([
                 'display_active' => false,
                 'superseded_at' => now(),
-            ])->save();
-        }
+            ]);
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * Latest display_active notification per service_key for this installation.
+     *
+     * @return array<string, array<string, mixed>> keyed by service_key
      */
-    public function activeForInstallation(string $installationId): array
+    public function latestByService(string $installationId): array
     {
         if (! Schema::hasTable('h1_client_notifications')) {
             return [];
         }
 
-        return H1ClientNotification::query()
+        $rows = H1ClientNotification::query()
             ->where('installation_id', $installationId)
             ->where('display_active', true)
+            ->whereNotNull('service_key')
             ->orderByDesc('issued_at')
             ->orderByDesc('id')
-            ->limit(50)
-            ->get()
-            ->map(fn (H1ClientNotification $n): array => $this->toArray($n))
-            ->all();
-    }
+            ->get();
 
-    /**
-     * @return list<array<string, mixed>>
-     */
-    public function recentHistory(string $installationId, int $limit = 20): array
-    {
-        if (! Schema::hasTable('h1_client_notifications')) {
-            return [];
+        $byService = [];
+        foreach ($rows as $n) {
+            $key = (string) $n->service_key;
+            if ($key === '' || isset($byService[$key])) {
+                continue;
+            }
+            $byService[$key] = $this->toArray($n);
         }
 
-        return H1ClientNotification::query()
-            ->where('installation_id', $installationId)
-            ->orderByDesc('issued_at')
-            ->orderByDesc('id')
-            ->limit($limit)
-            ->get()
-            ->map(fn (H1ClientNotification $n): array => $this->toArray($n))
-            ->all();
+        return $byService;
     }
 
     /**
@@ -151,7 +138,7 @@ final class ClientNotificationStore
             'status_before' => $n->status_before,
             'status_after' => $n->status_after,
             'entitlement_revision' => (int) $n->entitlement_revision,
-            'issued_at' => $n->issued_at?->toIso8601String(),
+            'issued_at' => $n->issued_at?->format('Y-m-d H:i'),
             'display_active' => (bool) $n->display_active,
         ];
     }

@@ -37,10 +37,10 @@ final class ClientNotificationStoreTest extends TestCase
         });
     }
 
-    public function test_idempotent_record_and_resume_supersedes_suspend(): void
+    public function test_idempotent_and_resume_replaces_suspend_as_latest(): void
     {
         $store = app(ClientNotificationStore::class);
-        $payload = [
+        $suspend = [
             'id' => 'cmd_suspend_1',
             'action' => 'suspend',
             'service_key' => 'seo',
@@ -50,31 +50,52 @@ final class ClientNotificationStoreTest extends TestCase
             'entitlement_revision' => 10,
             'issued_at' => '2026-10-24T09:00:00Z',
         ];
-        $store->recordFromCommand('ins_01', 'cmd_suspend_1', $payload);
-        $store->recordFromCommand('ins_01', 'cmd_suspend_1', $payload);
+        $store->recordFromCommand('ins_01', 'cmd_suspend_1', $suspend);
+        $store->recordFromCommand('ins_01', 'cmd_suspend_1', $suspend);
         self::assertSame(1, H1ClientNotification::query()->count());
-        self::assertTrue((bool) H1ClientNotification::query()->value('display_active'));
 
         $store->recordFromCommand('ins_01', 'cmd_resume_1', [
             'id' => 'cmd_resume_1',
             'action' => 'resume',
             'service_key' => 'seo',
-            'message' => 'Đã khôi phục',
+            'message' => 'Đã khôi phục sau bảo trì',
             'status_before' => 'suspended',
             'status_after' => 'active',
             'entitlement_revision' => 11,
             'issued_at' => '2026-10-24T10:00:00Z',
         ]);
 
-        $suspend = H1ClientNotification::query()->where('notification_id', 'cmd_suspend_1')->first();
-        self::assertNotNull($suspend);
-        self::assertFalse((bool) $suspend->display_active);
+        self::assertSame(2, H1ClientNotification::query()->count());
+        $latest = $store->latestByService('ins_01');
+        self::assertArrayHasKey('seo', $latest);
+        self::assertSame('resume', $latest['seo']['action']);
+        self::assertSame('Đã khôi phục sau bảo trì', $latest['seo']['message']);
+        self::assertFalse((bool) H1ClientNotification::query()->where('notification_id', 'cmd_suspend_1')->value('display_active'));
+        self::assertTrue((bool) H1ClientNotification::query()->where('notification_id', 'cmd_resume_1')->value('display_active'));
+    }
 
-        $active = $store->activeForInstallation('ins_01');
-        self::assertCount(0, $active);
+    public function test_notifications_do_not_cross_services(): void
+    {
+        $store = app(ClientNotificationStore::class);
+        $store->recordFromCommand('ins_01', 'cmd_s', [
+            'id' => 'cmd_s',
+            'action' => 'suspend',
+            'service_key' => 'seo',
+            'message' => 'SEO pause',
+            'entitlement_revision' => 1,
+            'issued_at' => '2026-10-24T09:00:00Z',
+        ]);
+        $store->recordFromCommand('ins_01', 'cmd_k', [
+            'id' => 'cmd_k',
+            'action' => 'revoke',
+            'service_key' => 'seeding',
+            'message' => 'Seeding revoke',
+            'entitlement_revision' => 2,
+            'issued_at' => '2026-10-24T09:01:00Z',
+        ]);
 
-        $history = $store->recentHistory('ins_01');
-        self::assertGreaterThanOrEqual(2, count($history));
-        self::assertSame('Tạm ngưng bảo trì', $history[1]['message'] ?? $history[0]['message']);
+        $latest = $store->latestByService('ins_01');
+        self::assertSame('SEO pause', $latest['seo']['message']);
+        self::assertSame('Seeding revoke', $latest['seeding']['message']);
     }
 }

@@ -130,13 +130,7 @@ final class ServiceStatusOverview extends Page
     {
         $resolver = app(ServiceDatabaseConnectionResolver::class);
         $gate = app(ServiceEntitlementGate::class);
-        $activeByService = [];
-        foreach ($this->activeClientNotifications() as $ntf) {
-            $key = is_string($ntf['service_key'] ?? null) ? (string) $ntf['service_key'] : '';
-            if ($key !== '' && ! isset($activeByService[$key])) {
-                $activeByService[$key] = $ntf;
-            }
-        }
+        $latestByService = $this->latestNotificationsByService();
         $cards = [];
 
         foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
@@ -155,7 +149,8 @@ final class ServiceStatusOverview extends Page
                 'suspended' => 'Quyền dịch vụ: Tạm ngưng / Thu hồi',
                 default => 'Quyền dịch vụ: Chưa cấp',
             };
-            $ntf = $activeByService[$publicSlug] ?? null;
+            $ntf = $latestByService[$publicSlug] ?? null;
+            $noticeAction = is_array($ntf) ? (string) ($ntf['action'] ?? '') : '';
 
             $cards[] = [
                 'slug' => $publicSlug,
@@ -165,8 +160,15 @@ final class ServiceStatusOverview extends Page
                 'status_label' => $health['status_label'] ?? 'Chưa cấu hình',
                 'entitlement_label' => $entitlementLabel,
                 'entitlement_state' => $entitlementState,
-                'client_message' => is_array($ntf) ? (string) ($ntf['message'] ?? '') : '',
-                'client_message_action' => is_array($ntf) ? (string) ($ntf['action'] ?? '') : '',
+                'notice_action' => match ($noticeAction) {
+                    'suspend' => 'Suspend',
+                    'resume' => 'Resume',
+                    'revoke' => 'Revoke',
+                    'grant', 'renew', 'change_plan' => ucfirst(str_replace('_', ' ', $noticeAction)),
+                    default => $noticeAction,
+                },
+                'notice_message' => is_array($ntf) ? (string) ($ntf['message'] ?? '') : '',
+                'notice_at' => is_array($ntf) ? (string) ($ntf['issued_at'] ?? '') : '',
                 'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình DB',
                 'setup_url' => ServiceConfigure::getUrl(['service' => $publicSlug]),
             ];
@@ -176,29 +178,16 @@ final class ServiceStatusOverview extends Page
     }
 
     /**
-     * @return list<array<string, mixed>>
+     * @return array<string, array<string, mixed>>
      */
-    public function activeClientNotifications(): array
+    private function latestNotificationsByService(): array
     {
         $installation = app(InstallationStateRepository::class)->currentInstallation();
         if (! $installation instanceof \App\Models\H1Installation) {
             return [];
         }
 
-        return app(ClientNotificationStore::class)->activeForInstallation($installation->installation_id);
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    public function clientNotificationHistory(): array
-    {
-        $installation = app(InstallationStateRepository::class)->currentInstallation();
-        if (! $installation instanceof \App\Models\H1Installation) {
-            return [];
-        }
-
-        return app(ClientNotificationStore::class)->recentHistory($installation->installation_id, 15);
+        return app(ClientNotificationStore::class)->latestByService($installation->installation_id);
     }
 
     /**
