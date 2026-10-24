@@ -7,6 +7,7 @@ namespace App\Services\H1\Commands;
 use App\Models\H1CommandReceipt;
 use App\Models\H1Installation;
 use App\Services\Gateway\EntitlementAppliedHook;
+use App\Services\H1\Notifications\ClientNotificationStore;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Protocol\LicenseCrypto;
 use App\Services\H1\Protocol\LicenseProtocol;
@@ -23,6 +24,7 @@ final class EntitlementCommandApplier
         private readonly AdminSiteStatusPolicy $sites,
         private readonly EntitlementAppliedHook $appliedHook,
         private readonly RotationCommandApplier $rotation,
+        private readonly ClientNotificationStore $notifications,
     ) {}
 
     /**
@@ -139,6 +141,14 @@ final class EntitlementCommandApplier
 
             $this->appliedHook->afterVerifiedEntitlementApplied($this->mapper->toPresentation($snapshot));
             $this->sites->bindAnchorFromInstallation($locked->fresh());
+
+            if (is_array($command['client_notification'] ?? null)) {
+                $this->notifications->recordFromCommand(
+                    $locked->installation_id,
+                    $commandId,
+                    $command['client_notification'],
+                );
+            }
 
             return $ack;
         });

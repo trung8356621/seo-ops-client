@@ -11,6 +11,7 @@ use App\Services\ConfigurationSync\H1InstallationMachineCredentialProvider;
 use App\Services\H1\Commands\EntitlementCommandApplier;
 use App\Services\H1\Commands\RotationCommandApplier;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
+use App\Services\H1\Notifications\ClientNotificationStore;
 use App\Services\H1\Enrollment\BlockedEnrollmentTransport;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Enrollment\EnrollmentTransport;
@@ -38,6 +39,7 @@ final class H1LicenseServiceProvider extends ServiceProvider
         $this->app->singleton(SignedHttpTransport::class);
         $this->app->singleton(AdminSiteStatusPolicy::class);
         $this->app->singleton(ServiceEntitlementGate::class);
+        $this->app->singleton(ClientNotificationStore::class);
         $this->app->singleton(RotationCommandApplier::class);
         $this->app->singleton(EntitlementCommandApplier::class);
         $this->app->singleton(EnrollmentConsumer::class);

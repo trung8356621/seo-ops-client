@@ -67,6 +67,7 @@ return [
                 'h1_installations',
                 'h1_credentials',
                 'h1_command_receipts',
+                'h1_client_notifications',
                 'service_gateway_provisions',
                 'local_entitlement_presentations',
                 'client_transfer_runs',

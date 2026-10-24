@@ -4,6 +4,8 @@
     @php
         $opsReport = $this->opsServerConnectionReport();
         $rows = $this->serviceCards();
+        $activeNotifications = $this->activeClientNotifications();
+        $notificationHistory = $this->clientNotificationHistory();
     @endphp
 
     <div class="mb-4 rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm dark:border-gray-700 dark:bg-gray-900">
@@ -39,9 +41,28 @@
             </button>
         </div>
         <p class="mt-2 text-[11px] text-gray-400">
-            H1 đã kết nối ≠ dịch vụ đã được cấp quyền. Trạng thái hàng bên dưới lấy từ snapshot đã xác minh + sẵn sàng DB.
+            H1 đã kết nối ≠ dịch vụ đã được cấp quyền. Thông báo dưới đây do OPS gửi qua H1 (không chỉnh sửa được tại Client).
         </p>
     </div>
+
+    @if (count($activeNotifications) > 0)
+        <div class="mb-4 space-y-2">
+            @foreach ($activeNotifications as $ntf)
+                <div class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+                    <div class="font-semibold">
+                        {{ strtoupper((string) ($ntf['action'] ?? '')) }}
+                        @if (! empty($ntf['service_key']))
+                            · {{ $ntf['service_key'] }}
+                        @endif
+                        @if (! empty($ntf['entitlement_revision']))
+                            · rev {{ $ntf['entitlement_revision'] }}
+                        @endif
+                    </div>
+                    <div class="mt-0.5">{{ $ntf['message'] ?? '' }}</div>
+                </div>
+            @endforeach
+        </div>
+    @endif
 
     <div
         class="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900"
@@ -58,6 +79,9 @@
                             <span class="text-gray-300 dark:text-gray-600">·</span>
                             <span>{{ $row['db_label'] }}</span>
                         </div>
+                        @if (! empty($row['client_message']) && in_array($row['entitlement_state'] ?? '', ['suspended', 'not_entitled'], true))
+                            <div class="mt-1 text-xs text-amber-700 dark:text-amber-300">{{ $row['client_message'] }}</div>
+                        @endif
                     </div>
                     <span @class([
                         'inline-flex shrink-0 rounded px-2 py-0.5 text-xs font-medium',
@@ -80,4 +104,21 @@
             @endforelse
         </div>
     </div>
+
+    @if (count($notificationHistory) > 0)
+        <div class="mt-4 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-900">
+            <div class="mb-1 font-semibold text-gray-900 dark:text-white">Lịch sử thông báo H1</div>
+            <ul class="divide-y divide-gray-100 dark:divide-gray-800">
+                @foreach ($notificationHistory as $ntf)
+                    <li class="py-1.5 text-gray-600 dark:text-gray-300">
+                        <span class="font-medium text-gray-800 dark:text-gray-100">{{ $ntf['action'] ?? '' }}</span>
+                        @if (! empty($ntf['service_key'])) · {{ $ntf['service_key'] }} @endif
+                        @if (! empty($ntf['entitlement_revision'])) · rev {{ $ntf['entitlement_revision'] }} @endif
+                        @if (! empty($ntf['issued_at'])) · {{ $ntf['issued_at'] }} @endif
+                        <div>{{ $ntf['message'] ?? '' }}</div>
+                    </li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 </x-filament-panels::page>

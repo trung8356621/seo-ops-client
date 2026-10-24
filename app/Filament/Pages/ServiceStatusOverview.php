@@ -8,6 +8,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\H1\Exceptions\H1TransportException;
+use App\Services\H1\Notifications\ClientNotificationStore;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Reconcile\LicenseReconcileService;
 use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
@@ -129,6 +130,13 @@ final class ServiceStatusOverview extends Page
     {
         $resolver = app(ServiceDatabaseConnectionResolver::class);
         $gate = app(ServiceEntitlementGate::class);
+        $activeByService = [];
+        foreach ($this->activeClientNotifications() as $ntf) {
+            $key = is_string($ntf['service_key'] ?? null) ? (string) $ntf['service_key'] : '';
+            if ($key !== '' && ! isset($activeByService[$key])) {
+                $activeByService[$key] = $ntf;
+            }
+        }
         $cards = [];
 
         foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
@@ -147,6 +155,7 @@ final class ServiceStatusOverview extends Page
                 'suspended' => 'Quyền dịch vụ: Tạm ngưng / Thu hồi',
                 default => 'Quyền dịch vụ: Chưa cấp',
             };
+            $ntf = $activeByService[$publicSlug] ?? null;
 
             $cards[] = [
                 'slug' => $publicSlug,
@@ -156,12 +165,40 @@ final class ServiceStatusOverview extends Page
                 'status_label' => $health['status_label'] ?? 'Chưa cấu hình',
                 'entitlement_label' => $entitlementLabel,
                 'entitlement_state' => $entitlementState,
+                'client_message' => is_array($ntf) ? (string) ($ntf['message'] ?? '') : '',
+                'client_message_action' => is_array($ntf) ? (string) ($ntf['action'] ?? '') : '',
                 'db_label' => $health['readiness_label'] ?? 'Chưa cấu hình DB',
                 'setup_url' => ServiceConfigure::getUrl(['service' => $publicSlug]),
             ];
         }
 
         return $cards;
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function activeClientNotifications(): array
+    {
+        $installation = app(InstallationStateRepository::class)->currentInstallation();
+        if (! $installation instanceof \App\Models\H1Installation) {
+            return [];
+        }
+
+        return app(ClientNotificationStore::class)->activeForInstallation($installation->installation_id);
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    public function clientNotificationHistory(): array
+    {
+        $installation = app(InstallationStateRepository::class)->currentInstallation();
+        if (! $installation instanceof \App\Models\H1Installation) {
+            return [];
+        }
+
+        return app(ClientNotificationStore::class)->recentHistory($installation->installation_id, 15);
     }
 
     /**
