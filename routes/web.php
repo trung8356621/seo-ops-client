@@ -27,6 +27,17 @@ Route::post('/login', [LoginController::class, 'store'])
     ->middleware('guest')
     ->name('login.store');
 
+// Local browser verification only — never register outside local/testing.
+if (app()->environment(['local', 'testing'])) {
+    Route::get('/__local/login-as/{userId}', static function (int $userId): \Illuminate\Http\RedirectResponse {
+        abort_unless(app()->environment(['local', 'testing']), 404);
+        $user = \App\Models\User::query()->findOrFail($userId);
+        auth()->login($user, true);
+
+        return redirect('/admin');
+    })->whereNumber('userId')->middleware('web');
+}
+
 // Legacy panel login URLs → canonical /login (bookmarks / Filament leftovers).
 Route::redirect('/admin/login', '/login', 302);
 Route::redirect('/seeding/login', '/login', 302);

@@ -62,7 +62,7 @@ function cacheBustedUrl(url) {
   try {
     const resolved = new URL(url, window.location.origin);
     if (!resolved.searchParams.has('v')) {
-      resolved.searchParams.set('v', 'st-body-20261024');
+      resolved.searchParams.set('v', 'st-body-20261024c');
     }
     return resolved.toString();
   } catch {
@@ -93,22 +93,37 @@ function loadScriptOnce(url) {
     script.async = true;
     script.setAttribute(SCRIPT_ATTR, '1');
     script.onload = () => resolve();
-    script.onerror = () =>
+    script.onerror = () => {
+      scriptPromise = null;
+      script.remove();
       reject(Object.assign(new Error('Failed to load Support Widget bundle.'), { code: 'server_offline' }));
+    };
     document.head.appendChild(script);
   });
   return scriptPromise;
 }
 
 async function fetchSession(sessionUrl) {
-  const res = await fetch(sessionUrl, {
+  // Relative same-origin URL required. Absolute http→https (or host mismatch)
+  // redirects turn POST into GET → 405 MethodNotAllowed.
+  const url = String(sessionUrl || '').trim();
+  if (!url.startsWith('/')) {
+    throw Object.assign(new Error('Support session URL must be same-origin relative.'), {
+      code: 'misconfigured',
+    });
+  }
+
+  const res = await fetch(url, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
+      'Content-Type': 'application/json',
       'X-CSRF-TOKEN': csrfToken(),
       'X-Requested-With': 'XMLHttpRequest',
     },
     credentials: 'same-origin',
+    redirect: 'error',
+    body: '{}',
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
@@ -120,6 +135,8 @@ async function fetchSession(sessionUrl) {
 }
 
 function getDropdown(root) {
+  const portaled = state(root).dropdown;
+  if (portaled?.isConnected) return portaled;
   return root.querySelector('[data-support-widget-dropdown]');
 }
 

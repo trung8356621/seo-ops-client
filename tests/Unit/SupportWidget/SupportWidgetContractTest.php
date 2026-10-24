@@ -46,7 +46,22 @@ final class SupportWidgetContractTest extends TestCase
         self::assertStringContainsString('loadScriptOnce', $js);
         self::assertStringContainsString('Hỗ trợ tạm thời không khả dụng', $js);
         self::assertStringContainsString('server_offline', $js);
+        self::assertStringContainsString("method: 'POST'", $js);
+        self::assertStringContainsString("redirect: 'error'", $js);
+        self::assertStringContainsString("startsWith('/')", $js);
         self::assertStringNotContainsString('support-tickets.store', $js);
         self::assertStringNotContainsString('/api/support-tickets', $js);
+    }
+
+    #[Test]
+    public function header_blade_uses_relative_session_url_not_absolute_app_url(): void
+    {
+        $blade = (string) file_get_contents(
+            resource_path('views/filament/hooks/support-widget-header.blade.php')
+        );
+        self::assertStringContainsString('absolute: false', $blade);
+        self::assertStringContainsString('data-session-url', $blade);
+        self::assertStringContainsString('support-widget-header', $blade);
+        self::assertStringNotContainsString('support-ticket-header', $blade);
     }
 }
