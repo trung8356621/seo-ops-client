@@ -14,7 +14,7 @@
 6. Ngoài Chat page: unread badge config có thể còn (sidebar Chat nav). Không mount floating launcher.
 7. Group messages không poll nhanh hơn **15 giây** mặc định.
 8. Poller phải **single-inflight**.
-9. **Support Ticket local Laravel đã retired** (2026-10-24). Không còn `support_tickets` table, header composer, Admin resource, hay `/api/support-tickets`. Future support = OPS-SERVER hosted (see ops-server `docs/modules/SUPPORT_TICKETS_FUTURE.md`).
+9. **Support Ticket local Laravel đã retired** (2026-10-24). Không còn local Ticket table/API. Header **Ticket** = OPS Support Widget (lazy embed; see ops-server `docs/modules/SUPPORT_WIDGET.md`).
 10. Không tạo Telegram/Zalo/social messaging adapter trong module này.
 11. Không generic hóa Agent/Group thành universal messaging framework.
 12. Không tạo popup/page Chat song song kiểu `ChatModeV2`.

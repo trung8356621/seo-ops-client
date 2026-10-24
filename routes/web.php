@@ -55,6 +55,9 @@ Route::middleware(['web', 'auth'])->group(function (): void {
 
     Route::post('/api/service-widget/session', [\App\Http\Controllers\ServiceWidgetSessionController::class, 'store'])
         ->name('service-widget.session');
+
+    Route::post('/api/support-widget/session', [\App\Http\Controllers\SupportWidgetSessionController::class, 'store'])
+        ->name('support-widget.session');
 });
 
 

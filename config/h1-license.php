@@ -64,5 +64,16 @@ return [
         ),
         'api_timeout_ms' => (int) env('OPS_SERVICE_WIDGET_API_TIMEOUT_MS', 5000),
     ],
+
+    /*
+    | Support Widget — same H1 token exchange; separate React IIFE bundle.
+    */
+    'support' => [
+        'bundle_url' => (string) env(
+            'OPS_SUPPORT_WIDGET_BUNDLE_URL',
+            '/vendor/ops-support-widget/ops-support-widget.js'
+        ),
+        'api_timeout_ms' => (int) env('OPS_SUPPORT_WIDGET_API_TIMEOUT_MS', 8000),
+    ],
 ];
 

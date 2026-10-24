@@ -108,6 +108,7 @@ final class ClientCoreServiceProvider extends ServiceProvider
         $this->registerCoreWorkspaceDestinations();
         $this->registerServiceTopbarRouterHook();
         $this->registerServiceWidgetHeaderHook();
+        $this->registerSupportWidgetHeaderHook();
         $this->registerOperationalAlertHook();
         $this->registerGlobalHelpHeaderHook();
 
@@ -166,6 +167,29 @@ final class ClientCoreServiceProvider extends ServiceProvider
 
                 return new HtmlString(
                     view('filament.hooks.service-widget-header')->render()
+                );
+            },
+        );
+    }
+
+    /**
+     * OPS Support Widget — lazy header Ticket entry (no local Ticket DB).
+     */
+    private function registerSupportWidgetHeaderHook(): void
+    {
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::USER_MENU_BEFORE,
+            function (): HtmlString {
+                if (! $this->isGlobalHelpSurface()) {
+                    return new HtmlString('');
+                }
+
+                if (! \App\Policies\SupportWidgetPolicy::allows(auth()->user())) {
+                    return new HtmlString('');
+                }
+
+                return new HtmlString(
+                    view('filament.hooks.support-widget-header')->render()
                 );
             },
         );
