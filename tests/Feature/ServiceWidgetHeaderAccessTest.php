@@ -64,7 +64,8 @@ final class ServiceWidgetHeaderAccessTest extends TestCase
         self::assertStringContainsString('data-service-widget-trigger', $html);
         self::assertStringContainsString('data-ops-service-widget-host', $html);
         self::assertStringContainsString('headerServiceWidget', $html);
-        self::assertStringContainsString(route('service-widget.session'), $html);
+        self::assertStringContainsString('data-session-url="/api/service-widget/session"', $html);
+        self::assertStringContainsString(route('service-widget.session', absolute: false), $html);
     }
 
     #[Test]

@@ -35,5 +35,7 @@ final class WidgetTokenExchangeClientTest extends TestCase
             "/return \\[[\\s\\S]*secretBase64Url[\\s\\S]*\\];/",
             $source
         );
+        // Same-origin widget IIFE must stay relative unless an absolute CDN override is configured.
+        self::assertStringNotContainsString('url($bundleUrl)', $source);
     }
 }

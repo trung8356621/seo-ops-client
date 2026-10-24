@@ -64,4 +64,16 @@ final class SupportWidgetContractTest extends TestCase
         self::assertStringContainsString('support-widget-header', $blade);
         self::assertStringNotContainsString('support-ticket-header', $blade);
     }
+
+    #[Test]
+    public function session_controller_keeps_same_origin_bundle_url_relative(): void
+    {
+        $source = (string) file_get_contents(
+            (new ReflectionClass(SupportWidgetSessionController::class))->getFileName()
+        );
+        self::assertStringContainsString('/vendor/ops-support-widget/ops-support-widget.js', $source);
+        // Must not force APP_URL absolute (http on https → mixed content / broken load).
+        self::assertStringNotContainsString('url($bundleUrl)', $source);
+        self::assertFileExists(public_path('vendor/ops-support-widget/ops-support-widget.js'));
+    }
 }

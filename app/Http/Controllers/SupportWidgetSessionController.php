@@ -70,15 +70,14 @@ final class SupportWidgetSessionController extends Controller
         }
 
         $user = auth()->user();
+        // Same-origin relative path by default — absolute APP_URL (http) on an
+        // https page breaks script load / mixed content the same way session POST did.
         $bundleUrl = (string) config(
             'h1-license.support.bundle_url',
             '/vendor/ops-support-widget/ops-support-widget.js'
         );
         if (! str_starts_with($bundleUrl, 'http://') && ! str_starts_with($bundleUrl, 'https://') && ! str_starts_with($bundleUrl, '/')) {
             $bundleUrl = '/'.$bundleUrl;
-        }
-        if (str_starts_with($bundleUrl, '/')) {
-            $bundleUrl = url($bundleUrl);
         }
 
         return response()->json([

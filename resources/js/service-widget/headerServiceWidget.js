@@ -127,10 +127,19 @@ function loadScriptOnce(url) {
 }
 
 async function fetchSession(sessionUrl) {
+  // Relative same-origin URL required. Absolute http→https (or host mismatch)
+  // redirects turn POST into GET → 405 MethodNotAllowed.
+  const url = String(sessionUrl || '').trim();
+  if (!url.startsWith('/')) {
+    throw Object.assign(new Error('Service session URL must be same-origin relative.'), {
+      code: 'misconfigured',
+    });
+  }
+
   const controller = new AbortController();
   const timer = window.setTimeout(() => controller.abort(), 8000);
   try {
-    const response = await fetch(sessionUrl, {
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -139,6 +148,7 @@ async function fetchSession(sessionUrl) {
         'X-Requested-With': 'XMLHttpRequest',
       },
       credentials: 'same-origin',
+      redirect: 'error',
       body: JSON.stringify({}),
       signal: controller.signal,
     });

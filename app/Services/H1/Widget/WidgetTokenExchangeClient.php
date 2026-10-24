@@ -146,12 +146,11 @@ class WidgetTokenExchangeClient
             throw new H1TransportException('token_expired', 'Widget token đã hết hạn ngay khi cấp.');
         }
 
+        // Prefer same-origin relative paths so APP_URL scheme/host mismatch cannot
+        // break script load on https installations (CDN absolute URLs still allowed).
         $bundleUrl = (string) config('h1-license.widget.bundle_url', '/vendor/ops-service-widget/ops-service-widget.js');
         if (! str_starts_with($bundleUrl, 'http://') && ! str_starts_with($bundleUrl, 'https://') && ! str_starts_with($bundleUrl, '/')) {
             $bundleUrl = '/'.$bundleUrl;
-        }
-        if (str_starts_with($bundleUrl, '/')) {
-            $bundleUrl = url($bundleUrl);
         }
 
         return [

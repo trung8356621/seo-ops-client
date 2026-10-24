@@ -1,5 +1,7 @@
 @php
-    $sessionUrl = route('service-widget.session');
+    // Relative path only — absolute APP_URL (http) on an https page causes
+    // POST→302→GET and MethodNotAllowed on /api/service-widget/session.
+    $sessionUrl = route('service-widget.session', absolute: false);
 @endphp
 
 @vite([

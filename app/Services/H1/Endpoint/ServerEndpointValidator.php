@@ -35,6 +35,17 @@ final class ServerEndpointValidator
         return false;
     }
 
+    /**
+     * Reserved test TLD (RFC 2606) used by Laragon local HTTPS reverse proxies.
+     * Trusted only when DNS resolves exclusively to loopback (see validate Rule 9).
+     */
+    public static function isTrustedLocalDevHost(string $host): bool
+    {
+        $normalized = strtolower(trim($host, '[]'));
+
+        return $normalized === 'test' || str_ends_with($normalized, '.test');
+    }
+
     public static function isPrivateOrReservedIp(string $ip): bool
     {
         $clean = trim($ip, '[]');
@@ -119,9 +130,17 @@ final class ServerEndpointValidator
                 $resolvedIps = @gethostbynamel($host);
                 if (is_array($resolvedIps) && ! empty($resolvedIps)) {
                     foreach ($resolvedIps as $ip) {
-                        if (self::isLoopbackHost($ip) || self::isPrivateOrReservedIp($ip)) {
-                            throw new InvalidArgumentException("Tên miền '{$host}' trỏ tới địa chỉ IP nội bộ ({$ip}). Yêu cầu bị chặn để chống SSRF / DNS rebinding.");
+                        $resolvesPrivate = self::isLoopbackHost($ip) || self::isPrivateOrReservedIp($ip);
+                        if (! $resolvesPrivate) {
+                            continue;
                         }
+
+                        // Laragon/mkcert: https://*.test → 127.0.0.1 is intentional local HTTPS.
+                        if (self::isTrustedLocalDevHost($host) && self::isLoopbackHost($ip)) {
+                            continue;
+                        }
+
+                        throw new InvalidArgumentException("Tên miền '{$host}' trỏ tới địa chỉ IP nội bộ ({$ip}). Yêu cầu bị chặn để chống SSRF / DNS rebinding.");
                     }
                 }
             }

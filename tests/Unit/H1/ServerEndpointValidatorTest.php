@@ -44,6 +44,28 @@ final class ServerEndpointValidatorTest extends TestCase
         $this->assertSame('https://ops.example.com:8443', ServerEndpointValidator::validate('https://ops.example.com:8443'));
     }
 
+    public function test_reserved_test_tld_https_allowed_when_resolves_to_loopback(): void
+    {
+        $this->assertTrue(ServerEndpointValidator::isTrustedLocalDevHost('ops-server.test'));
+
+        $ips = @gethostbynamel('ops-server.test');
+        if ($ips === false || $ips === [] || ! ServerEndpointValidator::isLoopbackHost((string) $ips[0])) {
+            $this->markTestSkipped('ops-server.test is not mapped to loopback on this machine');
+        }
+
+        $this->assertSame(
+            'https://ops-server.test',
+            ServerEndpointValidator::validate('https://ops-server.test'),
+        );
+    }
+
+    public function test_reserved_test_tld_still_requires_https(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('HTTPS');
+        ServerEndpointValidator::validate('http://ops-server.test');
+    }
+
     public function test_private_ips_are_rejected(): void
     {
         $privateUrls = [

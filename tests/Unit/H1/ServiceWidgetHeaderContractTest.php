@@ -31,6 +31,7 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         self::assertStringContainsString('Dịch vụ', $blade);
         self::assertStringContainsString('data-service-widget-header', $blade);
         self::assertStringContainsString('service-widget.session', $blade);
+        self::assertStringContainsString('absolute: false', $blade);
         self::assertStringContainsString('headerServiceWidget.js', $blade);
         self::assertStringContainsString('data-ops-service-widget-host', $blade);
         self::assertStringContainsString('wire:ignore', $blade);
@@ -46,6 +47,9 @@ final class ServiceWidgetHeaderContractTest extends TestCase
         self::assertStringContainsString('useMock: false', $js);
         self::assertStringContainsString('setAuthContext', $js);
         self::assertStringContainsString('installationId: session.installationId', $js);
+        self::assertStringContainsString("method: 'POST'", $js);
+        self::assertStringContainsString("redirect: 'error'", $js);
+        self::assertStringContainsString("startsWith('/')", $js);
         // boot only binds click handlers — must not call fetch/session at import time.
         self::assertDoesNotMatchRegularExpression('/boot\(\)[\s\S]*fetchSession\(/', $js);
     }
