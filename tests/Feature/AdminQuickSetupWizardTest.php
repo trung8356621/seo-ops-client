@@ -246,7 +246,7 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent->call('goToStep', 4)
             ->assertSet('currentStep', 4);
         $testComponent->call('goToStep', 5)
-            ->assertSet('currentStep', 4);
+            ->assertSet('currentStep', 5);
 
         $checklist = $testComponent->get('checklist');
         $this->assertIsArray($checklist);
@@ -843,7 +843,7 @@ final class AdminQuickSetupWizardTest extends TestCase
         $this->assertStringContainsString('goldenStatus === \'customized\'', $view);
         $this->assertStringContainsString('wire:click="nextStep"', $view);
         $this->assertStringContainsString('Đang xử lý cấu hình…', $view);
-        $this->assertStringContainsString('Bước {{ $currentStep }}/4', $view);
+        $this->assertStringContainsString('Bước {{ $currentStep }}/{{ $maxStep }}', $view);
         $this->assertStringContainsString('Dịch vụ thương mại', $view);
         $this->assertStringContainsString('Chưa có entitlement thương mại nào được cấp', $view);
         $this->assertStringContainsString('hasCommercialServiceEnabled', $view);

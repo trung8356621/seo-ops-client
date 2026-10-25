@@ -8,8 +8,10 @@
                     1 => ['short' => 'Kích hoạt', 'full' => 'Kích hoạt dịch vụ', 'desc' => 'Bản quyền OPS'],
                     2 => ['short' => 'Cấu hình', 'full' => 'Cấu hình mặc định', 'desc' => 'Golden Config'],
                     3 => ['short' => 'Kết nối AI', 'full' => 'Kết nối AI', 'desc' => 'API Providers'],
-                    4 => ['short' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'desc' => 'Sẵn sàng'],
+                    4 => ['short' => 'Cron', 'full' => 'Tác vụ nền định kỳ', 'desc' => 'aaPanel Cron'],
+                    5 => ['short' => 'Hoàn tất', 'full' => 'Hoàn tất & Tổng kết', 'desc' => 'Sẵn sàng'],
                 ];
+                $maxStep = \App\Filament\Pages\QuickSetupWizard::MAX_STEP;
             @endphp
 
             {{-- MOBILE VIEW (< 640px: 320, 375, 390px) --}}
@@ -24,13 +26,13 @@
                         </div>
                     </div>
                     <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold bg-primary-50 text-primary-700 dark:bg-primary-950/50 dark:text-primary-300">
-                        Bước {{ $currentStep }}/4
+                        Bước {{ $currentStep }}/{{ $maxStep }}
                     </span>
                 </div>
 
-                {{-- 4-segment interactive tap bar --}}
+                {{-- Segment interactive tap bar --}}
                 <div class="flex items-center gap-1.5 w-full">
-                    @for ($i = 1; $i <= 4; $i++)
+                    @for ($i = 1; $i <= $maxStep; $i++)
                         @php
                             $segActive = $currentStep === $i;
                             $segPassed = $currentStep > $i;
@@ -771,19 +773,83 @@
                         icon="heroicon-m-arrow-right"
                         icon-position="after"
                     >
-                        Tiếp tục: Hoàn tất & Tổng kết
+                        Tiếp tục: Tác vụ nền định kỳ
                     </x-filament::button>
                 </div>
             </div>
         @endif
 
-        {{-- STEP 4: HOÀN TẤT & TỔNG KẾT --}}
+        {{-- STEP 4: AAPANEL CRON --}}
         @if ($currentStep === 4)
             <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900 space-y-6">
                 <div>
                     <h3 class="text-lg font-bold text-gray-950 dark:text-white flex items-center gap-2">
+                        <x-filament::icon icon="heroicon-o-clock" class="h-5 w-5 text-primary-500" />
+                        Bước 4: {{ __('aapanel_cron.step_title') }}
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        {{ __('aapanel_cron.step_description') }}
+                    </p>
+                </div>
+
+                <div class="rounded-lg border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-gray-800/40 space-y-3">
+                    <p class="text-xs text-gray-600 dark:text-gray-300">
+                        {{ __('aapanel_cron.download_hint') }}
+                    </p>
+                    <p class="text-xs text-amber-700 dark:text-amber-300">
+                        {{ __('aapanel_cron.duplicate_warning') }}
+                    </p>
+                    <x-filament::button
+                        color="primary"
+                        icon="heroicon-m-arrow-down-tray"
+                        wire:click="downloadAaPanelCronJson"
+                        wire:loading.attr="disabled"
+                        wire:target="downloadAaPanelCronJson"
+                    >
+                        <span wire:loading.remove wire:target="downloadAaPanelCronJson">{{ __('aapanel_cron.download_json') }}</span>
+                        <span wire:loading wire:target="downloadAaPanelCronJson" class="inline-flex items-center gap-2">
+                            <x-filament::loading-indicator class="h-4 w-4" />
+                            …
+                        </span>
+                    </x-filament::button>
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-sm font-semibold text-gray-950 dark:text-white">{{ __('aapanel_cron.guide_title') }}</h4>
+                    <ol class="list-decimal space-y-1.5 pl-5 text-sm text-gray-700 dark:text-gray-300">
+                        <li>{{ __('aapanel_cron.guide_1') }}</li>
+                        <li>{{ __('aapanel_cron.guide_2') }}</li>
+                        <li>{{ __('aapanel_cron.guide_3') }}</li>
+                        <li>{{ __('aapanel_cron.guide_4') }}</li>
+                    </ol>
+                </div>
+
+                <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
+                    <x-filament::button
+                        wire:click="prevStep"
+                        color="gray"
+                        icon="heroicon-m-arrow-left"
+                    >
+                        {{ __('aapanel_cron.back') }}
+                    </x-filament::button>
+                    <x-filament::button
+                        wire:click="nextStep"
+                        icon="heroicon-m-arrow-right"
+                        icon-position="after"
+                    >
+                        {{ __('aapanel_cron.continue') }}
+                    </x-filament::button>
+                </div>
+            </div>
+        @endif
+
+        {{-- STEP 5: HOÀN TẤT & TỔNG KẾT --}}
+        @if ($currentStep === 5)
+            <div class="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-gray-900 space-y-6">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-950 dark:text-white flex items-center gap-2">
                         <x-filament::icon icon="heroicon-o-check-badge" class="h-5 w-5 text-emerald-500" />
-                        Bước 4: Tổng kết tình trạng hệ thống
+                        Bước 5: Tổng kết tình trạng hệ thống
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
                         Kiểm tra danh sách hạng mục đã thiết lập trước khi bắt đầu sử dụng bảng điều khiển SEO-OPS.
@@ -842,20 +908,6 @@
                     @endforeach
                 </div>
 
-                {{-- Hướng dẫn aaPanel Cron --}}
-                <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-white/10 dark:bg-gray-800/50 space-y-2">
-                    <div class="flex items-center gap-2 font-semibold text-gray-900 dark:text-white text-xs">
-                        <x-filament::icon icon="heroicon-o-clock" class="h-4 w-4 text-primary-500" />
-                        <span>Cấu hình Cronjob định kỳ trên máy chủ (aaPanel):</span>
-                    </div>
-                    <div class="rounded bg-gray-900 px-3 py-2 text-xs font-mono text-emerald-400 overflow-x-auto select-all">
-                        * * * * * cd {{ base_path() }} &amp;&amp; php artisan schedule:run &gt;&gt; /dev/null 2&gt;&amp;1
-                    </div>
-                    <p class="text-xs text-gray-500">
-                        Chạy mỗi phút một lần để xử lý hàng đợi bài viết, đồng bộ chỉ số SEO và giám sát tác vụ nền.
-                    </p>
-                </div>
-
                 {{-- Navigation Actions --}}
                 <div class="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-white/5">
                     <x-filament::button
@@ -863,7 +915,7 @@
                         color="gray"
                         icon="heroicon-m-arrow-left"
                     >
-                        Quay lại Bước 3
+                        Quay lại Bước 4
                     </x-filament::button>
                     <x-filament::button
                         wire:click="finishQuickSetup"

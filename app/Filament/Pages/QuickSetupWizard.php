@@ -9,6 +9,7 @@ use App\Models\H1Installation;
 use App\Models\Site;
 use App\Models\User;
 use App\Models\WpOption;
+use App\Services\AaPanelCron\AaPanelCronCatalog;
 use App\Services\H1\Endpoint\ServerEndpointValidator;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
@@ -21,6 +22,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Omnichannel\Addons\AiPrompt\Services\ProviderTemplates\AiProviderConnectionTester;
 use Omnichannel\Addons\AiPrompt\Support\ApiConnectionProviders;
 use Omnichannel\Addons\Seo\Services\ConfigurationSync\BlankInstallationDetector;
@@ -55,7 +57,7 @@ class QuickSetupWizard extends Page
     public bool $isEnrolled = false;
     public ?array $installationDetails = null;
 
-    public const MAX_STEP = 4;
+    public const MAX_STEP = 5;
 
     public const COMMERCIAL_GATE_MESSAGE = 'Chưa có dịch vụ được kích hoạt. Vui lòng liên hệ quản trị viên hoặc đồng bộ lại quyền sử dụng.';
 
@@ -127,7 +129,7 @@ class QuickSetupWizard extends Page
     /** Checklist / Site Management summary (no Quick Setup website creation step). */
     public array $existingSites = [];
 
-    // STEP 4 Properties (completion)
+    // STEP 5 Properties (completion / summary)
     public array $checklist = [];
 
     public static function getNavigationGroup(): ?string
@@ -168,8 +170,8 @@ class QuickSetupWizard extends Page
         abort_unless(static::canAccess(), 403);
 
         $requestedStep = (int) request()->query('step', 1);
-        // Legacy sessions used 5 steps (Website + Completion). Map old step 5 → Completion (4).
-        if ($requestedStep >= 5) {
+        // Clamp out-of-range only. Do not remap completed installs or wipe progress markers.
+        if ($requestedStep > self::MAX_STEP) {
             $requestedStep = self::MAX_STEP;
         }
         if ($requestedStep >= 1 && $requestedStep <= self::MAX_STEP) {
@@ -245,7 +247,7 @@ class QuickSetupWizard extends Page
         $this->loadStep2Data();
         $this->loadStep3Data();
         $this->loadSitesSummary();
-        $this->loadStep4Data();
+        $this->loadStep5Data();
     }
 
     // ==========================================
@@ -373,7 +375,7 @@ class QuickSetupWizard extends Page
     }
 
     /**
-     * Block Step 2–4 when no commercial service is Enabled (URL / goToStep / Livewire state).
+     * Block Step 2–5 when no commercial service is Enabled (URL / goToStep / Livewire state).
      */
     public function enforceCommercialStepGate(): void
     {
@@ -1344,10 +1346,27 @@ class QuickSetupWizard extends Page
     }
 
     // ==========================================
-    // STEP 4 — HOÀN TẤT & TỔNG KẾT
+    // STEP 4 — AAPANEL CRON (optional download)
     // ==========================================
 
-    public function loadStep4Data(): void
+    public function downloadAaPanelCronJson(AaPanelCronCatalog $catalog): StreamedResponse
+    {
+        abort_unless(static::canAccess(), 403);
+
+        $json = $catalog->exportJsonString();
+
+        return response()->streamDownload(static function () use ($json): void {
+            echo $json;
+        }, 'seo-ops-aapanel-cron.json', [
+            'Content-Type' => 'application/json; charset=UTF-8',
+        ]);
+    }
+
+    // ==========================================
+    // STEP 5 — HOÀN TẤT & TỔNG KẾT
+    // ==========================================
+
+    public function loadStep5Data(): void
     {
         $gate = app(ServiceEntitlementGate::class);
         $isEnrolled = app(InstallationStateRepository::class)->isEnrolled();
@@ -1512,18 +1531,6 @@ class QuickSetupWizard extends Page
             ];
         }
 
-        // 6. Tác vụ nền Cron
-        $checklist[] = [
-            'key' => 'cron',
-            'title' => 'Tác vụ nền định kỳ (aaPanel Cron)',
-            'status' => 'info',
-            'badge' => 'blue',
-            'status_label' => 'Hướng dẫn',
-            'description' => 'Thiết lập Cronjob trên aaPanel để hệ thống tự động xử lý hàng đợi và tác vụ định kỳ.',
-            'link' => null,
-            'link_label' => null,
-        ];
-
         $this->checklist = $checklist;
     }
 
@@ -1546,7 +1553,7 @@ class QuickSetupWizard extends Page
 
     public function goToStep(int $step): void
     {
-        if ($step >= 5) {
+        if ($step > self::MAX_STEP) {
             $step = self::MAX_STEP;
         }
         if ($step < 1 || $step > self::MAX_STEP) {
