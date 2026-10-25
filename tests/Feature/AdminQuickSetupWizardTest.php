@@ -181,6 +181,35 @@ final class AdminQuickSetupWizardTest extends TestCase
         $response->assertSee('Bắt đầu thiết lập');
     }
 
+    public function test_enrolled_without_grants_keeps_commercial_list_empty(): void
+    {
+        $this->seedEnrolledCommercial([
+            'agent' => ['key' => 'agent', 'scope' => 'global', 'enabled' => true, 'quota' => null],
+            'seo' => [
+                'key' => 'seo',
+                'scope' => 'licensed',
+                'license_model' => 'domain_quota',
+                'enabled' => false,
+                'quota' => null,
+                'revoked_at' => null,
+            ],
+            'seeding' => [
+                'key' => 'seeding',
+                'scope' => 'licensed',
+                'license_model' => 'flat',
+                'enabled' => false,
+                'quota' => null,
+                'revoked_at' => null,
+            ],
+        ]);
+
+        Livewire::actingAs($this->owner)
+            ->test(QuickSetupWizard::class)
+            ->assertSet('hasCommercialServiceEnabled', false)
+            ->assertSet('commercialServices', [])
+            ->assertSee('Chưa có entitlement thương mại nào được cấp');
+    }
+
     public function test_step_navigation_and_validation(): void
     {
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
@@ -387,11 +416,14 @@ final class AdminQuickSetupWizardTest extends TestCase
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->call('maybeAutoReconcileOnStep1')
             ->assertSet('step1AutoReconcileCompleted', true)
+            ->assertSet('connectionState', 'CONNECTION_ERROR')
             ->assertSet('hasCommercialServiceEnabled', true)
-            ->assertSee('Thử lại');
+            ->assertSee('Thử lại')
+            ->assertDontSee('Recovery Mode');
 
         $error = (string) $testComponent->get('reconcileError');
         $this->assertStringContainsString('OPS-SERVER', $error);
+        $this->assertStringContainsString('giữ nguyên', $error);
         $this->assertSame(1, $reconcile->calls);
 
         $testComponent->call('reconcileLicense');
@@ -409,12 +441,50 @@ final class AdminQuickSetupWizardTest extends TestCase
 
         $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
         $testComponent->call('maybeAutoReconcileOnStep1')
+            ->assertSet('connectionState', 'CONNECTION_ERROR')
             ->assertSet('hasCommercialServiceEnabled', true);
 
         $error = (string) $testComponent->get('reconcileError');
         $this->assertStringContainsString('timeout', strtolower($error));
 
         $testComponent->call('nextStep')->assertSet('currentStep', 2);
+    }
+
+    public function test_step1_installation_revoked_enters_recovery_mode_with_reconnect_form(): void
+    {
+        $this->seedEnrolledCommercial([
+            'seo' => ['key' => 'seo', 'enabled' => true, 'quota' => 10],
+        ]);
+        $this->bindFakeReconcile(static function (): array {
+            throw new \App\Services\H1\Exceptions\H1TransportException(
+                'installation_revoked',
+                'E2E TEST 1: manual revoke — Client must reconnect with a new Enrollment token'
+            );
+        });
+
+        $testComponent = Livewire::actingAs($this->owner)->test(QuickSetupWizard::class);
+        $testComponent->call('maybeAutoReconcileOnStep1')
+            ->assertSet('connectionState', 'INSTALLATION_REVOKED')
+            ->assertSet('hasCommercialServiceEnabled', false)
+            ->assertSee('Recovery Mode')
+            ->assertSee('Kết nối lại OPS-SERVER')
+            ->assertSee('Enrollment Token mới')
+            ->assertSee('snapshot cũ', false)
+            ->assertDontSee('Thiết bị đã được kích hoạt với OPS-SERVER');
+
+        $reason = (string) $testComponent->get('connectionReason');
+        $this->assertStringContainsString('manual revoke', $reason);
+
+        $installation = \App\Models\H1Installation::query()->first();
+        $this->assertNotNull($installation);
+        $this->assertNotEmpty($installation->verified_snapshot['revoked_at'] ?? null);
+        $this->assertNotNull(
+            \App\Models\H1Credential::query()
+                ->where('installation_id', $installation->installation_id)
+                ->where('status', \App\Models\H1Credential::STATUS_ACTIVE)
+                ->first(),
+            'Network-style revoke must not wipe local credential before reconnect'
+        );
     }
 
     public function test_step1_continue_locked_while_reconcile_running(): void
@@ -775,6 +845,7 @@ final class AdminQuickSetupWizardTest extends TestCase
         $this->assertStringContainsString('Đang xử lý cấu hình…', $view);
         $this->assertStringContainsString('Bước {{ $currentStep }}/4', $view);
         $this->assertStringContainsString('Dịch vụ thương mại', $view);
+        $this->assertStringContainsString('Chưa có entitlement thương mại nào được cấp', $view);
         $this->assertStringContainsString('hasCommercialServiceEnabled', $view);
         $this->assertStringContainsString('wire:init="maybeAutoReconcileOnStep1"', $view);
         $this->assertStringContainsString('Thử lại', $view);

@@ -163,7 +163,9 @@
                     </a>
                 </div>
             @empty
-                <div class="px-3 py-4 text-sm text-gray-500">Chưa có service trong catalog.</div>
+                <div class="px-3 py-4 text-sm text-gray-500">
+                    Chưa có entitlement thương mại nào được cấp. Catalog / Core không liệt kê ở đây — cấp quyền qua Order trên OPS-SERVER rồi Đồng bộ H1.
+                </div>
             @endforelse
         </div>
     </div>

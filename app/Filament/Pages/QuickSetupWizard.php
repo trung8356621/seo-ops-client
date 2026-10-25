@@ -13,6 +13,7 @@ use App\Services\H1\Endpoint\ServerEndpointValidator;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
 use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Exceptions\H1EnrollmentException;
+use App\Services\H1\Exceptions\H1TransportException;
 use App\Services\H1\Persistence\InstallationStateRepository;
 use App\Services\H1\Reconcile\LicenseReconcileService;
 use App\Services\H1\Snapshot\EntitlementSnapshotMapper;
@@ -75,6 +76,13 @@ class QuickSetupWizard extends Page
 
     /** Connection/timeout error from last reconcile attempt (null when OK). */
     public ?string $reconcileError = null;
+
+    /** @var 'CONNECTED'|'INSTALLATION_REVOKED'|'INSTALLATION_NOT_FOUND'|'CONNECTION_ERROR'|'RECONNECTING'|null */
+    public ?string $connectionState = null;
+
+    public ?string $connectionReason = null;
+
+    public bool $showReconnectConfirm = false;
 
     /**
      * Prevents duplicate auto-reconcile from Livewire rerender / step navigation.
@@ -203,6 +211,9 @@ class QuickSetupWizard extends Page
             'commercialGateMessage' => $this->commercialGateMessage,
             'reconcileRunning' => $this->reconcileRunning,
             'reconcileError' => $this->reconcileError,
+            'connectionState' => $this->connectionState,
+            'connectionReason' => $this->connectionReason,
+            'showReconnectConfirm' => $this->showReconnectConfirm,
             'step1AutoReconcileCompleted' => $this->step1AutoReconcileCompleted,
             'isSeoLicensed' => $this->isSeoLicensed,
             'goldenSeoEntitled' => $this->goldenSeoEntitled,
@@ -254,6 +265,16 @@ class QuickSetupWizard extends Page
             $seo = $this->commercialServiceRow('seo');
             $seeding = $this->commercialServiceRow('seeding');
             $social = $this->commercialServiceRow('social-automation');
+            $snap = is_array($installation->verified_snapshot) ? $installation->verified_snapshot : [];
+            if (
+                ! empty($snap['revoked_at'])
+                && ! in_array($this->connectionState, ['CONNECTION_ERROR', 'RECONNECTING'], true)
+            ) {
+                $this->connectionState = 'INSTALLATION_REVOKED';
+                $this->connectionReason = is_string($snap['lifecycle_reason'] ?? null)
+                    ? (string) $snap['lifecycle_reason']
+                    : ($this->connectionReason ?: 'Installation đã bị thu hồi trên OPS-SERVER.');
+            }
 
             $this->installationDetails = [
                 'installation_id' => $installation->installation_id,
@@ -264,6 +285,8 @@ class QuickSetupWizard extends Page
                 'seo_quota' => $seo['quota_label'] ?? null,
                 'seeding_active' => (bool) ($seeding['enabled'] ?? false),
                 'social_active' => (bool) ($social['enabled'] ?? false),
+                'snapshot_stale' => in_array($this->connectionState, ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND'], true)
+                    || ! empty($snap['revoked_at']),
             ];
         } else {
             $this->installationDetails = null;
@@ -276,7 +299,7 @@ class QuickSetupWizard extends Page
 
     /**
      * Verified H1 commercial entitlements only (seo / seeding / social-automation).
-     * Agent is ignored. Enrollment alone never implies Enabled.
+     * Agent / GLOBAL and enrollment placeholders are omitted — empty until a real grant exists.
      */
     public function refreshCommercialServices(): void
     {
@@ -302,13 +325,24 @@ class QuickSetupWizard extends Page
 
         foreach ($catalog as $key => $label) {
             $row = is_array($services[$key] ?? null) ? $services[$key] : null;
+            if (! is_array($row) || ! $mapper->hasPriorCommercialEntitlement(array_merge($row, ['key' => $key]))) {
+                continue;
+            }
+
+            $status = $mapper->commercialEntitlementStatus($row);
             $enabled = $productAllows
-                && is_array($row)
-                && $mapper->serviceCurrentlyLicensed($row)
+                && $status === 'active'
                 && $this->servicePassesProductDeadline($row, $snapshot, $mapper);
+            if (! $productAllows && $status === 'active') {
+                $status = 'expired';
+            } elseif ($enabled) {
+                $status = 'active';
+            } elseif ($status === 'active' && ! $this->servicePassesProductDeadline($row, $snapshot, $mapper)) {
+                $status = 'expired';
+            }
 
             $quotaLabel = null;
-            if (is_array($row) && array_key_exists('quota', $row) && is_numeric($row['quota'])) {
+            if (array_key_exists('quota', $row) && is_numeric($row['quota'])) {
                 $quotaLabel = $key === 'seo'
                     ? ((int) $row['quota']).' domains'
                     : (string) (int) $row['quota'];
@@ -318,6 +352,7 @@ class QuickSetupWizard extends Page
                 'key' => $key,
                 'label' => $label,
                 'enabled' => $enabled,
+                'status' => $status,
                 'quota_label' => $quotaLabel,
             ];
 
@@ -485,9 +520,34 @@ class QuickSetupWizard extends Page
         try {
             $normalized = ServerEndpointValidator::validate($url);
             $this->serverUrl = $normalized;
-            $installations->saveConfiguredControlServerUrl($normalized);
+            // Recovery Mode may retarget OPS URL; connected installs still block casual migration.
+            if (
+                $alreadyEnrolled
+                && in_array($this->connectionState, ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND'], true)
+            ) {
+                $installation = $installations->currentInstallation();
+                if ($installation instanceof H1Installation) {
+                    $installation->control_server_url = $normalized;
+                    $installation->save();
+                }
+                try {
+                    \App\Models\WpOption::set('h1_control_server_url', $normalized);
+                } catch (\Throwable) {
+                }
+                config([
+                    'h1-license.base_url' => $normalized,
+                    'configuration-sync.base_url' => $normalized,
+                ]);
+            } else {
+                $installations->saveConfiguredControlServerUrl($normalized);
+            }
+        } catch (H1EnrollmentException $e) {
+            $this->enrollmentError = $e->getMessage();
+
+            return;
         } catch (\InvalidArgumentException $e) {
             $this->enrollmentError = $e->getMessage();
+
             return;
         }
 
@@ -505,12 +565,17 @@ class QuickSetupWizard extends Page
         try {
             $consumer = app(EnrollmentConsumer::class);
             // Same reconnect service as Services page — no Fresh Installer / seeder.
+            $this->connectionState = $alreadyEnrolled ? 'RECONNECTING' : $this->connectionState;
             $result = $alreadyEnrolled
                 ? $consumer->replaceInstallationKey($token)
                 : $consumer->enroll($token);
 
             $this->enrollmentSuccess = true;
             $this->enrollmentToken = '';
+            $this->showReconnectConfirm = false;
+            $this->connectionState = 'CONNECTED';
+            $this->connectionReason = null;
+            $this->reconcileError = null;
             $this->step1AutoReconcileCompleted = false;
             $this->loadAllStepData();
             $this->maybeAutoReconcileOnStep1();
@@ -521,6 +586,10 @@ class QuickSetupWizard extends Page
                 ->success()
                 ->send();
         } catch (H1EnrollmentException $e) {
+            $this->showReconnectConfirm = false;
+            if ($this->connectionState === 'RECONNECTING') {
+                $this->connectionState = 'INSTALLATION_REVOKED';
+            }
             $this->enrollmentErrorCode = $e->errorCode;
             $this->enrollmentError = match ($e->errorCode) {
                 'invalid_receipt' => 'Mã kích hoạt không hợp lệ (phải bắt đầu bằng "tok_" và đúng định dạng).',
@@ -539,6 +608,10 @@ class QuickSetupWizard extends Page
                 ->danger()
                 ->send();
         } catch (\Throwable $e) {
+            $this->showReconnectConfirm = false;
+            if ($this->connectionState === 'RECONNECTING') {
+                $this->connectionState = 'INSTALLATION_REVOKED';
+            }
             $this->enrollmentError = 'Không thể kết nối đến máy chủ OPS-SERVER: ' . $e->getMessage();
 
             Notification::make()
@@ -547,6 +620,28 @@ class QuickSetupWizard extends Page
                 ->danger()
                 ->send();
         }
+    }
+
+    public function prepareReconnect(): void
+    {
+        $token = trim($this->enrollmentToken);
+        if ($token === '') {
+            $this->enrollmentError = 'Vui lòng nhập Enrollment Token của Installation mới.';
+
+            return;
+        }
+        if (! preg_match('/^tok_[A-Za-z0-9_-]{8,124}$/', $token)) {
+            $this->enrollmentError = 'Mã kích hoạt không đúng định dạng. Mã phải bắt đầu bằng "tok_".';
+
+            return;
+        }
+        $this->enrollmentError = null;
+        $this->showReconnectConfirm = true;
+    }
+
+    public function cancelReconnectConfirm(): void
+    {
+        $this->showReconnectConfirm = false;
     }
 
     /**
@@ -599,14 +694,25 @@ class QuickSetupWizard extends Page
 
         try {
             $result = app(LicenseReconcileService::class)->reconcile();
+            if ($result['offline'] ?? false) {
+                $this->connectionState = 'CONNECTION_ERROR';
+                $this->connectionReason = null;
+                $this->reconcileError = 'Không kết nối được OPS-SERVER (offline hoặc timeout). Key hiện tại được giữ nguyên. Đang dùng bản quyền đã xác minh gần nhất (nếu có).';
+            } else {
+                $this->connectionState = 'CONNECTED';
+                $this->connectionReason = null;
+                $this->reconcileError = null;
+            }
             $this->loadStep1Data();
 
-            if ($result['offline'] ?? false) {
-                $this->reconcileError = 'Không kết nối được OPS-SERVER (offline hoặc timeout). Đang dùng bản quyền đã xác minh gần nhất (nếu có).';
-            } elseif (! $this->hasCommercialServiceEnabled) {
+            if (! ($result['offline'] ?? false) && ! $this->hasCommercialServiceEnabled) {
                 $this->commercialGateMessage = self::COMMERCIAL_GATE_MESSAGE;
             }
+        } catch (H1TransportException $e) {
+            $this->applyReconcileTransportFailure($e);
+            $this->loadStep1Data();
         } catch (\Throwable $e) {
+            $this->connectionState = 'CONNECTION_ERROR';
             $this->reconcileError = $this->formatReconcileConnectionError($e);
             $this->loadStep1Data();
         } finally {
@@ -615,14 +721,78 @@ class QuickSetupWizard extends Page
         }
     }
 
+    private function applyReconcileTransportFailure(H1TransportException $e): void
+    {
+        $code = (string) $e->errorCode;
+        if (in_array($code, ['installation_revoked', 'credential_inactive', 'installation_inactive'], true)) {
+            $this->connectionState = 'INSTALLATION_REVOKED';
+            $this->connectionReason = $e->getMessage();
+            $this->reconcileError = null;
+            $this->markLocalSnapshotRevoked($e->getMessage());
+
+            return;
+        }
+        if (in_array($code, ['installation_not_found', 'unknown_credential'], true)) {
+            $this->connectionState = 'INSTALLATION_NOT_FOUND';
+            $this->connectionReason = $e->getMessage();
+            $this->reconcileError = null;
+            $this->markLocalSnapshotRevoked($e->getMessage());
+
+            return;
+        }
+        if ($code === 'server_offline') {
+            $this->connectionState = 'CONNECTION_ERROR';
+            $this->connectionReason = null;
+            $this->reconcileError = 'OPS-SERVER offline. Key hiện tại được giữ nguyên.';
+
+            return;
+        }
+
+        $this->connectionState = 'CONNECTION_ERROR';
+        $this->reconcileError = $this->formatReconcileConnectionError($e);
+    }
+
+    private function markLocalSnapshotRevoked(string $reason): void
+    {
+        $installation = app(InstallationStateRepository::class)->currentInstallation();
+        if (! $installation instanceof H1Installation) {
+            return;
+        }
+        $snap = is_array($installation->verified_snapshot) ? $installation->verified_snapshot : [];
+        if (! empty($snap['revoked_at'])) {
+            if ($this->connectionReason === null && is_string($snap['lifecycle_reason'] ?? null)) {
+                $this->connectionReason = (string) $snap['lifecycle_reason'];
+            }
+
+            return;
+        }
+        $snap['revoked_at'] = now()->utc()->format('Y-m-d\TH:i:s\Z');
+        $snap['lifecycle_reason'] = $reason;
+        $services = is_array($snap['services'] ?? null) ? $snap['services'] : [];
+        foreach ($services as $key => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $row['revoked_at'] = $snap['revoked_at'];
+            $row['enabled'] = false;
+            $services[$key] = $row;
+        }
+        $snap['services'] = $services;
+        $installation->verified_snapshot = $snap;
+        $installation->save();
+    }
+
     private function formatReconcileConnectionError(\Throwable $e): string
     {
         $msg = $e->getMessage();
+        if ($e instanceof H1TransportException) {
+            $msg = $e->errorCode.': '.$msg;
+        }
         if (str_contains($msg, 'timed out') || str_contains($msg, 'cURL error 28') || str_contains($msg, 'timeout')) {
-            return 'Kết nối OPS-SERVER quá thời gian chờ (timeout). Vui lòng thử lại.';
+            return 'Kết nối OPS-SERVER quá thời gian chờ (timeout). Key hiện tại được giữ nguyên. Vui lòng thử lại.';
         }
         if (str_contains($msg, 'Connection refused') || str_contains($msg, 'cURL error 7') || str_contains($msg, 'server_offline')) {
-            return 'Không kết nối được OPS-SERVER. Vui lòng thử lại.';
+            return 'Không kết nối được OPS-SERVER. Key hiện tại được giữ nguyên. Vui lòng thử lại.';
         }
 
         return 'Lỗi đồng bộ bản quyền: '.$msg;

@@ -63,10 +63,62 @@ final class EntitlementSnapshotMapper
             'license_model' => $row['license_model'] ?? null,
             'enabled' => (bool) ($row['enabled'] ?? false),
             'quota' => array_key_exists('quota', $row) ? (is_numeric($row['quota']) ? (int) $row['quota'] : null) : null,
+            'service_plan_key' => isset($row['service_plan_key']) && is_string($row['service_plan_key'])
+                ? $row['service_plan_key']
+                : null,
             'valid_until' => $row['valid_until'] ?? null,
             'grace_until' => $row['grace_until'] ?? null,
             'revoked_at' => $row['revoked_at'] ?? null,
         ];
+    }
+
+    /**
+     * True when the service row is a real commercial entitlement (granted / legacy / suspended / revoked),
+     * not an enrollment catalog placeholder and not Agent/GLOBAL core.
+     *
+     * @param  array<string, mixed>  $service
+     */
+    public function hasPriorCommercialEntitlement(array $service): bool
+    {
+        $key = strtolower((string) ($service['key'] ?? ''));
+        $scope = $service['scope'] ?? null;
+        if ($scope === 'global' || $key === 'agent') {
+            return false;
+        }
+        if (! empty($service['revoked_at'])) {
+            return true;
+        }
+        if (! empty($service['enabled'])) {
+            return true;
+        }
+        if (! empty($service['service_plan_key']) && is_string($service['service_plan_key'])) {
+            return true;
+        }
+        $model = $service['license_model'] ?? null;
+        $quota = $service['quota'] ?? null;
+
+        return $model === 'domain_quota' && is_numeric($quota) && (int) $quota > 0;
+    }
+
+    /**
+     * Presentation status for a prior commercial entitlement row.
+     *
+     * @param  array<string, mixed>  $service
+     * @return 'active'|'suspended'|'expired'|'revoked'
+     */
+    public function commercialEntitlementStatus(array $service, ?\DateTimeInterface $now = null): string
+    {
+        if (! empty($service['revoked_at'])) {
+            return 'revoked';
+        }
+        if (! (bool) ($service['enabled'] ?? false)) {
+            return 'suspended';
+        }
+        if (! $this->serviceCurrentlyLicensed($service, $now)) {
+            return 'expired';
+        }
+
+        return 'active';
     }
 
     /**

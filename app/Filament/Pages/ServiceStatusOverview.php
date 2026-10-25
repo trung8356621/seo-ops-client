@@ -281,6 +281,13 @@ final class ServiceStatusOverview extends Page
         $latestByService = $this->latestNotificationsByService();
         $cards = [];
 
+        $mapper = app(EntitlementSnapshotMapper::class);
+        $installation = app(InstallationStateRepository::class)->currentInstallation();
+        $snapshotServices = ($installation instanceof \App\Models\H1Installation
+            && is_array($installation->verified_snapshot['services'] ?? null))
+            ? $installation->verified_snapshot['services']
+            : [];
+
         foreach (ServiceIdentity::knownPublicSlugs() as $publicSlug) {
             $service = ServiceIdentity::findService($publicSlug);
             if (! $service instanceof Service && in_array($publicSlug, [
@@ -290,8 +297,17 @@ final class ServiceStatusOverview extends Page
                 continue;
             }
 
+            $snapRow = is_array($snapshotServices[$publicSlug] ?? null) ? $snapshotServices[$publicSlug] : null;
+            $hasPrior = is_array($snapRow)
+                && $mapper->hasPriorCommercialEntitlement(array_merge($snapRow, ['key' => $publicSlug]));
+            $entitlementState = $gate->state($publicSlug);
+            // Commercial list: omit catalog-only / never-granted rows (empty until Order grant).
+            if (! $hasPrior && $entitlementState === 'not_entitled') {
+                continue;
+            }
+
             $health = $resolver->healthReport($publicSlug);
-            $entitlementState = (string) ($health['entitlement_state'] ?? $gate->state($publicSlug));
+            $entitlementState = (string) ($health['entitlement_state'] ?? $entitlementState);
             $entitlementLabel = match ($entitlementState) {
                 'allowed' => 'Quyền dịch vụ: Đã cấp',
                 'suspended' => 'Quyền dịch vụ: Tạm ngưng / Thu hồi',

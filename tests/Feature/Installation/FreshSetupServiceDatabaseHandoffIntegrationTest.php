@@ -249,20 +249,14 @@ final class FreshSetupServiceDatabaseHandoffIntegrationTest extends TestCase
     private function assertAdminServicesReadsCanonicalConfigs(): void
     {
         $resolver = app(ServiceDatabaseConnectionResolver::class);
-        $cards = (new ServiceStatusOverview)->serviceCards();
-        $bySlug = [];
-        foreach ($cards as $card) {
-            $bySlug[$card['slug']] = $card;
-        }
+        // Commercial cards stay empty until H1 grant — DB readiness is via resolver, not catalog placeholders.
+        self::assertSame([], (new ServiceStatusOverview)->serviceCards());
 
         foreach ([
             ServiceIdentity::PUBLIC_SEO => 'fresh_seo_db',
             ServiceIdentity::PUBLIC_SEEDING => 'fresh_seeding_db',
             ServiceIdentity::PUBLIC_SOCIAL_AUTOMATION => 'fresh_sa_db',
         ] as $slug => $database) {
-            self::assertArrayHasKey($slug, $bySlug, "Admin services missing row for {$slug}");
-            self::assertNotSame('Chưa cấu hình DB', $bySlug[$slug]['db_label'], $slug);
-
             $health = $resolver->healthReport($slug);
             self::assertTrue($health['database_configured'], $slug);
             self::assertSame('canonical', $health['connection_source'], $slug);

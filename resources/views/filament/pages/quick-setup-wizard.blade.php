@@ -124,15 +124,46 @@
                 </div>
 
                 @if ($isEnrolled && $installationDetails)
-                    {{-- Đã kích hoạt — auto-reconcile once via wire:init --}}
+                    @php
+                        $isRecovery = in_array($connectionState ?? '', ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND'], true);
+                        $isConnError = ($connectionState ?? '') === 'CONNECTION_ERROR';
+                        $snapshotStale = $isRecovery || ! empty($installationDetails['snapshot_stale']);
+                    @endphp
+                    {{-- Enrolled local key — auto-reconcile once; Recovery when REVOKED --}}
                     <div
                         wire:init="maybeAutoReconcileOnStep1"
-                        class="rounded-lg border border-emerald-500/30 bg-emerald-50/50 p-4 dark:border-emerald-500/20 dark:bg-emerald-950/20 space-y-4"
+                        @class([
+                            'rounded-lg border p-4 space-y-4',
+                            'border-rose-500/40 bg-rose-50/60 dark:border-rose-500/30 dark:bg-rose-950/25' => $isRecovery,
+                            'border-amber-500/40 bg-amber-50/50 dark:border-amber-500/25 dark:bg-amber-950/20' => $isConnError && ! $isRecovery,
+                            'border-emerald-500/30 bg-emerald-50/50 dark:border-emerald-500/20 dark:bg-emerald-950/20' => ! $isRecovery && ! $isConnError,
+                        ])
                     >
-                        <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
-                            <x-filament::icon icon="heroicon-m-check-circle" class="h-5 w-5" />
-                            <span>Thiết bị đã được kích hoạt với OPS-SERVER</span>
-                        </div>
+                        @if ($isRecovery)
+                            <div class="flex items-start gap-2 text-rose-800 dark:text-rose-300 font-semibold text-sm">
+                                <x-filament::icon icon="heroicon-m-exclamation-triangle" class="h-5 w-5 shrink-0" />
+                                <div>
+                                    <div>
+                                        {{ ($connectionState ?? '') === 'INSTALLATION_NOT_FOUND'
+                                            ? 'Installation không tồn tại trên OPS-SERVER — Recovery Mode'
+                                            : 'Installation đã bị thu hồi — Recovery Mode' }}
+                                    </div>
+                                    @if (! empty($connectionReason))
+                                        <div class="mt-1 text-xs font-normal opacity-90">Lý do: {{ $connectionReason }}</div>
+                                    @endif
+                                </div>
+                            </div>
+                        @elseif ($isConnError)
+                            <div class="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-semibold text-sm">
+                                <x-filament::icon icon="heroicon-m-signal-slash" class="h-5 w-5" />
+                                <span>Lỗi kết nối OPS-SERVER — key cục bộ được giữ nguyên</span>
+                            </div>
+                        @else
+                            <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-semibold text-sm">
+                                <x-filament::icon icon="heroicon-m-check-circle" class="h-5 w-5" />
+                                <span>Thiết bị đã được kích hoạt với OPS-SERVER</span>
+                            </div>
+                        @endif
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-gray-600 dark:text-gray-300">
                             <div>
@@ -152,12 +183,12 @@
                             </div>
                         @endif
 
-                        @if ($reconcileError)
-                            <div class="rounded-lg border border-rose-500/40 bg-rose-50 p-3 text-sm text-rose-800 dark:border-rose-500/30 dark:bg-rose-950/30 dark:text-rose-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        @if ($isConnError && $reconcileError)
+                            <div class="rounded-lg border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                 <span>{{ $reconcileError }}</span>
                                 <x-filament::button
                                     wire:click="reconcileLicense"
-                                    color="danger"
+                                    color="warning"
                                     size="sm"
                                     icon="heroicon-m-arrow-path"
                                     wire:loading.attr="disabled"
@@ -169,45 +200,135 @@
                             </div>
                         @endif
 
-                        {{-- Commercial service badges (Verified Entitlement only) --}}
+                        {{-- Commercial entitlements only — never catalog placeholders / Core as Disabled --}}
                         <div class="space-y-2 {{ $reconcileRunning ? 'opacity-60' : '' }}">
-                            <div class="text-sm font-semibold text-gray-900 dark:text-white">Dịch vụ thương mại</div>
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                @foreach ($commercialServices as $svc)
-                                    <div class="rounded-xl border p-4
-                                        {{ ($svc['enabled'] ?? false)
-                                            ? 'border-emerald-400/50 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-950/30'
-                                            : 'border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-gray-800/50' }}
-                                    ">
-                                        <div class="text-base font-bold text-gray-950 dark:text-white">{{ $svc['label'] }}</div>
-                                        <div class="mt-2">
-                                            @if ($svc['enabled'] ?? false)
-                                                <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-emerald-600 text-white dark:bg-emerald-500">
-                                                    Enabled
-                                                </span>
-                                            @else
-                                                <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-gray-300 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
-                                                    Disabled
-                                                </span>
+                            <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                                {{ $snapshotStale ? 'Snapshot quyền cũ (không còn hiệu lực)' : 'Dịch vụ thương mại' }}
+                            </div>
+                            @if ($snapshotStale)
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Thông tin dưới đây chỉ là bản ghi cục bộ trước khi thu hồi — không phải entitlement hiện tại.
+                                </p>
+                            @endif
+                            @if (count($commercialServices) === 0)
+                                <div class="rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-5 text-sm text-gray-600 dark:border-white/10 dark:bg-gray-800/40 dark:text-gray-300">
+                                    Chưa có entitlement thương mại nào được cấp cho Installation này.
+                                    Agent/Core không thuộc danh sách thương mại. Cấp quyền qua Order trên OPS-SERVER rồi Đồng bộ H1.
+                                </div>
+                            @else
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                    @foreach ($commercialServices as $svc)
+                                        @php
+                                            $status = $snapshotStale ? 'revoked' : (string) ($svc['status'] ?? (($svc['enabled'] ?? false) ? 'active' : 'suspended'));
+                                            $liveEnabled = ! $snapshotStale && $status === 'active';
+                                        @endphp
+                                        <div class="rounded-xl border p-4
+                                            {{ $liveEnabled
+                                                ? 'border-emerald-400/50 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-950/30'
+                                                : 'border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-gray-800/50' }}
+                                        ">
+                                            <div class="text-base font-bold text-gray-950 dark:text-white">{{ $svc['label'] }}</div>
+                                            <div class="mt-2">
+                                                @if ($status === 'active')
+                                                    <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-emerald-600 text-white dark:bg-emerald-500">
+                                                        Active
+                                                    </span>
+                                                @elseif ($status === 'suspended')
+                                                    <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-amber-100 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200">
+                                                        Suspended
+                                                    </span>
+                                                @elseif ($status === 'expired')
+                                                    <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-orange-100 text-orange-900 dark:bg-orange-900/40 dark:text-orange-200">
+                                                        Expired
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-200">
+                                                        Revoked
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            @if (! empty($svc['quota_label']))
+                                                <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                                    {{ $snapshotStale ? 'Quota (snapshot cũ):' : 'Quota:' }} {{ $svc['quota_label'] }}
+                                                </div>
                                             @endif
                                         </div>
-                                        @if (! empty($svc['quota_label']))
-                                            <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-                                                Quota: {{ $svc['quota_label'] }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
 
-                        @if (! $reconcileRunning && ($commercialGateMessage || ! $hasCommercialServiceEnabled))
+                        @if ($isRecovery)
+                            <div class="border-t border-rose-200/60 pt-4 dark:border-rose-800/40 space-y-3">
+                                <div class="text-sm font-semibold text-gray-900 dark:text-white">Kết nối lại OPS-SERVER</div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    Nhập Enrollment Token của Installation mới. Không chạy lại Installer — website/article/project được giữ nguyên.
+                                </p>
+                                @if ($enrollmentError)
+                                    <div class="rounded-lg border border-rose-500/30 bg-rose-50 p-3 text-xs text-rose-700 dark:border-rose-500/20 dark:bg-rose-950/30 dark:text-rose-400">
+                                        {{ $enrollmentError }}
+                                    </div>
+                                @endif
+                                <div class="flex flex-col sm:flex-row gap-2 items-stretch sm:items-end">
+                                    <div class="flex-1 space-y-1">
+                                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-300" for="qs-reconnect-token">
+                                            Enrollment Token mới
+                                        </label>
+                                        <input
+                                            id="qs-reconnect-token"
+                                            type="text"
+                                            wire:model="enrollmentToken"
+                                            wire:loading.attr="disabled"
+                                            wire:target="activateEnrollment,prepareReconnect"
+                                            class="w-full rounded-lg border-gray-300 font-mono text-sm shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                                            placeholder="tok_…"
+                                            autocomplete="off"
+                                        />
+                                    </div>
+                                    @if ($showReconnectConfirm)
+                                        <x-filament::button
+                                            wire:click="activateEnrollment"
+                                            color="success"
+                                            size="sm"
+                                            icon="heroicon-m-check"
+                                            wire:loading.attr="disabled"
+                                            wire:target="activateEnrollment"
+                                        >
+                                            Xác nhận kết nối lại
+                                        </x-filament::button>
+                                        <x-filament::button
+                                            wire:click="cancelReconnectConfirm"
+                                            color="gray"
+                                            size="sm"
+                                        >
+                                            Hủy
+                                        </x-filament::button>
+                                    @else
+                                        <x-filament::button
+                                            wire:click="prepareReconnect"
+                                            color="warning"
+                                            size="sm"
+                                            icon="heroicon-m-arrow-path-rounded-square"
+                                            wire:loading.attr="disabled"
+                                            wire:target="prepareReconnect,activateEnrollment"
+                                        >
+                                            Kết nối lại
+                                        </x-filament::button>
+                                    @endif
+                                </div>
+                                @if ($showReconnectConfirm)
+                                    <p class="text-xs text-amber-800 dark:text-amber-200">
+                                        Xác nhận thay identity/credential thương mại. Dữ liệu SEO-OPS Client không bị reset.
+                                    </p>
+                                @endif
+                            </div>
+                        @elseif (! $reconcileRunning && ! $isConnError && ($commercialGateMessage || ! $hasCommercialServiceEnabled))
                             <div class="rounded-lg border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/30 dark:text-amber-200">
                                 {{ $commercialGateMessage ?: 'Chưa có dịch vụ được kích hoạt. Vui lòng liên hệ quản trị viên hoặc đồng bộ lại quyền sử dụng.' }}
                             </div>
                         @endif
 
-                        @if (! $reconcileError)
+                        @if (! $isRecovery && ! $isConnError)
                             <div class="pt-1 flex flex-wrap items-center gap-3">
                                 <x-filament::button
                                     wire:click="reconcileLicense"
@@ -218,7 +339,7 @@
                                     wire:target="reconcileLicense,maybeAutoReconcileOnStep1"
                                     :disabled="$reconcileRunning"
                                 >
-                                    Thử lại
+                                    Đồng bộ lại
                                 </x-filament::button>
                             </div>
                         @endif
