@@ -85,9 +85,21 @@ final class LicenseReconcileService
                     $secret,
                 );
                 $decoded = $result['decoded'];
+                $httpStatus = (int) ($result['status'] ?? 200);
+                if ($httpStatus >= 400) {
+                    $code = (string) ($decoded['code'] ?? 'http_error');
+                    $detail = (string) ($decoded['reason'] ?? $decoded['error'] ?? $decoded['detail'] ?? 'OPS-SERVER rejected reconcile.');
+                    if (in_array($code, ['installation_revoked', 'credential_inactive', 'installation_inactive', 'unknown_credential'], true)) {
+                        throw new H1TransportException($code, $detail);
+                    }
+                    if ($httpStatus === 404 || $code === 'installation_not_found') {
+                        throw new H1TransportException('installation_not_found', $detail);
+                    }
+                    throw new H1TransportException($code !== '' ? $code : 'http_error', $detail);
+                }
             } catch (H1TransportException $e) {
                 if ($e->errorCode === 'server_offline') {
-                    return ['commands_applied' => 0, 'acks' => $acks, 'offline' => true];
+                    return ['commands_applied' => 0, 'acks' => $acks, 'offline' => true, 'connection_state' => 'CONNECTION_ERROR'];
                 }
                 throw $e;
             }
@@ -142,6 +154,7 @@ final class LicenseReconcileService
             'commands_applied' => $applied,
             'acks' => $newAcks,
             'offline' => false,
+            'connection_state' => 'CONNECTED',
         ];
     }
 

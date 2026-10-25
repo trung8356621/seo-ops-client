@@ -28,9 +28,13 @@ final class FixtureEnrollmentTransport implements EnrollmentTransport
         ];
     }
 
-    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array
-    {
-        unset($clientVersion);
+    public function consume(
+        string $enrollmentToken,
+        string $clientVersion,
+        ?string $anchorIdentity = null,
+        ?string $previousInstallationId = null,
+    ): array {
+        unset($clientVersion, $previousInstallationId);
 
         if (! isset($this->tokens[$enrollmentToken])) {
             throw new H1EnrollmentException('invalid_receipt', 'Enrollment receipt token not found.');

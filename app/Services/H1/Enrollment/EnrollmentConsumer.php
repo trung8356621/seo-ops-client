@@ -114,7 +114,8 @@ final class EnrollmentConsumer
         $localAnchor = $this->primarySites->currentAnchorDomain();
 
         // Validate with OPS-SERVER BEFORE mutating local identity/credential.
-        $remote = $this->transport->consume($token, $version, $localAnchor);
+        // Pass previous_installation_id so OPS can ACK detach of the old key.
+        $remote = $this->transport->consume($token, $version, $localAnchor, $previousInstallationId);
         if (! ($remote['success'] ?? false)) {
             throw new H1EnrollmentException(
                 (string) ($remote['code'] ?? 'enrollment_failed'),

@@ -25,6 +25,12 @@ interface EnrollmentTransport
      */
     /**
      * @param  string|null  $anchorIdentity  Local Domain Anchor hostname (optional; legacy clients omit)
+     * @param  string|null  $previousInstallationId  Prior Installation Key when reconnecting (detach ACK)
      */
-    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array;
+    public function consume(
+        string $enrollmentToken,
+        string $clientVersion,
+        ?string $anchorIdentity = null,
+        ?string $previousInstallationId = null,
+    ): array;
 }

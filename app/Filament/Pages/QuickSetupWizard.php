@@ -401,11 +401,6 @@ class QuickSetupWizard extends Page
         $this->serverConnectionMessage = null;
 
         $installations = app(InstallationStateRepository::class);
-        if ($installations->isEnrolled()) {
-            $this->serverConnectionStatus = 'error';
-            $this->serverConnectionMessage = 'Thiết bị đã được kích hoạt. Không thể thay đổi máy chủ khi chưa hoàn tất thủ tục phục hồi ủy quyền.';
-            return;
-        }
 
         $url = trim($this->serverUrl);
         if ($url === '') {
@@ -479,10 +474,7 @@ class QuickSetupWizard extends Page
         $this->enrollmentSuccess = false;
 
         $installations = app(InstallationStateRepository::class);
-        if ($installations->isEnrolled()) {
-            $this->enrollmentError = 'Thiết bị đã được liên kết với một ID cài đặt. Di chuyển máy chủ yêu cầu quy trình phục hồi ủy quyền.';
-            return;
-        }
+        $alreadyEnrolled = $installations->isEnrolled();
 
         $url = trim($this->serverUrl);
         if ($url === '') {
@@ -512,7 +504,10 @@ class QuickSetupWizard extends Page
 
         try {
             $consumer = app(EnrollmentConsumer::class);
-            $result = $consumer->enroll($token);
+            // Same reconnect service as Services page — no Fresh Installer / seeder.
+            $result = $alreadyEnrolled
+                ? $consumer->replaceInstallationKey($token)
+                : $consumer->enroll($token);
 
             $this->enrollmentSuccess = true;
             $this->enrollmentToken = '';
@@ -521,7 +516,7 @@ class QuickSetupWizard extends Page
             $this->maybeAutoReconcileOnStep1();
 
             Notification::make()
-                ->title('Kích hoạt dịch vụ thành công!')
+                ->title($alreadyEnrolled ? 'Đã kết nối lại OPS-SERVER' : 'Kích hoạt dịch vụ thành công!')
                 ->body('Installation ID: ' . ($result['installation_id'] ?? ''))
                 ->success()
                 ->send();

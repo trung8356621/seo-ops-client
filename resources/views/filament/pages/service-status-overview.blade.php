@@ -6,11 +6,21 @@
         $rows = $this->serviceCards();
     @endphp
 
-    <div class="mb-4 rounded-lg border border-gray-200 bg-white px-3 py-3 text-sm dark:border-gray-700 dark:bg-gray-900">
+    <div @class([
+        'mb-4 rounded-lg border px-3 py-3 text-sm',
+        'border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30' => in_array($opsReport['connection_state'] ?? '', ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND'], true),
+        'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/30' => ($opsReport['connection_state'] ?? '') === 'CONNECTION_ERROR',
+        'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900' => ! in_array($opsReport['connection_state'] ?? '', ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND', 'CONNECTION_ERROR'], true),
+    ])>
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0">
-                <div class="font-semibold text-gray-900 dark:text-white">Bản quyền (H1)</div>
-                <div class="mt-0.5 text-xs text-gray-500">{{ $opsReport['status_label'] }}</div>
+                <div class="font-semibold text-gray-900 dark:text-white">Bản quyền (H1) / Kết nối OPS-SERVER</div>
+                <div class="mt-0.5 text-xs font-medium text-gray-700 dark:text-gray-200">{{ $opsReport['status_label'] }}</div>
+                @if (! empty($opsReport['connection_reason']))
+                    <div class="mt-1 text-xs text-red-700 dark:text-red-300">
+                        Lý do: {{ $opsReport['connection_reason'] }}
+                    </div>
+                @endif
                 <div class="mt-2 grid gap-1 text-xs text-gray-600 dark:text-gray-300 sm:grid-cols-2">
                     <div>Installation: <span class="font-mono">{{ $opsReport['installation_id'] }}</span></div>
                     <div>Revision (Client): <span class="font-mono">{{ $opsReport['entitlement_revision'] }}</span></div>
@@ -24,30 +34,33 @@
                     <div class="mt-2 text-xs text-red-600 dark:text-red-400">{{ $opsReport['last_error'] }}</div>
                 @endif
             </div>
-            <button
-                type="button"
-                wire:click="reconcileLicense"
-                wire:loading.attr="disabled"
-                wire:target="reconcileLicense,mountAutoReconcile"
-                class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
-            >
-                <span wire:loading.remove wire:target="reconcileLicense,mountAutoReconcile">Đồng bộ H1</span>
-                <span wire:loading wire:target="reconcileLicense,mountAutoReconcile" class="inline-flex items-center gap-1">
-                    <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
-                    Đang đồng bộ…
-                </span>
-            </button>
+            <div class="flex shrink-0 flex-col gap-1.5">
+                <button
+                    type="button"
+                    wire:click="reconcileLicense"
+                    wire:loading.attr="disabled"
+                    wire:target="reconcileLicense,mountAutoReconcile"
+                    class="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
+                >
+                    <span wire:loading.remove wire:target="reconcileLicense,mountAutoReconcile">
+                        {{ ($opsReport['connection_state'] ?? '') === 'CONNECTION_ERROR' ? 'Thử lại' : 'Đồng bộ H1' }}
+                    </span>
+                    <span wire:loading wire:target="reconcileLicense,mountAutoReconcile" class="inline-flex items-center gap-1">
+                        <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                        Đang đồng bộ…
+                    </span>
+                </button>
+            </div>
         </div>
         <p class="mt-2 text-[11px] text-gray-400">
-            H1 đã kết nối ≠ dịch vụ đã được cấp quyền. Reason lifecycle hiển thị dưới từng dịch vụ.
+            H1 đã kết nối ≠ dịch vụ đã được cấp quyền. Thu hồi Installation khóa dịch vụ thương mại — Admin vẫn vào Settings / Support / Kết nối lại.
         </p>
 
-        @if (! empty($opsReport['enrolled']))
+        @if (! empty($opsReport['show_reconnect']))
             <div class="mt-3 border-t border-gray-100 pt-3 dark:border-gray-800">
-                <div class="text-xs font-semibold text-gray-800 dark:text-gray-100">Thay Installation Key (không cài lại)</div>
+                <div class="text-xs font-semibold text-gray-800 dark:text-gray-100">Kết nối lại OPS-SERVER</div>
                 <p class="mt-0.5 text-[11px] text-gray-400">
-                    Xác thực Installation mới với OPS-SERVER trước khi đổi. Website, article, content project và cấu hình addon được giữ nguyên.
-                    Không tự Revoke key cũ — Admin xác nhận sau trên OPS-SERVER.
+                    Nhập Enrollment token của Installation mới. Không chạy lại Installer / seeder. Website, article, project, prompt, settings được giữ nguyên.
                 </p>
                 <div class="mt-2 flex flex-wrap items-end gap-2">
                     <div class="min-w-[16rem] flex-1">
@@ -57,26 +70,50 @@
                             type="text"
                             wire:model="replacementEnrollmentToken"
                             wire:loading.attr="disabled"
-                            wire:target="replaceInstallationKey"
+                            wire:target="replaceInstallationKey,prepareReconnect"
                             class="w-full rounded-md border border-gray-300 bg-white px-2 py-1.5 font-mono text-xs dark:border-gray-600 dark:bg-gray-950"
                             placeholder="tok_…"
                             autocomplete="off"
                         />
                     </div>
-                    <button
-                        type="button"
-                        wire:click="replaceInstallationKey"
-                        wire:loading.attr="disabled"
-                        wire:target="replaceInstallationKey"
-                        class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
-                    >
-                        <span wire:loading.remove wire:target="replaceInstallationKey">Thay key</span>
-                        <span wire:loading wire:target="replaceInstallationKey" class="inline-flex items-center gap-1">
-                            <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
-                            Đang xác thực…
-                        </span>
-                    </button>
+                    @if ($showReconnectConfirm)
+                        <button
+                            type="button"
+                            wire:click="replaceInstallationKey"
+                            wire:loading.attr="disabled"
+                            wire:target="replaceInstallationKey"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-emerald-400 bg-emerald-50 px-2.5 py-1.5 text-xs font-semibold text-emerald-900 hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-100"
+                        >
+                            <span wire:loading.remove wire:target="replaceInstallationKey">Xác nhận kết nối lại</span>
+                            <span wire:loading wire:target="replaceInstallationKey" class="inline-flex items-center gap-1">
+                                <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"/></svg>
+                                Đang xác thực…
+                            </span>
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="cancelReconnectConfirm"
+                            class="inline-flex items-center rounded-md border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-gray-700 dark:border-gray-600 dark:text-gray-200"
+                        >
+                            Hủy
+                        </button>
+                    @else
+                        <button
+                            type="button"
+                            wire:click="prepareReconnect"
+                            wire:loading.attr="disabled"
+                            wire:target="prepareReconnect,replaceInstallationKey"
+                            class="inline-flex items-center gap-1.5 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-xs font-semibold text-amber-900 hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-100"
+                        >
+                            Kết nối lại
+                        </button>
+                    @endif
                 </div>
+                @if ($showReconnectConfirm)
+                    <p class="mt-2 text-[11px] text-amber-800 dark:text-amber-200">
+                        Xác nhận thay identity/credential thương mại. Dữ liệu SEO-OPS Client không bị reset.
+                    </p>
+                @endif
                 @if ($replacementError)
                     <div class="mt-2 text-xs text-red-600 dark:text-red-400">{{ $replacementError }}</div>
                 @endif

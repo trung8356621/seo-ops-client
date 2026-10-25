@@ -37,11 +37,18 @@ final class ServiceStatusOverview extends Page
 
     public ?string $reconcileError = null;
 
+    /** @var 'CONNECTED'|'INSTALLATION_REVOKED'|'INSTALLATION_NOT_FOUND'|'CONNECTION_ERROR'|'RECONNECTING'|null */
+    public ?string $connectionState = null;
+
+    public ?string $connectionReason = null;
+
     public string $replacementEnrollmentToken = '';
 
     public bool $replacementRunning = false;
 
     public ?string $replacementError = null;
+
+    public bool $showReconnectConfirm = false;
 
     private bool $autoReconcileCompleted = false;
 
@@ -90,6 +97,23 @@ final class ServiceStatusOverview extends Page
         $this->runReconcile(notify: true);
     }
 
+    public function prepareReconnect(): void
+    {
+        $token = trim($this->replacementEnrollmentToken);
+        if ($token === '') {
+            $this->replacementError = 'Vui lòng nhập enrollment token của Installation mới.';
+
+            return;
+        }
+        $this->replacementError = null;
+        $this->showReconnectConfirm = true;
+    }
+
+    public function cancelReconnectConfirm(): void
+    {
+        $this->showReconnectConfirm = false;
+    }
+
     /**
      * Replace OPS-SERVER Installation Key without reinstalling or touching SEO business data.
      * Validates the new enrollment token with OPS-SERVER before swapping local identity.
@@ -107,37 +131,52 @@ final class ServiceStatusOverview extends Page
             return;
         }
 
+        if (! $this->showReconnectConfirm) {
+            $this->prepareReconnect();
+
+            return;
+        }
+
         $this->replacementRunning = true;
+        $this->connectionState = 'RECONNECTING';
         $this->replacementError = null;
 
         try {
             $result = app(EnrollmentConsumer::class)->replaceInstallationKey($token);
             $this->replacementEnrollmentToken = '';
+            $this->showReconnectConfirm = false;
+            $this->connectionState = 'CONNECTED';
+            $this->connectionReason = null;
             Notification::make()
-                ->title('Đã thay Installation Key')
+                ->title('Đã kết nối lại OPS-SERVER')
                 ->body(
                     'Từ '.$result['previous_installation_id'].' → '.$result['installation_id']
-                    .'. Dữ liệu website/article không đổi. Revoke key cũ trên OPS-SERVER sau khi xác nhận.'
+                    .'. Dữ liệu website/article/project/prompt được giữ nguyên.'
                 )
                 ->success()
                 ->send();
             $this->runReconcile(notify: false);
         } catch (H1EnrollmentException $e) {
             $this->replacementError = $e->getMessage();
+            $this->showReconnectConfirm = false;
             Notification::make()
-                ->title('Thay key thất bại — kết nối hiện tại được giữ nguyên')
+                ->title('Kết nối lại thất bại — key hiện tại được giữ nguyên')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         } catch (\Throwable $e) {
             $this->replacementError = $e->getMessage();
+            $this->showReconnectConfirm = false;
             Notification::make()
-                ->title('Thay key thất bại — kết nối hiện tại được giữ nguyên')
+                ->title('Kết nối lại thất bại — key hiện tại được giữ nguyên')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
         } finally {
             $this->replacementRunning = false;
+            if ($this->connectionState === 'RECONNECTING') {
+                $this->connectionState = null;
+            }
         }
     }
 
@@ -160,16 +199,40 @@ final class ServiceStatusOverview extends Page
         try {
             $result = app(LicenseReconcileService::class)->reconcile();
             if (! empty($result['offline'])) {
-                $this->reconcileError = 'Không kết nối được OPS-SERVER. Đang dùng bản quyền đã xác minh gần nhất (nếu có).';
-            } elseif ($notify) {
-                Notification::make()
-                    ->title('Đã đồng bộ quyền H1')
-                    ->body('Áp dụng '.((int) ($result['commands_applied'] ?? 0)).' lệnh entitlement.')
-                    ->success()
-                    ->send();
+                $this->connectionState = 'CONNECTION_ERROR';
+                $this->connectionReason = null;
+                $this->reconcileError = 'Không kết nối được OPS-SERVER. Đang dùng bản quyền đã xác minh gần nhất (nếu có). Key hiện tại không bị xóa.';
+            } else {
+                $this->connectionState = 'CONNECTED';
+                $this->connectionReason = null;
+                if ($notify) {
+                    Notification::make()
+                        ->title('Đã đồng bộ quyền H1')
+                        ->body('Áp dụng '.((int) ($result['commands_applied'] ?? 0)).' lệnh entitlement.')
+                        ->success()
+                        ->send();
+                }
             }
         } catch (H1TransportException $e) {
-            $this->reconcileError = $e->getMessage();
+            $code = (string) $e->errorCode;
+            if ($code === 'installation_revoked' || $code === 'credential_inactive' || $code === 'installation_inactive') {
+                $this->connectionState = 'INSTALLATION_REVOKED';
+                $this->connectionReason = $e->getMessage();
+                $this->reconcileError = 'Installation đã bị thu hồi: '.$e->getMessage();
+                $this->markLocalSnapshotRevoked($e->getMessage());
+            } elseif ($code === 'installation_not_found' || $code === 'unknown_credential') {
+                $this->connectionState = 'INSTALLATION_NOT_FOUND';
+                $this->connectionReason = $e->getMessage();
+                $this->reconcileError = 'Installation không tồn tại trên OPS-SERVER. Có thể kết nối lại bằng mã mới.';
+                $this->markLocalSnapshotRevoked($e->getMessage());
+            } elseif ($code === 'server_offline') {
+                $this->connectionState = 'CONNECTION_ERROR';
+                $this->connectionReason = null;
+                $this->reconcileError = 'OPS-SERVER offline. Key hiện tại được giữ nguyên.';
+            } else {
+                $this->connectionState = 'CONNECTION_ERROR';
+                $this->reconcileError = $e->getMessage();
+            }
             if ($notify) {
                 Notification::make()
                     ->title('Đồng bộ H1 thất bại')
@@ -180,6 +243,32 @@ final class ServiceStatusOverview extends Page
         } finally {
             $this->reconcileRunning = false;
         }
+    }
+
+    private function markLocalSnapshotRevoked(string $reason): void
+    {
+        $installation = app(InstallationStateRepository::class)->currentInstallation();
+        if (! $installation instanceof \App\Models\H1Installation) {
+            return;
+        }
+        $snap = is_array($installation->verified_snapshot) ? $installation->verified_snapshot : [];
+        if (! empty($snap['revoked_at'])) {
+            return;
+        }
+        $snap['revoked_at'] = now()->utc()->format('Y-m-d\TH:i:s\Z');
+        $snap['lifecycle_reason'] = $reason;
+        $services = is_array($snap['services'] ?? null) ? $snap['services'] : [];
+        foreach ($services as $key => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+            $row['revoked_at'] = $snap['revoked_at'];
+            $row['enabled'] = false;
+            $services[$key] = $row;
+        }
+        $snap['services'] = $services;
+        $installation->verified_snapshot = $snap;
+        $installation->save();
     }
 
     /**
@@ -328,14 +417,36 @@ final class ServiceStatusOverview extends Page
         }
 
         $h1Connected = $cred !== null;
-        $statusLabel = $h1Connected
-            ? 'H1: Đã kết nối (enrollment) — quyền dịch vụ theo snapshot bên dưới'
-            : 'H1: Chờ credential';
-        $statusBadge = $h1Connected ? 'emerald' : 'amber';
+        $state = $this->connectionState;
+        if ($state === null && ! empty($installation->verified_snapshot['revoked_at'])) {
+            $state = 'INSTALLATION_REVOKED';
+        }
+        if ($state === null) {
+            $state = $h1Connected ? 'CONNECTED' : 'CONNECTION_ERROR';
+        }
+
+        $statusLabel = match ($state) {
+            'INSTALLATION_REVOKED' => 'H1: Installation đã bị thu hồi — cần kết nối lại',
+            'INSTALLATION_NOT_FOUND' => 'H1: Installation không tồn tại — cần kết nối lại',
+            'CONNECTION_ERROR' => 'H1: Lỗi kết nối OPS-SERVER (key hiện tại được giữ)',
+            'RECONNECTING' => 'H1: Đang kết nối lại…',
+            default => $h1Connected
+                ? 'H1: Đã kết nối (enrollment) — quyền dịch vụ theo snapshot bên dưới'
+                : 'H1: Chờ credential',
+        };
+        $statusBadge = match ($state) {
+            'CONNECTED' => 'emerald',
+            'INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND' => 'red',
+            'RECONNECTING' => 'amber',
+            default => 'amber',
+        };
 
         return [
             'enrolled' => $h1Connected,
             'h1_connected' => $h1Connected,
+            'connection_state' => $state,
+            'connection_reason' => $this->connectionReason,
+            'show_reconnect' => in_array($state, ['INSTALLATION_REVOKED', 'INSTALLATION_NOT_FOUND', 'CONNECTED'], true),
             'status_label' => $statusLabel,
             'status_badge' => $statusBadge,
             'installation_id' => $installation->installation_id,

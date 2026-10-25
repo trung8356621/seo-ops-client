@@ -14,8 +14,12 @@ use Illuminate\Support\Facades\Http;
  */
 final class HttpEnrollmentTransport implements EnrollmentTransport
 {
-    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array
-    {
+    public function consume(
+        string $enrollmentToken,
+        string $clientVersion,
+        ?string $anchorIdentity = null,
+        ?string $previousInstallationId = null,
+    ): array {
         $installations = app(InstallationStateRepository::class);
         $base = $installations->getEffectiveControlServerUrl();
         $this->assertUrl($base);
@@ -29,6 +33,9 @@ final class HttpEnrollmentTransport implements EnrollmentTransport
         ];
         if (is_string($anchorIdentity) && trim($anchorIdentity) !== '') {
             $payload['anchor_identity'] = strtolower(trim($anchorIdentity));
+        }
+        if (is_string($previousInstallationId) && trim($previousInstallationId) !== '') {
+            $payload['previous_installation_id'] = trim($previousInstallationId);
         }
 
         try {

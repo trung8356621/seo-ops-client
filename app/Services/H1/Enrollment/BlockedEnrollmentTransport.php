@@ -11,9 +11,13 @@ use App\Services\H1\Exceptions\H1EnrollmentException;
  */
 final class BlockedEnrollmentTransport implements EnrollmentTransport
 {
-    public function consume(string $enrollmentToken, string $clientVersion, ?string $anchorIdentity = null): array
-    {
-        unset($enrollmentToken, $clientVersion, $anchorIdentity);
+    public function consume(
+        string $enrollmentToken,
+        string $clientVersion,
+        ?string $anchorIdentity = null,
+        ?string $previousInstallationId = null,
+    ): array {
+        unset($enrollmentToken, $clientVersion, $anchorIdentity, $previousInstallationId);
 
         throw new H1EnrollmentException(
             'server_endpoint_missing',
