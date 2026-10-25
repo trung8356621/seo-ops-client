@@ -84,6 +84,21 @@ final class AddonMigrationRegistrar
         return $byConnection;
     }
 
+    /**
+     * Migration paths safe to register with Laravel's default migrate command.
+     *
+     * Laravel stores migration history on the command connection, even when an
+     * individual migration sets a different $connection for schema operations.
+     * Registering every connection here therefore makes `artisan migrate`
+     * replay service-database migrations against the wrong repository.
+     *
+     * @return list<string>
+     */
+    public function pathsForConnection(string $connection): array
+    {
+        return $this->pathsByConnection()[$connection] ?? [];
+    }
+
     private function directoryHasPhpMigrations(string $absolute): bool
     {
         $files = glob($absolute.DIRECTORY_SEPARATOR.'*.php') ?: [];

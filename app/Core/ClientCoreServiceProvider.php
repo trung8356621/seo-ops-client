@@ -380,7 +380,8 @@ final class ClientCoreServiceProvider extends ServiceProvider
     {
         /** @var \App\Core\Database\AddonMigrationRegistrar $registrar */
         $registrar = $this->app->make(\App\Core\Database\AddonMigrationRegistrar::class);
-        foreach ($registrar->migrationPaths() as $path) {
+        $defaultConnection = (string) config('database.default', 'mysql');
+        foreach ($registrar->pathsForConnection($defaultConnection) as $path) {
             // Skip default database/migrations — Laravel already loads it.
             if (realpath($path) === realpath(database_path('migrations'))) {
                 continue;

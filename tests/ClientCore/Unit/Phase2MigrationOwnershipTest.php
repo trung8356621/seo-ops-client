@@ -6,7 +6,7 @@ namespace Tests\Unit\Core;
 
 use App\Core\Database\AddonMigrationRegistrar;
 use Omnichannel\Addons\WordPress\WpPluginContractMap;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 final class Phase2MigrationOwnershipTest extends TestCase
 {
@@ -58,6 +58,18 @@ final class Phase2MigrationOwnershipTest extends TestCase
             'publishing',
             $registrar->classifyFilename('2026_08_02_100000_add_publishing_queue_handoff_to_seo_project_tasks.php'),
         );
+    }
+
+    public function test_default_migrate_registration_can_be_scoped_to_one_connection(): void
+    {
+        $registrar = new AddonMigrationRegistrar();
+        $mysqlPaths = $registrar->pathsForConnection('mysql');
+        $socialAutomationPaths = $registrar->pathsForConnection('omi_social_automation');
+
+        $this->assertNotEmpty($mysqlPaths);
+        $this->assertNotEmpty($socialAutomationPaths);
+        $this->assertStringContainsString('social-automation', str_replace('\\', '/', $socialAutomationPaths[0]));
+        $this->assertNotContains($socialAutomationPaths[0], $mysqlPaths);
     }
 
     public function test_wp_plugin_contract_map_covers_bridge_and_media(): void
