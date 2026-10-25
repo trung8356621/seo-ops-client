@@ -6,7 +6,9 @@ namespace App\Filament\Pages;
 
 use App\Models\Service;
 use App\Models\User;
+use App\Services\H1\Enrollment\EnrollmentConsumer;
 use App\Services\H1\Enforcement\ServiceEntitlementGate;
+use App\Services\H1\Exceptions\H1EnrollmentException;
 use App\Services\H1\Exceptions\H1TransportException;
 use App\Services\H1\Notifications\ClientNotificationStore;
 use App\Services\H1\Persistence\InstallationStateRepository;
@@ -34,6 +36,12 @@ final class ServiceStatusOverview extends Page
     public bool $reconcileRunning = false;
 
     public ?string $reconcileError = null;
+
+    public string $replacementEnrollmentToken = '';
+
+    public bool $replacementRunning = false;
+
+    public ?string $replacementError = null;
 
     private bool $autoReconcileCompleted = false;
 
@@ -80,6 +88,57 @@ final class ServiceStatusOverview extends Page
     public function reconcileLicense(): void
     {
         $this->runReconcile(notify: true);
+    }
+
+    /**
+     * Replace OPS-SERVER Installation Key without reinstalling or touching SEO business data.
+     * Validates the new enrollment token with OPS-SERVER before swapping local identity.
+     */
+    public function replaceInstallationKey(): void
+    {
+        if ($this->replacementRunning) {
+            return;
+        }
+
+        $token = trim($this->replacementEnrollmentToken);
+        if ($token === '') {
+            $this->replacementError = 'Vui lòng nhập enrollment token của Installation mới.';
+
+            return;
+        }
+
+        $this->replacementRunning = true;
+        $this->replacementError = null;
+
+        try {
+            $result = app(EnrollmentConsumer::class)->replaceInstallationKey($token);
+            $this->replacementEnrollmentToken = '';
+            Notification::make()
+                ->title('Đã thay Installation Key')
+                ->body(
+                    'Từ '.$result['previous_installation_id'].' → '.$result['installation_id']
+                    .'. Dữ liệu website/article không đổi. Revoke key cũ trên OPS-SERVER sau khi xác nhận.'
+                )
+                ->success()
+                ->send();
+            $this->runReconcile(notify: false);
+        } catch (H1EnrollmentException $e) {
+            $this->replacementError = $e->getMessage();
+            Notification::make()
+                ->title('Thay key thất bại — kết nối hiện tại được giữ nguyên')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } catch (\Throwable $e) {
+            $this->replacementError = $e->getMessage();
+            Notification::make()
+                ->title('Thay key thất bại — kết nối hiện tại được giữ nguyên')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        } finally {
+            $this->replacementRunning = false;
+        }
     }
 
     private function runReconcile(bool $notify): void

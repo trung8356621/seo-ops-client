@@ -85,13 +85,16 @@ final class AddonFaultIsolationTest extends TestCase
         self::assertStringContainsString('not approved in server deployment allowlist', $result->diagnostic());
     }
 
-    public function test_social_automation_with_deployment_ready_true_is_isolated_when_server_allowlist_omits_it_while_seo_remains_ready(): void
+    public function test_social_automation_is_approved_without_affecting_seo_readiness(): void
     {
+        $config = (string) file_get_contents(dirname(__DIR__, 3).'/config/addons.php');
+        self::assertStringContainsString('seo-content-ai,social-automation', $config);
+
         $socialManifest = new AddonManifest(
             slug: 'social-automation',
             name: 'Social Automation',
             version: '0.1.0',
-            provider: 'Omnichannel\\Addons\\SocialAutomation\\Providers\\SocialAutomationServiceProvider',
+            provider: 'Omnichannel\\Addons\\SocialAutomation\\SocialAutomationServiceProvider',
             path: '/path/to/social-automation',
             raw: ['deployment_ready' => true],
         );
@@ -105,19 +108,44 @@ final class AddonFaultIsolationTest extends TestCase
             raw: [],
         );
 
-        // Production server allowlist has 'seo' but NOT 'social-automation'
+        // Legitimate addons are independently approved in the server allowlist.
         $serverValidator = new AddonReadinessValidator(
-            deploymentReadySlugs: ['seo', 'seeding', 'search-foundation']
+            deploymentReadySlugs: ['seo', 'seeding', 'search-foundation', 'social-automation']
         );
 
-        // Social Automation MUST be rejected despite deployment_ready: true in manifest
+        // Social Automation readiness does not alter SEO readiness.
         $socialResult = $serverValidator->validateManifest($socialManifest);
-        self::assertFalse($socialResult->isReady());
-        self::assertStringContainsString('not approved in server deployment allowlist', $socialResult->diagnostic());
+        self::assertTrue($socialResult->isReady());
 
         // SEO addon MUST remain healthy and ready
         $seoResult = $serverValidator->validateManifest($seoManifest);
         self::assertTrue($seoResult->isReady());
+    }
+
+    public function test_broken_social_automation_provider_does_not_break_seo_readiness(): void
+    {
+        $validator = new AddonReadinessValidator(
+            deploymentReadySlugs: ['seo', 'social-automation']
+        );
+        $brokenSocial = new AddonManifest(
+            slug: 'social-automation',
+            name: 'Social Automation',
+            version: '0.1.0',
+            provider: 'Omnichannel\\Addons\\SocialAutomation\\MissingProvider',
+            path: '/path/to/social-automation',
+            raw: ['deployment_ready' => true],
+        );
+        $seo = new AddonManifest(
+            slug: 'seo',
+            name: 'SEO',
+            version: '1.0.0',
+            provider: 'App\\Providers\\AppServiceProvider',
+            path: '/path/to/seo',
+            raw: [],
+        );
+
+        self::assertFalse($validator->validateManifest($brokenSocial)->isReady());
+        self::assertTrue($validator->validateManifest($seo)->isReady());
     }
 
     public function test_missing_composer_namespace_fails_readiness(): void

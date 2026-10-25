@@ -283,4 +283,124 @@ final class InstallationStateRepository
             'pending_acks' => $pendingAcks,
         ])->save();
     }
+
+    /**
+     * Replace Installation identity/credential after OPS-SERVER has already validated
+     * the new enrollment token. Does NOT touch websites, articles, or other business data.
+     *
+     * @param  array<string, mixed>  $entitlementSnapshot
+     */
+    public function replaceInstallationBinding(
+        string $previousInstallationId,
+        string $installationId,
+        string $credentialId,
+        int $credentialVersion,
+        string $secretBase64Url,
+        array $entitlementSnapshot,
+        ?string $anchorIdentity,
+        ?string $controlServerUrl,
+        string $clientVersion,
+        int $entitlementRevision,
+    ): H1Installation {
+        if (! $this->tablesReady()) {
+            throw new H1EnrollmentException('schema_missing', 'H1 license tables are not migrated.');
+        }
+
+        if ($previousInstallationId === '' || $installationId === '') {
+            throw new H1EnrollmentException('invalid_response', 'Installation identity missing for key replacement.');
+        }
+
+        $effectiveControlServerUrl = filled($controlServerUrl)
+            ? ServerEndpointValidator::normalize($controlServerUrl)
+            : $this->getEffectiveControlServerUrl();
+
+        return DB::transaction(function () use (
+            $previousInstallationId,
+            $installationId,
+            $credentialId,
+            $credentialVersion,
+            $secretBase64Url,
+            $entitlementSnapshot,
+            $anchorIdentity,
+            $effectiveControlServerUrl,
+            $clientVersion,
+            $entitlementRevision,
+        ): H1Installation {
+            $installation = H1Installation::query()
+                ->where('installation_id', $previousInstallationId)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $installation instanceof H1Installation) {
+                throw new H1EnrollmentException(
+                    'not_enrolled',
+                    'No existing Installation binding to replace.',
+                );
+            }
+
+            $boundAnchor = filled($installation->anchor_identity)
+                ? strtolower(trim((string) $installation->anchor_identity))
+                : null;
+            $incomingAnchor = is_string($anchorIdentity) && trim($anchorIdentity) !== ''
+                ? strtolower(trim($anchorIdentity))
+                : null;
+            // Preserve permanently bound Domain Anchor; never swap to a different identity.
+            $resolvedAnchor = $boundAnchor ?? $incomingAnchor;
+
+            // Retire previous credentials before switching the installation_id FK string.
+            H1Credential::query()
+                ->where('installation_id', $previousInstallationId)
+                ->whereIn('status', [
+                    H1Credential::STATUS_ACTIVE,
+                    H1Credential::STATUS_PENDING,
+                    H1Credential::STATUS_RETIRING,
+                ])
+                ->update([
+                    'status' => H1Credential::STATUS_REVOKED,
+                    'retired_at' => now(),
+                ]);
+
+            // Leave prior H1 receipts/notifications keyed to the previous installation_id
+            // (audit orphans). Avoid unique collisions and do not rewrite commercial history.
+
+            $installation->fill([
+                'installation_id' => $installationId,
+                'product' => (string) config('h1-license.product', 'seo-ops'),
+                'control_server_url' => $effectiveControlServerUrl !== '' ? $effectiveControlServerUrl : $installation->control_server_url,
+                'status' => 'enrolled',
+                'anchor_identity' => $resolvedAnchor,
+                'client_version' => $clientVersion,
+                'entitlement_revision' => $entitlementRevision,
+                'credential_version' => $credentialVersion,
+                'last_command_id' => null,
+                'verified_snapshot' => $entitlementSnapshot,
+                'validated_at' => now(),
+                'pending_acks' => [],
+                'rotation_state' => null,
+            ])->save();
+
+            $cred = H1Credential::query()->where('credential_id', $credentialId)->first() ?? new H1Credential;
+            $cred->installation_id = $installationId;
+            $cred->credential_id = $credentialId;
+            $cred->version = $credentialVersion;
+            $cred->status = H1Credential::STATUS_ACTIVE;
+            $cred->activated_at = now();
+            $cred->retired_at = null;
+            $cred->setSecretBase64Url($secretBase64Url);
+            $cred->save();
+
+            if ($effectiveControlServerUrl !== '') {
+                try {
+                    WpOption::set('h1_control_server_url', $effectiveControlServerUrl);
+                } catch (\Throwable) {
+                }
+                config([
+                    'h1-license.base_url' => $effectiveControlServerUrl,
+                    'configuration-sync.base_url' => $effectiveControlServerUrl,
+                ]);
+            }
+
+            return $installation->fresh() ?? $installation;
+        });
+    }
 }

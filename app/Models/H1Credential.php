@@ -20,6 +20,8 @@ class H1Credential extends Model
 
     public const STATUS_PENDING = 'pending';
 
+    public const STATUS_REVOKED = 'revoked';
+
     protected $table = 'h1_credentials';
 
     protected $fillable = [

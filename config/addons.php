@@ -18,7 +18,7 @@ return [
     */
     'deployment_ready_slugs' => array_values(array_filter(array_map(
         static fn (string $slug): string => trim($slug),
-        explode(',', (string) env('ADDON_DEPLOYMENT_READY_SLUGS', 'search-foundation,seo,search-intelligence,ai-prompt,content,content-projects,media,wordpress,publishing,site-sync,agent-runtime,social,commerce,seeding,seo-content-ai')),
+        explode(',', (string) env('ADDON_DEPLOYMENT_READY_SLUGS', 'search-foundation,seo,search-intelligence,ai-prompt,content,content-projects,media,wordpress,publishing,site-sync,agent-runtime,social,commerce,seeding,seo-content-ai,social-automation')),
     ))),
 
     /*
