@@ -140,6 +140,36 @@ final class SystemAiRemoteHttpIntegrationTest extends TestCase
         self::assertSame('from-http', $result->output['output'] ?? null);
     }
 
+    public function test_remote_http_transport_uses_the_configured_production_base_url(): void
+    {
+        Http::fake([
+            'https://seo-ops.duckdns.org/api/system/v1/ai/executions' => Http::response([
+                'ok' => true,
+                'data' => [
+                    'id' => 'ai_production_route',
+                    'status' => 'completed',
+                    'capability' => 'article.content.generate',
+                    'output' => ['output' => 'ok'],
+                ],
+            ]),
+        ]);
+
+        $transport = new RemoteHttpAiTransport(
+            baseUrl: 'https://seo-ops.duckdns.org/',
+            serviceToken: 'test-system-token',
+        );
+
+        $result = $transport->execute(new AiExecutionRequest(
+            capability: 'article.content.generate',
+            input: ['prompt_id' => 1],
+        ));
+
+        Http::assertSentCount(1);
+        Http::assertSent(static fn ($request): bool => $request->url()
+            === 'https://seo-ops.duckdns.org/api/system/v1/ai/executions');
+        self::assertSame('completed', $result->status);
+    }
+
     public function test_remote_http_422_business_failure_parses_execution_envelope(): void
     {
         Http::fake([
