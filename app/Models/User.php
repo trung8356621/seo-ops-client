@@ -129,8 +129,8 @@ class User extends Authenticatable implements FilamentUser
             'admin' => in_array((string) $this->role, [self::ROLE_OWNER, self::ROLE_ADMIN], true),
             'tools' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
             'seeding' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
-            // Admin-owned addon; service activation is gated separately by SocialAutomationAccess.
-            'social-automation' => in_array((string) $this->role, [self::ROLE_OWNER, self::ROLE_ADMIN], true),
+            // Service activation and permissions are gated separately by SocialAutomationAccess.
+            'social-automation' => (string) ($this->status ?? '') !== self::STATUS_BLOCK,
             'seo', 'seo-main' => $this->canAccessSeoPanel(),
             default => false,
         };
