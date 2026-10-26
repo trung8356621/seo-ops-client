@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Laravel\Facades\Image as InterventionImage;
@@ -83,6 +84,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->ensureSafeSessionDriverDuringInstallation();
+        $this->enforceCanonicalHttpsUrlGeneration();
 
         $this->registerFallbackTestCommand();
 
@@ -302,6 +304,32 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->register($providerClass);
         $this->registeredAddonProviders[$providerClass] = true;
+    }
+
+    /**
+     * Align URL generation + Secure session cookies with canonical HTTPS.
+     * Does not weaken Secure cookies: only sets secure=true when unset and HTTPS is forced.
+     */
+    private function enforceCanonicalHttpsUrlGeneration(): void
+    {
+        if (! (bool) config('app.force_https')) {
+            return;
+        }
+
+        URL::forceScheme('https');
+
+        $root = rtrim((string) config('app.url'), '/');
+        if ($root !== '') {
+            $httpsRoot = (string) preg_replace('#^http://#i', 'https://', $root);
+            URL::forceRootUrl($httpsRoot);
+            if ($httpsRoot !== $root) {
+                config(['app.url' => $httpsRoot]);
+            }
+        }
+
+        if (config('session.secure') === null) {
+            config(['session.secure' => true]);
+        }
     }
 
     private function ensureSafeSessionDriverDuringInstallation(): void

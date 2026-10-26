@@ -56,6 +56,28 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Force HTTPS (canonical browser origin)
+    |--------------------------------------------------------------------------
+    |
+    | When true, browser HTTP requests are redirected to the HTTPS origin from
+    | APP_URL (host taken from APP_URL, never from arbitrary Host headers).
+    | Enabled explicitly via FORCE_HTTPS=true, or when APP_URL uses https://.
+    | Leave false for HTTP-only local/dev deployments.
+    |
+    */
+
+    'force_https' => (static function (): bool {
+        if (filter_var(env('FORCE_HTTPS', false), FILTER_VALIDATE_BOOL)) {
+            return true;
+        }
+
+        $scheme = parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_SCHEME);
+
+        return is_string($scheme) && strtolower($scheme) === 'https';
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Auth;
 
+use App\Core\Installation\InstallationState;
+use App\Core\Installation\InstallationStateManager;
 use App\Models\User;
 use App\Services\Auth\PostLoginRedirector;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +18,16 @@ use Tests\TestCase;
  */
 class AuthenticationTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Bind a forced INSTALLED manager — EnsureApplicationInstalled resolves a fresh instance otherwise.
+        $state = new InstallationStateManager(storage_path('framework/testing/installer-auth'));
+        $state->setStatusForTesting(InstallationState::INSTALLED);
+        $this->app->instance(InstallationStateManager::class, $state);
+    }
+
     public function test_login_route_is_registered(): void
     {
         self::assertTrue(Route::has('login'));
@@ -88,5 +100,52 @@ class AuthenticationTest extends TestCase
     public function test_users_can_logout_via_named_route(): void
     {
         self::assertTrue(Route::has('logout'));
+    }
+
+    public function test_login_page_is_not_cacheable(): void
+    {
+        $response = $this->get('/login');
+
+        $response->assertOk();
+        $cacheControl = strtolower((string) $response->headers->get('Cache-Control'));
+        self::assertStringContainsString('no-store', $cacheControl);
+    }
+
+    public function test_browser_logout_redirects_to_fresh_login(): void
+    {
+        $owner = new User([
+            'id' => 98,
+            'role' => User::ROLE_OWNER,
+            'email' => 'owner-logout-test@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        Auth::login($owner);
+        $this->get('/login')->assertRedirect('/admin');
+
+        $this->post('/logout')->assertRedirect(route('login'));
+
+        $this->assertGuest();
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Đăng nhập SEO Ops', false);
+
+        $cacheControl = strtolower((string) $this->get('/login')->headers->get('Cache-Control'));
+        self::assertStringContainsString('no-store', $cacheControl);
+    }
+
+    public function test_json_logout_still_returns_no_content(): void
+    {
+        $owner = new User([
+            'id' => 97,
+            'role' => User::ROLE_OWNER,
+            'email' => 'owner-logout-json@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        Auth::login($owner);
+
+        $this->postJson('/logout')->assertNoContent();
+        $this->assertGuest();
     }
 }

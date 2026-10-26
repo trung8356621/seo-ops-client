@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Before vendor ModelNotFoundException autoloads: safe setModel for nested-array ids
@@ -49,6 +50,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(static fn (): string => route('login'));
 
+        // Behind Herd/nginx/Cloudflare TLS termination — required so secure() is true
+        // and EnsureCanonicalHttps does not loop. Override via TRUSTED_PROXIES.
+        $trustedProxies = env('TRUSTED_PROXIES', '*');
+        $middleware->trustProxies(
+            at: $trustedProxies === '*' ? '*' : array_values(array_filter(array_map('trim', explode(',', (string) $trustedProxies)))),
+            headers: Request::HEADER_X_FORWARDED_FOR
+                | Request::HEADER_X_FORWARDED_HOST
+                | Request::HEADER_X_FORWARDED_PORT
+                | Request::HEADER_X_FORWARDED_PROTO
+                | Request::HEADER_X_FORWARDED_AWS_ELB,
+        );
+
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
@@ -69,7 +82,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->statefulApi(); // Đảm bảo session được giữ cho các request API/Livewire
 
+        // Last prepend runs first: HTTPS before install gate / session cookies on wrong scheme.
         $middleware->prepend(\App\Http\Middleware\EnsureApplicationInstalled::class);
+        $middleware->prepend(\App\Http\Middleware\EnsureCanonicalHttps::class);
         $middleware->prependToPriorityList(
             \Illuminate\Cookie\Middleware\EncryptCookies::class,
             \App\Http\Middleware\EnsureApplicationInstalled::class,

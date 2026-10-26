@@ -5,6 +5,13 @@
 
     RewriteEngine On
 
+    # Optional Apache TLS redirect (prefer enabling when Apache terminates HTTPS).
+    # Application middleware EnsureCanonicalHttps is the portable SSOT using APP_URL.
+    # Uncomment only when this vhost serves HTTPS and you want edge-level redirects:
+    # RewriteCond %{HTTPS} !=on
+    # RewriteCond %{HTTP:X-Forwarded-Proto} !https [NC]
+    # RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

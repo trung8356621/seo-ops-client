@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
@@ -24,8 +27,11 @@ class AuthenticatedSessionController extends Controller
 
     /**
      * Destroy an authenticated session.
+     *
+     * Browser logout must land on a fresh GET /login (new CSRF). A bare 204
+     * leaves a stale Filament/HTML UI that keeps POSTing expired tokens → 419.
      */
-    public function destroy(Request $request): Response
+    public function destroy(Request $request): RedirectResponse|Response
     {
         Auth::guard('web')->logout();
 
@@ -33,6 +39,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return response()->noContent();
+        if ($request->expectsJson() && ! $request->header('X-Livewire')) {
+            return response()->noContent();
+        }
+
+        return redirect()->to(route('login'));
     }
 }

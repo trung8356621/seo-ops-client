@@ -12,7 +12,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 /**
  * Canonical browser login — one User, one web session, one flow.
@@ -23,7 +22,7 @@ final class LoginController extends Controller
         private readonly PostLoginRedirector $postLoginRedirector,
     ) {}
 
-    public function create(Request $request): View|RedirectResponse
+    public function create(Request $request): RedirectResponse|Response
     {
         if (Auth::check()) {
             /** @var User $user */
@@ -32,7 +31,12 @@ final class LoginController extends Controller
             return redirect()->to($this->postLoginRedirector->urlFor($user));
         }
 
-        return view('auth.login');
+        // Prevent bfcache / intermediary reuse of a login form whose CSRF
+        // no longer matches the current session (recurring HTTP 419 on retry).
+        return response()
+            ->view('auth.login')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache');
     }
 
     public function store(LoginRequest $request): RedirectResponse|Response
